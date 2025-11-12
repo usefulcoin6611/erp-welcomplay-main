@@ -1,0 +1,602 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Kelola proyek dan analitik Anda",
+    "welcome": "Selamat datang di Dashboard"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "lifecycle": "Siklus Hidup",
+    "analytics": "Analitik",
+    "projects": "Proyek",
+    "users": "Tim",
+    "capture": "Tangkap",
+    "proposal": "Proposal",
+    "prompts": "Prompt",
+    "activeProposals": "Proposal Aktif",
+    "archived": "Arsip",
+    "settings": "Pengaturan",
+    "help": "Bantuan",
+    "search": "Pencarian"
+  },
+  "sidebar": {
+    "platform": "Platform",
+    "projects": "Proyek",
+    "recent": "Terbaru",
+    "more": "Lainnya",
+    "favorites": "Favorit",
+    "teams": "Tim",
+    "settings": "Pengaturan",
+    "getHelp": "Dapatkan Bantuan",
+    "search": "Pencarian",
+    "dataLibrary": "Perpustakaan Data",
+    "reports": "Laporan",
+    "wordAssistant": "Asisten Word",
+    "menu": {
+      "dashboard": "Dashboard",
+      "overview": "Ringkasan",
+      "reports": "Laporan",
+      "accounting": "Akuntansi",
+      "hrm": "HRM",
+      "crm": "CRM",
+      "project": "Proyek",
+      "pos": "POS",
+      "accountStatement": "Laporan Akun",
+      "invoiceSummary": "Ringkasan Faktur",
+      "salesReport": "Laporan Penjualan",
+      "receivables": "Piutang",
+      "payables": "Hutang",
+      "billSummary": "Ringkasan Tagihan",
+      "productStock": "Stok Produk",
+      "cashFlow": "Arus Kas",
+      "transaction": "Transaksi",
+      "incomeSummary": "Ringkasan Pendapatan",
+      "expenseSummary": "Ringkasan Pengeluaran",
+      "incomeVsExpense": "Pendapatan VS Pengeluaran",
+      "taxSummary": "Ringkasan Pajak",
+      "payroll": "Penggajian",
+      "leave": "Cuti",
+      "monthlyAttendance": "Presensi Bulanan",
+      "lead": "Prospek",
+      "deal": "Penawaran",
+      "warehouseReport": "Laporan Gudang",
+      "purchaseDailyMonthlyReport": "Laporan Pembelian Harian/Bulanan",
+      "posDailyMonthlyReport": "Laporan POS Harian/Bulanan",
+      "posVsPurchaseReport": "Laporan POS VS Pembelian",
+      "hrmSystem": "Sistem HRM",
+      "accountingSystem": "Sistem Akuntansi",
+      "crmSystem": "Sistem CRM",
+      "projectSystem": "Sistem Proyek",
+      "posSystem": "Sistem POS",
+      "userManagement": "Manajemen Pengguna",
+      "productSystem": "Sistem Produk",
+      "supportSystem": "Sistem Dukungan",
+      "meetingSystem": "Sistem Rapat",
+      "employeeSetup": "Pengaturan Karyawan",
+      "payrollSetup": "Pengaturan Gaji",
+      "performanceSetup": "Pengaturan Kinerja",
+      "trainingSetup": "Pengaturan Pelatihan",
+      "recruitmentSetup": "Pengaturan Rekrutmen",
+      "hrAdminSetup": "Pengaturan Admin SDM",
+      "eventSetup": "Pengaturan Acara",
+      "meeting": "Rapat",
+      "employeesAssetSetup": "Pengaturan Aset Karyawan",
+      "documentSetup": "Pengaturan Dokumen",
+      "companyPolicy": "Kebijakan Perusahaan",
+      "hrmSystemSetup": "Pengaturan Sistem SDM",
+      "leads": "Prospek",
+      "deals": "Penawaran",
+      "formBuilder": "Pembuat Formulir",
+      "contract": "Kontrak",
+      "crmSystemSetup": "Pengaturan Sistem CRM"
+    }
+  },
+  "header": {
+    "search": "Cari...",
+    "notifications": "Notifikasi",
+    "profile": "Profil",
+    "logout": "Keluar"
+  },
+  "cards": {
+    "totalRevenue": "Total Pendapatan",
+    "subscriptions": "Langganan",
+    "sales": "Penjualan",
+    "activeNow": "Aktif Sekarang"
+  },
+  "chart": {
+    "title": "Grafik Area - Interaktif",
+    "description": "Menampilkan total pengunjung untuk 6 bulan terakhir",
+    "desktop": "Desktop",
+    "mobile": "Mobile"
+  },
+  "table": {
+    "title": "Tabel Data",
+    "name": "Nama",
+    "status": "Status",
+    "email": "Email",
+    "amount": "Jumlah",
+    "actions": "Aksi",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "view": "Lihat"
+  },
+  "common": {
+    "loading": "Memuat...",
+    "error": "Terjadi kesalahan",
+    "success": "Berhasil",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "close": "Tutup",
+    "open": "Buka",
+    "back": "Kembali",
+    "next": "Selanjutnya",
+    "previous": "Sebelumnya",
+    "apply": "Terapkan",
+    "reset": "Reset",
+    "export": "Ekspor",
+    "download": "Unduh"
+  },
+  "accountDashboard": {
+    "stats": {
+      "totalCustomers": "Total Pelanggan",
+      "totalVendors": "Total Vendor",
+      "totalInvoices": "Total Faktur",
+      "totalBills": "Total Tagihan"
+    },
+    "incomeVsExpense": {
+      "title": "Pendapatan Vs Pengeluaran",
+      "incomeToday": "Pendapatan Hari Ini",
+      "expenseToday": "Pengeluaran Hari Ini",
+      "incomeThisMonth": "Pendapatan Bulan Ini",
+      "expenseThisMonth": "Pengeluaran Bulan Ini"
+    },
+    "accountBalance": {
+      "title": "Saldo Rekening",
+      "bank": "BANK",
+      "holderName": "NAMA PEMEGANG",
+      "balance": "SALDO",
+      "noData": "tidak ada saldo rekening"
+    },
+    "incomeExpense": {
+      "title": "Pendapatan & Pengeluaran",
+      "currentYear": "Tahun Ini - 2025",
+      "income": "Pendapatan",
+      "expense": "Pengeluaran"
+    },
+    "latestIncome": {
+      "title": "Pendapatan Terbaru",
+      "date": "TANGGAL",
+      "customer": "PELANGGAN",
+      "amountDue": "JUMLAH",
+      "noData": "tidak ada pendapatan terbaru"
+    },
+    "latestExpense": {
+      "title": "Pengeluaran Terbaru",
+      "date": "TANGGAL",
+      "vendor": "VENDOR",
+      "amountDue": "JUMLAH",
+      "noData": "tidak ada pengeluaran terbaru"
+    },
+    "cashflow": {
+      "title": "Arus Kas",
+      "monthly": "Bulanan",
+      "income": "Pendapatan",
+      "expense": "Pengeluaran"
+    },
+    "incomeByCategory": {
+      "title": "Pendapatan Per Kategori",
+      "year": "Tahun - 2025",
+      "maintenanceSales": "Penjualan Pemeliharaan",
+      "productSales": "Penjualan Produk"
+    },
+    "expenseByCategory": {
+      "title": "Pengeluaran Per Kategori",
+      "year": "Tahun - 2025",
+      "rentOrLease": "Sewa atau Lease",
+      "travel": "Perjalanan"
+    },
+    "storageLimit": {
+      "title": "Batas Penyimpanan",
+      "used": "Terpakai"
+    },
+    "recentInvoices": {
+      "title": "Faktur Terbaru",
+      "number": "#",
+      "customer": "PELANGGAN",
+      "issueDate": "TGL TERBIT",
+      "dueDate": "TGL JATUH TEMPO",
+      "amount": "JUMLAH",
+      "status": {
+        "label": "STATUS",
+        "paid": "Dibayar",
+        "unpaid": "Belum Dibayar",
+        "overdue": "Terlambat"
+      },
+      "noData": "tidak ada faktur terbaru",
+      "weekly": "Faktur Mingguan",
+      "monthly": "Faktur Bulanan",
+      "statistics": {
+        "totalGenerated": "Faktur Dibuat",
+        "totalPaid": "Dibayar",
+        "totalDue": "Jatuh Tempo",
+        "total": "Total"
+      }
+    },
+    "recentBills": {
+      "title": "Tagihan Terbaru",
+      "number": "#",
+      "vendor": "VENDOR",
+      "billDate": "TGL TAGIHAN",
+      "dueDate": "TGL JATUH TEMPO",
+      "amount": "JUMLAH",
+      "status": {
+        "label": "STATUS",
+        "paid": "Dibayar",
+        "unpaid": "Belum Dibayar",
+        "overdue": "Terlambat"
+      },
+      "noData": "tidak ada tagihan terbaru",
+      "weekly": "Tagihan Mingguan",
+      "monthly": "Tagihan Bulanan",
+      "statistics": {
+        "totalGenerated": "Tagihan Dibuat",
+        "totalPaid": "Dibayar",
+        "totalDue": "Jatuh Tempo",
+        "total": "Total"
+      }
+    },
+    "goal": {
+      "title": "Target",
+      "name": "Nama",
+      "type": "Tipe",
+      "duration": "Durasi",
+      "target": "Target",
+      "progress": "Progress",
+      "current": "Saat Ini",
+      "achieved": "Tercapai",
+      "remaining": "Tersisa",
+      "types": {
+        "bill": "Tagihan",
+        "invoice": "Faktur",
+        "payment": "Pembayaran",
+        "revenue": "Pendapatan"
+      }
+    }
+  },
+  "hrmDashboard": {
+    "attendanceClock": {
+      "title": "Absensi Hari Ini",
+      "greeting": {
+        "morning": "Selamat Pagi",
+        "afternoon": "Selamat Siang",
+        "evening": "Selamat Sore",
+        "night": "Selamat Malam",
+        "welcome": "Selamat Datang"
+      },
+      "clockedIn": "Anda sudah clock in hari ini",
+      "notClockedIn": "Anda belum clock in hari ini",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "clockInTime": "Clock In",
+      "clockOutTime": "Clock Out",
+      "notClockInList": "Daftar Belum Clock In",
+      "notClockInTitle": "Belum Clock In",
+      "notClockedBadge": "Belum Absen",
+      "allClockedIn": "Semua karyawan sudah clock in",
+      "viewAll": "Lihat Semua"
+    },
+    "eventCalendar": {
+      "title": "Kalender Acara",
+      "eventTitle": "Acara",
+      "calendarType": {
+        "google": "Google Kalender",
+        "local": "Kalender Lokal"
+      },
+      "addEvent": "Tambah",
+      "today": "Hari Ini",
+      "eventTypes": {
+        "meeting": "Rapat",
+        "training": "Pelatihan",
+        "holiday": "Libur",
+        "other": "Lainnya"
+      },
+      "months": {
+        "jan": "Januari",
+        "feb": "Februari",
+        "mar": "Maret",
+        "apr": "April",
+        "may": "Mei",
+        "jun": "Juni",
+        "jul": "Juli",
+        "aug": "Agustus",
+        "sep": "September",
+        "oct": "Oktober",
+        "nov": "November",
+        "dec": "Desember"
+      },
+      "days": {
+        "mon": "Sen",
+        "tue": "Sel",
+        "wed": "Rab",
+        "thu": "Kam",
+        "fri": "Jum",
+        "sat": "Sab",
+        "sun": "Min"
+      }
+    },
+    "statsCards": {
+      "staff": {
+        "totalStaff": "Total Staf",
+        "totalEmployee": "Total Karyawan",
+        "totalClient": "Total Klien"
+      },
+      "job": {
+        "totalJobs": "Total Pekerjaan",
+        "activeJobs": "Pekerjaan Aktif",
+        "inactiveJobs": "Pekerjaan Tidak Aktif"
+      },
+      "training": {
+        "totalTrainer": "Total Pelatih",
+        "activeTraining": "Pelatihan Aktif",
+        "doneTraining": "Pelatihan Selesai"
+      }
+    },
+    "announcementList": {
+      "title": "Daftar Pengumuman",
+      "addButton": "Tambah",
+      "table": {
+        "title": "Judul",
+        "startDate": "Tanggal Mulai",
+        "endDate": "Tanggal Berakhir",
+        "description": "Deskripsi",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Aktif",
+        "inactive": "Tidak Aktif"
+      },
+      "priority": {
+        "high": "Tinggi",
+        "medium": "Sedang",
+        "low": "Rendah"
+      },
+      "emptyState": {
+        "title": "Tidak ada Pengumuman",
+        "description": "Belum ada pengumuman yang tersedia"
+      },
+      "viewAll": "Lihat Semua Pengumuman"
+    },
+    "meetingSchedule": {
+      "title": "Jadwal Rapat",
+      "addButton": "Tambah",
+      "table": {
+        "title": "Judul",
+        "date": "Tanggal",
+        "time": "Waktu",
+        "type": "Tipe",
+        "attendees": "Peserta",
+        "status": "Status"
+      },
+      "status": {
+        "scheduled": "Terjadwal",
+        "ongoing": "Berlangsung",
+        "completed": "Selesai",
+        "cancelled": "Dibatalkan"
+      },
+      "meetingType": {
+        "online": "Online",
+        "offline": "Offline",
+        "hybrid": "Hybrid"
+      },
+      "upcoming": "Akan Datang",
+      "emptyState": {
+        "title": "Tidak Ada Rapat Terjadwal",
+        "description": "Belum ada rapat yang dijadwalkan"
+      },
+      "viewAll": "Lihat Semua Rapat"
+    }
+  },
+  "posDashboard": {
+    "stats": {
+      "monthlyPOS": "POS Bulan Ini",
+      "totalPOSAmount": "Jumlah POS",
+      "monthlyPurchase": "Pembelian Bulan Ini",
+      "totalPurchaseAmount": "Jumlah Pembelian",
+      "total": "Total"
+    },
+    "chart": {
+      "title": "Laporan Pembelian Vs POS",
+      "subtitle": "10 Hari Terakhir",
+      "purchase": "Pembelian",
+      "pos": "POS",
+      "amount": "Jumlah"
+    }
+  },
+  "crmDashboard": {
+    "stats": {
+      "totalLead": "Total Lead",
+      "totalDeal": "Total Deal",
+      "totalContract": "Total Kontrak"
+    },
+    "leadStatus": {
+      "title": "Status Lead",
+      "draft": "Draft",
+      "sent": "Terkirim",
+      "open": "Open",
+      "revised": "Direvisi",
+      "declined": "Ditolak",
+      "pending": "Tertunda",
+      "contacted": "Telah Dihubungi",
+      "qualified": "Berkualitas",
+      "proposal": "Proposal"
+    },
+    "dealStatus": {
+      "title": "Status Deal",
+      "initialContact": "Kontak Awal",
+      "qualification": "Kualifikasi",
+      "meeting": "Pertemuan",
+      "proposal": "Proposal",
+      "close": "Tutup",
+      "discovery": "Penemuan",
+      "negotiation": "Negosiasi",
+      "closed": "Ditutup",
+      "won": "Menang"
+    },
+    "latestContract": {
+      "title": "Kontrak Terbaru",
+      "number": "#",
+      "subject": "Subjek",
+      "client": "Klien",
+      "project": "Proyek",
+      "contractType": "Tipe Kontrak",
+      "contractValue": "Nilai Kontrak",
+      "startDate": "Tanggal Mulai",
+      "endDate": "Tanggal Selesai",
+      "noContract": "Tidak ada kontrak terbaru"
+    }
+  },
+  "projectDashboard": {
+    "stats": {
+      "totalProjects": "Total Proyek",
+      "totalTasks": "Total Tugas",
+      "totalExpense": "Total Pengeluaran",
+      "completed": "Selesai"
+    },
+    "projectStatus": {
+      "title": "Status Proyek",
+      "onGoing": "Sedang Berjalan",
+      "onHold": "Ditunda",
+      "complete": "Selesai",
+      "cancelled": "Dibatalkan"
+    },
+    "tasksOverview": {
+      "title": "Ikhtisar Tugas",
+      "subtitle": "Total tugas selesai dalam 7 hari terakhir"
+    },
+    "topDueProjects": {
+      "title": "Proyek Jatuh Tempo Teratas",
+      "name": "Nama",
+      "endDate": "Tanggal Selesai",
+      "status": "Status",
+      "noProjects": "Tidak Ada Proyek Jatuh Tempo."
+    },
+    "timesheetLoggedHours": {
+      "title": "Jam Kerja Tercatat",
+      "subtitle": "7 hari terakhir",
+      "hoursLogged": "jam tercatat"
+    },
+    "topDueTasks": {
+      "title": "Tugas Jatuh Tempo Teratas",
+      "task": "Tugas",
+      "project": "Proyek",
+      "stage": "Tahap",
+      "completion": "Penyelesaian",
+      "low": "Rendah",
+      "medium": "Sedang",
+      "high": "Tinggi",
+      "critical": "Kritis",
+      "noTasks": "Tidak Ada Tugas Jatuh Tempo."
+    }
+  },
+  "hrm": {
+    "employee": {
+      "title": "Manajemen Karyawan",
+      "createEmployee": "Buat Karyawan",
+      "editEmployee": "Edit Karyawan",
+      "viewEmployee": "Lihat Karyawan",
+      "deleteEmployee": "Hapus Karyawan",
+      "employeeList": "Daftar Karyawan",
+      "personalDetail": "Detail Pribadi",
+      "companyDetail": "Detail Perusahaan",
+      "document": "Dokumen",
+      "name": "Nama",
+      "email": "Email",
+      "phone": "Telepon",
+      "dateOfBirth": "Tanggal Lahir",
+      "gender": "Jenis Kelamin",
+      "male": "Laki-laki",
+      "female": "Perempuan",
+      "address": "Alamat",
+      "employeeId": "ID Karyawan",
+      "branch": "Cabang",
+      "department": "Departemen",
+      "designation": "Jabatan",
+      "companyDateOfJoining": "Tanggal Bergabung Perusahaan",
+      "dateOfJoining": "Tanggal Bergabung",
+      "lastLogin": "Login Terakhir",
+      "status": "Status",
+      "active": "Aktif",
+      "inactive": "Tidak Aktif",
+      "actions": "Aksi",
+      "search": "Cari karyawan...",
+      "export": "Ekspor",
+      "import": "Impor",
+      "password": "Kata Sandi",
+      "cancel": "Batal",
+      "save": "Simpan",
+      "edit": "Edit",
+      "view": "Lihat",
+      "delete": "Hapus",
+      "selectBranch": "Pilih Cabang",
+      "selectDepartment": "Pilih Departemen",
+      "selectDesignation": "Pilih Jabatan",
+      "createBranch": "Buat Cabang",
+      "createDepartment": "Buat Departemen",
+      "createDesignation": "Buat Jabatan",
+      "createBranchHere": "Buat cabang dari sini",
+      "createDepartmentHere": "Buat departemen dari sini",
+      "createDesignationHere": "Buat jabatan dari sini",
+      "enterEmployeeName": "Masukkan nama karyawan",
+      "enterEmployeePhone": "Masukkan telepon karyawan",
+      "enterEmployeeEmail": "Masukkan email karyawan",
+      "enterEmployeePassword": "Masukkan kata sandi karyawan",
+      "enterEmployeeAddress": "Masukkan alamat karyawan",
+      "create": "Buat",
+      "noEmployees": "Tidak ada karyawan ditemukan",
+      "backToList": "Kembali ke Daftar",
+      "showing": "Menampilkan",
+      "to": "sampai",
+      "of": "dari",
+      "entries": "entri",
+      "rowsPerPage": "Baris per halaman:",
+      "page": "Halaman",
+      "bankAccountDetail": "Detail Rekening Bank",
+      "accountHolderName": "Nama Pemegang Rekening",
+      "accountNumber": "Nomor Rekening",
+      "bankName": "Nama Bank",
+      "bankIdentifierCode": "Kode Identifikasi Bank",
+      "branchLocation": "Lokasi Cabang",
+      "taxPayerId": "ID Wajib Pajak",
+      "enterAccountHolderName": "Masukkan nama pemegang rekening",
+      "enterAccountNumber": "Masukkan nomor rekening",
+      "enterBankName": "Masukkan nama bank",
+      "enterBankIdentifierCode": "Masukkan kode identifikasi bank",
+      "enterBranchLocation": "Masukkan lokasi cabang",
+      "enterTaxPayerId": "Masukkan ID wajib pajak",
+      "employeeDetail": "Detail Karyawan"
+    }
+  },
+  "accountingReports": {
+    "accountStatement": {
+      "title": "Ringkasan Laporan Akun",
+      "subtitle": "Lihat dan kelola laporan akun Anda",
+      "startMonth": "Bulan Mulai",
+      "endMonth": "Bulan Akhir",
+      "account": "Akun",
+      "category": "Kategori",
+      "allAccounts": "Semua Akun",
+      "allCategories": "Semua Kategori",
+      "revenue": "Pendapatan",
+      "payment": "Pembayaran",
+      "report": "Laporan",
+      "type": "Tipe",
+      "duration": "Durasi",
+      "revenueAccounts": "Akun Pendapatan",
+      "paymentAccounts": "Akun Pembayaran",
+      "transactions": "Transaksi",
+      "date": "TANGGAL",
+      "amount": "JUMLAH",
+      "description": "DESKRIPSI"
+    }
+  }
+}

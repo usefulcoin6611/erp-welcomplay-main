@@ -1,0 +1,748 @@
+"use client"
+
+import { AppSidebar } from '@/components/app-sidebar'
+import { SiteHeader } from '@/components/site-header'
+import {
+  SidebarInset,
+  SidebarProvider,
+} from '@/components/ui/sidebar'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { 
+  Users, 
+  Truck, 
+  FileText, 
+  Receipt,
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Target
+} from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+
+export default function AccountDashboardPage() {
+  // Mock data
+  const stats = [
+    {
+      title: "Total Customers",
+      value: "0",
+      icon: Users,
+      href: "/customer",
+      color: "from-pink-400 via-pink-500 to-pink-600"
+    },
+    {
+      title: "Total Vendors", 
+      value: "0",
+      icon: Truck,
+      href: "/vendor", 
+      color: "from-green-400 via-green-500 to-green-600"
+    },
+    {
+      title: "Total Invoices",
+      value: "0",
+      icon: FileText,
+      href: "/invoice",
+      color: "from-orange-400 via-orange-500 to-orange-600"
+    },
+    {
+      title: "Total Bills",
+      value: "0",
+      icon: Receipt,
+      href: "/bill",
+      color: "from-cyan-400 via-cyan-500 to-cyan-600"
+    }
+  ]
+
+  const incomeExpenseData = [
+    { month: "January", income: 850000, expense: 640000 },
+    { month: "February", income: 920000, expense: 680000 },
+    { month: "March", income: 780000, expense: 720000 },
+    { month: "April", income: 1050000, expense: 580000 },
+    { month: "May", income: 890000, expense: 650000 },
+    { month: "June", income: 1100000, expense: 780000 },
+    { month: "July", income: 980000, expense: 820000 },
+    { month: "August", income: 860000, expense: 680000 },
+    { month: "September", income: 1150000, expense: 730000 },
+    { month: "October", income: 1050000, expense: 850000 },
+    { month: "November", income: 920000, expense: 780000 },
+    { month: "December", income: 980000, expense: 820000 }
+  ]
+
+  const chartConfig = {
+    income: {
+      label: "Income",
+      color: "#22d3ee",
+    },
+    expense: {
+      label: "Expense",
+      color: "#f472b6",
+    },
+  } satisfies ChartConfig
+
+  return (
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+            {/* Top Section - Statistics Cards and Income Vs Expense Side by Side */}
+            <div className="grid gap-4 xl:grid-cols-3">
+              {/* Left Side - Statistics Cards */}
+              <div className="xl:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {stats.map((stat) => {
+                    const IconComponent = stat.icon
+                    return (
+                      <Card key={stat.title} className="relative overflow-hidden border-0 shadow-sm">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${stat.color}`}>
+                          <div className="absolute top-3 right-3 w-12 h-12 opacity-20">
+                            <div className="w-full h-full bg-white rounded-full"></div>
+                          </div>
+                          <div className="absolute -top-1 -right-1 w-16 h-16 opacity-10">
+                            <div className="w-full h-full bg-white rounded-full"></div>
+                          </div>
+                        </div>
+                        <CardContent className="relative p-4 text-white">
+                          <div className="flex items-start justify-between">
+                            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                              <IconComponent className="h-5 w-5" />
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold">{stat.value}</div>
+                            </div>
+                          </div>
+                          <div className="mt-3">
+                            <h3 className="text-base font-medium">
+                              <a href={stat.href} className="hover:underline">
+                                {stat.title}
+                              </a>
+                            </h3>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div>
+              
+              {/* Right Side - Income Vs Expense */}
+              <div className="xl:col-span-1">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Income Vs Expense</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between p-2 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-green-500 rounded-md">
+                          <TrendingUp className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="text-xs font-medium">Income Today</span>
+                      </div>
+                      <div className="text-sm font-bold text-green-600">
+                        Rp 127.000
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-red-500 rounded-md">
+                          <TrendingDown className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="text-xs font-medium">Expense Today</span>
+                      </div>
+                      <div className="text-sm font-bold text-red-600">
+                        Rp 65.500
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-500 rounded-md">
+                          <TrendingUp className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="text-xs font-medium">Income This Month</span>
+                      </div>
+                      <div className="text-sm font-bold text-blue-600">
+                        Rp 1.026.000
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-purple-500 rounded-md">
+                          <TrendingDown className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="text-xs font-medium">Expense This Month</span>
+                      </div>
+                      <div className="text-sm font-bold text-purple-600">
+                        Rp 645.500
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Main Content Grid - 2 Column Layout */}
+            <div className="grid gap-4 xl:grid-cols-3">
+              {/* Left Column - Main Content - Account Balance, Income & Expense, Latest Income */}
+              <div className="xl:col-span-2 space-y-4">
+                {/* Account Balance */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Account Balance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <div className="relative w-full overflow-auto">
+                        <table className="w-full caption-bottom text-sm">
+                          <thead className="[&_tr]:border-b">
+                            <tr className="border-b transition-colors hover:bg-muted/50">
+                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                BANK
+                              </th>
+                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                HOLDER NAME
+                              </th>
+                              <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
+                                BALANCE
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="[&_tr:last-child]:border-0">
+                            <tr>
+                              <td colSpan={3} className="h-24 text-center text-muted-foreground">
+                                there is no account balance
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Income & Expense Chart - Full Width */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-6 bg-green-500 rounded"></div>
+                        <CardTitle>Income & Expense</CardTitle>
+                      </div>
+                      <Badge variant="secondary">Current Year - 2025</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={chartConfig} className="h-[180px] w-full">
+                      <BarChart accessibilityLayer data={incomeExpenseData}>
+                        <CartesianGrid vertical={true} />
+                        <XAxis
+                          dataKey="month"
+                          tickLine={false}
+                          tickMargin={10}
+                          axisLine={false}
+                          tickFormatter={(value) => value.slice(0, 3)}
+                        />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <ChartLegend />
+                        <Bar dataKey="income" fill="var(--color-income)" radius={4} />
+                        <Bar dataKey="expense" fill="var(--color-expense)" radius={4} />
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+                
+                {/* Latest Income Table - Full Width */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-6 bg-green-500 rounded"></div>
+                      <CardTitle>Latest Income</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <div className="relative w-full overflow-auto">
+                        <table className="w-full caption-bottom text-sm">
+                          <thead className="[&_tr]:border-b">
+                            <tr className="border-b transition-colors hover:bg-muted/50">
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                DATE
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                CUSTOMER
+                              </th>
+                              <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground">
+                                AMOUNT DUE
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="[&_tr:last-child]:border-0">
+                            <tr>
+                              <td colSpan={3} className="h-24 text-center text-muted-foreground">
+                                there is no latest income
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Right Column - Sidebar */}
+              <div className="xl:col-span-1 space-y-4">
+                {/* Cashflow */}
+                <Card>
+                  <CardHeader className="pb-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-4 bg-green-500 rounded"></div>
+                        <CardTitle className="text-sm">Cashflow</CardTitle>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">Monthly</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-2 pt-0">
+                    {/* Chart Area using shadcn chart */}
+                    <div className="h-32">
+                      <div className="w-full h-full bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 rounded-lg p-1 relative overflow-hidden">
+                        {/* Simple Line Chart Mockup */}
+                        <svg className="w-full h-full" viewBox="0 0 280 100">
+                          {/* Grid lines */}
+                          <defs>
+                            <pattern id="grid" width="28" height="16" patternUnits="userSpaceOnUse">
+                              <path d="M 28 0 L 0 0 0 16" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+                            </pattern>
+                          </defs>
+                          <rect width="100%" height="100%" fill="url(#grid)" />
+                          
+                          {/* Y-axis labels (Rupiah values) */}
+                          <text x="5" y="12" fontSize="8" fill="#6b7280">Rp 2M</text>
+                          <text x="5" y="25" fontSize="8" fill="#6b7280">Rp 1.5M</text>
+                          <text x="5" y="38" fontSize="8" fill="#6b7280">Rp 1M</text>
+                          <text x="5" y="51" fontSize="8" fill="#6b7280">Rp 500K</text>
+                          <text x="5" y="64" fontSize="8" fill="#6b7280">Rp 0</text>
+                          
+                          {/* Income line (green) */}
+                          <polyline
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2"
+                            points="40,48 70,38 100,43 130,28 160,33 190,23 220,18"
+                          />
+                          
+                          {/* Expense line (red) */}
+                          <polyline
+                            fill="none"
+                            stroke="#ef4444"
+                            strokeWidth="2"
+                            points="40,58 70,53 100,63 130,43 160,48 190,38 220,33"
+                          />
+                          
+                          {/* Data points */}
+                          {[40,70,100,130,160,190,220].map((x, i) => (
+                            <g key={i}>
+                              <circle cx={x} cy={[48,38,43,28,33,23,18][i]} r="2" fill="#22c55e" />
+                              <circle cx={x} cy={[58,53,63,43,48,38,33][i]} r="2" fill="#ef4444" />
+                            </g>
+                          ))}
+                          
+                          {/* Month labels */}
+                          {['Apr','May','Jun','Jul','Aug','Sep','Oct'].map((month, i) => (
+                            <text key={i} x={40 + i * 30} y={85} fontSize="8" fill="#6b7280" textAnchor="middle">
+                              {month}
+                            </text>
+                          ))}
+                        </svg>
+                        
+                        {/* Legend */}
+                        <div className="absolute top-1 right-1 flex gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                            <span className="text-xs">Income</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                            <span className="text-xs">Expense</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Income By Category Donut Chart */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-6 bg-green-500 rounded"></div>
+                        <CardTitle className="text-sm">Income By Category</CardTitle>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">Year - 2025</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      {/* Donut Chart - Left side */}
+                      <div className="relative flex-shrink-0">
+                        <svg width="120" height="120" className="transform -rotate-90">
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="40"
+                            fill="transparent"
+                            stroke="#22c55e"
+                            strokeWidth="16"
+                            strokeDasharray="176 251"
+                            strokeDashoffset="0"
+                          />
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="40"
+                            fill="transparent"
+                            stroke="#3b82f6"
+                            strokeWidth="16"
+                            strokeDasharray="75 251"
+                            strokeDashoffset="-176"
+                          />
+                        </svg>
+                      </div>
+                      
+                      {/* Legend - Right side */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+                          <span className="text-xs">Maintenance Sales</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                          <span className="text-xs">Product Sales</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Expense By Category Donut Chart */}
+                <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-6 bg-green-500 rounded"></div>
+                          <CardTitle>Expense By Category</CardTitle>
+                        </div>
+                        <Badge variant="secondary">Year - 2025</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4">
+                        {/* Donut Chart - Left side */}
+                        <div className="relative flex-shrink-0">
+                          <svg width="120" height="120" className="transform -rotate-90">
+                            <circle
+                              cx="60"
+                              cy="60"
+                              r="40"
+                              fill="transparent"
+                              stroke="#06b6d4"
+                              strokeWidth="16"
+                              strokeDasharray="125 251"
+                              strokeDashoffset="0"
+                            />
+                            <circle
+                              cx="60"
+                              cy="60"
+                              r="40"
+                              fill="transparent"
+                              stroke="#ec4899"
+                              strokeWidth="16"
+                              strokeDasharray="126 251"
+                              strokeDashoffset="-125"
+                            />
+                          </svg>
+                        </div>
+                        
+                        {/* Legend - Right side */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-cyan-500 rounded-sm"></div>
+                            <span className="text-xs">Rent Or Lease</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-pink-500 rounded-sm"></div>
+                            <span className="text-xs">Travel</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+              </div>
+            </div>
+
+            {/* Bottom Section - Tables */}
+            <div className="grid gap-4 lg:grid-cols-2">
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-2 pt-0">
+                    {/* Chart Area using shadcn chart */}
+                    <div className="h-32">
+                      <div className="w-full h-full bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 rounded-lg p-1 relative overflow-hidden">
+                        {/* Simple Line Chart Mockup */}
+                        <svg className="w-full h-full" viewBox="0 0 280 100">
+                          {/* Grid lines */}
+                          <defs>
+                            <pattern id="grid" width="28" height="16" patternUnits="userSpaceOnUse">
+                              <path d="M 28 0 L 0 0 0 16" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+                            </pattern>
+                          </defs>
+                          <rect width="100%" height="100%" fill="url(#grid)" />
+                          
+                          {/* Y-axis labels (Rupiah values) */}
+                          <text x="5" y="12" fontSize="8" fill="#6b7280">Rp 2M</text>
+                          <text x="5" y="25" fontSize="8" fill="#6b7280">Rp 1.5M</text>
+                          <text x="5" y="38" fontSize="8" fill="#6b7280">Rp 1M</text>
+                          <text x="5" y="51" fontSize="8" fill="#6b7280">Rp 500K</text>
+                          <text x="5" y="64" fontSize="8" fill="#6b7280">Rp 0</text>
+                          
+                          {/* Income line (green) */}
+                          <polyline
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2"
+                            points="40,48 70,38 100,43 130,28 160,33 190,23 220,18"
+                          />
+                          
+                          {/* Expense line (red) */}
+                          <polyline
+                            fill="none"
+                            stroke="#ef4444"
+                            strokeWidth="2"
+                            points="40,58 70,53 100,63 130,43 160,48 190,38 220,33"
+                          />
+                          
+                          {/* Data points */}
+                          {[40,70,100,130,160,190,220].map((x, i) => (
+                            <g key={i}>
+                              <circle cx={x} cy={[48,38,43,28,33,23,18][i]} r="2" fill="#22c55e" />
+                              <circle cx={x} cy={[58,53,63,43,48,38,33][i]} r="2" fill="#ef4444" />
+                            </g>
+                          ))}
+                          
+                          {/* Month labels */}
+                          {['Apr','May','Jun','Jul','Aug','Sep','Oct'].map((month, i) => (
+                            <text key={i} x={40 + i * 30} y={85} fontSize="8" fill="#6b7280" textAnchor="middle">
+                              {month}
+                            </text>
+                          ))}
+                        </svg>
+                        
+                        {/* Legend */}
+                        <div className="absolute top-1 right-1 flex gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                            <span className="text-xs">Income</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                            <span className="text-xs">Expense</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Income By Category Donut Chart */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-6 bg-green-500 rounded"></div>
+                        <CardTitle className="text-sm">Income By Category</CardTitle>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">Year - 2025</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      {/* Donut Chart - Left side */}
+                      <div className="relative flex-shrink-0">
+                        <svg width="120" height="120" className="transform -rotate-90">
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="40"
+                            fill="transparent"
+                            stroke="#22c55e"
+                            strokeWidth="16"
+                            strokeDasharray="176 251"
+                            strokeDashoffset="0"
+                          />
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="40"
+                            fill="transparent"
+                            stroke="#3b82f6"
+                            strokeWidth="16"
+                            strokeDasharray="75 251"
+                            strokeDashoffset="-176"
+                          />
+                        </svg>
+                      </div>
+                      
+                      {/* Legend - Right side */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+                          <span className="text-xs">Maintenance Sales</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                          <span className="text-xs">Product Sales</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Bottom Section - Tables */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-4">
+                {/* Recent Invoices */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-6 bg-green-500 rounded"></div>
+                      <CardTitle>Recent Invoices</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <div className="relative w-full overflow-auto">
+                        <table className="w-full caption-bottom text-sm">
+                          <thead className="[&_tr]:border-b">
+                            <tr className="border-b transition-colors hover:bg-muted/50">
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                #
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                CUSTOMER
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                AMOUNT
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                STATUS
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="[&_tr:last-child]:border-0">
+                            <tr>
+                              <td colSpan={4} className="h-24 text-center text-muted-foreground">
+                                there is no recent invoice
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Recent Bills */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-6 bg-green-500 rounded"></div>
+                      <CardTitle>Recent Bills</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <div className="relative w-full overflow-auto">
+                        <table className="w-full caption-bottom text-sm">
+                          <thead className="[&_tr]:border-b">
+                            <tr className="border-b transition-colors hover:bg-muted/50">
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                #
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                VENDOR
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                AMOUNT
+                              </th>
+                              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                                STATUS
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="[&_tr:last-child]:border-0">
+                            <tr>
+                              <td colSpan={4} className="h-24 text-center text-muted-foreground">
+                                there is no recent bill
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Goal */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-6 bg-green-500 rounded"></div>
+                      <CardTitle>Goal</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">There is no goal.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}

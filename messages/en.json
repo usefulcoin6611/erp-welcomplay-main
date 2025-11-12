@@ -1,0 +1,602 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Manage your projects and analytics",
+    "welcome": "Welcome to Dashboard"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "lifecycle": "Lifecycle",
+    "analytics": "Analytics",
+    "projects": "Projects",
+    "users": "Team",
+    "capture": "Capture",
+    "proposal": "Proposal",
+    "prompts": "Prompts",
+    "activeProposals": "Active Proposals",
+    "archived": "Archived",
+    "settings": "Settings",
+    "help": "Help",
+    "search": "Search"
+  },
+  "sidebar": {
+    "platform": "Platform",
+    "projects": "Projects",
+    "recent": "Recent",
+    "more": "More",
+    "favorites": "Favorites",
+    "teams": "Teams",
+    "settings": "Settings",
+    "getHelp": "Get Help",
+    "search": "Search",
+    "dataLibrary": "Data Library",
+    "reports": "Reports",
+    "wordAssistant": "Word Assistant",
+    "menu": {
+      "dashboard": "Dashboard",
+      "overview": "Overview",
+      "reports": "Reports",
+      "accounting": "Accounting",
+      "hrm": "HRM",
+      "crm": "CRM",
+      "project": "Project",
+      "pos": "POS",
+      "accountStatement": "Account Statement",
+      "invoiceSummary": "Invoice Summary",
+      "salesReport": "Sales Report",
+      "receivables": "Receivables",
+      "payables": "Payables",
+      "billSummary": "Bill Summary",
+      "productStock": "Product Stock",
+      "cashFlow": "Cash Flow",
+      "transaction": "Transaction",
+      "incomeSummary": "Income Summary",
+      "expenseSummary": "Expense Summary",
+      "incomeVsExpense": "Income VS Expense",
+      "taxSummary": "Tax Summary",
+      "payroll": "Payroll",
+      "leave": "Leave",
+      "monthlyAttendance": "Monthly Attendance",
+      "lead": "Lead",
+      "deal": "Deal",
+      "warehouseReport": "Warehouse Report",
+      "purchaseDailyMonthlyReport": "Purchase Daily/Monthly Report",
+      "posDailyMonthlyReport": "POS Daily/Monthly Report",
+      "posVsPurchaseReport": "Pos VS Purchase Report",
+      "hrmSystem": "HRM System",
+      "accountingSystem": "Accounting System",
+      "crmSystem": "CRM System",
+      "projectSystem": "Project System",
+      "posSystem": "POS System",
+      "userManagement": "User Management",
+      "productSystem": "Product System",
+      "supportSystem": "Support System",
+      "meetingSystem": "Meeting System",
+      "employeeSetup": "Employee Setup",
+      "payrollSetup": "Payroll Setup",
+      "performanceSetup": "Performance Setup",
+      "trainingSetup": "Training Setup",
+      "recruitmentSetup": "Recruitment Setup",
+      "hrAdminSetup": "HR Admin Setup",
+      "eventSetup": "Event Setup",
+      "meeting": "Meeting",
+      "employeesAssetSetup": "Employees Asset Setup",
+      "documentSetup": "Document Setup",
+      "companyPolicy": "Company Policy",
+      "hrmSystemSetup": "HRM System Setup",
+      "leads": "Leads",
+      "deals": "Deals",
+      "formBuilder": "Form Builder",
+      "contract": "Contract",
+      "crmSystemSetup": "CRM System Setup"
+    }
+  },
+  "header": {
+    "search": "Search...",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "cards": {
+    "totalRevenue": "Total Revenue",
+    "subscriptions": "Subscriptions",
+    "sales": "Sales",
+    "activeNow": "Active Now"
+  },
+  "chart": {
+    "title": "Area Chart - Interactive",
+    "description": "Showing total visitors for the last 6 months",
+    "desktop": "Desktop",
+    "mobile": "Mobile"
+  },
+  "table": {
+    "title": "Data Table",
+    "name": "Name",
+    "status": "Status",
+    "email": "Email",
+    "amount": "Amount",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "open": "Open",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "apply": "Apply",
+    "reset": "Reset",
+    "export": "Export",
+    "download": "Download"
+  },
+  "accountDashboard": {
+    "stats": {
+      "totalCustomers": "Total Customers",
+      "totalVendors": "Total Vendors",
+      "totalInvoices": "Total Invoices",
+      "totalBills": "Total Bills"
+    },
+    "incomeVsExpense": {
+      "title": "Income Vs Expense",
+      "incomeToday": "Income Today",
+      "expenseToday": "Expense Today",
+      "incomeThisMonth": "Income This Month",
+      "expenseThisMonth": "Expense This Month"
+    },
+    "accountBalance": {
+      "title": "Account Balance",
+      "bank": "BANK",
+      "holderName": "HOLDER NAME",
+      "balance": "BALANCE",
+      "noData": "there is no account balance"
+    },
+    "incomeExpense": {
+      "title": "Income & Expense",
+      "currentYear": "Current Year - 2025",
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "latestIncome": {
+      "title": "Latest Income",
+      "date": "DATE",
+      "customer": "CUSTOMER",
+      "amountDue": "AMOUNT DUE",
+      "noData": "there is no latest income"
+    },
+    "latestExpense": {
+      "title": "Latest Expense",
+      "date": "DATE",
+      "vendor": "VENDOR",
+      "amountDue": "AMOUNT DUE",
+      "noData": "there is no latest expense"
+    },
+    "cashflow": {
+      "title": "Cashflow",
+      "monthly": "Monthly",
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "incomeByCategory": {
+      "title": "Income By Category",
+      "year": "Year - 2025",
+      "maintenanceSales": "Maintenance Sales",
+      "productSales": "Product Sales"
+    },
+    "expenseByCategory": {
+      "title": "Expense By Category",
+      "year": "Year - 2025",
+      "rentOrLease": "Rent Or Lease",
+      "travel": "Travel"
+    },
+    "storageLimit": {
+      "title": "Storage Limit",
+      "used": "Used"
+    },
+    "recentInvoices": {
+      "title": "Recent Invoices",
+      "number": "#",
+      "customer": "CUSTOMER",
+      "issueDate": "ISSUE DATE",
+      "dueDate": "DUE DATE",
+      "amount": "AMOUNT",
+      "status": {
+        "label": "STATUS",
+        "paid": "Paid",
+        "unpaid": "Unpaid",
+        "overdue": "Overdue"
+      },
+      "noData": "there is no recent invoice",
+      "weekly": "Invoices Weekly",
+      "monthly": "Invoices Monthly",
+      "statistics": {
+        "totalGenerated": "Invoice Generated",
+        "totalPaid": "Paid",
+        "totalDue": "Due",
+        "total": "Total"
+      }
+    },
+    "recentBills": {
+      "title": "Recent Bills",
+      "number": "#",
+      "vendor": "VENDOR",
+      "billDate": "BILL DATE",
+      "dueDate": "DUE DATE",
+      "amount": "AMOUNT",
+      "status": {
+        "label": "STATUS",
+        "paid": "Paid",
+        "unpaid": "Unpaid",
+        "overdue": "Overdue"
+      },
+      "noData": "there is no recent bill",
+      "weekly": "Bills Weekly",
+      "monthly": "Bills Monthly",
+      "statistics": {
+        "totalGenerated": "Bill Generated",
+        "totalPaid": "Paid",
+        "totalDue": "Due",
+        "total": "Total"
+      }
+    },
+    "goal": {
+      "title": "Goal",
+      "name": "Name",
+      "type": "Type",
+      "duration": "Duration",
+      "target": "Target",
+      "progress": "Progress",
+      "current": "Current",
+      "achieved": "Achieved",
+      "remaining": "Remaining",
+      "types": {
+        "bill": "Bill",
+        "invoice": "Invoice",
+        "payment": "Payment",
+        "revenue": "Revenue"
+      }
+    }
+  },
+  "hrmDashboard": {
+    "attendanceClock": {
+      "title": "Today's Attendance",
+      "greeting": {
+        "morning": "Good Morning",
+        "afternoon": "Good Afternoon",
+        "evening": "Good Evening",
+        "night": "Good Night",
+        "welcome": "Welcome"
+      },
+      "clockedIn": "You have clocked in today",
+      "notClockedIn": "You haven't clocked in today",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "clockInTime": "Clock In",
+      "clockOutTime": "Clock Out",
+      "notClockInList": "Not Clock In List",
+      "notClockInTitle": "Not Clock In",
+      "notClockedBadge": "Not Clocked",
+      "allClockedIn": "All employees have clocked in",
+      "viewAll": "View All"
+    },
+    "eventCalendar": {
+      "title": "Event Calendar",
+      "eventTitle": "Event",
+      "calendarType": {
+        "google": "Google Calendar",
+        "local": "Local Calendar"
+      },
+      "addEvent": "Event",
+      "today": "Today",
+      "eventTypes": {
+        "meeting": "Meeting",
+        "training": "Training",
+        "holiday": "Holiday",
+        "other": "Other"
+      },
+      "months": {
+        "jan": "January",
+        "feb": "February",
+        "mar": "March",
+        "apr": "April",
+        "may": "May",
+        "jun": "June",
+        "jul": "July",
+        "aug": "August",
+        "sep": "September",
+        "oct": "October",
+        "nov": "November",
+        "dec": "December"
+      },
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    },
+    "statsCards": {
+      "staff": {
+        "totalStaff": "Total Staff",
+        "totalEmployee": "Total Employee",
+        "totalClient": "Total Client"
+      },
+      "job": {
+        "totalJobs": "Total Jobs",
+        "activeJobs": "Active Jobs",
+        "inactiveJobs": "Inactive Jobs"
+      },
+      "training": {
+        "totalTrainer": "Total Trainer",
+        "activeTraining": "Active Training",
+        "doneTraining": "Done Training"
+      }
+    },
+    "announcementList": {
+      "title": "Announcement List",
+      "addButton": "Add",
+      "table": {
+        "title": "Title",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "description": "Description",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "priority": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "emptyState": {
+        "title": "No Announcements",
+        "description": "No announcements available yet"
+      },
+      "viewAll": "View All Announcements"
+    },
+    "meetingSchedule": {
+      "title": "Meeting Schedule",
+      "addButton": "Add",
+      "table": {
+        "title": "Title",
+        "date": "Date",
+        "time": "Time",
+        "type": "Type",
+        "attendees": "Attendees",
+        "status": "Status"
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "ongoing": "Ongoing",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "meetingType": {
+        "online": "Online",
+        "offline": "Offline",
+        "hybrid": "Hybrid"
+      },
+      "upcoming": "Upcoming",
+      "emptyState": {
+        "title": "No Meetings Scheduled",
+        "description": "No meetings have been scheduled yet"
+      },
+      "viewAll": "View All Meetings"
+    }
+  },
+  "posDashboard": {
+    "stats": {
+      "monthlyPOS": "POS Of This Month",
+      "totalPOSAmount": "POS Amount",
+      "monthlyPurchase": "Purchase Of This Month",
+      "totalPurchaseAmount": "Purchase Amount",
+      "total": "Total"
+    },
+    "chart": {
+      "title": "Purchase Vs POS Report",
+      "subtitle": "Last 10 Days",
+      "purchase": "Purchase",
+      "pos": "POS",
+      "amount": "Amount"
+    }
+  },
+  "crmDashboard": {
+    "stats": {
+      "totalLead": "Total Lead",
+      "totalDeal": "Total Deal",
+      "totalContract": "Total Contract"
+    },
+    "leadStatus": {
+      "title": "Lead Status",
+      "draft": "Draft",
+      "sent": "Sent",
+      "open": "Open",
+      "revised": "Revised",
+      "declined": "Declined",
+      "pending": "Pending",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "proposal": "Proposal"
+    },
+    "dealStatus": {
+      "title": "Deal Status",
+      "initialContact": "Initial Contact",
+      "qualification": "Qualification",
+      "meeting": "Meeting",
+      "proposal": "Proposal",
+      "close": "Close",
+      "discovery": "Discovery",
+      "negotiation": "Negotiation",
+      "closed": "Closed",
+      "won": "Won"
+    },
+    "latestContract": {
+      "title": "Latest Contract",
+      "number": "#",
+      "subject": "Subject",
+      "client": "Client",
+      "project": "Project",
+      "contractType": "Contract Type",
+      "contractValue": "Contract Value",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "noContract": "There is no latest contract"
+    }
+  },
+  "projectDashboard": {
+    "stats": {
+      "totalProjects": "Total Projects",
+      "totalTasks": "Total Tasks",
+      "totalExpense": "Total Expense",
+      "completed": "Completed"
+    },
+    "projectStatus": {
+      "title": "Project Status",
+      "onGoing": "On Going",
+      "onHold": "On Hold",
+      "complete": "Complete",
+      "cancelled": "Cancelled"
+    },
+    "tasksOverview": {
+      "title": "Tasks Overview",
+      "subtitle": "Total Completed task in last 7 days"
+    },
+    "topDueProjects": {
+      "title": "Top Due Projects",
+      "name": "Name",
+      "endDate": "End Date",
+      "status": "Status",
+      "noProjects": "No Due Projects Found."
+    },
+    "timesheetLoggedHours": {
+      "title": "Timesheet Logged Hours",
+      "subtitle": "Last 7 days",
+      "hoursLogged": "hours logged"
+    },
+    "topDueTasks": {
+      "title": "Top Due Tasks",
+      "task": "Task",
+      "project": "Project",
+      "stage": "Stage",
+      "completion": "Completion",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical",
+      "noTasks": "No Due Tasks Found."
+    }
+  },
+  "hrm": {
+    "employee": {
+      "title": "Employee Management",
+      "createEmployee": "Create Employee",
+      "editEmployee": "Edit Employee",
+      "viewEmployee": "View Employee",
+      "deleteEmployee": "Delete Employee",
+      "employeeList": "Employee List",
+      "personalDetail": "Personal Detail",
+      "companyDetail": "Company Detail",
+      "document": "Document",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "dateOfBirth": "Date of Birth",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "address": "Address",
+      "employeeId": "Employee ID",
+      "branch": "Branch",
+      "department": "Department",
+      "designation": "Designation",
+      "companyDateOfJoining": "Company Date of Joining",
+      "dateOfJoining": "Date of Joining",
+      "lastLogin": "Last Login",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "actions": "Actions",
+      "search": "Search employees...",
+      "export": "Export",
+      "import": "Import",
+      "password": "Password",
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete",
+      "selectBranch": "Select Branch",
+      "selectDepartment": "Select Department",
+      "selectDesignation": "Select Designation",
+      "createBranch": "Create Branch",
+      "createDepartment": "Create Department",
+      "createDesignation": "Create Designation",
+      "createBranchHere": "Create branch from here",
+      "createDepartmentHere": "Create department from here",
+      "createDesignationHere": "Create designation from here",
+      "enterEmployeeName": "Enter employee name",
+      "enterEmployeePhone": "Enter employee phone",
+      "enterEmployeeEmail": "Enter employee email",
+      "enterEmployeePassword": "Enter employee password",
+      "enterEmployeeAddress": "Enter employee address",
+      "create": "Create",
+      "noEmployees": "No employees found",
+      "backToList": "Back to List",
+      "showing": "Showing",
+      "to": "to", 
+      "of": "of",
+      "entries": "entries",
+      "rowsPerPage": "Rows per page:",
+      "page": "Page",
+      "bankAccountDetail": "Bank Account Detail",
+      "accountHolderName": "Account Holder Name",
+      "accountNumber": "Account Number",
+      "bankName": "Bank Name",
+      "bankIdentifierCode": "Bank Identifier Code",
+      "branchLocation": "Branch Location",
+      "taxPayerId": "Tax Payer Id",
+      "enterAccountHolderName": "Enter account holder name",
+      "enterAccountNumber": "Enter account number",
+      "enterBankName": "Enter bank name",
+      "enterBankIdentifierCode": "Enter bank identifier code",
+      "enterBranchLocation": "Enter branch location",
+      "enterTaxPayerId": "Enter tax payer id",
+      "employeeDetail": "Employee Detail"
+    }
+  },
+  "accountingReports": {
+    "accountStatement": {
+      "title": "Account Statement Summary",
+      "subtitle": "View and manage your account statements",
+      "startMonth": "Start Month",
+      "endMonth": "End Month",
+      "account": "Account",
+      "category": "Category",
+      "allAccounts": "All Accounts",
+      "allCategories": "All Categories",
+      "revenue": "Revenue",
+      "payment": "Payment",
+      "report": "Report",
+      "type": "Type",
+      "duration": "Duration",
+      "revenueAccounts": "Revenue Accounts",
+      "paymentAccounts": "Payment Accounts",
+      "transactions": "Transactions",
+      "date": "DATE",
+      "amount": "AMOUNT",
+      "description": "DESCRIPTION"
+    }
+  }
+}
