@@ -576,10 +576,17 @@
       "employeeDetail": "Detail Karyawan"
     }
   },
-  "accountingReports": {
+  "reports": {
+    "select": "Pilih",
+    "apply": "Terapkan",
+    "export": "Ekspor",
+    "download": "Unduh",
     "accountStatement": {
       "title": "Ringkasan Laporan Akun",
       "subtitle": "Lihat dan kelola laporan akun Anda",
+      "dateRange": "Rentang Tanggal",
+      "pickDateRange": "Pilih rentang tanggal",
+      "select": "Pilih",
       "startMonth": "Bulan Mulai",
       "endMonth": "Bulan Akhir",
       "account": "Akun",
@@ -588,6 +595,9 @@
       "allCategories": "Semua Kategori",
       "revenue": "Pendapatan",
       "payment": "Pembayaran",
+      "apply": "Terapkan",
+      "export": "Ekspor",
+      "download": "Unduh",
       "report": "Laporan",
       "type": "Tipe",
       "duration": "Durasi",
@@ -597,6 +607,254 @@
       "date": "TANGGAL",
       "amount": "JUMLAH",
       "description": "DESKRIPSI"
+    },
+    "payables": {
+      "title": "Laporan Hutang",
+      "subtitle": "Lihat dan kelola hutang Anda",
+      "vendorBalanceTab": "Saldo Pemasok",
+      "payableSummaryTab": "Ringkasan Hutang",
+      "payableDetailsTab": "Detail Hutang",
+      "agingSummaryTab": "Ringkasan Umur Hutang",
+      "agingDetailsTab": "Detail Umur Hutang",
+      "dateRange": "Rentang Tanggal",
+      "pickDateRange": "Pilih rentang tanggal",
+      "startMonth": "Bulan Mulai",
+      "endMonth": "Bulan Akhir",
+      "vendor": "Pemasok",
+      "allVendors": "Semua Pemasok",
+      "status": "Status",
+      "allStatus": "Semua Status",
+      "reset": "Atur Ulang",
+      "totalBill": "Total Tagihan",
+      "totalPaid": "Total Dibayar",
+      "totalDue": "Total Jatuh Tempo",
+      "billReport": "Laporan Tagihan",
+      "summary": "Ringkasan",
+      "bills": "Tagihan",
+      "bill": "Tagihan",
+      "date": "Tanggal",
+      "category": "Kategori",
+      "paidAmount": "Jumlah Dibayar",
+      "dueAmount": "Jumlah Jatuh Tempo",
+      "paymentDate": "Tanggal Pembayaran",
+      "noBillsFound": "Tidak ada tagihan ditemukan",
+      "searchBills": "Cari tagihan...",
+      "draft": "Draf",
+      "sent": "Terkirim",
+      "unpaid": "Belum Dibayar",
+      "partiallyPaid": "Dibayar Sebagian",
+      "paid": "Lunas",
+      "searchPlaceholder": "Cari...",
+      "vendorBalance": {
+        "vendor": "Nama Pemasok",
+        "billedAmount": "Jumlah Ditagih",
+        "availableDebit": "Debit Tersedia",
+        "closingBalance": "Saldo Akhir"
+      },
+      "noDataFound": "Data tidak ditemukan",
+      "payableSummary": {
+        "vendor": "Nama Pemasok",
+        "date": "Tanggal",
+        "transaction": "Transaksi",
+        "status": "Status",
+        "transactionType": "Tipe Transaksi",
+        "total": "Total",
+        "balance": "Saldo"
+      },
+      "payableDetails": {
+        "vendor": "Nama Pemasok",
+        "date": "Tanggal",
+        "transaction": "Transaksi",
+        "status": "Status",
+        "transactionType": "Tipe Transaksi",
+        "itemName": "Nama Barang",
+        "quantityOrdered": "Jumlah Dipesan",
+        "itemPrice": "Harga Barang",
+        "total": "Total"
+      },
+      "agingSummary": {
+        "vendor": "Nama Pemasok",
+        "current": "Saat Ini",
+        "days1_15": "1-15 HARI",
+        "days16_30": "16-30 HARI",
+        "days31_45": "31-45 HARI",
+        "over45Days": "> 45 HARI",
+        "total": "Total"
+      },
+      "agingDetails": {
+        "date": "Tanggal",
+        "transaction": "Transaksi",
+        "type": "Tipe",
+        "status": "Status",
+        "vendor": "Nama Pemasok",
+        "age": "Umur",
+        "amount": "Jumlah",
+        "balanceDue": "Saldo Jatuh Tempo"
+      },
+      "itemsTab": "Penjualan per Item",
+      "customersTab": "Penjualan per Vendor",
+      "select": "Pilih",
+      "apply": "Terapkan",
+      "export": "Ekspor",
+      "download": "Unduh",
+      "total": "Total",
+      "days": "hari",
+      "searchItems": "Cari...",
+      "searchCustomers": "Cari...",
+      "invoiceItem": "Item Faktur",
+      "quantity": "Kuantitas",
+      "amount": "Jumlah",
+      "avgPrice": "Harga Rata-rata",
+      "customer": "Vendor",
+      "orders": "Pesanan",
+      "revenue": "Pendapatan",
+      "avgOrder": "Rata-rata Pesanan"
+    },
+    "invoiceSummary": {
+      "title": "Ringkasan Faktur",
+      "summaryTab": "Ringkasan",
+      "invoicesTab": "Faktur",
+      "dateRange": "Rentang Tanggal",
+      "pickDateRange": "Pilih rentang tanggal",
+      "select": "Pilih",
+      "customer": "Pelanggan",
+      "allCustomers": "Semua Pelanggan",
+      "status": "Status",
+      "allStatus": "Semua Status",
+      "paid": "Lunas",
+      "unpaid": "Belum Dibayar",
+      "overdue": "Jatuh Tempo",
+      "partial": "Sebagian",
+      "apply": "Terapkan",
+      "export": "Ekspor",
+      "download": "Unduh",
+      "totalInvoice": "Total Faktur",
+      "totalPaid": "Total Dibayar",
+      "totalDue": "Total Jatuh Tempo",
+      "searchInvoice": "Cari faktur",
+      "noInvoicesFound": "Faktur tidak ditemukan.",
+      "invoice": "Faktur",
+      "date": "Tanggal",
+      "category": "Kategori",
+      "paidAmount": "Jumlah Dibayar",
+      "dueAmount": "Jumlah Jatuh Tempo",
+      "paymentDate": "Tanggal Pembayaran",
+      "amount": "Jumlah",
+      "showingInvoiceAmounts": "Menampilkan jumlah faktur untuk periode yang dipilih"
+    },
+    "salesReport": {
+      "title": "Laporan Penjualan",
+      "itemsTab": "Penjualan per Item",
+      "customersTab": "Penjualan per Pelanggan",
+      "dateRange": "Rentang Tanggal",
+      "pickDateRange": "Pilih rentang tanggal",
+      "select": "Pilih",
+      "apply": "Terapkan",
+      "export": "Ekspor",
+      "download": "Unduh",
+      "searchItems": "Cari...",
+      "searchCustomers": "Cari...",
+      "invoiceItem": "Item Faktur",
+      "quantity": "Kuantitas",
+      "amount": "Jumlah",
+      "avgPrice": "Harga Rata-rata",
+      "customer": "Pelanggan",
+      "orders": "Pesanan",
+      "revenue": "Pendapatan",
+      "avgOrder": "Rata-rata Pesanan"
+    },
+    "receivables": {
+      "title": "Laporan Piutang",
+      "dateRange": "Rentang Tanggal",
+      "pickDateRange": "Pilih rentang tanggal",
+      "select": "Pilih",
+      "apply": "Terapkan",
+      "export": "Ekspor",
+      "download": "Unduh",
+      "searchCustomers": "Cari...",
+      "customerBalanceTab": "Saldo Pelanggan",
+      "receivableSummaryTab": "Ringkasan Piutang",
+      "receivableDetailsTab": "Detail Piutang",
+      "agingSummaryTab": "Ringkasan Umur Piutang",
+      "agingDetailsTab": "Detail Umur Piutang",
+      "customerBalance": {
+        "customerName": "Nama Pelanggan",
+        "invoiceBalance": "Saldo Faktur",
+        "availableCredits": "Kredit Tersedia",
+        "balance": "Saldo",
+        "total": "Total"
+      },
+      "receivableSummary": {
+        "customerName": "Nama Pelanggan",
+        "date": "Tanggal",
+        "transaction": "Transaksi",
+        "status": "Status",
+        "transactionType": "Tipe Transaksi",
+        "total": "Total",
+        "balance": "Saldo"
+      },
+      "receivableDetails": {
+        "customerName": "Nama Pelanggan",
+        "date": "Tanggal",
+        "transaction": "Transaksi",
+        "status": "Status",
+        "transactionType": "Tipe Transaksi",
+        "itemName": "Nama Barang",
+        "quantityOrdered": "Jumlah Dipesan",
+        "itemPrice": "Harga Barang",
+        "total": "Total"
+      },
+      "agingSummary": {
+        "customerName": "Nama Pelanggan",
+        "current": "Saat Ini",
+        "days1_15": "1-15 Hari",
+        "days16_30": "16-30 Hari",
+        "days31_45": "31-45 Hari",
+        "over45Days": "> 45 Hari",
+        "total": "Total"
+      },
+      "agingDetails": {
+        "date": "Tanggal",
+        "transaction": "Transaksi",
+        "type": "Tipe",
+        "status": "Status",
+        "customerName": "Nama Pelanggan",
+        "age": "Umur",
+        "amount": "Jumlah",
+        "balanceDue": "Saldo Jatuh Tempo"
+      }
+    },
+    "billSummary": {
+      "title": "Laporan Ringkasan Tagihan",
+      "description": "Lihat dan kelola ringkasan tagihan dan analitik Anda"
+    },
+    "productStock": {
+      "title": "Laporan Stok Produk",
+      "description": "Lihat dan kelola tingkat stok produk dan inventaris Anda"
+    },
+    "cashFlow": {
+      "title": "Laporan Arus Kas",
+      "description": "Lihat dan analisis arus kas dan likuiditas Anda"
+    },
+    "transaction": {
+      "title": "Laporan Transaksi",
+      "description": "Lihat dan kelola semua transaksi Anda"
+    },
+    "incomeSummary": {
+      "title": "Laporan Ringkasan Pendapatan",
+      "description": "Lihat dan analisis sumber pendapatan dan tren Anda"
+    },
+    "expenseSummary": {
+      "title": "Laporan Ringkasan Pengeluaran",
+      "description": "Lihat dan kelola kategori pengeluaran dan pembelanjaan Anda"
+    },
+    "incomeVsExpense": {
+      "title": "Laporan Pendapatan VS Pengeluaran",
+      "description": "Bandingkan tren pendapatan dan pengeluaran dari waktu ke waktu"
+    },
+    "taxSummary": {
+      "title": "Laporan Ringkasan Pajak",
+      "description": "Lihat dan kelola kewajiban pajak dan ringkasan Anda"
     }
   }
 }

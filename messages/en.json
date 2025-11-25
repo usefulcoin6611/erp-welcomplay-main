@@ -576,10 +576,13 @@
       "employeeDetail": "Employee Detail"
     }
   },
-  "accountingReports": {
+  "reports": {
     "accountStatement": {
       "title": "Account Statement Summary",
       "subtitle": "View and manage your account statements",
+      "dateRange": "Date Range",
+      "pickDateRange": "Pick a date range",
+      "select": "Select",
       "startMonth": "Start Month",
       "endMonth": "End Month",
       "account": "Account",
@@ -588,6 +591,9 @@
       "allCategories": "All Categories",
       "revenue": "Revenue",
       "payment": "Payment",
+      "apply": "Apply",
+      "export": "Export",
+      "download": "Download",
       "report": "Report",
       "type": "Type",
       "duration": "Duration",
@@ -597,6 +603,243 @@
       "date": "DATE",
       "amount": "AMOUNT",
       "description": "DESCRIPTION"
+    },
+    "payables": {
+      "title": "Payables Report",
+      "subtitle": "View and manage your payables",
+      "vendorBalanceTab": "Vendor Balance",
+      "payableSummaryTab": "Payable Summary",
+      "payableDetailsTab": "Payable Details",
+      "agingSummaryTab": "Aging Summary",
+      "agingDetailsTab": "Aging Details",
+      "dateRange": "Date Range",
+      "pickDateRange": "Pick a date range",
+      "startMonth": "Start Month",
+      "endMonth": "End Month",
+      "vendor": "Vendor",
+      "allVendors": "All Vendors",
+      "status": "Status",
+      "allStatus": "All Status",
+      "apply": "Apply",
+      "reset": "Reset",
+      "export": "Export",
+      "download": "Download",
+      "totalBill": "Total Bill",
+      "totalPaid": "Total Paid",
+      "totalDue": "Total Due",
+      "billReport": "Bill Report",
+      "summary": "Summary",
+      "bills": "Bills",
+      "bill": "Bill",
+      "date": "Date",
+      "category": "Category",
+      "paidAmount": "Paid Amount",
+      "dueAmount": "Due Amount",
+      "paymentDate": "Payment Date",
+      "amount": "Amount",
+      "noBillsFound": "No bills found",
+      "searchBills": "Search bills...",
+      "draft": "Draft",
+      "sent": "Sent",
+      "unpaid": "Unpaid",
+      "partiallyPaid": "Partially Paid",
+      "paid": "Paid",
+      "searchPlaceholder": "Search...",
+      "vendorBalance": {
+        "vendor": "Vendor Name",
+        "billedAmount": "Billed Amount",
+        "availableDebit": "Available Debit",
+        "closingBalance": "Closing Balance"
+      },
+      "noDataFound": "No data found",
+      "payableSummary": {
+        "vendor": "Vendor Name",
+        "date": "Date",
+        "transaction": "Transaction",
+        "status": "Status",
+        "transactionType": "Transaction Type",
+        "total": "Total",
+        "balance": "Balance"
+      },
+      "payableDetails": {
+        "vendor": "Vendor Name",
+        "date": "Date",
+        "transaction": "Transaction",
+        "status": "Status",
+        "transactionType": "Transaction Type",
+        "itemName": "Item Name",
+        "quantityOrdered": "Quantity Ordered",
+        "itemPrice": "Item Price",
+        "total": "Total"
+      },
+      "agingSummary": {
+        "vendor": "Vendor Name",
+        "current": "Current",
+        "days1_15": "1-15 DAYS",
+        "days16_30": "16-30 DAYS",
+        "days31_45": "31-45 DAYS",
+        "over45Days": "> 45 DAYS",
+        "total": "Total"
+      },
+      "agingDetails": {
+        "date": "Date",
+        "transaction": "Transaction",
+        "type": "Type",
+        "status": "Status",
+        "vendor": "Vendor Name",
+        "age": "Age",
+        "amount": "Amount",
+        "balanceDue": "Balance Due"
+      },
+      "select": "Select",
+      "total": "Total",
+      "days": "days"
+    },
+    "invoiceSummary": {
+      "title": "Invoice Summary",
+      "summaryTab": "Summary",
+      "invoicesTab": "Invoices",
+      "dateRange": "Date Range",
+      "pickDateRange": "Pick a date range",
+      "select": "Select",
+      "customer": "Customer",
+      "allCustomers": "All Customers",
+      "status": "Status",
+      "allStatus": "All Status",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "overdue": "Overdue",
+      "partial": "Partial",
+      "apply": "Apply",
+      "export": "Export",
+      "download": "Download",
+      "totalInvoice": "Total Invoice",
+      "totalPaid": "Total Paid",
+      "totalDue": "Total Due",
+      "searchInvoice": "Search invoice",
+      "noInvoicesFound": "No invoices found.",
+      "invoice": "Invoice",
+      "date": "Date",
+      "category": "Category",
+      "paidAmount": "Paid Amount",
+      "dueAmount": "Due Amount",
+      "paymentDate": "Payment Date",
+      "amount": "Amount",
+      "showingInvoiceAmounts": "Showing invoice amounts for the selected period"
+    },
+    "salesReport": {
+      "title": "Sales Report",
+      "itemsTab": "Sales by Item",
+      "customersTab": "Sales by Customer",
+      "dateRange": "Date Range",
+      "pickDateRange": "Pick a date range",
+      "select": "Select",
+      "apply": "Apply",
+      "export": "Export",
+      "download": "Download",
+      "searchItems": "Search...",
+      "searchCustomers": "Search...",
+      "invoiceItem": "Invoice Item",
+      "quantity": "Quantity",
+      "amount": "Amount",
+      "avgPrice": "Avg. Price",
+      "customer": "Customer",
+      "orders": "Orders",
+      "revenue": "Revenue",
+      "avgOrder": "Avg. Order"
+    },
+    "receivables": {
+      "title": "Receivables Report",
+      "dateRange": "Date Range",
+      "pickDateRange": "Pick a date range",
+      "select": "Select",
+      "apply": "Apply",
+      "export": "Export",
+      "download": "Download",
+      "searchCustomers": "Search...",
+      "customerBalanceTab": "Customer Balance",
+      "receivableSummaryTab": "Receivable Summary",
+      "receivableDetailsTab": "Receivable Details",
+      "agingSummaryTab": "Aging Summary",
+      "agingDetailsTab": "Aging Details",
+      "customerBalance": {
+        "customerName": "Customer Name",
+        "invoiceBalance": "Invoice Balance",
+        "availableCredits": "Available Credits",
+        "balance": "Balance",
+        "total": "Total"
+      },
+      "receivableSummary": {
+        "customerName": "Customer Name",
+        "date": "Date",
+        "transaction": "Transaction",
+        "status": "Status",
+        "transactionType": "Transaction Type",
+        "total": "Total",
+        "balance": "Balance"
+      },
+      "receivableDetails": {
+        "customerName": "Customer Name",
+        "date": "Date",
+        "transaction": "Transaction",
+        "status": "Status",
+        "transactionType": "Transaction Type",
+        "itemName": "Item Name",
+        "quantityOrdered": "Quantity Ordered",
+        "itemPrice": "Item Price",
+        "total": "Total"
+      },
+      "agingSummary": {
+        "customerName": "Customer Name",
+        "current": "Current",
+        "days1_15": "1-15 Days",
+        "days16_30": "16-30 Days",
+        "days31_45": "31-45 Days",
+        "over45Days": "> 45 Days",
+        "total": "Total"
+      },
+      "agingDetails": {
+        "date": "Date",
+        "transaction": "Transaction",
+        "type": "Type",
+        "status": "Status",
+        "customerName": "Customer Name",
+        "age": "Age",
+        "amount": "Amount",
+        "balanceDue": "Balance Due"
+      }
+    },
+    "billSummary": {
+      "title": "Bill Summary Report",
+      "description": "View and manage your bill summary and analytics"
+    },
+    "productStock": {
+      "title": "Product Stock Report",
+      "description": "View and manage your product stock levels and inventory"
+    },
+    "cashFlow": {
+      "title": "Cash Flow Report",
+      "description": "View and analyze your cash flow and liquidity"
+    },
+    "transaction": {
+      "title": "Transaction Report",
+      "description": "View and manage all your transactions"
+    },
+    "incomeSummary": {
+      "title": "Income Summary Report",
+      "description": "View and analyze your income sources and trends"
+    },
+    "expenseSummary": {
+      "title": "Expense Summary Report",
+      "description": "View and manage your expense categories and spending"
+    },
+    "incomeVsExpense": {
+      "title": "Income VS Expense Report",
+      "description": "Compare income and expense trends over time"
+    },
+    "taxSummary": {
+      "title": "Tax Summary Report",
+      "description": "View and manage your tax obligations and summaries"
     }
   }
 }

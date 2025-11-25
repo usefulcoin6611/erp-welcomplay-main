@@ -188,10 +188,16 @@ export function SmoothTab({
                 className={cn(
                                                 "flex items-center justify-start gap-1 p-1 relative",
                                                 "bg-gray-100 dark:bg-gray-800 rounded-xl",
-                                                "transition-all duration-200 overflow-x-auto scrollbar-hide",
-                                                "w-full",
+                                                "overflow-x-auto overflow-y-hidden scrollbar-hide",
+                                                "transition-all duration-200",
+                                                "w-full max-w-full",
                                                 className
                                             )}
+                style={{
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
+                }}
                                     >
                 {/* Sliding Background */}
                 {dimensions.width > 0 && (
@@ -219,8 +225,7 @@ export function SmoothTab({
                 )}
 
                 {/* Tab Buttons */}
-                <div className="flex gap-1 relative z-[2]">
-                    {items.map((item) => {
+                {items.map((item) => {
                         const isSelected = selected === item.id;
                         return (
                             <motion.button
@@ -240,9 +245,9 @@ export function SmoothTab({
                                 onMouseEnter={() => onTabPreload?.(item.id)}
                                 onFocus={() => onTabPreload?.(item.id)}
                                 className={cn(
-                                    "relative flex items-center justify-center rounded-lg",
-                                    "py-2 text-xs sm:text-sm font-medium leading-none",
-                                    "transition-colors duration-200 whitespace-nowrap cursor-pointer",
+                                    "relative flex items-center justify-center rounded-lg z-[2]",
+                                    "py-2 text-xs sm:text-sm font-medium leading-none min-w-fit",
+                                    "transition-colors duration-200 whitespace-nowrap cursor-pointer flex-shrink-0",
                                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
                                     "disabled:pointer-events-none disabled:opacity-50",
                                     isSelected
@@ -256,7 +261,6 @@ export function SmoothTab({
                             </motion.button>
                         );
                     })}
-                </div>
             </div>
 
             {/* Content Area with Animation */}

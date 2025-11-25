@@ -1,0 +1,1 @@
+export { ProductStockTab } from './ProductStockTab'

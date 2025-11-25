@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState, memo } from 'react'
 import {
-  ColumnDef,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -20,55 +19,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { DataGrid } from '@/components/ui/data-grid'
-import { DataGridColumnHeader } from '@/components/ui/data-grid-column-header'
 import { DataGridPagination } from '@/components/ui/data-grid-pagination'
 import { DataGridTable } from '@/components/ui/data-grid-table'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { Skeleton } from '@/components/ui/skeleton'
-import { FileSpreadsheet, RotateCcw, Search as SearchIcon, Building2, Calendar as CalendarIcon, X, FileDown, FileText, Filter } from 'lucide-react'
+import { FileSpreadsheet, RotateCcw, Search as SearchIcon, Calendar as CalendarIcon, X, FileDown, FileText } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-
-interface AccountStatementData {
-  id: number
-  date: string
-  amount: number
-  description: string
-  type: 'revenue' | 'payment'
-}
-
-interface AccountSummary {
-  id: number
-  holderName: string
-  bankName?: string
-  total: number
-  type: 'revenue' | 'payment'
-}
-
-const mockStatementData: AccountStatementData[] = [
-  { id: 1, date: '01 Nov, 2025', amount: 12500000, description: 'Payment from Acme Corporation', type: 'revenue' },
-  { id: 2, date: '02 Nov, 2025', amount: -5500000, description: 'Payment to Office Supplies Co', type: 'payment' },
-  { id: 3, date: '03 Nov, 2025', amount: 15200000, description: 'Invoice payment - Global Solutions', type: 'revenue' },
-  { id: 4, date: '04 Nov, 2025', amount: -8900000, description: 'Marketing services payment', type: 'payment' },
-  { id: 5, date: '05 Nov, 2025', amount: 9450000, description: 'Digital Ventures payment', type: 'revenue' },
-]
-
-const mockRevenueAccounts: AccountSummary[] = [
-  { id: 1, holderName: 'Cash', total: 45000000, type: 'revenue' },
-  { id: 2, holderName: 'John Doe', bankName: 'BCA', total: 125000000, type: 'revenue' },
-  { id: 3, holderName: 'Jane Smith', bankName: 'Mandiri', total: 89000000, type: 'revenue' },
-  { id: 4, holderName: '', bankName: 'Stripe / Paypal', total: 67000000, type: 'revenue' },
-]
-
-const mockPaymentAccounts: AccountSummary[] = [
-  { id: 5, holderName: 'Cash', total: 32000000, type: 'payment' },
-  { id: 6, holderName: 'Company Account', bankName: 'BNI', total: 95000000, type: 'payment' },
-  { id: 7, holderName: 'Operations', bankName: 'BRI', total: 52000000, type: 'payment' },
-]
+import { useAccountStatementData } from './account-statement/hooks'
+import { getAccountStatementColumns } from './account-statement/columns'
+import { RevenueAccountCard } from './account-statement/components/RevenueAccountCard'
+import { PaymentAccountCard } from './account-statement/components/PaymentAccountCard'
 
 export function AccountStatementTab() {
-  const t = useTranslations('accountingReports.accountStatement')
+  const t = useTranslations('reports.accountStatement')
   const commonT = useTranslations('common')
   const headerT = useTranslations('header')
 
@@ -83,61 +47,20 @@ export function AccountStatementTab() {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
+  // Use custom hook for data management
+  const { statementData, revenueAccounts, paymentAccounts } = useAccountStatementData({
+    searchQuery,
+    selectedAccount,
+    selectedCategory,
+  })
 
-  const columns = useMemo<ColumnDef<AccountStatementData>[]>(() => {
-    return [
-      {
-        id: 'date',
-        accessorFn: (row) => row.date,
-        header: ({ column }) => <DataGridColumnHeader title={t('date')} column={column} />,
-        cell: ({ row }) => <div className="font-medium pl-[0.375rem]">{row.original.date}</div>,
-        enableSorting: true,
-        size: 150,
-        meta: { skeleton: <Skeleton className="h-5 w-[100px] ml-[0.375rem]" /> },
-      },
-      {
-        id: 'amount',
-        accessorFn: (row) => row.amount,
-        header: ({ column }) => (
-          <div className="flex justify-end w-full">
-            <DataGridColumnHeader title={t('amount')} column={column} className="-mr-2" />
-          </div>
-        ),
-        cell: ({ row }) => {
-          const isNegative = row.original.amount < 0
-          return (
-            <div className={`text-right font-medium pr-2 ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
-              {formatRupiah(row.original.amount)}
-            </div>
-          )
-        },
-        enableSorting: true,
-        size: 180,
-        meta: { skeleton: <Skeleton className="h-5 w-[120px] ml-auto -mr-2" />, cellClassName: 'text-right' },
-      },
-      {
-        id: 'description',
-        accessorFn: (row) => row.description,
-        header: ({ column }) => <DataGridColumnHeader title={t('description')} column={column} />,
-        cell: ({ row }) => <div className="pl-[0.375rem]">{row.original.description}</div>,
-        enableSorting: false,
-        size: 400,
-        meta: { skeleton: <Skeleton className="h-5 w-[250px] ml-[0.375rem]" /> },
-      },
-    ]
-  }, [t])
+  // Get columns
+  const columns = useMemo(() => getAccountStatementColumns(t), [t])
 
   const table = useReactTable({
     columns,
-    data: mockStatementData,
-    pageCount: Math.ceil(mockStatementData.length / pagination.pageSize),
+    data: statementData,
+    pageCount: Math.ceil(statementData.length / pagination.pageSize),
     getRowId: (row) => String(row.id),
     state: { pagination, sorting },
     onPaginationChange: setPagination,
@@ -166,14 +89,14 @@ export function AccountStatementTab() {
           <div className="flex flex-col lg:flex-row lg:items-end gap-3">
             {/* Date Range */}
             <div className="flex-1 min-w-0 space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Date Range</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('dateRange')}</Label>
               <Popover open={isDateRangeOpen} onOpenChange={setIsDateRangeOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full h-9 justify-start text-left font-normal cursor-pointer shadow-none hover:bg-blue-50 hover:text-blue-600 border border-input",
-                      !dateRange && "text-muted-foreground"
+                      "w-full h-9 justify-start text-left font-normal shadow-none hover:bg-blue-50 hover:text-blue-700 border-input",
+                      !dateRange?.from && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -187,7 +110,7 @@ export function AccountStatementTab() {
                         format(dateRange.from, "LLL dd, y")
                       )
                     ) : (
-                      <span>Pick a date range</span>
+                      <span>{t('pickDateRange')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -199,14 +122,15 @@ export function AccountStatementTab() {
                     selected={dateRange}
                     onSelect={setDateRange}
                     numberOfMonths={2}
+                    required={false}
                   />
                   <div className="p-3 border-t">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="w-full h-8 bg-blue-500 hover:bg-blue-600"
                       onClick={() => setIsDateRangeOpen(false)}
                     >
-                      Select
+                      {t('select')}
                     </Button>
                   </div>
                 </PopoverContent>
@@ -251,7 +175,7 @@ export function AccountStatementTab() {
                 className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
               >
                 <SearchIcon className="w-4 h-4" />
-                Apply
+                {t('apply')}
               </Button>
               <Button
                 variant="outline"
@@ -267,14 +191,14 @@ export function AccountStatementTab() {
                 className="h-9 px-4 shadow-none"
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                Export
+                {t('export')}
               </Button>
               <Button
                 size="sm"
                 className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
               >
                 <FileDown className="w-4 h-4" />
-                Download
+                {t('download')}
               </Button>
             </div>
           </div>
@@ -285,23 +209,8 @@ export function AccountStatementTab() {
       <div>
         <h3 className="text-lg font-semibold text-foreground/80 mb-4">{t('revenueAccounts')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockRevenueAccounts.map((account) => (
-            <Card key={account.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 shrink-0">
-                    <Building2 className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground mb-1.5 truncate">
-                      {account.holderName || 'Stripe / Paypal'}
-                      {account.bankName && account.holderName && ` - ${account.bankName}`}
-                    </p>
-                    <p className="text-base font-bold text-green-600">{formatRupiah(account.total)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {revenueAccounts.map((account) => (
+            <RevenueAccountCard key={account.id} account={account} />
           ))}
         </div>
       </div>
@@ -310,29 +219,14 @@ export function AccountStatementTab() {
       <div>
         <h3 className="text-lg font-semibold text-foreground/80 mb-4">{t('paymentAccounts')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockPaymentAccounts.map((account) => (
-            <Card key={account.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-100 shrink-0">
-                    <Building2 className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground mb-1.5 truncate">
-                      {account.holderName || 'Stripe / Paypal'}
-                      {account.bankName && account.holderName && ` - ${account.bankName}`}
-                    </p>
-                    <p className="text-base font-bold text-red-600">{formatRupiah(account.total)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {paymentAccounts.map((account) => (
+            <PaymentAccountCard key={account.id} account={account} />
           ))}
         </div>
       </div>
 
       {/* Transactions Table */}
-      <DataGrid table={table} recordCount={mockStatementData.length} tableLayout={{ cellBorder: true, dense: true }}>
+      <DataGrid table={table} recordCount={statementData.length} tableLayout={{ cellBorder: true, dense: true }}>
         <Card className="py-2">
           <CardHeader className="px-3 py-1.5">
             <div className="flex items-center gap-2">

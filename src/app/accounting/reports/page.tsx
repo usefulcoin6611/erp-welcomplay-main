@@ -10,35 +10,35 @@ import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load tab components for better performance
-const AccountStatementTab = lazy(() => import('@/components/reports/account-statement-tab').then(m => ({ default: m.AccountStatementTab })))
-const InvoiceSummaryTab = lazy(() => import('@/components/reports/invoice-summary-tab').then(m => ({ default: m.InvoiceSummaryTab })))
-const SalesReportTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.SalesReportTab })))
-const ReceivablesTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.ReceivablesTab })))
-const PayablesTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.PayablesTab })))
-const BillSummaryTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.BillSummaryTab })))
-const ProductStockTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.ProductStockTab })))
-const CashFlowTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.CashFlowTab })))
-const TransactionTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.TransactionTab })))
-const IncomeSummaryTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.IncomeSummaryTab })))
-const ExpenseSummaryTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.ExpenseSummaryTab })))
-const IncomeVsExpenseTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.IncomeVsExpenseTab })))
-const TaxSummaryTab = lazy(() => import('@/components/reports/placeholder-tabs').then(m => ({ default: m.TaxSummaryTab })))
+const AccountStatementTab = lazy(() => import('@/components/reports').then(m => ({ default: m.AccountStatementTab })))
+const InvoiceSummaryTab = lazy(() => import('@/components/reports').then(m => ({ default: m.InvoiceSummaryTab })))
+const SalesReportTab = lazy(() => import('@/components/reports').then(m => ({ default: m.SalesReportTab })))
+const ReceivablesTab = lazy(() => import('@/components/reports').then(m => ({ default: m.ReceivablesTab })))
+const PayablesTab = lazy(() => import('@/components/reports').then(m => ({ default: m.PayablesTab })))
+const BillSummaryTab = lazy(() => import('@/components/reports').then(m => ({ default: m.BillSummaryTab })))
+const ProductStockTab = lazy(() => import('@/components/reports').then(m => ({ default: m.ProductStockTab })))
+const CashFlowTab = lazy(() => import('@/components/reports').then(m => ({ default: m.CashFlowTab })))
+const TransactionTab = lazy(() => import('@/components/reports').then(m => ({ default: m.TransactionTab })))
+const IncomeSummaryTab = lazy(() => import('@/components/reports').then(m => ({ default: m.IncomeSummaryTab })))
+const ExpenseSummaryTab = lazy(() => import('@/components/reports').then(m => ({ default: m.ExpenseSummaryTab })))
+const IncomeVsExpenseTab = lazy(() => import('@/components/reports').then(m => ({ default: m.IncomeVsExpenseTab })))
+const TaxSummaryTab = lazy(() => import('@/components/reports').then(m => ({ default: m.TaxSummaryTab })))
 
 // Preload tab modules on hover/focus
 const preloadTab = {
-  'account-statement': () => import('@/components/reports/account-statement-tab'),
-  'invoice-summary': () => import('@/components/reports/invoice-summary-tab'),
-  'sales-report': () => import('@/components/reports/placeholder-tabs'),
-  'receivables': () => import('@/components/reports/placeholder-tabs'),
-  'payables': () => import('@/components/reports/placeholder-tabs'),
-  'bill-summary': () => import('@/components/reports/placeholder-tabs'),
-  'product-stock': () => import('@/components/reports/placeholder-tabs'),
-  'cash-flow': () => import('@/components/reports/placeholder-tabs'),
-  'transaction': () => import('@/components/reports/placeholder-tabs'),
-  'income-summary': () => import('@/components/reports/placeholder-tabs'),
-  'expense-summary': () => import('@/components/reports/placeholder-tabs'),
-  'income-vs-expense': () => import('@/components/reports/placeholder-tabs'),
-  'tax-summary': () => import('@/components/reports/placeholder-tabs'),
+  'account-statement': () => import('@/components/reports'),
+  'invoice-summary': () => import('@/components/reports'),
+  'sales-report': () => import('@/components/reports'),
+  'receivables': () => import('@/components/reports'),
+  'payables': () => import('@/components/reports'),
+  'bill-summary': () => import('@/components/reports'),
+  'product-stock': () => import('@/components/reports'),
+  'cash-flow': () => import('@/components/reports'),
+  'transaction': () => import('@/components/reports'),
+  'income-summary': () => import('@/components/reports'),
+  'expense-summary': () => import('@/components/reports'),
+  'income-vs-expense': () => import('@/components/reports'),
+  'tax-summary': () => import('@/components/reports'),
 }
 
 // Loading fallback component

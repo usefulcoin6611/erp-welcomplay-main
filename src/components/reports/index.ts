@@ -1,14 +1,14 @@
 /**
- * @deprecated This file is kept for backward compatibility only.
- * All components have been refactored into modular structure.
- * Please import directly from '@/components/reports' instead.
+ * Refactored Reports Components with Better Separation of Concerns
  * 
- * Example:
- * Old: import { PayablesTab } from '@/components/reports/placeholder-tabs'
- * New: import { PayablesTab } from '@/components/reports'
+ * This is the new modular structure. For backward compatibility,
+ * the old monolithic placeholder-tabs.tsx is still available.
+ * 
+ * Gradually migrate to use this index instead.
  */
 
-// Re-export all refactored components
+// Fully refactored with SoC best practices
+export { AccountStatementTab } from './account-statement-tab'
 export { InvoiceSummaryTab } from './invoice-summary'
 export { SalesReportTab } from './sales-report'
 export { PayablesTab } from './payables'
