@@ -810,7 +810,7 @@
       }
     },
     "billSummary": {
-      "title": "Bill Summary Report",
+      "title": "Bill Summary",
       "description": "View and manage your bill summary and analytics"
     },
     "productStock": {

@@ -1,1 +1,6 @@
 export { BillSummaryTab } from './BillSummaryTab'
+export { BillSummaryFilters } from './BillSummaryFilters'
+export { BillSummaryChart } from './BillSummaryChart'
+export { BillsTable } from './tables/BillsTable'
+export { useBillSummaryData } from './hooks/useBillSummaryData'
+export * from './constants'
