@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { SiteHeader } from '@/components/site-header';
+import { Separator } from '@/components/ui/separator';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,15 +95,26 @@ export default function DocumentSetupPage() {
   const optionalDocuments = documents.filter((d) => !d.isRequired).length;
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
+    <SidebarProvider
+      style={{
+        '--sidebar-width': 'calc(var(--spacing) * 72)',
+        '--header-height': 'calc(var(--spacing) * 12)',
+      } as React.CSSProperties}
+    >
+      <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Document Setup</h1>
-            <p className="text-sm text-muted-foreground">Manage employee document types and requirements</p>
+        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
+            <h1 className="text-base font-medium">Document Setup</h1>
+            <div className="ml-auto flex items-center gap-2">
+              <LanguageSwitcher />
+            </div>
           </div>
+        </header>
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
 
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
@@ -137,16 +149,15 @@ export default function DocumentSetupPage() {
             </Card>
           </div>
 
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Document Types</h2>
+            <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Document Type
+            </Button>
+          </div>
+
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Document Types</CardTitle>
-                <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Document Type
-                </Button>
-              </div>
-            </CardHeader>
             <CardContent className="space-y-4 pt-6">
               {showForm && (
                 <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
@@ -256,6 +267,7 @@ export default function DocumentSetupPage() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -3,10 +3,12 @@
 import { useMemo, lazy, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { SiteHeader } from '@/components/site-header'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { useTranslations } from 'next-intl'
 
 // Lazy load tab components for better performance
 const SetSalaryTab = lazy(() => import('@/components/hrm-payroll').then(m => ({ default: m.SetSalaryTab })))
@@ -179,23 +181,44 @@ export default function PayrollSetupPage() {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <SmoothTab
-            items={payrollTabs}
-            defaultTabId={activeTab}
-            activeColor="bg-white dark:bg-gray-700 shadow-xs"
-            onChange={handleTabChange}
-            onTabPreload={(tabId) => {
-              // Preload tab component on hover for instant switching
-              if (preloadTab[tabId as keyof typeof preloadTab]) {
-                preloadTab[tabId as keyof typeof preloadTab]()
-              }
-            }}
-          />
+        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mx-2 data-[orientation=vertical]:h-4"
+            />
+            <h1 className="text-base font-medium">Payroll Setup</h1>
+            <div className="ml-auto flex items-center gap-2">
+              <LanguageSwitcher />
+            </div>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+            <SmoothTab
+              items={payrollTabs}
+              defaultTabId={activeTab}
+              activeColor="bg-white dark:bg-gray-700 shadow-xs"
+              onChange={handleTabChange}
+              onTabPreload={(tabId) => {
+                // Preload tab component on hover for instant switching
+                if (preloadTab[tabId as keyof typeof preloadTab]) {
+                  preloadTab[tabId as keyof typeof preloadTab]()
+                }
+              }}
+            />
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

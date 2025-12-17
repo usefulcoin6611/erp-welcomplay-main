@@ -92,16 +92,15 @@ export default function DepartmentTab() {
         </Card>
       </div>
 
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Departments</h2>
+        <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Department
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Departments</CardTitle>
-            <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Department
-            </Button>
-          </div>
-        </CardHeader>
         <CardContent className="space-y-4 pt-6">
           {showForm && (
             <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
