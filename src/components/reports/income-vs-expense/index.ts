@@ -1,1 +1,6 @@
 export { IncomeVsExpenseTab } from './IncomeVsExpenseTab'
+export { IncomeVsExpenseFilters } from './IncomeVsExpenseFilters'
+export { IncomeVsExpenseChart } from './IncomeVsExpenseChart'
+export { IncomeVsExpenseTable } from './IncomeVsExpenseTable'
+export { useIncomeVsExpenseData } from './hooks/useIncomeVsExpenseData'
+export * from './constants'

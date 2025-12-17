@@ -1,0 +1,1 @@
+export { POSVsPurchaseTab } from './POSVsPurchaseTab'

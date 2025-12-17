@@ -1,26 +1,62 @@
 'use client'
 
 import { memo } from 'react'
-import { useTranslations } from 'next-intl'
-import { FileText } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { TaxSummaryFilters } from './TaxSummaryFilters'
+import { TaxSummaryTable } from './TaxSummaryTable'
+import { useTaxSummaryData } from './hooks/useTaxSummaryData'
 
 function TaxSummaryTabComponent() {
-  const t = useTranslations('reports.taxSummary')
+  const {
+    year,
+    handleYearChange,
+    monthList,
+    incomeTaxes,
+    expenseTaxes,
+    dateRange,
+  } = useTaxSummaryData()
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <CardContent className="p-8 text-center">
-          <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            {t('title', { default: 'Tax Summary Report' })}
-          </h3>
-          <p className="text-muted-foreground">
-            {t('description', { default: 'This tab will contain the Tax Summary report content.' })}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Filters */}
+      <TaxSummaryFilters year={year} onYearChange={handleYearChange} />
+
+      {/* Info Cards */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+        <Card className="shadow-none">
+          <CardContent className="pt-6">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Report</p>
+              <p className="text-lg font-semibold">Tax Summary</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-none">
+          <CardContent className="pt-6">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Duration</p>
+              <p className="text-lg font-semibold">{dateRange}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Income Tax Table */}
+      <TaxSummaryTable
+        title="Income"
+        monthList={monthList}
+        taxData={incomeTaxes}
+        emptyMessage="Income tax not found"
+      />
+
+      {/* Expense Tax Table */}
+      <TaxSummaryTable
+        title="Expense"
+        monthList={monthList}
+        taxData={expenseTaxes}
+        emptyMessage="Expense tax not found"
+      />
     </div>
   )
 }

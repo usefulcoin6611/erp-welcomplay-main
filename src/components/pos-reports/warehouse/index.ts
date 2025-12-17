@@ -1,0 +1,1 @@
+export { WarehouseTab } from './WarehouseTab'

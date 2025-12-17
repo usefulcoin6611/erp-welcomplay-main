@@ -190,7 +190,7 @@ export function SmoothTab({
                                                 "bg-gray-100 dark:bg-gray-800 rounded-xl",
                                                 "overflow-x-auto overflow-y-hidden scrollbar-hide",
                                                 "transition-all duration-200",
-                                                "w-full max-w-full",
+                                                "w-fit max-w-full",
                                                 className
                                             )}
                 style={{

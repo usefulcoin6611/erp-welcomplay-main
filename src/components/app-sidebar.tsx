@@ -76,12 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               { title: t("overview"), url: "/hrm-dashboard" },
               {
                 title: t("reports"),
-                url: "#",
-                items: [
-                  { title: t("payroll"), url: "/reports-payroll" },
-                  { title: t("leave"), url: "/report-leave" },
-                  { title: t("monthlyAttendance"), url: "/reports-monthly-attendance" },
-                ],
+                url: "/hrm/reports", // Direct link to unified Reports page
               },
             ],
           },
@@ -90,14 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "#", // No direct URL, only expand dropdown
             items: [
               { title: t("overview"), url: "/crm-dashboard" },
-              {
-                title: t("reports"),
-                url: "#",
-                items: [
-                  { title: t("lead"), url: "/reports-lead" },
-                  { title: t("deal"), url: "/reports-deal" },
-                ],
-              },
+              { title: t("reports"), url: "/crm/reports" },
             ],
           },
           {
@@ -111,13 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               { title: t("overview"), url: "/pos-dashboard" },
               {
                 title: t("reports"),
-                url: "#",
-                items: [
-                  { title: t("warehouseReport"), url: "/reports-warehouse" },
-                  { title: t("purchaseDailyMonthlyReport"), url: "/reports-daily-purchase" },
-                  { title: t("posDailyMonthlyReport"), url: "/reports-daily-pos" },
-                  { title: t("posVsPurchaseReport"), url: "/reports-pos-vs-purchase" },
-                ],
+                url: "/pos/reports",
               },
             ],
           },
@@ -134,71 +116,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           { 
             title: t("payrollSetup"), 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Set Salary", url: "/hrm/payroll/salary" },
-              { title: "Payslip", url: "/hrm/payroll/payslip" },
-            ],
+            url: "/hrm/payroll",
           },
           { 
             title: "Leave Management Setup", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Manage Leave", url: "/hrm/leave/manage" },
-              { 
-                title: "Attendance", 
-                url: "/hrm/attendance",
-                items: [
-                  { title: "Mark Attendance", url: "/hrm/attendance/mark" },
-                  { title: "Bulk Attendance", url: "/hrm/attendance/bulk" },
-                ],
-              },
-            ],
+            url: "/hrm/leave",
           },
           { 
             title: "Performance Setup", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Indicator", url: "/hrm/performance/indicator" },
-              { title: "Appraisal", url: "/hrm/performance/appraisal" },
-              { title: "Goal Tracking", url: "/hrm/performance/goals" },
-            ],
+            url: "/hrm/performance",
           },
           { 
             title: "Training Setup", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Training List", url: "/hrm/training/list" },
-              { title: "Trainer", url: "/hrm/training/trainer" },
-            ],
+            url: "/hrm/training",
           },
           { 
             title: "Recruitment Setup", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Jobs", url: "/hrm/recruitment/jobs" },
-              { title: "Job Application", url: "/hrm/recruitment/applications" },
-              { title: "Job Candidate", url: "/hrm/recruitment/candidates" },
-              { title: "Job On-boarding", url: "/hrm/recruitment/onboarding" },
-              { title: "Custom Question", url: "/hrm/recruitment/questions" },
-              { title: "Interview Schedule", url: "/hrm/recruitment/interviews" },
-            ],
+            url: "/hrm/recruitment",
           },
           { 
             title: "HR Admin Setup", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Award", url: "/hrm/admin/award" },
-              { title: "Transfer", url: "/hrm/admin/transfer" },
-              { title: "Resignation", url: "/hrm/admin/resignation" },
-              { title: "Travel", url: "/hrm/admin/travel" },
-              { title: "Promotion", url: "/hrm/admin/promotion" },
-              { title: "Complaints", url: "/hrm/admin/complaints" },
-              { title: "Warning", url: "/hrm/admin/warning" },
-              { title: "Termination", url: "/hrm/admin/termination" },
-              { title: "Announcement", url: "/hrm/admin/announcement" },
-              { title: "Holidays", url: "/hrm/admin/holidays" },
-            ],
+            url: "/hrm/admin",
           },
           { title: "Event Setup", url: "/hrm/events" },
           { title: "Meeting", url: "/hrm/meetings" },
@@ -359,13 +297,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
           { 
             title: "Reports", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Warehouse Report", url: "/pos/reports/warehouse" },
-              { title: "Purchase Daily/Monthly Report", url: "/pos/reports/purchase-daily" },
-              { title: "POS Daily/Monthly Report", url: "/pos/reports/pos-daily" },
-              { title: "Pos VS Purchase Report", url: "/pos/reports/pos-vs-purchase" },
-            ],
+            url: "/pos/reports",
           },
           { title: "POS System Setup", url: "/pos/setup" },
         ],

@@ -1,0 +1,6 @@
+export { JobsTab } from './jobs/JobsTab'
+export { ApplicationsTab } from './applications/ApplicationsTab'
+export { CandidatesTab } from './candidates/CandidatesTab'
+export { OnboardingTab } from './onboarding/OnboardingTab'
+export { CustomQuestionsTab } from './questions/CustomQuestionsTab'
+export { InterviewScheduleTab } from './interviews/InterviewScheduleTab'
