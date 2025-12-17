@@ -16,7 +16,7 @@ export function ComplaintsContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ employeeFrom: '', complaintAgainst: '', title: '', date: '', description: '', status: 'Pending' as const });
+  const [formData, setFormData] = useState<{ employeeFrom: string; complaintAgainst: string; title: string; date: string; description: string; status: 'Pending' | 'In Progress' | 'Resolved' }>({ employeeFrom: '', complaintAgainst: '', title: '', date: '', description: '', status: 'Pending' });
   const [data, setData] = useState<Complaint[]>([
     { id: '1', employeeFrom: 'Sarah Johnson', complaintAgainst: 'Mike Brown', title: 'Workplace Harassment', date: '2024-02-10', description: 'Unprofessional behavior', status: 'In Progress' },
     { id: '2', employeeFrom: 'John Smith', complaintAgainst: 'Tom Wilson', title: 'Code of Conduct Violation', date: '2024-01-25', description: 'Policy breach', status: 'Resolved' },
