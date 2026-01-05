@@ -151,13 +151,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#", // Only dropdown, no direct navigation
         icon: IconFileText,
         items: [
-          { 
-            title: "Banking", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Account", url: "/accounting/bank-account" },
-              { title: "Transfer", url: "/accounting/bank-transfer" },
-            ],
+          {
+            title: t("banking"),
+            url: "/accounting/bank-account",
           },
           { 
             title: "Sales", 

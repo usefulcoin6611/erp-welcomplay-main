@@ -1,41 +1,14 @@
+"use client"
+
+import React from 'react'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
-import { SiteHeader } from '@/components/site-header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import { 
-  IconPlus, 
-  IconEye,
-  IconSearch,
-  IconArrowRight,
-  IconCalendar,
-  IconFilter
-} from '@tabler/icons-react'
+import { Separator } from '@/components/ui/separator'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { TransferTab } from '@/components/accounting-bank'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+
+
 
 // Mock data
 const bankTransfers = [
