@@ -155,7 +155,7 @@ const MenuItemComponent = ({
   )
 }
 
-export function SidebarMenu({ items }: SidebarMenuProps) {
+function SidebarMenuInner({ items }: SidebarMenuProps) {
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({
     // Auto-open Dashboard by default
     "0-Dashboard": true
@@ -174,6 +174,21 @@ export function SidebarMenu({ items }: SidebarMenuProps) {
       ))}
     </div>
   )
+}
+
+export function SidebarMenu({ items }: SidebarMenuProps) {
+  // Render this menu only on the client to avoid hydration mismatches
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
+  if (!hasMounted) {
+    return null
+  }
+
+  return <SidebarMenuInner items={items} />
 }
 
 export default SidebarMenu;
