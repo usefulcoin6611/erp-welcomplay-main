@@ -68,11 +68,18 @@ export function AccountTab() {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button size="sm">
+          <Button
+            size="sm"
+            className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+          >
             <Plus className="mr-2 size-4" />
             Buat Akun Bank
           </Button>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-4 shadow-none"
+          >
             Export CSV
           </Button>
         </div>
@@ -232,7 +239,9 @@ export function TransferTab() {
               </Select>
             </div>
             <div className="flex items-end gap-2">
-              <Button className="flex-1">
+              <Button
+                className="flex-1 h-9 bg-blue-500 hover:bg-blue-600 shadow-none"
+              >
                 <Plus className="mr-2 size-4" />
                 Buat Transfer
               </Button>
@@ -241,6 +250,7 @@ export function TransferTab() {
                 size="icon"
                 aria-label="Reset filter"
                 onClick={() => setFilters({ date: '', fromAccount: '', toAccount: '' })}
+                className="h-9 w-9 shadow-none"
               >
                 <RefreshCw className="size-4" />
               </Button>

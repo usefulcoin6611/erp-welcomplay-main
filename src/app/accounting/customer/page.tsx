@@ -135,11 +135,12 @@ const customers = [
 ]
 
 function getStatusBadge(status: string) {
-  return (
-    <Badge variant={status === 'Active' ? 'default' : 'secondary'}>
-      {status}
-    </Badge>
-  )
+  const classes =
+    status === 'Active'
+      ? 'bg-green-100 text-green-700 border-none'
+      : 'bg-gray-100 text-gray-700 border-none'
+
+  return <Badge className={classes}>{status}</Badge>
 }
 
 export default function CustomerPage() {
@@ -173,7 +174,7 @@ export default function CustomerPage() {
               </div>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                     <IconPlus className="h-4 w-4 mr-2" />
                     Add Customer
                   </Button>
@@ -272,8 +273,12 @@ export default function CustomerPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline">Cancel</Button>
-                    <Button>Create Customer</Button>
+                    <Button variant="outline" className="shadow-none">
+                      Cancel
+                    </Button>
+                    <Button className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                      Create Customer
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -333,14 +338,34 @@ export default function CustomerPage() {
             </div>
 
             {/* Search and Filters */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 max-w-sm">
-                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search customers..." className="pl-10" />
+            <Card>
+              <CardHeader>
+                <CardTitle>Filters</CardTitle>
+                <CardDescription>
+                  Search and filter customers by status and city.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="flex-1 min-w-0">
+                    <label className="mb-1 block text-sm font-medium">
+                      Search
+                    </label>
+                    <div className="relative">
+                      <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                      <Input
+                        placeholder="Search customers..."
+                        className="pl-10"
+                      />
+                    </div>
               </div>
+                  <div className="w-full md:w-48">
+                    <label className="mb-1 block text-sm font-medium">
+                      Status
+                    </label>
               <Select defaultValue="all">
-                <SelectTrigger className="w-40">
-                  <SelectValue />
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
@@ -348,9 +373,14 @@ export default function CustomerPage() {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+                  </div>
+                  <div className="w-full md:w-48">
+                    <label className="mb-1 block text-sm font-medium">
+                      City
+                    </label>
               <Select defaultValue="all-city">
-                <SelectTrigger className="w-40">
-                  <SelectValue />
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all-city">All Cities</SelectItem>
@@ -361,6 +391,9 @@ export default function CustomerPage() {
                 </SelectContent>
               </Select>
             </div>
+                </form>
+              </CardContent>
+            </Card>
 
             {/* Customers Table */}
             <Card>

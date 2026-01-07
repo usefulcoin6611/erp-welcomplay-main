@@ -7,12 +7,20 @@ import {
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -111,18 +119,19 @@ const creditNotesData = [
   }
 ]
 
-function getStatusColor(status: string) {
+function getStatusClasses(status: string) {
+  // Pastel-style badges similar to other pages
   switch (status) {
     case 'applied':
-      return 'default'
+      return 'bg-green-100 text-green-700 border-none'
     case 'pending':
-      return 'secondary'
+      return 'bg-yellow-100 text-yellow-700 border-none'
     case 'draft':
-      return 'outline'
+      return 'bg-gray-100 text-gray-700 border-none'
     case 'cancelled':
-      return 'destructive'
+      return 'bg-red-100 text-red-700 border-none'
     default:
-      return 'secondary'
+      return 'bg-slate-100 text-slate-700 border-none'
   }
 }
 
@@ -153,7 +162,7 @@ export default function CreditNotePage() {
                   Manage refunds, adjustments and customer credits
                 </p>
               </div>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                 <Plus className="h-4 w-4" />
                 Create Credit Note
               </Button>
@@ -217,22 +226,53 @@ export default function CreditNotePage() {
               </Card>
             </div>
 
-            {/* Search and Filter */}
+            {/* Filters */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Credit Notes List</CardTitle>
-                  <div className="flex items-center gap-2">
+                <CardTitle>Filters</CardTitle>
+                <CardDescription>
+                  Search and filter credit notes by status and customer.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="flex-1 min-w-0">
+                    <label className="mb-1 block text-sm font-medium">
+                      Search
+                    </label>
                     <div className="relative">
                       <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Search credit notes..." className="pl-8 w-[300px]" />
+                      <Input
+                        placeholder="Search credit notes..."
+                        className="pl-8 w-full"
+                      />
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
                   </div>
+                  <div className="w-full md:w-40">
+                    <label className="mb-1 block text-sm font-medium">
+                      Status
+                    </label>
+                    <Select defaultValue="all-status">
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all-status">All Status</SelectItem>
+                        <SelectItem value="applied">Applied</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
                 </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Credit notes table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Credit Notes List</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -272,7 +312,9 @@ export default function CreditNotePage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{creditNote.invoiceReference}</Badge>
+                          <Badge className="bg-blue-50 text-blue-700 border-none">
+                            {creditNote.invoiceReference}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="max-w-[200px]">
@@ -287,7 +329,7 @@ export default function CreditNotePage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusColor(creditNote.status)}>
+                          <Badge className={getStatusClasses(creditNote.status)}>
                             {creditNote.status}
                           </Badge>
                         </TableCell>
@@ -369,19 +411,19 @@ export default function CreditNotePage() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Credit Note
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                     <Download className="mr-2 h-4 w-4" />
                     Export Credit Notes
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                     <Send className="mr-2 h-4 w-4" />
                     Send Notifications
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                     <FileText className="mr-2 h-4 w-4" />
                     Generate Report
                   </Button>

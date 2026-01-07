@@ -1,135 +1,344 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Link from "next/link";
+import React from "react"
+import Link from "next/link"
 
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar"
+import {
+  IconCalendar,
+  IconDownload,
+  IconEye,
+  IconPlus,
+  IconSearch,
+} from "@tabler/icons-react"
+
+// Mock proposal data, modeled after the reference ERP but adapted to this UI
 const proposals = [
   {
-    id: "PR-001",
-    category: "General",
+    id: "PR-2025-001",
+    customer: "PT Teknologi Digital Indonesia",
+    category: "Income",
     issueDate: "2025-12-01",
-    status: 0,
+    status: 0, // Draft
+    total: 12500000,
   },
   {
-    id: "PR-002",
-    category: "IT",
+    id: "PR-2025-002",
+    customer: "CV Mitra Sejahtera",
+    category: "Income",
     issueDate: "2025-12-03",
-    status: 2,
+    status: 2, // Accepted
+    total: 9800000,
   },
   {
-    id: "PR-003",
-    category: "Marketing",
+    id: "PR-2025-003",
+    customer: "PT Global Solution",
+    category: "Income",
     issueDate: "2025-12-05",
-    status: 1,
+    status: 1, // Sent
+    total: 15750000,
   },
-];
+] as const
 
-const statusMap = [
-  { label: "Draft", color: "primary" },
-  { label: "Sent", color: "info" },
-  { label: "Accepted", color: "success" },
-  { label: "Declined", color: "warning" },
-  { label: "Expired", color: "destructive" },
-];
+// Simplified mirror of Laravel's Proposal::$statues
+const statusMap: {
+  [key: number]: {
+    label: string
+  }
+} = {
+  0: { label: "Draft" },
+  1: { label: "Sent" },
+  2: { label: "Accepted" },
+  3: { label: "Declined" },
+  4: { label: "Expired" },
+}
+
+function getProposalStatusClasses(status: number) {
+  switch (status) {
+    case 0:
+      return "bg-gray-100 text-gray-700 border-none"
+    case 1:
+      return "bg-blue-100 text-blue-700 border-none"
+    case 2:
+      return "bg-green-100 text-green-700 border-none"
+    case 3:
+      return "bg-red-100 text-red-700 border-none"
+    case 4:
+      return "bg-yellow-100 text-yellow-700 border-none"
+    default:
+      return "bg-slate-100 text-slate-700 border-none"
+  }
+}
 
 export default function ProposalPage() {
+  const totalProposals = proposals.length
+  const acceptedProposals = proposals.filter((p) => p.status === 2)
+  const draftProposals = proposals.filter((p) => p.status === 0)
+
+  const totalValue = proposals.reduce((sum, p) => sum + p.total, 0)
+  const acceptedValue = acceptedProposals.reduce((sum, p) => sum + p.total, 0)
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Proposal</h1>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">Proposals</h1>
+                <p className="text-muted-foreground">
+                  Manage customer proposals before converting them to invoices.
+                </p>
+              </div>
         <div className="flex gap-2">
-          <Button asChild variant="secondary" size="sm">
-            <Link href="#">Export</Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-4 shadow-none"
+                >
+                  <IconDownload className="mr-2 h-4 w-4" />
+                  Export
           </Button>
-          <Button asChild variant="default" size="sm">
-            <Link href="/accounting/proposal/create">Create</Link>
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                >
+                  <Link href="/accounting/proposal/create">
+                    <IconPlus className="mr-2 h-4 w-4" />
+                    Create Proposal
+                  </Link>
           </Button>
         </div>
       </div>
+
+            {/* Summary cards */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Proposals
+                  </CardTitle>
+                  <CardDescription>All proposal documents</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalProposals}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Overall count of proposals
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Accepted Value
+                  </CardTitle>
+                  <CardDescription>Converted / ready to invoice</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    Rp {acceptedValue.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {acceptedProposals.length} accepted proposals
+                  </p>
+                </CardContent>
+              </Card>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Filter</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Draft Proposals
+                  </CardTitle>
+                  <CardDescription>Not yet sent to customer</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col md:flex-row gap-4 md:items-end">
-            <div>
-              <label className="block text-sm font-medium mb-1">Date</label>
-              <Input type="date" name="issue_date" className="w-48" />
+                  <div className="text-2xl font-bold">
+                    {draftProposals.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {draftProposals.length} in draft status
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <Select name="status" defaultValue="">
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select Status" />
+
+            {/* Filters (search + issue date + status) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Filters</CardTitle>
+                <CardDescription>
+                  Search and filter proposals by issue date and status.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="flex-1 min-w-0">
+                    <label className="mb-1 block text-sm font-medium">
+                      Search
+                    </label>
+                    <div className="relative">
+                      <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                      <Input placeholder="Search proposals..." className="pl-10" />
+                    </div>
+                  </div>
+                  <div className="w-full md:w-44">
+                    <label className="mb-1 block text-sm font-medium">
+                      Issue Date
+                    </label>
+                    <Input type="date" name="issue_date" />
+                  </div>
+                  <div className="w-full md:w-40">
+                    <label className="mb-1 block text-sm font-medium">
+                      Status
+                    </label>
+                    <Select defaultValue="all">
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
-                  {statusMap.map((s, i) => (
-                    <SelectItem key={i} value={String(i)}>{s.label}</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
+                        {Object.entries(statusMap).map(([key, value]) => (
+                          <SelectItem key={key} value={key}>
+                            {value.label}
+                          </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="mt-2 md:mt-0">Apply</Button>
-            <Button type="button" variant="destructive" className="mt-2 md:mt-0">Reset</Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                    >
+                      Apply
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 px-4 shadow-none"
+                    >
+                      Reset
+                    </Button>
+                  </div>
           </form>
         </CardContent>
       </Card>
+
+            {/* Proposal list table */}
       <Card>
         <CardHeader>
           <CardTitle>Proposal List</CardTitle>
+                <CardDescription>
+                  Overview of all proposals, similar to the ERP list page.
+                </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Proposal</TableHead>
+                      <TableHead>Customer</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Issue Date</TableHead>
+                      <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
+                      <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {proposals.map((proposal, idx) => (
+                    {proposals.map((proposal) => (
                 <TableRow key={proposal.id}>
                   <TableCell>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/accounting/proposal/${proposal.id}`}>{proposal.id}</Link>
+                          <Button
+                            asChild
+                            variant="link"
+                            className="h-auto p-0 text-sm font-semibold"
+                          >
+                            <Link href={`/accounting/proposal/${proposal.id}`}>
+                              {proposal.id}
+                            </Link>
                     </Button>
                   </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            {proposal.customer}
+                          </div>
+                        </TableCell>
                   <TableCell>{proposal.category}</TableCell>
-                  <TableCell>{proposal.issueDate}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <IconCalendar className="h-3 w-3" />
+                            <span>{proposal.issueDate}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            Rp {proposal.total.toLocaleString()}
+                          </div>
+                        </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-${statusMap[proposal.status].color}/10 text-${statusMap[proposal.status].color}-700`}>
+                          <Badge className={getProposalStatusClasses(proposal.status)}>
                       {statusMap[proposal.status].label}
-                    </span>
+                          </Badge>
                   </TableCell>
-                  <TableCell className="flex gap-1">
-                    <Button variant="secondary" size="icon" title="Convert to Invoice">
-                      <span className="sr-only">Convert</span>
-                      <i className="ti ti-exchange" />
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="View / Print"
+                            >
+                              <IconEye className="h-4 w-4" />
                     </Button>
-                    <Button variant="secondary" size="icon" title="Duplicate">
-                      <span className="sr-only">Duplicate</span>
-                      <i className="ti ti-copy" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Download PDF"
+                            >
+                              <IconDownload className="h-4 w-4" />
                     </Button>
-                    <Button variant="warning" size="icon" title="Show">
-                      <span className="sr-only">Show</span>
-                      <i className="ti ti-eye" />
-                    </Button>
-                    <Button variant="info" size="icon" title="Edit">
-                      <span className="sr-only">Edit</span>
-                      <i className="ti ti-pencil" />
-                    </Button>
-                    <Button variant="destructive" size="icon" title="Delete">
-                      <span className="sr-only">Delete</span>
-                      <i className="ti ti-trash" />
-                    </Button>
+                          </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -138,5 +347,8 @@ export default function ProposalPage() {
         </CardContent>
       </Card>
     </div>
-  );
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  )
 }

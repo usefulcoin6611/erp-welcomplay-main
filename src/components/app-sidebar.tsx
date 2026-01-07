@@ -212,42 +212,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "#", // Only dropdown, no direct navigation
         icon: IconShare,
         items: [
+          { title: "Projects", url: "/projects/project/list" },
+          { title: "Tasks", url: "/projects/task" },
+          { title: "Timesheet", url: "/projects/timesheet/list" },
+          { title: "Bug", url: "/projects/bug/list" },
+          { title: "Task Calendar", url: "/projects/task/calendar" },
+          { title: "Tracker", url: "/projects/time-tracker" },
+          { title: "Project Report", url: "/projects/reports/project" },
           { 
-            title: "Project", 
+            title: "Project System Setup", 
             url: "#", // Only dropdown, no direct navigation
             items: [
-              { title: "Project", url: "/projects/project/list" },
-              { title: "Milestone", url: "/projects/milestone" },
-              { title: "Task", url: "/projects/task" },
-              { title: "Task Stage", url: "/projects/task/stage" },
-            ],
-          },
-          { 
-            title: "Timesheet", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Timesheet", url: "/projects/timesheet/list" },
-              { title: "Time Tracker", url: "/projects/time-tracker" },
-            ],
-          },
-          { 
-            title: "Bug Report", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Bug Report", url: "/projects/bug/list" },
+              { title: "Project Stages", url: "/projects/setup" },
+              { title: "Task Stages", url: "/projects/task/stage" },
               { title: "Bug Status", url: "/projects/bug/status" },
             ],
           },
-          { 
-            title: "Project Reports", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Project Report", url: "/projects/reports/project" },
-              { title: "Task Report", url: "/projects/reports/task" },
-              { title: "Timesheet Report", url: "/projects/reports/timesheet" },
-            ],
-          },
-          { title: "Project System Setup", url: "/projects/setup" },
         ],
       },
       {

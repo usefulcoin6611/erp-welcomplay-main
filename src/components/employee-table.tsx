@@ -275,16 +275,28 @@ export function EmployeeTable() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <FileUp className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-4 shadow-none"
+              >
+                <FileUp className="mr-2 h-4 w-4" />
                 {t("import")}
               </Button>
-              <Button variant="outline" size="sm">
-                <FileDown className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-4 shadow-none"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
                 {t("export")}
               </Button>
-              <Button size="sm" onClick={handleCreateEmployee}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button
+                size="sm"
+                onClick={handleCreateEmployee}
+                className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              >
+                <Plus className="mr-2 h-4 w-4" />
                 {t("create")}
               </Button>
             </div>

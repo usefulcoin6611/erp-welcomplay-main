@@ -7,12 +7,20 @@ import {
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -107,16 +115,16 @@ const categories = [
   { name: 'Software License', amount: 8500, percentage: 12.9 }
 ]
 
-function getStatusColor(status: string) {
+function getRevenueStatusClasses(status: string) {
   switch (status) {
     case 'received':
-      return 'default'
+      return 'bg-green-100 text-green-700 border-none'
     case 'pending':
-      return 'secondary'
+      return 'bg-yellow-100 text-yellow-700 border-none'
     case 'cancelled':
-      return 'destructive'
+      return 'bg-red-100 text-red-700 border-none'
     default:
-      return 'secondary'
+      return 'bg-slate-100 text-slate-700 border-none'
   }
 }
 
@@ -147,7 +155,7 @@ export default function RevenuePage() {
                   Track and manage your income streams
                 </p>
               </div>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                 <Plus className="h-4 w-4" />
                 Add Revenue
               </Button>
@@ -213,25 +221,55 @@ export default function RevenuePage() {
               </Card>
             </div>
 
+            {/* Filters */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Filters</CardTitle>
+                <CardDescription>
+                  Search and filter revenue by status and customer.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="flex-1 min-w-0">
+                    <label className="mb-1 block text-sm font-medium">
+                      Search
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search revenue..."
+                        className="pl-8 w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full md:w-40">
+                    <label className="mb-1 block text-sm font-medium">
+                      Status
+                    </label>
+                    <Select defaultValue="all-status">
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all-status">All Status</SelectItem>
+                        <SelectItem value="received">Received</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
             {/* Content Grid */}
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Revenue List */}
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
                       <CardTitle>Revenue Transactions</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input placeholder="Search revenue..." className="pl-8 w-[250px]" />
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <Filter className="h-4 w-4 mr-2" />
-                          Filter
-                        </Button>
-                      </div>
-                    </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -268,7 +306,9 @@ export default function RevenuePage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{revenue.category}</Badge>
+                              <Badge className="bg-blue-50 text-blue-700 border-none">
+                                {revenue.category}
+                              </Badge>
                             </TableCell>
                             <TableCell>
                               <span className="font-medium text-green-600">
@@ -276,7 +316,7 @@ export default function RevenuePage() {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={getStatusColor(revenue.status)}>
+                              <Badge className={getRevenueStatusClasses(revenue.status)}>
                                 {revenue.status}
                               </Badge>
                             </TableCell>
@@ -342,15 +382,21 @@ export default function RevenuePage() {
                     <CardTitle>Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Record Revenue
                     </Button>
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                    >
                       <Receipt className="mr-2 h-4 w-4" />
                       Generate Report
                     </Button>
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                    >
                       <TrendingUp className="mr-2 h-4 w-4" />
                       View Analytics
                     </Button>
