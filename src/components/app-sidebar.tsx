@@ -285,8 +285,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Product & Services", url: "/products/services" },
           { title: "Product Stock", url: "/products/stock" },
-          { title: "Product & Service Category", url: "/products/category" },
-          { title: "Product & Service Unit", url: "/products/unit" },
         ],
       },
       {
