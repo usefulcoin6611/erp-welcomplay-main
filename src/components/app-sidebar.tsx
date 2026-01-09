@@ -293,19 +293,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: IconUsers,
         items: [
           { title: "Users", url: "/users" },
+          { title: "Clients", url: "/users/clients" },
           { title: "Roles", url: "/users/roles" },
           { title: "Permissions", url: "/users/permissions" },
         ],
       },
       {
         title: t("supportSystem"),
-        url: "#", // Only dropdown, no direct navigation
+        url: "/support",
         icon: IconHeadphones,
-        items: [
-          { title: "Support", url: "/support/tickets" },
-          { title: "Knowledge Base", url: "/support/kb" },
-          { title: "FAQ", url: "/support/faq" },
-        ],
       },
     ],
     navSecondary: [
