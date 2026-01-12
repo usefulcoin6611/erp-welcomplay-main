@@ -49,21 +49,21 @@ export default function LoginPage() {
 
   // Reset all states when component mounts (e.g., after logout)
   useEffect(() => {
-    // Clear any existing success state and loading state
+    // Force reset all states immediately - critical for preventing freeze
+    // Always reset, don't check hasInitialized to ensure clean state after logout
     setShowSuccess(false)
     setIsLoading(false)
     setError("")
+    setEmail("")
+    setPassword("")
     
-    // Clear form if coming from logout (no user in sessionStorage)
+    // Check if user is logged in
     if (typeof window !== "undefined") {
       const user = sessionStorage.getItem("user")
-      if (!user) {
-        // User is logged out, reset form completely
-        setEmail("")
-        setPassword("")
-      } else {
+      if (user) {
         // If user is already logged in, redirect immediately
         router.replace("/hrm-dashboard")
+        return
       }
     }
 
@@ -73,7 +73,8 @@ export default function LoginPage() {
       setIsLoading(false)
       setError("")
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty deps - only run on mount/unmount
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -290,7 +291,11 @@ export default function LoginPage() {
             )}
 
             {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form 
+              key="login-form" 
+              onSubmit={handleSubmit} 
+              className="space-y-5"
+            >
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -304,7 +309,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="h-11"
-                  disabled={isLoading || showSuccess}
+                  disabled={isLoading}
                   autoComplete="email"
                 />
               </div>
@@ -330,7 +335,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="h-11"
-                  disabled={isLoading || showSuccess}
+                  disabled={isLoading}
                   autoComplete="current-password"
                 />
               </div>
@@ -341,7 +346,7 @@ export default function LoginPage() {
                   type="submit"
                   variant="blue"
                   className="w-full h-11 font-medium shadow-sm"
-                  disabled={isLoading || showSuccess}
+                  disabled={isLoading}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">

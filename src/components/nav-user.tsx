@@ -62,9 +62,11 @@ export function NavUser({
     // Close dialog
     setShowLogoutDialog(false)
     
-    // Use replace instead of push to prevent back button navigation
-    // This ensures clean state when user returns to login page
-    router.replace("/login")
+    // Use window.location for full page reload to ensure clean state
+    // This prevents any state persistence issues
+    if (typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
   }
 
   return (
