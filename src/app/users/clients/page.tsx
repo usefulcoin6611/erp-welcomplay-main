@@ -153,7 +153,7 @@ export default function ClientsPage() {
               </div>
               <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="shadow-none">
+                  <Button size="sm" variant="blue" className="shadow-none">
                     <Plus className="mr-2 h-4 w-4" /> Create Client
                   </Button>
                 </DialogTrigger>
@@ -232,7 +232,7 @@ export default function ClientsPage() {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit">Create</Button>
+                      <Button type="submit" variant="blue">Create</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -246,7 +246,7 @@ export default function ClientsPage() {
                   <CardContent className="p-4">
                     {/* Client Info */}
                     <div className="flex items-center gap-3 pb-3 mb-3 border-b">
-                      <Avatar className="h-16 w-16 border-2 border-primary">
+                      <Avatar className="h-16 w-16 border-2 border-blue-500">
                         <AvatarImage src={client.avatar} alt={client.name} />
                         <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
                       </Avatar>
@@ -303,14 +303,14 @@ export default function ClientsPage() {
                     {/* Last Login */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center h-8 w-8 rounded bg-primary">
-                          <Calendar className="h-4 w-4 text-white" />
+                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                          <Calendar className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-sm">{formatDate(client.last_login_at)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center h-8 w-8 rounded bg-primary">
-                          <Clock className="h-4 w-4 text-white" />
+                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                          <Clock className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-sm">{formatTime(client.last_login_at)}</span>
                       </div>
@@ -321,11 +321,11 @@ export default function ClientsPage() {
 
               {/* Add New Client Card */}
               <Card
-                className="shadow-none border-dashed border-2 cursor-pointer hover:border-primary transition-colors"
+                className="shadow-none border-dashed border-2 cursor-pointer hover:border-blue-500 transition-colors"
                 onClick={() => setDialogOpen(true)}
               >
                 <CardContent className="p-4 flex flex-col items-center justify-center h-full min-h-[280px] text-center">
-                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary mb-3">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 mb-3">
                     <Plus className="h-8 w-8 text-white" />
                   </div>
                   <h6 className="font-semibold mb-2">Create Client</h6>

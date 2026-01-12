@@ -22,6 +22,7 @@ const buttonVariants = cva(
         info: 'bg-sky-500 text-white hover:bg-sky-600',
         warning: 'bg-yellow-400 text-white hover:bg-yellow-500',
         success: 'bg-green-500 text-white hover:bg-green-600',
+        blue: 'bg-blue-500 text-white hover:bg-blue-600',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

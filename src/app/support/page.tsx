@@ -174,28 +174,28 @@ export default function SupportPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'Low':
-        return 'bg-primary text-white'
+        return 'bg-blue-100 text-blue-700'
       case 'Medium':
-        return 'bg-blue-500 text-white'
+        return 'bg-purple-100 text-purple-700'
       case 'High':
-        return 'bg-yellow-500 text-white'
+        return 'bg-yellow-100 text-yellow-700'
       case 'Critical':
-        return 'bg-destructive text-white'
+        return 'bg-red-100 text-red-700'
       default:
-        return 'bg-primary text-white'
+        return 'bg-gray-100 text-gray-700'
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Open':
-        return 'bg-green-500 text-white'
+        return 'bg-green-100 text-green-700'
       case 'On Hold':
-        return 'bg-yellow-500 text-white'
+        return 'bg-yellow-100 text-yellow-700'
       case 'Close':
-        return 'bg-destructive text-white'
+        return 'bg-gray-100 text-gray-700'
       default:
-        return 'bg-gray-500 text-white'
+        return 'bg-gray-100 text-gray-700'
     }
   }
 
@@ -236,7 +236,7 @@ export default function SupportPage() {
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="shadow-none">
+                    <Button size="sm" variant="blue" className="shadow-none">
                       <Plus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
@@ -374,7 +374,7 @@ export default function SupportPage() {
                         >
                           Cancel
                         </Button>
-                        <Button type="submit">Create</Button>
+                        <Button type="submit" variant="blue">Create</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -385,12 +385,12 @@ export default function SupportPage() {
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Total Tickets */}
-              <Card className="shadow-none border-l-4 border-l-primary">
+              <Card className="shadow-none border-l-4 border-l-blue-500">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <TicketIcon className="h-5 w-5 text-primary" />
+                      <div className="p-2 rounded-lg bg-blue-100">
+                        <TicketIcon className="h-5 w-5 text-blue-500" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground mb-1">Total</p>
@@ -512,10 +512,10 @@ export default function SupportPage() {
                           <TableCell>
                             {support.attachment ? (
                               <div className="flex items-center gap-2">
-                                <Button variant="default" size="sm" className="shadow-none h-7">
+                                <Button variant="blue" size="sm" className="shadow-none h-7">
                                   <Download className="h-3 w-3" />
                                 </Button>
-                                <Button variant="secondary" size="sm" className="shadow-none h-7">
+                                <Button variant="secondary" size="sm" className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white">
                                   <Eye className="h-3 w-3" />
                                 </Button>
                               </div>
@@ -535,11 +535,15 @@ export default function SupportPage() {
                               <Button
                                 variant="default"
                                 size="sm"
-                                className="shadow-none bg-warning hover:bg-warning/90"
+                                className="shadow-none bg-yellow-500 hover:bg-yellow-600 text-white"
                               >
                                 <Reply className="h-4 w-4" />
                               </Button>
-                              <Button variant="default" size="sm" className="shadow-none bg-info">
+                              <Button 
+                                variant="blue" 
+                                size="sm" 
+                                className="shadow-none"
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button

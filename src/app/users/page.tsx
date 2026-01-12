@@ -136,6 +136,21 @@ export default function UsersPage() {
       .substring(0, 2)
   }
 
+  const getUserTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'admin':
+        return 'bg-purple-100 text-purple-700'
+      case 'hr':
+        return 'bg-blue-100 text-blue-700'
+      case 'employee':
+        return 'bg-green-100 text-green-700'
+      case 'manager':
+        return 'bg-yellow-100 text-yellow-700'
+      default:
+        return 'bg-gray-100 text-gray-700'
+    }
+  }
+
   return (
     <SidebarProvider
       style={
@@ -164,7 +179,7 @@ export default function UsersPage() {
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="shadow-none">
+                    <Button size="sm" variant="blue" className="shadow-none">
                       <Plus className="mr-2 h-4 w-4" /> Create User
                     </Button>
                   </DialogTrigger>
@@ -268,7 +283,7 @@ export default function UsersPage() {
                         >
                           Cancel
                         </Button>
-                        <Button type="submit">Create</Button>
+                        <Button type="submit" variant="blue">Create</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -283,7 +298,7 @@ export default function UsersPage() {
                   <CardContent className="p-4">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
-                      <Badge variant="default">{user.type}</Badge>
+                      <Badge className={getUserTypeColor(user.type)}>{user.type}</Badge>
                       {user.is_active && user.delete_status === 1 ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -318,7 +333,7 @@ export default function UsersPage() {
 
                     {/* User Info */}
                     <div className="flex items-center gap-3 pb-3 mb-3 border-b">
-                      <Avatar className="h-16 w-16 border-2 border-primary">
+                      <Avatar className="h-16 w-16 border-2 border-blue-500">
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                       </Avatar>
@@ -334,14 +349,14 @@ export default function UsersPage() {
                     {/* Last Login */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center h-8 w-8 rounded bg-primary">
-                          <Calendar className="h-4 w-4 text-white" />
+                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                          <Calendar className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-sm">{formatDate(user.last_login_at)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center h-8 w-8 rounded bg-primary">
-                          <Clock className="h-4 w-4 text-white" />
+                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                          <Clock className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-sm">{formatTime(user.last_login_at)}</span>
                       </div>
@@ -352,11 +367,11 @@ export default function UsersPage() {
 
               {/* Add New User Card */}
               <Card
-                className="shadow-none border-dashed border-2 cursor-pointer hover:border-primary transition-colors"
+                className="shadow-none border-dashed border-2 cursor-pointer hover:border-blue-500 transition-colors"
                 onClick={() => setDialogOpen(true)}
               >
                 <CardContent className="p-4 flex flex-col items-center justify-center h-full min-h-[280px] text-center">
-                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary mb-3">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 mb-3">
                     <Plus className="h-8 w-8 text-white" />
                   </div>
                   <h6 className="font-semibold mb-2">Create User</h6>

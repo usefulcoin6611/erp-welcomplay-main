@@ -120,7 +120,7 @@ export default function PermissionsPage() {
               </div>
               <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="shadow-none">
+                  <Button size="sm" variant="blue" className="shadow-none">
                     <Plus className="mr-2 h-4 w-4" /> Create
                   </Button>
                 </DialogTrigger>
@@ -156,7 +156,7 @@ export default function PermissionsPage() {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit">{editPermission ? 'Update' : 'Create'}</Button>
+                      <Button type="submit" variant="blue">{editPermission ? 'Update' : 'Create'}</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -181,12 +181,12 @@ export default function PermissionsPage() {
                           <TableCell className="text-end">
                             <div className="flex items-center justify-end gap-2">
                               <Button
-                                variant="default"
+                                variant="blue"
                                 size="sm"
                                 className="shadow-none"
                                 onClick={() => handleEdit(permission)}
                               >
-                                <Pencil className="h-4 w-4 text-white" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="destructive"

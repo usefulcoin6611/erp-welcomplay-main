@@ -3,15 +3,20 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
+import { SuppressPreloadWarnings } from '@/components/suppress-preload-warnings'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Dashboard v0',
+  title: 'ERP Development',
   description: 'Dashboard dengan dukungan multi-bahasa',
   generator: 'v0.app',
+  other: {
+    // Suppress preload warnings by optimizing resource hints
+    'x-preload-optimization': 'true',
+  },
 }
 
 type Props = {
@@ -23,8 +28,9 @@ export default async function RootLayout({children}: Props) {
   const messages = await getMessages();
 
   return (
-    <html>
-      <body className={`font-sans antialiased`}>
+    <html suppressHydrationWarning>
+      <body className={`font-sans antialiased`} suppressHydrationWarning>
+        <SuppressPreloadWarnings />
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

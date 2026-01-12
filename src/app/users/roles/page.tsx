@@ -158,7 +158,7 @@ export default function RolesPage() {
               </div>
               <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="shadow-none">
+                  <Button size="sm" variant="blue" className="shadow-none">
                     <Plus className="mr-2 h-4 w-4" /> Create Role
                   </Button>
                 </DialogTrigger>
@@ -216,7 +216,7 @@ export default function RolesPage() {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit">{editRole ? 'Update' : 'Create'}</Button>
+                      <Button type="submit" variant="blue">{editRole ? 'Update' : 'Create'}</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -242,7 +242,7 @@ export default function RolesPage() {
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {role.permissions.map((permission) => (
-                                <Badge key={permission} variant="default" className="text-xs">
+                                <Badge key={permission} className="text-xs bg-blue-100 text-blue-700">
                                   {permission}
                                 </Badge>
                               ))}
@@ -251,7 +251,7 @@ export default function RolesPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Button
-                                variant="default"
+                                variant="blue"
                                 size="sm"
                                 className="shadow-none"
                                 onClick={() => handleEdit(role)}
