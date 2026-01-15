@@ -258,7 +258,7 @@ export default function CreateProductServicePage() {
                     <Button type="button" variant="outline" asChild>
                       <Link href="/products/services">Cancel</Link>
                     </Button>
-                    <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
+                    <Button type="submit" variant="blue" className="shadow-none">
                       Create
                     </Button>
                   </div>

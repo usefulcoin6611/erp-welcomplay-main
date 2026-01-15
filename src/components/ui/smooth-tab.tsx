@@ -240,12 +240,16 @@ export function SmoothTab({
                                 aria-controls={`panel-${item.id}`}
                                 id={`tab-${item.id}`}
                                 tabIndex={isSelected ? 0 : -1}
-                                onClick={() => handleTabClick(item.id)}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleTabClick(item.id);
+                                }}
                                 onKeyDown={(e) => handleKeyDown(e, item.id)}
                                 onMouseEnter={() => onTabPreload?.(item.id)}
                                 onFocus={() => onTabPreload?.(item.id)}
                                 className={cn(
-                                    "relative flex items-center justify-center rounded-lg z-[2]",
+                                    "relative flex items-center justify-center rounded-lg z-[10]",
                                     "py-2 text-xs sm:text-sm font-medium leading-none min-w-fit",
                                     "transition-colors duration-200 whitespace-nowrap cursor-pointer flex-shrink-0",
                                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
@@ -254,8 +258,8 @@ export function SmoothTab({
                                         ? "text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-xs pl-5 pr-3"
                                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 px-3"
                                 )}
+                                style={{ pointerEvents: 'auto', position: 'relative', touchAction: 'manipulation' }}
                                 whileHover={!isSelected ? { scale: 1.02 } : undefined}
-                                whileTap={{ scale: 0.98 }}
                             >
                                 {item.title}
                             </motion.button>
@@ -264,7 +268,7 @@ export function SmoothTab({
             </div>
 
             {/* Content Area with Animation */}
-            <div className="flex-1 relative w-full overflow-hidden">
+            <div className="flex-1 relative w-full overflow-visible">
                 <AnimatePresence
                     initial={false}
                     mode="wait"
@@ -282,8 +286,13 @@ export function SmoothTab({
                             ease: [0.32, 0.72, 0, 1] as any,
                         }}
                         className="w-full will-change-transform"
+                        style={{ minHeight: '200px' }}
                     >
-                        {selectedItem?.content}
+                        {selectedItem ? (
+                            selectedItem.content
+                        ) : (
+                            <div>No content for tab: {selected}</div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>

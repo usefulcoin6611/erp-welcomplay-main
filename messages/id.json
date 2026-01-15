@@ -102,7 +102,10 @@
       "deals": "Penawaran",
       "formBuilder": "Pembuat Formulir",
       "contract": "Kontrak",
-      "crmSystemSetup": "Pengaturan Sistem CRM"
+      "crmSystemSetup": "Pengaturan Sistem CRM",
+      "tasks": "Tugas",
+      "bugs": "Bug",
+      "users": "Pengguna"
     }
   },
   "header": {

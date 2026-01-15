@@ -146,9 +146,9 @@ export default function ProductStockPage() {
                                 </td>
                                 <td className="px-3 py-2 text-sm text-center">
                                   <Button
-                                    variant="outline"
+                                    variant="blue"
                                     size="sm"
-                                    className="h-7 px-2"
+                                    className="shadow-none h-7"
                                     title="Update Quantity"
                                     onClick={() => handleUpdateQuantity(product)}
                                   >
@@ -224,7 +224,8 @@ export default function ProductStockPage() {
                       </Button>
                       <Button
                         type="submit"
-                        className="bg-blue-500 hover:bg-blue-600"
+                        variant="blue"
+                        className="shadow-none"
                       >
                         Save
                       </Button>

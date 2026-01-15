@@ -1,0 +1,10 @@
+---
+description: This is a new rule
+alwaysApply: true
+---
+# Overview
+
+for UI style use shadcn UI
+for reference use E:\Project\ERP\erp-welcomplay-main\reference-erp
+for button style (color, etc) like edit, delete, download, view. follow sistem dukungan (http://localhost:3000/support) page
+for status badge (Open, On Hold, Close etc) color should be pastel color. follow sistem dukungan menu (http://localhost:3000/support) page

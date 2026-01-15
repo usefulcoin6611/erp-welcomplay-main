@@ -16,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,10 @@ import {
   IconFilter,
   IconPlus,
   IconSearch,
+  IconEye,
+  IconPencil,
+  IconTrash,
+  IconDownload,
 } from '@tabler/icons-react'
 
 const deals = [
@@ -51,6 +56,11 @@ const deals = [
     price: 350_000_000,
     status: 'Open',
     createdAt: '2025-11-02',
+    tasks: { total: 5, completed: 3 },
+    users: [
+      { id: '1', name: 'John Doe', avatar: '' },
+      { id: '2', name: 'Jane Smith', avatar: '' },
+    ],
   },
   {
     id: 'DEAL-002',
@@ -61,8 +71,21 @@ const deals = [
     price: 180_000_000,
     status: 'Open',
     createdAt: '2025-11-05',
+    tasks: { total: 8, completed: 2 },
+    users: [
+      { id: '3', name: 'Bob Johnson', avatar: '' },
+    ],
   },
 ] as const
+
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2)
+}
 
 function getStageBadge(stage: string) {
   switch (stage) {
@@ -104,17 +127,15 @@ export default function DealsPage() {
               <Dialog>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
-                    className="h-9 px-4 shadow-none"
+                    className="shadow-none h-7"
                   >
-                    <IconFilter className="mr-2 h-4 w-4" />
-                    Filter
+                    <IconDownload className="h-3 w-3" />
                   </Button>
                   <DialogTrigger asChild>
-                    <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                      <IconPlus className="mr-2 h-4 w-4" />
-                      Create Deal
+                    <Button variant="blue" size="sm" className="shadow-none h-7">
+                      <IconPlus className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
                 </div>
@@ -170,26 +191,57 @@ export default function DealsPage() {
               </Dialog>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            {/* Summary Cards - 4 cards like reference */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Deals
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalDeals}</div>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Total Deals</p>
+                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+                    </div>
+                    <div className="h-10 w-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                      <IconCalendar className="h-5 w-5 text-cyan-600" />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Value
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    Rp {totalValue.toLocaleString()}
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">This Month Total Deals</p>
+                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+                    </div>
+                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <IconCalendar className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">This Week Total Deals</p>
+                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+                    </div>
+                    <div className="h-10 w-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                      <IconCalendar className="h-5 w-5 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Last 30 Days Total Deals</p>
+                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+                    </div>
+                    <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <IconCalendar className="h-5 w-5 text-red-600" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -197,106 +249,81 @@ export default function DealsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Filters</CardTitle>
-                <CardDescription>
-                  Filter deals berdasarkan tanggal dan status.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form className="flex flex-col gap-4 md:flex-row md:items-end">
-                  <div className="flex-1 min-w-0">
-                    <label className="mb-1 block text-sm font-medium">
-                      Search
-                    </label>
-                    <div className="relative">
-                      <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                      <Input
-                        placeholder="Search deals..."
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="w-full md:w-40">
-                    <label className="mb-1 block text-sm font-medium">
-                      Created Date
-                    </label>
-                    <Input type="date" />
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
                 <CardTitle>Deal List</CardTitle>
-                <CardDescription>
-                  Ringkasan deals per pipeline seperti di modul Deal ERP.
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Deal</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Pipeline / Stage</TableHead>
-                      <TableHead className="text-right">Value</TableHead>
-                      <TableHead>Created</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Tasks</TableHead>
+                      <TableHead>Users</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {deals.map((deal) => (
                       <TableRow key={deal.id}>
-                        <TableCell>
-                          <div className="font-semibold">
-                            <Link
-                              href={`/deals/${deal.id}`}
-                              className="text-primary hover:underline"
-                            >
-                              {deal.name}
-                            </Link>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {deal.id}
-                          </div>
+                        <TableCell className="font-medium">
+                          {deal.name}
                         </TableCell>
-                        <TableCell>{deal.client}</TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm text-muted-foreground">
-                              {deal.pipeline}
-                            </div>
-                            <Badge className={getStageBadge(deal.stage)}>
-                              {deal.stage}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
                           Rp {deal.price.toLocaleString()}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <IconCalendar className="h-3 w-3" />
-                            <span>{deal.createdAt}</span>
+                          <Badge className={getStageBadge(deal.stage)}>
+                            {deal.stage}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {deal.tasks.completed}/{deal.tasks.total}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex -space-x-2">
+                            {deal.users.map((user) => (
+                              <Avatar
+                                key={user.id}
+                                className="h-6 w-6 border-2 border-background"
+                                title={user.name}
+                              >
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback className="text-xs">
+                                  {getInitials(user.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          <div className="flex items-center gap-2 justify-start">
                             <Button
-                              asChild
-                              variant="outline"
+                              variant="secondary"
                               size="sm"
-                              className="h-8 px-2 shadow-none"
+                              className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                              title="View"
+                              asChild
                             >
-                              <Link href={`/deals/${deal.id}`}>View</Link>
+                              <Link href={`/deals/${deal.id}`}>
+                                <IconEye className="h-3 w-3" />
+                              </Link>
                             </Button>
                             <Button
-                              variant="outline"
+                              variant="secondary"
                               size="sm"
-                              className="h-8 px-2 shadow-none"
+                              className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                              title="Edit"
                             >
-                              Edit
+                              <IconPencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="shadow-none h-7"
+                              title="Delete"
+                            >
+                              <IconTrash className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>

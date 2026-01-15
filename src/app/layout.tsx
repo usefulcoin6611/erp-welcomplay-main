@@ -4,6 +4,8 @@ import { Analytics } from '@vercel/analytics/next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { SuppressPreloadWarnings } from '@/components/suppress-preload-warnings'
+import { AuthProvider } from '@/contexts/auth-context'
+import { AuthWrapper } from '@/components/auth-wrapper'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -32,7 +34,11 @@ export default async function RootLayout({children}: Props) {
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <SuppressPreloadWarnings />
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <AuthProvider>
+            <AuthWrapper>
+              {children}
+            </AuthWrapper>
+          </AuthProvider>
         </NextIntlClientProvider>
         <Analytics />
       </body>

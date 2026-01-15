@@ -39,6 +39,8 @@ import {
   IconEye,
   IconPlus,
   IconSearch,
+  IconPencil,
+  IconTrash,
 } from "@tabler/icons-react"
 
 // Mock proposal data, modeled after the reference ERP but adapted to this UI
@@ -84,18 +86,18 @@ const statusMap: {
 
 function getProposalStatusClasses(status: number) {
   switch (status) {
-    case 0:
-      return "bg-gray-100 text-gray-700 border-none"
-    case 1:
+    case 0: // Draft
       return "bg-blue-100 text-blue-700 border-none"
-    case 2:
+    case 1: // Sent
+      return "bg-cyan-100 text-cyan-700 border-none"
+    case 2: // Accepted
       return "bg-green-100 text-green-700 border-none"
-    case 3:
-      return "bg-red-100 text-red-700 border-none"
-    case 4:
+    case 3: // Declined
       return "bg-yellow-100 text-yellow-700 border-none"
+    case 4: // Expired
+      return "bg-red-100 text-red-700 border-none"
     default:
-      return "bg-slate-100 text-slate-700 border-none"
+      return "bg-gray-100 text-gray-700 border-none"
   }
 }
 
@@ -130,23 +132,22 @@ export default function ProposalPage() {
                 </p>
               </div>
         <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-4 shadow-none"
-                >
-                  <IconDownload className="mr-2 h-4 w-4" />
-                  Export
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shadow-none h-7"
+          >
+            <IconDownload className="h-3 w-3" />
           </Button>
-                <Button
-                  asChild
-                  size="sm"
-                  className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
-                >
-                  <Link href="/accounting/proposal/create">
-                    <IconPlus className="mr-2 h-4 w-4" />
-                    Create Proposal
-                  </Link>
+          <Button
+            asChild
+            variant="blue"
+            size="sm"
+            className="shadow-none h-7"
+          >
+            <Link href="/accounting/proposal/create">
+              <IconPlus className="h-3 w-3" />
+            </Link>
           </Button>
         </div>
       </div>
@@ -249,14 +250,17 @@ export default function ProposalPage() {
                   <div className="flex gap-2">
                     <Button
                       type="submit"
-                      className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                      variant="blue"
+                      size="sm"
+                      className="shadow-none h-7"
                     >
                       Apply
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-9 px-4 shadow-none"
+                      size="sm"
+                      className="shadow-none h-7"
                     >
                       Reset
                     </Button>
@@ -278,67 +282,72 @@ export default function ProposalPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Proposal</TableHead>
-                      <TableHead>Customer</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Issue Date</TableHead>
-                      <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-                    {proposals.map((proposal) => (
+              {proposals.map((proposal) => (
                 <TableRow key={proposal.id}>
                   <TableCell>
-                          <Button
-                            asChild
-                            variant="link"
-                            className="h-auto p-0 text-sm font-semibold"
-                          >
-                            <Link href={`/accounting/proposal/${proposal.id}`}>
-                              {proposal.id}
-                            </Link>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="shadow-none"
+                    >
+                      <Link href={`/accounting/proposal/${proposal.id}`}>
+                        {proposal.id}
+                      </Link>
                     </Button>
                   </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {proposal.customer}
-                          </div>
-                        </TableCell>
                   <TableCell>{proposal.category}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <IconCalendar className="h-3 w-3" />
-                            <span>{proposal.issueDate}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            Rp {proposal.total.toLocaleString()}
-                          </div>
-                        </TableCell>
                   <TableCell>
-                          <Badge className={getProposalStatusClasses(proposal.status)}>
-                      {statusMap[proposal.status].label}
-                          </Badge>
+                    <div className="flex items-center gap-1 text-sm">
+                      <IconCalendar className="h-3 w-3" />
+                      <span>{proposal.issueDate}</span>
+                    </div>
                   </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="View / Print"
-                            >
-                              <IconEye className="h-4 w-4" />
-                    </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Download PDF"
-                            >
-                              <IconDownload className="h-4 w-4" />
-                    </Button>
-                          </div>
+                  <TableCell>
+                    <Badge className={getProposalStatusClasses(proposal.status)}>
+                      {statusMap[proposal.status].label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 justify-start">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                        title="View"
+                        asChild
+                      >
+                        <Link href={`/accounting/proposal/${proposal.id}`}>
+                          <IconEye className="h-3 w-3" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="blue"
+                        size="sm"
+                        className="shadow-none h-7"
+                        title="Edit"
+                        asChild
+                      >
+                        <Link href={`/accounting/proposal/${proposal.id}/edit`}>
+                          <IconPencil className="h-3 w-3" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="shadow-none h-7"
+                        title="Delete"
+                      >
+                        <IconTrash className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

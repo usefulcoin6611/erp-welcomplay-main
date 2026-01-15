@@ -102,7 +102,10 @@
       "deals": "Deals",
       "formBuilder": "Form Builder",
       "contract": "Contract",
-      "crmSystemSetup": "CRM System Setup"
+      "crmSystemSetup": "CRM System Setup",
+      "tasks": "Tasks",
+      "bugs": "Bugs",
+      "users": "Users"
     }
   },
   "header": {

@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import {
   IconCreditCard,
   IconDotsVertical,
   IconLogout,
   IconNotification,
   IconUserCircle,
+  IconShield,
 } from "@tabler/icons-react"
 
 import {
@@ -39,6 +39,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { useAuth } from '@/contexts/auth-context'
 
 export function NavUser({
   user,
@@ -50,23 +51,32 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const router = useRouter()
+  const { user: authUser, logout } = useAuth()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   const handleLogout = () => {
-    // Clear session storage
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("user")
-    }
-    
     // Close dialog
     setShowLogoutDialog(false)
     
-    // Use window.location for full page reload to ensure clean state
-    // This prevents any state persistence issues
-    if (typeof window !== "undefined") {
-      window.location.href = "/login"
+    // Use auth context logout which handles everything
+    logout()
+  }
+  
+  // Get user role badge color
+  const getRoleBadge = () => {
+    if (!authUser) return null
+    const roleColors: Record<string, string> = {
+      'super admin': 'text-red-600 bg-red-50',
+      'company': 'text-blue-600 bg-blue-50',
+      'client': 'text-green-600 bg-green-50',
+      'employee': 'text-purple-600 bg-purple-50',
     }
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${roleColors[authUser.type] || 'text-gray-600 bg-gray-50'}`}>
+        <IconShield className="h-3 w-3" />
+        {authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}
+      </span>
+    )
   }
 
   return (
@@ -108,6 +118,9 @@ export function NavUser({
                 <span className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </span>
+                <div className="mt-1">
+                  {getRoleBadge()}
+                </div>
               </div>
             </div>
           </DropdownMenuLabel>

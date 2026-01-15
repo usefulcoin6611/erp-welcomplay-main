@@ -248,7 +248,7 @@ export default function ProductServicesPage() {
                 <p className="text-sm text-muted-foreground mt-1">Manage your products and services</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="warning" size="sm" className="shadow-none">
+                <Button variant="outline" size="sm" className="shadow-none">
                   <Upload className="mr-2 h-4 w-4" /> Import
                 </Button>
                 <Button variant="outline" size="sm" className="shadow-none">
@@ -256,7 +256,7 @@ export default function ProductServicesPage() {
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="shadow-none">
+                    <Button size="sm" variant="blue" className="shadow-none">
                       <Plus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
@@ -456,7 +456,8 @@ export default function ProductServicesPage() {
                         </Button>
                         <Button
                           type="submit"
-                          className="bg-blue-500 hover:bg-blue-600"
+                          variant="blue"
+                          className="shadow-none"
                         >
                           Create
                         </Button>
@@ -492,8 +493,9 @@ export default function ProductServicesPage() {
                   <div className="flex items-center gap-2 lg:ml-auto">
                     <Button
                       size="sm"
+                      variant="blue"
                       onClick={handleApplyFilters}
-                      className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                      className="h-9 px-4 shadow-none"
                     >
                       <Search className="w-4 h-4 mr-2" />
                       Apply
@@ -516,7 +518,8 @@ export default function ProductServicesPage() {
                     </Button>
                     <Button
                       size="sm"
-                      className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                      variant="blue"
+                      className="h-9 px-4 shadow-none"
                     >
                       <FileDown className="w-4 h-4 mr-2" />
                       Download
@@ -636,10 +639,10 @@ export default function ProductServicesPage() {
                                   <div className="flex items-center justify-center gap-1">
                                     <Button
                                       asChild
-                                      variant="outline"
+                                      variant="secondary"
                                       size="sm"
-                                      className="h-7 px-2"
-                                      title="View Warehouse Details"
+                                      className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white"
+                                      title="View"
                                     >
                                       <Link href={`/products/services/${item.id}`}>
                                         <Eye className="w-4 h-4" />
@@ -647,9 +650,9 @@ export default function ProductServicesPage() {
                                     </Button>
                                     <Button
                                       asChild
-                                      variant="outline"
+                                      variant="blue"
                                       size="sm"
-                                      className="h-7 px-2"
+                                      className="shadow-none h-7"
                                       title="Edit"
                                     >
                                       <Link href={`/products/services/${item.id}/edit`}>
@@ -657,9 +660,9 @@ export default function ProductServicesPage() {
                                       </Link>
                                     </Button>
                                     <Button
-                                      variant="outline"
+                                      variant="destructive"
                                       size="sm"
-                                      className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      className="shadow-none h-7"
                                       title="Delete"
                                       onClick={() => handleDelete(item.id)}
                                     >

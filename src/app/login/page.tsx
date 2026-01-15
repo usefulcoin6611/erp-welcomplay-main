@@ -9,6 +9,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 // Default credentials based on reference-erp UsersTableSeeder
 // These match the default users created in the seeder
@@ -41,6 +42,7 @@ const DEFAULT_CREDENTIALS = [
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login, isAuthenticated } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -56,16 +58,6 @@ export default function LoginPage() {
     setError("")
     setEmail("")
     setPassword("")
-    
-    // Check if user is logged in
-    if (typeof window !== "undefined") {
-      const user = sessionStorage.getItem("user")
-      if (user) {
-        // If user is already logged in, redirect immediately
-        router.replace("/hrm-dashboard")
-        return
-      }
-    }
 
     // Cleanup function to reset states on unmount
     return () => {
@@ -96,18 +88,32 @@ export default function LoginPage() {
         return
       }
 
-      // Store user info in sessionStorage (in production, use proper auth system)
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("user", JSON.stringify({
-          email: user.email,
-          name: user.name,
-          type: user.type,
-        }))
-      }
+      // Use auth context to login (this updates both context and sessionStorage)
+      login({
+        email: user.email,
+        name: user.name,
+        type: user.type,
+      })
 
       // Show success animation
       setShowSuccess(true)
       
+      // Determine redirect path based on user type
+      const getRedirectPath = (userType: string) => {
+        switch (userType) {
+          case 'super admin':
+            return '/dashboard'
+          case 'company':
+            return '/hrm-dashboard'
+          case 'client':
+            return '/dashboard'
+          case 'employee':
+            return '/employee-dashboard'
+          default:
+            return '/dashboard'
+        }
+      }
+
       // Redirect while overlay is still visible to prevent flashing
       // Wait for animation to fully appear (after all animations complete ~0.8s), then redirect
       // Redirect happens while overlay is still visible, preventing any flash
@@ -115,7 +121,7 @@ export default function LoginPage() {
         // Use replace instead of push to prevent back navigation
         // Keep showSuccess true - overlay will remain until Next.js unmounts the component
         // This ensures no flash of login page before redirect
-        router.replace("/hrm-dashboard")
+        router.replace(getRedirectPath(user.type))
       }, 1000) // Redirect after main animation completes but before exit animation
     } catch (err) {
       setError("An error occurred. Please try again.")
@@ -133,7 +139,7 @@ export default function LoginPage() {
     >
       {/* Success Overlay Animation */}
       <AnimatePresence>
-        {showSuccess && (
+        {showSuccess && isAuthenticated && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

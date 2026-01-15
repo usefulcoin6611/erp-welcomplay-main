@@ -17,7 +17,9 @@ import {
   ExternalLink,
   Video,
   Clock,
+  List,
 } from 'lucide-react'
+import { EventCalendar } from '@/components/event-calendar'
 import {
   Dialog,
   DialogContent,
@@ -114,6 +116,7 @@ const mockUsers = [
 export default function ZoomMeetingPage() {
   const [meetings, setMeetings] = useState<ZoomMeeting[]>(mockMeetings)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [formData, setFormData] = useState({
     title: '',
@@ -183,14 +186,14 @@ export default function ZoomMeetingPage() {
     const isActive = checkDateTime(meeting.start_date)
     
     if (!isActive) {
-      return <Badge className="bg-destructive text-white">End</Badge>
+      return <Badge className="bg-gray-100 text-gray-700">End</Badge>
     }
     
     if (meeting.status === 'waiting') {
-      return <Badge className="bg-blue-500 text-white">Waiting</Badge>
+      return <Badge className="bg-yellow-100 text-yellow-700">Waiting</Badge>
     }
     
-    return <Badge className="bg-green-500 text-white">Started</Badge>
+    return <Badge className="bg-green-100 text-green-700">Started</Badge>
   }
 
   return (
@@ -216,12 +219,25 @@ export default function ZoomMeetingPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="shadow-none">
+                <Button 
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm" 
+                  className="shadow-none"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="mr-2 h-4 w-4" /> List View
+                </Button>
+                <Button 
+                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                  size="sm" 
+                  className="shadow-none"
+                  onClick={() => setViewMode('calendar')}
+                >
                   <CalendarIcon className="mr-2 h-4 w-4" /> Calendar View
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="shadow-none">
+                    <Button size="sm" variant="blue" className="shadow-none">
                       <Plus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
@@ -375,7 +391,7 @@ export default function ZoomMeetingPage() {
                         >
                           Cancel
                         </Button>
-                        <Button type="submit">Create</Button>
+                        <Button type="submit" variant="blue" className="shadow-none">Create</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -383,104 +399,180 @@ export default function ZoomMeetingPage() {
               </div>
             </div>
 
-            {/* Meetings Table */}
-            <Card className="shadow-none">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Meeting Time</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Join URL</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-end">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {meetings.map((meeting) => (
-                        <TableRow key={meeting.id}>
-                          <TableCell className="font-medium">{meeting.title}</TableCell>
-                          <TableCell>{meeting.project || '-'}</TableCell>
-                          <TableCell>
-                            {meeting.users.length > 0 ? (
-                              <div className="flex -space-x-2">
-                                {meeting.users.slice(0, 3).map((user) => (
-                                  <Avatar
-                                    key={user.id}
-                                    className="h-8 w-8 border-2 border-background"
-                                  >
-                                    <AvatarImage src={user.avatar} />
-                                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                                  </Avatar>
-                                ))}
-                                {meeting.users.length > 3 && (
-                                  <Avatar className="h-8 w-8 border-2 border-background bg-muted">
-                                    <AvatarFallback className="text-xs">
-                                      +{meeting.users.length - 3}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                )}
-                              </div>
-                            ) : (
-                              '-'
-                            )}
-                          </TableCell>
-                          <TableCell>{formatDateTime(meeting.start_date)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              {meeting.duration} Minutes
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {checkDateTime(meeting.start_date) ? (
-                              meeting.can_start && meeting.start_url ? (
-                                <a
-                                  href={meeting.start_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline flex items-center gap-1"
-                                >
-                                  Start meeting <ExternalLink className="h-3 w-3" />
-                                </a>
-                              ) : meeting.join_url ? (
-                                <a
-                                  href={meeting.join_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline flex items-center gap-1"
-                                >
-                                  Join meeting <ExternalLink className="h-3 w-3" />
-                                </a>
+            {/* List View */}
+            {viewMode === 'list' && (
+              <Card className="shadow-none">
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Project</TableHead>
+                          <TableHead>User</TableHead>
+                          <TableHead>Meeting Time</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Join URL</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-end">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {meetings.map((meeting) => (
+                          <TableRow key={meeting.id}>
+                            <TableCell className="font-medium">{meeting.title}</TableCell>
+                            <TableCell>{meeting.project || '-'}</TableCell>
+                            <TableCell>
+                              {meeting.users.length > 0 ? (
+                                <div className="flex -space-x-2">
+                                  {meeting.users.slice(0, 3).map((user) => (
+                                    <Avatar
+                                      key={user.id}
+                                      className="h-8 w-8 border-2 border-background"
+                                    >
+                                      <AvatarImage src={user.avatar} />
+                                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                    </Avatar>
+                                  ))}
+                                  {meeting.users.length > 3 && (
+                                    <Avatar className="h-8 w-8 border-2 border-background bg-muted">
+                                      <AvatarFallback className="text-xs">
+                                        +{meeting.users.length - 3}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  )}
+                                </div>
                               ) : (
                                 '-'
-                              )
-                            ) : (
-                              '-'
-                            )}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(meeting)}</TableCell>
-                          <TableCell className="text-end">
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="shadow-none"
-                              onClick={() => handleDelete(meeting.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                              )}
+                            </TableCell>
+                            <TableCell>{formatDateTime(meeting.start_date)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                {meeting.duration} Minutes
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {checkDateTime(meeting.start_date) ? (
+                                meeting.can_start && meeting.start_url ? (
+                                  <a
+                                    href={meeting.start_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    Start meeting <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                ) : meeting.join_url ? (
+                                  <a
+                                    href={meeting.join_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    Join meeting <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                ) : (
+                                  '-'
+                                )
+                              ) : (
+                                '-'
+                              )}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(meeting)}</TableCell>
+                            <TableCell className="text-end">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="shadow-none"
+                                onClick={() => handleDelete(meeting.id)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Calendar View */}
+            {viewMode === 'calendar' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Calendar */}
+                <div className="lg:col-span-2">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center mb-4">
+                        <h3 className="text-lg font-semibold">Calendar</h3>
+                      </div>
+                      <EventCalendar
+                        events={meetings.map((meeting) => ({
+                          id: meeting.id,
+                          title: meeting.title,
+                          date: meeting.start_date.split('T')[0],
+                          time: new Date(meeting.start_date).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }),
+                          type: 'meeting' as const,
+                        }))}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Meetings List */}
+                <div className="lg:col-span-1">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h3 className="text-lg font-semibold mb-4">Meetings</h3>
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                        {meetings
+                          .filter((meeting) => {
+                            const meetingDate = new Date(meeting.start_date)
+                            const currentMonth = new Date().getMonth()
+                            return meetingDate.getMonth() === currentMonth
+                          })
+                          .map((meeting) => (
+                            <div
+                              key={meeting.id}
+                              className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex-shrink-0 mt-1">
+                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                  <Video className="h-5 w-5 text-blue-600" />
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h5 className="font-medium text-sm mb-1 line-clamp-1">
+                                  {meeting.title}
+                                </h5>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDateTime(meeting.start_date)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        {meetings.filter((meeting) => {
+                          const meetingDate = new Date(meeting.start_date)
+                          const currentMonth = new Date().getMonth()
+                          return meetingDate.getMonth() === currentMonth
+                        }).length === 0 && (
+                          <div className="text-center text-sm text-muted-foreground py-8">
+                            No meetings this month
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </SidebarInset>

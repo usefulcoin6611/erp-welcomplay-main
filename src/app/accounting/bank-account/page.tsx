@@ -1,62 +1,108 @@
-"use client"
+'use client'
 
-import React, { Suspense, useMemo, useRef } from 'react'
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { useMemo, lazy, Suspense, useRef, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
-import { Separator } from '@/components/ui/separator'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SiteHeader } from '@/components/site-header'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
-import dynamic from 'next/dynamic'
 
-// Lazy-load tabs
-const AccountTab = dynamic(() => import('@/components/accounting-bank').then(m => m.AccountTab), { ssr: false })
-const TransferTab = dynamic(() => import('@/components/accounting-bank').then(m => m.TransferTab), { ssr: false })
+// Lazy load tab components for better performance
+const AccountTab = lazy(() => import('@/components/accounting-bank').then(m => ({ default: m.AccountTab })))
+const TransferTab = lazy(() => import('@/components/accounting-bank').then(m => ({ default: m.TransferTab })))
 
-const TabLoading = () => (
+// Preload tab modules on hover/focus
+const preloadTab = {
+  'account': () => import('@/components/accounting-bank'),
+  'transfer': () => import('@/components/accounting-bank'),
+}
+
+// Loading fallback component
+const TabLoadingSkeleton = () => (
   <div className="space-y-4">
-    <Skeleton className="h-20 w-full" />
-    <Skeleton className="h-64 w-full" />
+    <Skeleton className="h-[100px] w-full" />
+    <Skeleton className="h-[400px] w-full" />
   </div>
 )
 
 export default function BankingPage() {
-  const tabCache = useRef<{[key: string]: React.ReactNode}>({})
+  const searchParams = useSearchParams()
+  const router = useRouter()
 
-  const tabs = useMemo(() => [
-    { id: 'account', title: 'Account', content: <AccountTab /> },
-    { id: 'transfer', title: 'Transfer', content: <TransferTab /> },
+  // Get active tab from URL or default to 'account'
+  const activeTab = searchParams.get('tab') || 'account'
+
+  // Cache for tab content (to avoid Suspense fallback after first load)
+  const tabContentCache = useRef<{[key: string]: React.ReactNode}>({})
+
+  // Memoize banking tabs with lazy-loaded components wrapped in Suspense
+  const bankingTabs = useMemo(() => [
+    {
+      id: 'account',
+      title: 'Account',
+      content: (
+        <Suspense fallback={<TabLoadingSkeleton />}>
+          <TabContentWithCache tabId="account" Component={AccountTab} cache={tabContentCache.current} />
+        </Suspense>
+      )
+    },
+    {
+      id: 'transfer',
+      title: 'Transfer',
+      content: (
+        <Suspense fallback={<TabLoadingSkeleton />}>
+          <TabContentWithCache tabId="transfer" Component={TransferTab} cache={tabContentCache.current} />
+        </Suspense>
+      )
+    },
   ], [])
+
+  // Preload tab module on hover/focus
+  const handleTabPreload = (tabId: string) => {
+    if (preloadTab[tabId as keyof typeof preloadTab]) {
+      preloadTab[tabId as keyof typeof preloadTab]()
+    }
+  }
+
+  // TabContentWithCache component
+  function TabContentWithCache({ tabId, Component, cache }: { tabId: string, Component: React.ComponentType, cache: any }) {
+    const [mounted, setMounted] = useState(false)
+    if (cache[tabId]) return cache[tabId]
+    if (!mounted) {
+      setMounted(true)
+      cache[tabId] = <Component />
+    }
+    return <Component />
+  }
+
+  // Handle tab change - update URL query params
+  const handleTabChange = (tabId: string) => {
+    router.push(`/accounting/bank-account?tab=${tabId}`, { scroll: false })
+  }
 
   return (
     <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-            <h1 className="text-base font-medium">Banking</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
+        <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+            {/* Smooth Tab Navigation with Animated Content */}
             <SmoothTab
-              items={tabs.map(t => ({ ...t, content: (
-                <Suspense fallback={<TabLoading />}>
-                  {t.content}
-                </Suspense>
-              ) }))}
-              defaultTabId="account"
+              items={bankingTabs}
+              value={activeTab}
+              defaultTabId={activeTab}
               activeColor="bg-white dark:bg-gray-700 shadow-xs"
+              onChange={handleTabChange}
+              onTabPreload={handleTabPreload}
             />
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo } from 'react'
 import React from "react"
 import Link from "next/link"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -31,22 +32,35 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
-  IconCalendar,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
+import {
   IconFilter,
   IconPlus,
-  IconSearch,
-  IconSend,
   IconPencil,
   IconTrash,
   IconLayoutGrid,
   IconList,
+  IconEye,
 } from "@tabler/icons-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Search, X } from 'lucide-react'
+import { SimplePagination } from '@/components/ui/simple-pagination'
 
-const projects = [
+interface Project {
+  id: number
+  name: string
+  status: string
+  users: string[]
+  completion: number
+}
+
+const projects: Project[] = [
   {
     id: 1,
     name: "Implementasi ERP PT Maju Jaya",
@@ -68,7 +82,42 @@ const projects = [
     users: ["Budi", "Sari"],
     completion: 45,
   },
-] as const
+  {
+    id: 4,
+    name: "Mobile App Development",
+    status: "in_progress",
+    users: ["Ahmad", "Dewi", "Fauzi", "Budi"],
+    completion: 75,
+  },
+  {
+    id: 5,
+    name: "Cloud Migration Project",
+    status: "finished",
+    users: ["Sari", "Ahmad"],
+    completion: 100,
+  },
+  {
+    id: 6,
+    name: "Database Optimization",
+    status: "in_progress",
+    users: ["Budi", "Dewi"],
+    completion: 55,
+  },
+  {
+    id: 7,
+    name: "Security Audit",
+    status: "cancel",
+    users: ["Ahmad"],
+    completion: 10,
+  },
+  {
+    id: 8,
+    name: "E-Commerce Platform",
+    status: "in_progress",
+    users: ["Sari", "Fauzi", "Budi", "Ahmad", "Dewi"],
+    completion: 60,
+  },
+]
 
 const statusMap: Record<string, { label: string; color: string }> = {
   not_started: { label: "Not Started", color: "bg-gray-100 text-gray-700" },
@@ -90,7 +139,51 @@ function getCompletionColor(completion: number) {
 }
 
 export default function ProjectListPage() {
-  const [view, setView] = React.useState<"list" | "grid">("list")
+  const [view, setView] = useState<"list" | "grid">("list")
+  const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [statusFilter, setStatusFilter] = useState<string>('')
+
+  // Filtered data
+  const filteredData = useMemo(() => {
+    let filtered = projects
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      filtered = filtered.filter(
+        (project) =>
+          project.name.toLowerCase().includes(q)
+      )
+    }
+
+    // Status filter
+    if (statusFilter) {
+      filtered = filtered.filter((project) => project.status === statusFilter)
+    }
+
+    return filtered
+  }, [search, statusFilter])
+
+  // Paginated data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    return filteredData.slice(startIndex, endIndex)
+  }, [filteredData, currentPage, pageSize])
+
+  const totalRecords = filteredData.length
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setCurrentPage(1)
+  }
+
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status === 'all' ? '' : status)
+    setCurrentPage(1)
+  }
 
   return (
     <SidebarProvider
@@ -105,44 +198,72 @@ export default function ProjectListPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold">Projects</h1>
+                <h1 className="text-2xl font-semibold">Projects</h1>
+                <p className="text-sm text-muted-foreground">
+                  Manage projects and track progress
+                </p>
               </div>
               <div className="flex gap-2">
                 {view === "list" ? (
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
-                    className="h-9 px-4 shadow-none"
+                    className="shadow-none h-7"
+                    title="Grid View"
                     onClick={() => setView("grid")}
                   >
-                    <IconLayoutGrid className="h-4 w-4" />
+                    <IconLayoutGrid className="h-3 w-3" />
                   </Button>
                 ) : (
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
-                    className="h-9 px-4 shadow-none"
+                    className="shadow-none h-7"
+                    title="List View"
                     onClick={() => setView("list")}
                   >
-                    <IconList className="h-4 w-4" />
+                    <IconList className="h-3 w-3" />
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-4 shadow-none"
-                >
-                  <IconFilter className="mr-2 h-4 w-4" />
-                  Status
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="shadow-none h-7"
+                      title="Filter"
+                    >
+                      <IconFilter className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleStatusFilter('all')}>
+                      Show All
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusFilter('not_started')}>
+                      Not Started
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusFilter('on_hold')}>
+                      On Hold
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusFilter('in_progress')}>
+                      In Progress
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusFilter('cancel')}>
+                      Cancel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusFilter('finished')}>
+                      Finished
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                      <IconPlus className="mr-2 h-4 w-4" />
-                      Create Project
+                    <Button variant="blue" size="sm" className="shadow-none h-7">
+                      <IconPlus className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px]">
@@ -256,13 +377,16 @@ export default function ProjectListPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="shadow-none"
+                        size="sm"
+                        className="shadow-none h-7"
                       >
                         Cancel
                       </Button>
                       <Button
                         type="button"
-                        className="bg-blue-500 hover:bg-blue-600 shadow-none"
+                        variant="blue"
+                        size="sm"
+                        className="shadow-none h-7"
                       >
                         Create
                       </Button>
@@ -272,6 +396,34 @@ export default function ProjectListPage() {
               </div>
             </div>
 
+            {/* Search */}
+            <Card className="shadow-none">
+              <CardContent className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search projects..."
+                      value={search}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        onClick={() => handleSearchChange('')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Project List */}
             <Card>
               <CardHeader>
                 <CardTitle>Project List</CardTitle>
@@ -285,99 +437,124 @@ export default function ProjectListPage() {
                         <TableHead>Status</TableHead>
                         <TableHead>Users</TableHead>
                         <TableHead>Completion</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {projects.map((project) => (
-                        <TableRow key={project.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded border-2 border-primary bg-slate-100 flex items-center justify-center">
-                                <span className="text-xs font-semibold">
-                                  {project.name.charAt(0)}
-                                </span>
-                              </div>
-                              <Link
-                                href={`/projects/project/${project.id}`}
-                                className="text-sm font-semibold text-primary hover:underline"
-                              >
-                                {project.name}
-                              </Link>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusClasses(project.status)}>
-                              {statusMap[project.status]?.label || project.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex -space-x-2">
-                              {project.users.slice(0, 3).map((user, idx) => (
-                                <Avatar
-                                  key={idx}
-                                  className="h-8 w-8 border-2 border-white"
-                                >
-                                  <AvatarFallback className="text-xs">
-                                    {user.charAt(0)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              ))}
-                              {project.users.length > 3 && (
-                                <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
-                                  <span className="text-xs font-medium">
-                                    +{project.users.length - 3}
+                      {paginatedData.length > 0 ? (
+                        paginatedData.map((project) => (
+                          <TableRow key={project.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded border-2 border-primary bg-slate-100 flex items-center justify-center">
+                                  <span className="text-xs font-semibold">
+                                    {project.name.charAt(0)}
                                   </span>
                                 </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm font-medium">
-                                {project.completion}%
+                                <Link
+                                  href={`/projects/project/${project.id}`}
+                                  className="text-sm font-semibold text-primary hover:underline"
+                                >
+                                  {project.name}
+                                </Link>
                               </div>
-                              <div className="h-2 w-full rounded-full bg-slate-100">
-                                <div
-                                  className={`h-2 rounded-full ${getCompletionColor(project.completion)}`}
-                                  style={{ width: `${project.completion}%` }}
-                                />
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusClasses(project.status)}>
+                                {statusMap[project.status]?.label || project.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex -space-x-2">
+                                {project.users.slice(0, 3).map((user, idx) => (
+                                  <Avatar
+                                    key={idx}
+                                    className="h-8 w-8 border-2 border-white"
+                                  >
+                                    <AvatarFallback className="text-xs">
+                                      {user.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                ))}
+                                {project.users.length > 3 && (
+                                  <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                    <span className="text-xs font-medium">
+                                      +{project.users.length - 3}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 p-0 shadow-none"
-                                title="Invite User"
-                              >
-                                <IconSend className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 p-0 shadow-none"
-                                title="Edit"
-                              >
-                                <IconPencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 p-0 shadow-none text-red-600 hover:text-red-700 hover:bg-red-50"
-                                title="Delete"
-                              >
-                                <IconTrash className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium">
+                                  {project.completion}%
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-slate-100">
+                                  <div
+                                    className={`h-2 rounded-full ${getCompletionColor(project.completion)}`}
+                                    style={{ width: `${project.completion}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 justify-start">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                  title="View"
+                                  asChild
+                                >
+                                  <Link href={`/projects/project/${project.id}`}>
+                                    <IconEye className="h-3 w-3" />
+                                  </Link>
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                                  title="Edit"
+                                >
+                                  <IconPencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="shadow-none h-7"
+                                  title="Delete"
+                                >
+                                  <IconTrash className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No projects found
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </div>
+                {totalRecords > 0 && (
+                  <div className="mt-4">
+                    <SimplePagination
+                      totalCount={totalRecords}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

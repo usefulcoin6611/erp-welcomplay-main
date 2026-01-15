@@ -1,10 +1,9 @@
 "use client"
 
 import React from 'react'
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
-import { Separator } from '@/components/ui/separator'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { SiteHeader } from '@/components/site-header'
 import { TransferTab } from '@/components/accounting-bank'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 

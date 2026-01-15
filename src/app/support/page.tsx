@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -25,7 +25,10 @@ import {
   XCircle,
   PauseCircle,
   Ticket as TicketIcon,
+  Search,
+  X,
 } from 'lucide-react'
+import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
   Dialog,
   DialogContent,
@@ -110,6 +113,141 @@ const mockSupports: Support[] = [
     created_at: '2024-01-13',
     has_unread_reply: false,
   },
+  {
+    id: '4',
+    created_by: {
+      name: 'Alice Williams',
+      avatar: '',
+    },
+    subject: 'Password reset not working',
+    ticket_code: 'TKT-004',
+    attachment: '',
+    assign_user: 'Admin User',
+    status: 'Open',
+    priority: 'High',
+    created_at: '2024-01-12',
+    has_unread_reply: true,
+  },
+  {
+    id: '5',
+    created_by: {
+      name: 'Charlie Brown',
+      avatar: '',
+    },
+    subject: 'Invoice generation error',
+    ticket_code: 'TKT-005',
+    attachment: 'error_log.txt',
+    assign_user: 'Dev Team',
+    status: 'On Hold',
+    priority: 'Medium',
+    created_at: '2024-01-11',
+    has_unread_reply: false,
+  },
+  {
+    id: '6',
+    created_by: {
+      name: 'Diana Prince',
+      avatar: '',
+    },
+    subject: 'Report export failing',
+    ticket_code: 'TKT-006',
+    attachment: '',
+    assign_user: 'Support Team',
+    status: 'Open',
+    priority: 'Low',
+    created_at: '2024-01-10',
+    has_unread_reply: false,
+  },
+  {
+    id: '7',
+    created_by: {
+      name: 'Edward Norton',
+      avatar: '',
+    },
+    subject: 'User permission issue',
+    ticket_code: 'TKT-007',
+    attachment: 'screenshot.png',
+    assign_user: 'Admin User',
+    status: 'Close',
+    priority: 'Critical',
+    created_at: '2024-01-09',
+    has_unread_reply: false,
+  },
+  {
+    id: '8',
+    created_by: {
+      name: 'Fiona Apple',
+      avatar: '',
+    },
+    subject: 'Email notification not sent',
+    ticket_code: 'TKT-008',
+    attachment: '',
+    assign_user: 'Dev Team',
+    status: 'Open',
+    priority: 'Medium',
+    created_at: '2024-01-08',
+    has_unread_reply: true,
+  },
+  {
+    id: '9',
+    created_by: {
+      name: 'George Clooney',
+      avatar: '',
+    },
+    subject: 'Data synchronization problem',
+    ticket_code: 'TKT-009',
+    attachment: '',
+    assign_user: 'Support Team',
+    status: 'On Hold',
+    priority: 'High',
+    created_at: '2024-01-07',
+    has_unread_reply: false,
+  },
+  {
+    id: '10',
+    created_by: {
+      name: 'Helen Mirren',
+      avatar: '',
+    },
+    subject: 'Mobile app crash on iOS',
+    ticket_code: 'TKT-010',
+    attachment: 'crash_report.log',
+    assign_user: 'Dev Team',
+    status: 'Open',
+    priority: 'Critical',
+    created_at: '2024-01-06',
+    has_unread_reply: true,
+  },
+  {
+    id: '11',
+    created_by: {
+      name: 'Ian McKellen',
+      avatar: '',
+    },
+    subject: 'Slow page loading',
+    ticket_code: 'TKT-011',
+    attachment: '',
+    assign_user: 'Admin User',
+    status: 'Close',
+    priority: 'Low',
+    created_at: '2024-01-05',
+    has_unread_reply: false,
+  },
+  {
+    id: '12',
+    created_by: {
+      name: 'Julia Roberts',
+      avatar: '',
+    },
+    subject: 'Payment gateway integration issue',
+    ticket_code: 'TKT-012',
+    attachment: 'api_response.json',
+    assign_user: 'Dev Team',
+    status: 'On Hold',
+    priority: 'High',
+    created_at: '2024-01-04',
+    has_unread_reply: false,
+  },
 ]
 
 // Statistics
@@ -125,6 +263,9 @@ const statuses = ['Open', 'On Hold', 'Close']
 export default function SupportPage() {
   const [supports, setSupports] = useState<Support[]>(mockSupports)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({
     subject: '',
     user: '',
@@ -206,6 +347,34 @@ export default function SupportPage() {
       month: 'long',
       day: 'numeric',
     })
+  }
+
+  // Filtered data
+  const filteredData = useMemo(() => {
+    if (!search.trim()) return supports
+    
+    const q = search.trim().toLowerCase()
+    return supports.filter(
+      (support) =>
+        support.subject.toLowerCase().includes(q) ||
+        support.ticket_code.toLowerCase().includes(q) ||
+        support.created_by.name.toLowerCase().includes(q) ||
+        (support.assign_user && support.assign_user.toLowerCase().includes(q))
+    )
+  }, [search, supports])
+
+  // Paginated data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    return filteredData.slice(startIndex, endIndex)
+  }, [filteredData, currentPage, pageSize])
+
+  const totalRecords = filteredData.length
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setCurrentPage(1)
   }
 
   return (
@@ -382,6 +551,33 @@ export default function SupportPage() {
               </div>
             </div>
 
+            {/* Search */}
+            <Card className="shadow-none">
+              <CardContent className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search support tickets..."
+                      value={search}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        onClick={() => handleSearchChange('')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Total Tickets */}
@@ -475,7 +671,8 @@ export default function SupportPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {supports.map((support) => (
+                      {paginatedData.length > 0 ? (
+                        paginatedData.map((support) => (
                         <TableRow key={support.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -557,10 +754,31 @@ export default function SupportPage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            No support tickets found
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
+                {totalRecords > 0 && (
+                  <div className="mt-4 px-4 pb-4">
+                    <SimplePagination
+                      totalCount={totalRecords}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
