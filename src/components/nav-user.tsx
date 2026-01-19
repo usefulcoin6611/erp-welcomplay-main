@@ -54,12 +54,36 @@ export function NavUser({
   const { user: authUser, logout } = useAuth()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Close dialog
     setShowLogoutDialog(false)
     
-    // Use auth context logout which handles everything
-    logout()
+    try {
+      // Import and use authService directly (like reference project)
+      const { authService } = await import('@/lib/auth')
+      
+      // ✅ CRITICAL: Clear token and storage FIRST (synchronous)
+      // Clear token from apiClient immediately
+      authService.clearStoredUser()
+      
+      // Call logout API (non-blocking, but clear storage first)
+      authService.logout().catch((err) => {
+        console.error('Logout API error (non-critical):', err)
+      })
+      
+      // ✅ CRITICAL: Clear context state and redirect
+      // Context logout will handle complete cleanup and redirect
+      await logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+      // ✅ CRITICAL: Ensure logout completes even on error
+      // Force clear everything and redirect
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        sessionStorage.clear()
+      }
+      await logout()
+    }
   }
   
   // Get user role badge color

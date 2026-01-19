@@ -401,16 +401,8 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               { title: "Product Stock", url: "/products/stock" },
             ],
           },
-          {
-            title: t("userManagement"),
-            url: "#",
-            icon: IconUsersGroup,
-            items: [
-              { title: t("users"), url: "/users" },
-              { title: "Roles", url: "/users/roles" },
-              { title: "Client", url: "/users/clients" },
-            ],
-          },
+          // User Management - Company should NOT have access
+          // Removed from company menu based on ROLE_BASED_ACCESS.md line 40
           {
             title: t("supportSystem"),
             url: "/support",
@@ -482,7 +474,8 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
       }
 
     case 'employee':
-      // Employee = Accountant (based on reference-erp Accountant sidebar structure)
+      // Employee - Employee Self-Service (based on ROLE_BASED_ACCESS.md)
+      // NO access to Accounting, CRM, POS, User Management
       return {
         navMain: [
           {
@@ -492,18 +485,17 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             isActive: true,
             items: [
               {
-                title: t("accounting"),
-                url: "#",
-                items: [
-                  { title: t("overview"), url: "/account-dashboard" },
-                  { title: t("reports"), url: "/accounting/reports" },
-                ],
-              },
-              {
                 title: t("hrm"),
                 url: "#",
                 items: [
                   { title: t("overview"), url: "/hrm-dashboard" },
+                ],
+              },
+              {
+                title: t("project"),
+                url: "#",
+                items: [
+                  { title: t("overview"), url: "/project-dashboard" },
                 ],
               },
             ],
@@ -513,75 +505,22 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             url: "#",
             icon: IconUsers,
             items: [
-              { title: "Employees Asset Setup", url: "/hrm/assets" },
+              { title: "Leave Management", url: "/hrm/leave" },
+              { title: "Event Setup", url: "/hrm/events" },
+              { title: "Meeting", url: "/hrm/meetings" },
+              { title: "My Documents", url: "/hrm/documents" },
+              { title: "Company Policy", url: "/hrm/policies" },
             ],
           },
           {
-            title: t("accountingSystem"),
+            title: t("projectSystem"),
             url: "#",
-            icon: IconCash,
+            icon: IconShare,
             items: [
-              {
-                title: "Banking",
-                url: "/accounting/bank-account",
-              },
-              {
-                title: "Sales",
-                url: "#",
-                items: [
-                  { title: "Customer", url: "/accounting/customer" },
-                  { title: "Estimate", url: "/accounting/proposal" },
-                  { title: "Invoice", url: "/accounting/invoice" },
-                  { title: "Revenue", url: "/accounting/revenue" },
-                  { title: "Credit Note", url: "/accounting/credit-note" },
-                ],
-              },
-              {
-                title: "Purchases",
-                url: "#",
-                items: [
-                  { title: "Supplier", url: "/accounting/vender" },
-                  { title: "Bill", url: "/accounting/bill" },
-                  { title: "Expense", url: "/accounting/expense" },
-                  { title: "Payment", url: "/accounting/payment" },
-                  { title: "Debit Note", url: "/accounting/debit-note" },
-                ],
-              },
-              {
-                title: "Double Entry",
-                url: "#",
-                items: [
-                  { title: "Chart of Accounts", url: "/accounting/chart-of-account" },
-                  { title: "Journal Account", url: "/accounting/journal-entry" },
-                  { title: "Ledger Summary", url: "/accounting/ledger" },
-                  { title: "Balance Sheet", url: "/accounting/balance-sheet" },
-                  { title: "Profit & Loss", url: "/accounting/profit-loss" },
-                  { title: "Trial Balance", url: "/accounting/trial-balance" },
-                ],
-              },
-              { title: "Financial Goal", url: "/accounting/goal" },
-              {
-                title: "Accounting Setup",
-                url: "/accounting/setup",
-              },
-            ],
-          },
-          {
-            title: t("userManagement"),
-            url: "#",
-            icon: IconUsersGroup,
-            items: [
-              { title: t("users"), url: "/users" },
-              { title: "Client", url: "/users/clients" },
-            ],
-          },
-          {
-            title: t("productSystem"),
-            url: "#",
-            icon: IconShoppingCart,
-            items: [
-              { title: "Product & Services", url: "/products/services" },
-              { title: "Product Stock", url: "/products/stock" },
+              { title: "My Tasks", url: "/projects/task" },
+              { title: "Timesheet", url: "/projects/timesheet/list" },
+              { title: "Task Calendar", url: "/projects/task/calendar" },
+              { title: "Time Tracker", url: "/projects/time-tracker" },
             ],
           },
           {
