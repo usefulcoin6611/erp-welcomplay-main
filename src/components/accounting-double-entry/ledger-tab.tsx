@@ -1,0 +1,231 @@
+'use client'
+
+import { useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { IconDownload, IconSearch } from '@tabler/icons-react'
+
+// Mock data based on reference structure
+const chart_accounts = [
+  {
+    id: 1,
+    account_name: 'Cash & Bank',
+  },
+]
+
+const accountArrays = [
+  [
+    {
+      account_name: 'Cash & Bank',
+      user_name: 'John Doe',
+      reference: 'Invoice #001',
+      date: '2025-01-15',
+      debit: 5_000_000,
+      credit: 0,
+    },
+    {
+      account_name: 'Cash & Bank',
+      user_name: 'Jane Smith',
+      reference: 'Payment #002',
+      date: '2025-01-20',
+      debit: 0,
+      credit: 2_500_000,
+    },
+    {
+      account_name: 'Cash & Bank',
+      user_name: 'Bob Johnson',
+      reference: 'Invoice #003',
+      date: '2025-01-25',
+      debit: 3_000_000,
+      credit: 0,
+    },
+  ],
+]
+
+const accounts = [
+  { id: 0, name: 'Select', code: '', parent: 0 },
+  { id: 1, name: 'Cash & Bank', code: '1000', parent: 0 },
+  { id: 2, name: 'Accounts Receivable', code: '1100', parent: 0 },
+]
+
+function formatPrice(amount: number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+export function LedgerTab() {
+  const [startDate, setStartDate] = useState('2025-01-01')
+  const [endDate, setEndDate] = useState('2025-12-31')
+  const [selectedAccount, setSelectedAccount] = useState('1')
+
+  let balance = 0
+  let totalDebit = 0
+  let totalCredit = 0
+
+  accountArrays.forEach((accounts) => {
+    accounts.forEach((account) => {
+      totalDebit += account.debit
+      totalCredit += account.credit
+      const total = account.debit + account.credit
+      if (account.debit != 0) {
+        balance -= total
+      } else {
+        balance += total
+      }
+    })
+  })
+
+  return (
+    <div className="space-y-4">
+      {/* Action Button */}
+      <div className="flex items-center justify-end">
+        <Button
+          variant="blue"
+          size="sm"
+          className="shadow-none h-7"
+          onClick={() => {
+            const element = document.getElementById('printableArea')
+            if (element) {
+              // In real app, would use html2pdf library
+              console.log('Download ledger as PDF')
+            }
+          }}
+        >
+          <IconDownload className="h-3 w-3 mr-2" />
+          Download
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+            }}
+            className="flex flex-col gap-4 md:flex-row md:items-end md:justify-end"
+          >
+            <div className="w-full md:w-44">
+              <label className="mb-1 block text-sm font-medium">Start Date</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="month-btn"
+              />
+            </div>
+            <div className="w-full md:w-44">
+              <label className="mb-1 block text-sm font-medium">End Date</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="month-btn"
+              />
+            </div>
+            <div className="w-full md:w-52">
+              <label className="mb-1 block text-sm font-medium">Account</label>
+              <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id.toString()}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" variant="blue" size="sm" className="shadow-none h-7">
+                <IconSearch className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="shadow-none h-7"
+                onClick={() => {
+                  setStartDate('2025-01-01')
+                  setEndDate('2025-12-31')
+                  setSelectedAccount('1')
+                }}
+              >
+                <IconSearch className="h-3 w-3 rotate-180" />
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Ledger Table */}
+      <div id="printableArea">
+        <Card>
+          <CardContent className="p-0">
+            <div className="table-responsive overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Transaction Type</TableHead>
+                    <TableHead>Transaction Date</TableHead>
+                    <TableHead>Debit</TableHead>
+                    <TableHead>Credit</TableHead>
+                    <TableHead>Balance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accountArrays.map((accounts, idx) => {
+                    let runningBalance = 0
+                    return accounts.map((account, accIdx) => {
+                      const total = account.debit + account.credit
+                      if (account.debit != 0) {
+                        runningBalance -= total
+                      } else {
+                        runningBalance += total
+                      }
+                      return (
+                        <TableRow key={`${idx}-${accIdx}`}>
+                          <TableCell>{account.account_name}</TableCell>
+                          <TableCell>{account.user_name || '-'}</TableCell>
+                          <TableCell>{account.reference}</TableCell>
+                          <TableCell>{account.date}</TableCell>
+                          <TableCell>{formatPrice(account.debit)}</TableCell>
+                          <TableCell>{formatPrice(account.credit)}</TableCell>
+                          <TableCell>{formatPrice(runningBalance)}</TableCell>
+                        </TableRow>
+                      )
+                    })
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

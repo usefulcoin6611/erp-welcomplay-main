@@ -44,36 +44,38 @@ import {
 } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
-const mockTaxes = [
+const mockUnits = [
   {
     id: 1,
-    name: 'VAT',
-    rate: 11,
+    name: 'Piece',
   },
   {
     id: 2,
-    name: 'Income Tax',
-    rate: 2.5,
+    name: 'Kilogram',
   },
   {
     id: 3,
-    name: 'Sales Tax',
-    rate: 10,
+    name: 'Liter',
   },
   {
     id: 4,
-    name: 'Service Tax',
-    rate: 5,
+    name: 'Meter',
   },
   {
     id: 5,
-    name: 'Corporate Tax',
-    rate: 25,
+    name: 'Box',
   },
   {
     id: 6,
-    name: 'Property Tax',
-    rate: 1.5,
+    name: 'Pack',
+  },
+  {
+    id: 7,
+    name: 'Set',
+  },
+  {
+    id: 8,
+    name: 'Dozen',
   },
 ]
 
@@ -100,30 +102,25 @@ const sidebarItems = [
   },
 ]
 
-export default function AccountingSetupPage() {
+export default function UnitPage() {
   const pathname = usePathname()
-  const [taxes, setTaxes] = useState(mockTaxes)
+  const [units, setUnits] = useState(mockUnits)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingTax, setEditingTax] = useState<any>(null)
+  const [editingUnit, setEditingUnit] = useState<any>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({
     name: '',
-    rate: '',
   })
 
   // Filter data
   const filteredData = useMemo(() => {
-    if (!search.trim()) return taxes
+    if (!search.trim()) return units
     const q = search.trim().toLowerCase()
-    return taxes.filter(
-      (tax) =>
-        tax.name.toLowerCase().includes(q) ||
-        tax.rate.toString().includes(q)
-    )
-  }, [taxes, search])
+    return units.filter((unit) => unit.name.toLowerCase().includes(q))
+  }, [units, search])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -142,45 +139,42 @@ export default function AccountingSetupPage() {
   }
 
   const handleCreate = () => {
-    const newTax = {
-      id: taxes.length + 1,
+    const newUnit = {
+      id: units.length + 1,
       name: formData.name,
-      rate: parseFloat(formData.rate),
     }
-    setTaxes([...taxes, newTax])
-    setFormData({ name: '', rate: '' })
+    setUnits([...units, newUnit])
+    setFormData({ name: '' })
     setCreateDialogOpen(false)
   }
 
-  const handleEdit = (tax: any) => {
-    setEditingTax(tax)
+  const handleEdit = (unit: any) => {
+    setEditingUnit(unit)
     setFormData({
-      name: tax.name,
-      rate: tax.rate.toString(),
+      name: unit.name,
     })
     setEditDialogOpen(true)
   }
 
   const handleUpdate = () => {
-    setTaxes(
-      taxes.map((t) =>
-        t.id === editingTax.id
+    setUnits(
+      units.map((u) =>
+        u.id === editingUnit.id
           ? {
-              ...t,
+              ...u,
               name: formData.name,
-              rate: parseFloat(formData.rate),
             }
-          : t
+          : u
       )
     )
     setEditDialogOpen(false)
-    setEditingTax(null)
-    setFormData({ name: '', rate: '' })
+    setEditingUnit(null)
+    setFormData({ name: '' })
   }
 
   const handleDelete = (id: number) => {
     if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setTaxes(taxes.filter((t) => t.id !== id))
+      setUnits(units.filter((u) => u.id !== id))
     }
   }
 
@@ -234,39 +228,23 @@ export default function AccountingSetupPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Create Tax Rate</DialogTitle>
+                        <DialogTitle>Create New Unit</DialogTitle>
                         <DialogDescription>
-                          Add a new tax rate for your accounting setup.
+                          Add a new product or service unit.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="tax-name">
-                              Tax Rate Name <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="tax-name"
-                              placeholder="Enter Tax Rate Name"
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="tax-rate">
-                              Tax Rate % <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="tax-rate"
-                              type="number"
-                              step="0.01"
-                              placeholder="Enter Rate"
-                              value={formData.rate}
-                              onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                              required
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="unit-name">
+                            Unit Name <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="unit-name"
+                            placeholder="Enter Unit Name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                          />
                         </div>
                       </div>
                       <DialogFooter>
@@ -290,7 +268,7 @@ export default function AccountingSetupPage() {
                     <div className="relative">
                       <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                       <Input
-                        placeholder="Search taxes by name or rate..."
+                        placeholder="Search units by name..."
                         value={search}
                         onChange={(e) => {
                           setSearch(e.target.value)
@@ -314,24 +292,22 @@ export default function AccountingSetupPage() {
                   </CardContent>
                 </Card>
 
-                {/* Taxes Table */}
+                {/* Units Table */}
                 <Card>
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Tax Name</TableHead>
-                            <TableHead>Rate %</TableHead>
+                            <TableHead>Unit</TableHead>
                             <TableHead>Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {paginatedData.length > 0 ? (
-                            paginatedData.map((tax) => (
-                              <TableRow key={tax.id} className="font-style">
-                                <TableCell>{tax.name}</TableCell>
-                                <TableCell>{tax.rate}</TableCell>
+                            paginatedData.map((unit) => (
+                              <TableRow key={unit.id}>
+                                <TableCell>{unit.name}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2 justify-start">
                                     <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -340,49 +316,29 @@ export default function AccountingSetupPage() {
                                         size="sm"
                                         className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
                                         title="Edit"
-                                        onClick={() => handleEdit(tax)}
+                                        onClick={() => handleEdit(unit)}
                                       >
                                         <IconPencil className="h-3 w-3" />
                                       </Button>
                                       <DialogContent>
                                         <DialogHeader>
-                                          <DialogTitle>Edit Tax Rate</DialogTitle>
+                                          <DialogTitle>Edit Unit</DialogTitle>
                                           <DialogDescription>
-                                            Update the tax rate details.
+                                            Update the unit details.
                                           </DialogDescription>
                                         </DialogHeader>
                                         <div className="grid gap-4 py-4">
-                                          <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                              <Label htmlFor="edit-tax-name">
-                                                Tax Rate Name <span className="text-red-500">*</span>
-                                              </Label>
-                                              <Input
-                                                id="edit-tax-name"
-                                                placeholder="Enter Tax Rate Name"
-                                                value={formData.name}
-                                                onChange={(e) =>
-                                                  setFormData({ ...formData, name: e.target.value })
-                                                }
-                                                required
-                                              />
-                                            </div>
-                                            <div className="space-y-2">
-                                              <Label htmlFor="edit-tax-rate">
-                                                Tax Rate % <span className="text-red-500">*</span>
-                                              </Label>
-                                              <Input
-                                                id="edit-tax-rate"
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="Enter Rate"
-                                                value={formData.rate}
-                                                onChange={(e) =>
-                                                  setFormData({ ...formData, rate: e.target.value })
-                                                }
-                                                required
-                                              />
-                                            </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="edit-unit-name">
+                                              Unit Name <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Input
+                                              id="edit-unit-name"
+                                              placeholder="Enter Unit Name"
+                                              value={formData.name}
+                                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                              required
+                                            />
                                           </div>
                                         </div>
                                         <DialogFooter>
@@ -403,7 +359,7 @@ export default function AccountingSetupPage() {
                                       size="sm"
                                       className="shadow-none h-7"
                                       title="Delete"
-                                      onClick={() => handleDelete(tax.id)}
+                                      onClick={() => handleDelete(unit.id)}
                                     >
                                       <IconTrash className="h-3 w-3" />
                                     </Button>
@@ -413,8 +369,8 @@ export default function AccountingSetupPage() {
                             ))
                           ) : (
                             <TableRow>
-                              <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                                No taxes found
+                              <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                                No units found
                               </TableCell>
                             </TableRow>
                           )}

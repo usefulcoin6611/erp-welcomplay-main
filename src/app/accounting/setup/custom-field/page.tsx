@@ -26,6 +26,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -44,37 +51,58 @@ import {
 } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
-const mockTaxes = [
+const mockCustomFields = [
   {
     id: 1,
-    name: 'VAT',
-    rate: 11,
+    name: 'Custom Field 1',
+    type: 'Text',
+    module: 'Invoice',
   },
   {
     id: 2,
-    name: 'Income Tax',
-    rate: 2.5,
+    name: 'Custom Field 2',
+    type: 'Number',
+    module: 'Bill',
   },
   {
     id: 3,
-    name: 'Sales Tax',
-    rate: 10,
+    name: 'Custom Field 3',
+    type: 'Date',
+    module: 'Customer',
   },
   {
     id: 4,
-    name: 'Service Tax',
-    rate: 5,
+    name: 'Custom Field 4',
+    type: 'Select',
+    module: 'Vendor',
   },
   {
     id: 5,
-    name: 'Corporate Tax',
-    rate: 25,
+    name: 'Custom Field 5',
+    type: 'Text',
+    module: 'Product',
   },
   {
     id: 6,
-    name: 'Property Tax',
-    rate: 1.5,
+    name: 'Custom Field 6',
+    type: 'Number',
+    module: 'Invoice',
   },
+]
+
+const fieldTypes = [
+  { value: 'Text', label: 'Text' },
+  { value: 'Number', label: 'Number' },
+  { value: 'Date', label: 'Date' },
+  { value: 'Select', label: 'Select' },
+]
+
+const modules = [
+  { value: 'Invoice', label: 'Invoice' },
+  { value: 'Bill', label: 'Bill' },
+  { value: 'Customer', label: 'Customer' },
+  { value: 'Vendor', label: 'Vendor' },
+  { value: 'Product', label: 'Product' },
 ]
 
 const sidebarItems = [
@@ -100,30 +128,32 @@ const sidebarItems = [
   },
 ]
 
-export default function AccountingSetupPage() {
+export default function CustomFieldPage() {
   const pathname = usePathname()
-  const [taxes, setTaxes] = useState(mockTaxes)
+  const [customFields, setCustomFields] = useState(mockCustomFields)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingTax, setEditingTax] = useState<any>(null)
+  const [editingField, setEditingField] = useState<any>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({
     name: '',
-    rate: '',
+    type: '',
+    module: '',
   })
 
   // Filter data
   const filteredData = useMemo(() => {
-    if (!search.trim()) return taxes
+    if (!search.trim()) return customFields
     const q = search.trim().toLowerCase()
-    return taxes.filter(
-      (tax) =>
-        tax.name.toLowerCase().includes(q) ||
-        tax.rate.toString().includes(q)
+    return customFields.filter(
+      (field) =>
+        field.name.toLowerCase().includes(q) ||
+        field.type.toLowerCase().includes(q) ||
+        field.module.toLowerCase().includes(q)
     )
-  }, [taxes, search])
+  }, [customFields, search])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -142,45 +172,48 @@ export default function AccountingSetupPage() {
   }
 
   const handleCreate = () => {
-    const newTax = {
-      id: taxes.length + 1,
+    const newField = {
+      id: customFields.length + 1,
       name: formData.name,
-      rate: parseFloat(formData.rate),
+      type: formData.type,
+      module: formData.module,
     }
-    setTaxes([...taxes, newTax])
-    setFormData({ name: '', rate: '' })
+    setCustomFields([...customFields, newField])
+    setFormData({ name: '', type: '', module: '' })
     setCreateDialogOpen(false)
   }
 
-  const handleEdit = (tax: any) => {
-    setEditingTax(tax)
+  const handleEdit = (field: any) => {
+    setEditingField(field)
     setFormData({
-      name: tax.name,
-      rate: tax.rate.toString(),
+      name: field.name,
+      type: field.type,
+      module: field.module,
     })
     setEditDialogOpen(true)
   }
 
   const handleUpdate = () => {
-    setTaxes(
-      taxes.map((t) =>
-        t.id === editingTax.id
+    setCustomFields(
+      customFields.map((f) =>
+        f.id === editingField.id
           ? {
-              ...t,
+              ...f,
               name: formData.name,
-              rate: parseFloat(formData.rate),
+              type: formData.type,
+              module: formData.module,
             }
-          : t
+          : f
       )
     )
     setEditDialogOpen(false)
-    setEditingTax(null)
-    setFormData({ name: '', rate: '' })
+    setEditingField(null)
+    setFormData({ name: '', type: '', module: '' })
   }
 
   const handleDelete = (id: number) => {
     if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setTaxes(taxes.filter((t) => t.id !== id))
+      setCustomFields(customFields.filter((f) => f.id !== id))
     }
   }
 
@@ -234,39 +267,63 @@ export default function AccountingSetupPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Create Tax Rate</DialogTitle>
+                        <DialogTitle>Create New Custom Field</DialogTitle>
                         <DialogDescription>
-                          Add a new tax rate for your accounting setup.
+                          Add a new custom field for your modules.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="tax-name">
-                              Tax Rate Name <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="tax-name"
-                              placeholder="Enter Tax Rate Name"
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="tax-rate">
-                              Tax Rate % <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="tax-rate"
-                              type="number"
-                              step="0.01"
-                              placeholder="Enter Rate"
-                              value={formData.rate}
-                              onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                              required
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="field-name">
+                            Custom Field Name <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="field-name"
+                            placeholder="Enter Custom Field Name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="field-type">
+                            Type <span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            value={formData.type}
+                            onValueChange={(value) => setFormData({ ...formData, type: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {fieldTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="field-module">
+                            Module <span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            value={formData.module}
+                            onValueChange={(value) => setFormData({ ...formData, module: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Module" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {modules.map((module) => (
+                                <SelectItem key={module.value} value={module.value}>
+                                  {module.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <DialogFooter>
@@ -290,7 +347,7 @@ export default function AccountingSetupPage() {
                     <div className="relative">
                       <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                       <Input
-                        placeholder="Search taxes by name or rate..."
+                        placeholder="Search custom fields by name, type, or module..."
                         value={search}
                         onChange={(e) => {
                           setSearch(e.target.value)
@@ -314,24 +371,26 @@ export default function AccountingSetupPage() {
                   </CardContent>
                 </Card>
 
-                {/* Taxes Table */}
+                {/* Custom Fields Table */}
                 <Card>
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Tax Name</TableHead>
-                            <TableHead>Rate %</TableHead>
+                            <TableHead>Custom Field</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Module</TableHead>
                             <TableHead>Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {paginatedData.length > 0 ? (
-                            paginatedData.map((tax) => (
-                              <TableRow key={tax.id} className="font-style">
-                                <TableCell>{tax.name}</TableCell>
-                                <TableCell>{tax.rate}</TableCell>
+                            paginatedData.map((field) => (
+                              <TableRow key={field.id}>
+                                <TableCell>{field.name}</TableCell>
+                                <TableCell>{field.type}</TableCell>
+                                <TableCell>{field.module}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2 justify-start">
                                     <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -340,49 +399,69 @@ export default function AccountingSetupPage() {
                                         size="sm"
                                         className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
                                         title="Edit"
-                                        onClick={() => handleEdit(tax)}
+                                        onClick={() => handleEdit(field)}
                                       >
                                         <IconPencil className="h-3 w-3" />
                                       </Button>
                                       <DialogContent>
                                         <DialogHeader>
-                                          <DialogTitle>Edit Tax Rate</DialogTitle>
+                                          <DialogTitle>Edit Custom Field</DialogTitle>
                                           <DialogDescription>
-                                            Update the tax rate details.
+                                            Update the custom field details.
                                           </DialogDescription>
                                         </DialogHeader>
                                         <div className="grid gap-4 py-4">
-                                          <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                              <Label htmlFor="edit-tax-name">
-                                                Tax Rate Name <span className="text-red-500">*</span>
-                                              </Label>
-                                              <Input
-                                                id="edit-tax-name"
-                                                placeholder="Enter Tax Rate Name"
-                                                value={formData.name}
-                                                onChange={(e) =>
-                                                  setFormData({ ...formData, name: e.target.value })
-                                                }
-                                                required
-                                              />
-                                            </div>
-                                            <div className="space-y-2">
-                                              <Label htmlFor="edit-tax-rate">
-                                                Tax Rate % <span className="text-red-500">*</span>
-                                              </Label>
-                                              <Input
-                                                id="edit-tax-rate"
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="Enter Rate"
-                                                value={formData.rate}
-                                                onChange={(e) =>
-                                                  setFormData({ ...formData, rate: e.target.value })
-                                                }
-                                                required
-                                              />
-                                            </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="edit-field-name">
+                                              Custom Field Name <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Input
+                                              id="edit-field-name"
+                                              placeholder="Enter Custom Field Name"
+                                              value={formData.name}
+                                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                              required
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="edit-field-type">
+                                              Type <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Select
+                                              value={formData.type}
+                                              onValueChange={(value) => setFormData({ ...formData, type: value })}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select Type" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {fieldTypes.map((type) => (
+                                                  <SelectItem key={type.value} value={type.value}>
+                                                    {type.label}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor="edit-field-module">
+                                              Module <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Select
+                                              value={formData.module}
+                                              onValueChange={(value) => setFormData({ ...formData, module: value })}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select Module" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {modules.map((module) => (
+                                                  <SelectItem key={module.value} value={module.value}>
+                                                    {module.label}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
                                           </div>
                                         </div>
                                         <DialogFooter>
@@ -403,7 +482,7 @@ export default function AccountingSetupPage() {
                                       size="sm"
                                       className="shadow-none h-7"
                                       title="Delete"
-                                      onClick={() => handleDelete(tax.id)}
+                                      onClick={() => handleDelete(field.id)}
                                     >
                                       <IconTrash className="h-3 w-3" />
                                     </Button>
@@ -413,8 +492,8 @@ export default function AccountingSetupPage() {
                             ))
                           ) : (
                             <TableRow>
-                              <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                                No taxes found
+                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                No custom fields found
                               </TableCell>
                             </TableRow>
                           )}
