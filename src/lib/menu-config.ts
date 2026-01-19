@@ -379,16 +379,8 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               { title: "Product Stock", url: "/products/stock" },
             ],
           },
-          {
-            title: t("userManagement"),
-            url: "#",
-            icon: IconUsersGroup,
-            items: [
-              { title: t("users"), url: "/users" },
-              { title: "Roles", url: "/users/roles" },
-              { title: "Client", url: "/users/clients" },
-            ],
-          },
+          // User Management - Company should NOT have access
+          // Removed from company menu based on ROLE_BASED_ACCESS.md line 40
           {
             title: t("supportSystem"),
             url: "/support",
@@ -460,7 +452,8 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
       }
 
     case 'employee':
-      // Employee = Accountant (based on reference-erp Accountant sidebar structure)
+      // Employee - Employee Self-Service (based on ROLE_BASED_ACCESS.md)
+      // NO access to Accounting, CRM, POS, User Management
       return {
         navMain: [
           {
@@ -470,18 +463,17 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             isActive: true,
             items: [
               {
-                title: t("accounting"),
-                url: "#",
-                items: [
-                  { title: t("overview"), url: "/account-dashboard" },
-                  { title: t("reports"), url: "/accounting/reports" },
-                ],
-              },
-              {
                 title: t("hrm"),
                 url: "#",
                 items: [
                   { title: t("overview"), url: "/hrm-dashboard" },
+                ],
+              },
+              {
+                title: t("project"),
+                url: "#",
+                items: [
+                  { title: t("overview"), url: "/project-dashboard" },
                 ],
               },
             ],
@@ -491,16 +483,20 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             url: "#",
             icon: IconUsers,
             items: [
-              { title: "Employees Asset Setup", url: "/hrm/assets" },
+              { title: "Leave Management", url: "/hrm/leave" },
+              { title: "Event Setup", url: "/hrm/events" },
+              { title: "Meeting", url: "/hrm/meetings" },
+              { title: "My Documents", url: "/hrm/documents" },
+              { title: "Company Policy", url: "/hrm/policies" },
             ],
           },
           {
             title: t("accountingSystem"),
             url: "#",
-            icon: IconCash,
+            icon: IconFileText,
             items: [
               {
-                title: "Banking",
+                title: t("banking"),
                 url: "/accounting/bank-account",
               },
               {
@@ -520,6 +516,17 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
                 title: "Accounting Setup",
                 url: "/accounting/setup",
               },
+            ],
+          },
+          {
+            title: t("projectSystem"),
+            url: "#",
+            icon: IconShare,
+            items: [
+              { title: "My Tasks", url: "/projects/task" },
+              { title: "Timesheet", url: "/projects/timesheet/list" },
+              { title: "Task Calendar", url: "/projects/task/calendar" },
+              { title: "Time Tracker", url: "/projects/time-tracker" },
             ],
           },
           {
