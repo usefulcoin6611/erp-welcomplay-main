@@ -41,22 +41,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     navMain: menuData.navMain,
     navSecondary: menuData.navSecondary,
   }
-  
-  // Get role badge styling
-  const getRoleBadgeStyle = () => {
-    if (!user) return { color: 'bg-gray-100 text-gray-600', label: 'Guest' }
-    
-    const styles: Record<string, { color: string; label: string }> = {
-      'super admin': { color: 'bg-red-100 text-red-700', label: 'Super Admin' },
-      'company': { color: 'bg-blue-100 text-blue-700', label: 'Company' },
-      'client': { color: 'bg-green-100 text-green-700', label: 'Client' },
-      'employee': { color: 'bg-purple-100 text-purple-700', label: 'Employee' },
-    }
-    
-    return styles[user.type] || { color: 'bg-gray-100 text-gray-600', label: user.type }
-  }
-  
-  const roleBadge = getRoleBadgeStyle()
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -70,11 +54,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <IconBriefcase className="!size-5" />
             <div className="flex flex-col items-start flex-1">
               <span className="text-base font-semibold">WelcomplayERP</span>
-              {user && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${roleBadge.color} font-medium`}>
-                  {roleBadge.label}
-                </span>
-              )}
             </div>
           </a>
         </SidebarMenuButton>

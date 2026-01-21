@@ -83,9 +83,10 @@ const MenuItemComponent = ({
               className={`
                 flex items-center justify-between w-full py-2 px-3 
                 text-sm font-medium rounded-md cursor-pointer
-                hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+                hover:bg-blue-100 hover:text-blue-700
                 transition-all duration-300 ease-out
                 ${paddingLeft}
+                ${childIsActive ? 'bg-blue-50 text-blue-700' : 'text-sidebar-foreground'}
               `}
               whileTap={{ scale: 0.98 }}
             >
@@ -138,9 +139,9 @@ const MenuItemComponent = ({
         className={`
           flex items-center gap-2 w-full py-2 px-3 
           text-sm font-medium rounded-md transition-all duration-300 ease-out
-          hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+          hover:bg-blue-100 hover:text-blue-700
           ${paddingLeft}
-          ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground'}
+          ${isActive ? 'bg-blue-50 text-blue-700' : 'text-sidebar-foreground'}
         `}
         initial={false}
       >

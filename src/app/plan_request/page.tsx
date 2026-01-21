@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -7,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Check, X } from 'lucide-react'
+import SimplePagination from '@/components/ui/simple-pagination'
 
 // Types
 interface PlanRequest {
@@ -22,52 +24,82 @@ interface PlanRequest {
 }
 
 // Mock data - Plan names sesuai dengan 4 plan yang ada: Free Plan, Silver, Gold, Platinum
-const mockPlanRequests: PlanRequest[] = [
-  {
-    id: '1',
-    user_name: 'Acme Corporation',
-    plan_name: 'Gold',
-    total_users: 50,
-    total_customers: 500,
-    total_vendors: 100,
-    total_clients: 50,
-    duration: 'year',
-    date: '2024-01-15 10:30:00',
-  },
-  {
-    id: '2',
-    user_name: 'Tech Solutions Inc',
-    plan_name: 'Platinum',
-    total_users: -1,
-    total_customers: -1,
-    total_vendors: -1,
-    total_clients: -1,
-    duration: 'month',
-    date: '2024-01-14 14:20:00',
-  },
-  {
-    id: '3',
-    user_name: 'Global Enterprises',
-    plan_name: 'Silver',
-    total_users: 20,
-    total_customers: 100,
-    total_vendors: 50,
-    total_clients: 25,
-    duration: 'month',
-    date: '2024-01-13 09:15:00',
-  },
-  {
-    id: '4',
-    user_name: 'Startup Company',
-    plan_name: 'Gold',
-    total_users: 50,
-    total_customers: 500,
-    total_vendors: 100,
-    total_clients: 50,
-    duration: 'month',
-    date: '2024-01-12 16:45:00',
-  },
-]
+// Ditambahkan lebih banyak data untuk demo pagination
+const generateMockPlanRequests = (): PlanRequest[] => {
+  const companies = [
+    'Acme Corporation',
+    'Tech Solutions Inc',
+    'Global Enterprises',
+    'Startup Company',
+    'Digital Innovations',
+    'Cloud Services Ltd',
+    'Future Tech Corp',
+    'Smart Solutions',
+    'Innovation Hub',
+    'Tech Ventures',
+    'Digital Dynamics',
+    'Modern Systems',
+    'NextGen Technologies',
+    'Advanced Solutions',
+    'Elite Enterprises',
+    'Prime Corporation',
+    'Apex Industries',
+    'Summit Business',
+    'Peak Performance',
+    'Top Tier Corp',
+  ]
+  
+  const plans = ['Free Plan', 'Silver', 'Gold', 'Platinum']
+  const durations: ('year' | 'month' | 'lifetime')[] = ['year', 'month', 'lifetime']
+  
+  return companies.map((company, index) => {
+    const planIndex = index % plans.length
+    const durationIndex = index % durations.length
+    const planName = plans[planIndex]
+    
+    // Generate limits based on plan
+    let total_users = 20
+    let total_customers = 100
+    let total_vendors = 50
+    let total_clients = 25
+    
+    if (planName === 'Gold') {
+      total_users = 50
+      total_customers = 500
+      total_vendors = 100
+      total_clients = 50
+    } else if (planName === 'Platinum') {
+      total_users = -1
+      total_customers = -1
+      total_vendors = -1
+      total_clients = -1
+    } else if (planName === 'Free Plan') {
+      total_users = 5
+      total_customers = 5
+      total_vendors = 5
+      total_clients = 5
+    }
+    
+    // Generate date (decreasing by day)
+    const date = new Date('2024-01-15')
+    date.setDate(date.getDate() - index)
+    date.setHours(10 + (index % 12), 30 + (index % 30), 0)
+    
+    return {
+      id: `${index + 1}`,
+      user_name: company,
+      plan_name: planName,
+      total_users,
+      total_customers,
+      total_vendors,
+      total_clients,
+      duration: durations[durationIndex],
+      date: date.toISOString().replace('T', ' ').substring(0, 19),
+    }
+  })
+}
+
+const mockPlanRequests = generateMockPlanRequests()
 
 const formatLimit = (limit: number) => {
   if (limit === -1) return 'Unlimited'
@@ -99,6 +131,15 @@ const formatDate = (dateString: string) => {
 }
 
 export default function PlanRequestPage() {
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  
+  // Calculate pagination
+  const totalCount = mockPlanRequests.length
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedRequests = mockPlanRequests.slice(startIndex, endIndex)
+  
   return (
     <SidebarProvider
       style={
@@ -142,8 +183,8 @@ export default function PlanRequestPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockPlanRequests.length > 0 ? (
-                        mockPlanRequests.map((request) => (
+                      {paginatedRequests.length > 0 ? (
+                        paginatedRequests.map((request) => (
                           <tr key={request.id} className="border-t hover:bg-muted/50">
                             <td className="px-4 py-3">
                               <div className="font-medium">{request.user_name}</div>
@@ -202,6 +243,21 @@ export default function PlanRequestPage() {
                       )}
                     </tbody>
                   </table>
+                </div>
+                
+                {/* Pagination */}
+                <div className="border-t px-4 py-3">
+                  <SimplePagination
+                    totalCount={totalCount}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size)
+                      setCurrentPage(1) // Reset to first page when changing page size
+                    }}
+                    sizes={[5, 10, 25, 50]}
+                  />
                 </div>
               </CardContent>
             </Card>

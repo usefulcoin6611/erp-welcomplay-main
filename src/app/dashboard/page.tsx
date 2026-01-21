@@ -173,104 +173,89 @@ export default function DashboardPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-8 p-8">
             {/* Page Header */}
-            <div>
-              <h1 className="text-3xl font-bold">
+            <div className="mb-2">
+              <h1 className="text-2xl font-semibold text-gray-900">
                 {isSuperAdmin 
                   ? 'Super Admin Dashboard' 
                   : isClient 
                     ? 'Client Dashboard' 
                     : 'Dashboard'}
               </h1>
-              <p className="text-muted-foreground">
-                {isSuperAdmin
-                  ? 'Overview of your SaaS platform management'
-                  : isClient
-                    ? 'Overview of your deals, projects, and tasks'
-                    : 'Overview of your projects and tasks'}
-              </p>
             </div>
 
             {/* Super Admin Dashboard */}
             {isSuperAdmin ? (
-              <>
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-8">
+                {/* Stats Cards - Minimalist Design */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Total Companies */}
-                  <Card className="h-full hover:bg-gray-50 transition-all duration-200 overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col gap-2">
-                        {/* Top: Icon and Value side by side */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100">
-                            <Users className="w-6 h-6 text-blue-500" />
-                          </div>
-                          <h3 className="text-xl font-semibold text-gray-900 flex-1 text-center">24</h3>
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600 font-medium">Total Companies</p>
+                          <h3 className="text-3xl font-semibold text-gray-900">24</h3>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Paid Users: <span className="font-medium text-gray-700">18</span>
+                          </p>
                         </div>
-                        
-                        {/* Bottom: Description */}
-                        <p className="text-xs font-medium text-muted-foreground leading-tight break-words">
-                          Total Companies
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Paid Users: <span className="font-semibold text-gray-900">18</span>
-                        </p>
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                          <Building2 className="w-6 h-6 text-blue-600" />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Total Orders */}
-                  <Card className="h-full hover:bg-gray-50 transition-all duration-200 overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col gap-2">
-                        {/* Top: Icon and Value side by side */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-green-100">
-                            <ShoppingCart className="w-6 h-6 text-green-500" />
-                          </div>
-                          <h3 className="text-xl font-semibold text-gray-900 flex-1 text-center">156</h3>
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600 font-medium">Total Orders</p>
+                          <h3 className="text-3xl font-semibold text-gray-900">156</h3>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Amount: <span className="font-medium text-gray-700">
+                              {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                              }).format(45230)}
+                            </span>
+                          </p>
                         </div>
-                        
-                        {/* Bottom: Description */}
-                        <p className="text-xs font-medium text-muted-foreground leading-tight break-words">
-                          Total Orders
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Total Order Amount: <span className="font-semibold text-gray-900">$45,230</span>
-                        </p>
+                        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                          <ShoppingCart className="w-6 h-6 text-green-600" />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Total Plans */}
-                  <Card className="h-full hover:bg-gray-50 transition-all duration-200 overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col gap-2">
-                        {/* Top: Icon and Value side by side */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-purple-100">
-                            <FileText className="w-6 h-6 text-purple-500" />
-                          </div>
-                          <h3 className="text-xl font-semibold text-gray-900 flex-1 text-center">4</h3>
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600 font-medium">Total Plans</p>
+                          <h3 className="text-3xl font-semibold text-gray-900">4</h3>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Most Popular: <span className="font-medium text-gray-700">Gold</span>
+                          </p>
                         </div>
-                        
-                        {/* Bottom: Description */}
-                        <p className="text-xs font-medium text-muted-foreground leading-tight break-words">
-                          Total Plans
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Most Purchase Plan: <span className="font-semibold text-gray-900">Gold</span>
-                        </p>
+                        <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-purple-600" />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Recent Order Chart */}
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Recent Order</CardTitle>
+                {/* Recent Order Chart - Clean Design */}
+                <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Recent Orders</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Chart
@@ -279,19 +264,27 @@ export default function DashboardPage() {
                           height: 300,
                           type: 'area',
                           toolbar: { show: false },
+                          fontFamily: 'inherit',
                         },
                         dataLabels: { enabled: false },
                         stroke: { width: 2, curve: 'smooth' },
                         xaxis: {
                           categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                          title: { text: 'Days' },
+                          labels: { style: { colors: '#6b7280', fontSize: '12px' } },
                         },
                         yaxis: {
-                          title: { text: 'Income' },
+                          labels: { style: { colors: '#6b7280', fontSize: '12px' } },
                         },
-                        colors: ['#6fd944'],
-                        grid: { strokeDashArray: 4 },
+                        colors: ['#3b82f6'],
+                        grid: { 
+                          strokeDashArray: 4,
+                          borderColor: '#f3f4f6',
+                        },
                         legend: { show: false },
+                        tooltip: {
+                          theme: 'light',
+                          style: { fontSize: '12px' },
+                        },
                       }}
                       series={[
                         {
@@ -304,206 +297,219 @@ export default function DashboardPage() {
                     />
                   </CardContent>
                 </Card>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Total Deals */}
-                      <Card className="relative overflow-hidden">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3">
-                            <div className="p-3 rounded-lg bg-pink-500/10">
-                              <IconRocket className="w-6 h-6 text-pink-500" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-muted-foreground mb-1">Total</p>
-                              <h2 className="text-2xl font-bold">Deal</h2>
-                            </div>
-                            <h3 className="text-3xl font-bold">{dashboardData.stats.totalDeals}</h3>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Total Tasks */}
-                      <Card className="relative overflow-hidden">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3">
-                            <div className="p-3 rounded-lg bg-purple-500/10">
-                              <IconListCheck className="w-6 h-6 text-purple-500" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-muted-foreground mb-1">Total</p>
-                              <h2 className="text-2xl font-bold">Deal Task</h2>
-                            </div>
-                            <h3 className="text-3xl font-bold">{dashboardData.stats.totalTasks}</h3>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Calendar Placeholder */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Calendar</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
-                          <p className="text-muted-foreground">Calendar Integration Coming Soon</p>
+              <div className="space-y-8">
+                {/* Stats Cards - Minimalist */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Total Deals */}
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600 font-medium">Total Deals</p>
+                          <h3 className="text-4xl font-semibold text-gray-900">{dashboardData.stats.totalDeals}</h3>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    {/* Project Progress Cards */}
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">Total Project</p>
-                              <h3 className="text-xl font-bold">{dashboardData.projectProgress.totalProjects}%</h3>
-                            </div>
-                            <Progress value={dashboardData.projectProgress.totalProjects} className="h-2" />
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">Project Tasks</p>
-                              <h3 className="text-xl font-bold">{dashboardData.projectProgress.totalProjectTasks}%</h3>
-                            </div>
-                            <Progress value={dashboardData.projectProgress.totalProjectTasks} className="h-2" />
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">Total Bugs</p>
-                              <h3 className="text-xl font-bold">{dashboardData.projectProgress.totalBugs}%</h3>
-                            </div>
-                            <Progress value={dashboardData.projectProgress.totalBugs} className="h-2" />
-                          </div>
+                        <div className="w-14 h-14 rounded-xl bg-pink-50 flex items-center justify-center">
+                          <IconRocket className="w-7 h-7 text-pink-600" />
                         </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Tasks Overview Chart */}
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>Tasks Overview</CardTitle>
-                          <span className="text-sm text-muted-foreground">Last 7 Days</span>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <Chart
-                          options={tasksChartOptions}
-                          series={dashboardData.tasksOverview.datasets}
-                          type="area"
-                          height={250}
-                        />
-                      </CardContent>
-                    </Card>
-
-                    {/* Project Status Chart */}
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>Project Status</CardTitle>
-                          <span className="text-sm text-muted-foreground">Year - 2026</span>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <Chart
-                          options={projectStatusOptions}
-                          series={dashboardData.projectStatus.series}
-                          type="donut"
-                          height={250}
-                        />
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-
-                {/* Bottom Section - Tables */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  {/* Top Due Projects */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Top Due Project</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Task Name</TableHead>
-                            <TableHead>Remain Task</TableHead>
-                            <TableHead>Due Date</TableHead>
-                            <TableHead>Action</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {dashboardData.topDueProjects.map((project) => (
-                            <TableRow key={project.id}>
-                              <TableCell className="font-medium">{project.name}</TableCell>
-                              <TableCell>{project.remainTask}</TableCell>
-                              <TableCell>{project.dueDate}</TableCell>
-                              <TableCell>
-                                <Button variant="secondary" size="sm" className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white">
-                                  <IconEye className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  {/* Top Due Tasks */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Top Due Task</CardTitle>
+                  {/* Total Tasks */}
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600 font-medium">Total Tasks</p>
+                          <h3 className="text-4xl font-semibold text-gray-900">{dashboardData.stats.totalTasks}</h3>
+                        </div>
+                        <div className="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center">
+                          <IconListCheck className="w-7 h-7 text-purple-600" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Charts and Progress Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Project Progress - Compact */}
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-gray-900">Project Progress</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Total Project</span>
+                          <span className="font-semibold text-gray-900">{dashboardData.projectProgress.totalProjects}%</span>
+                        </div>
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-blue-100">
+                          <div 
+                            className="h-full bg-blue-500 transition-all rounded-full"
+                            style={{ width: `${dashboardData.projectProgress.totalProjects}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Project Tasks</span>
+                          <span className="font-semibold text-gray-900">{dashboardData.projectProgress.totalProjectTasks}%</span>
+                        </div>
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-green-100">
+                          <div 
+                            className="h-full bg-green-500 transition-all rounded-full"
+                            style={{ width: `${dashboardData.projectProgress.totalProjectTasks}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Total Bugs</span>
+                          <span className="font-semibold text-gray-900">{dashboardData.projectProgress.totalBugs}%</span>
+                        </div>
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-red-100">
+                          <div 
+                            className="h-full bg-red-500 transition-all rounded-full"
+                            style={{ width: `${dashboardData.projectProgress.totalBugs}%` }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tasks Overview Chart */}
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] lg:col-span-2">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg font-semibold text-gray-900">Tasks Overview</CardTitle>
+                        <span className="text-xs text-gray-500 font-medium">Last 7 Days</span>
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Task Name</TableHead>
-                            <TableHead>Assign To</TableHead>
-                            <TableHead>Task Stage</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {dashboardData.topDueTasks.map((task) => (
-                            <TableRow key={task.id}>
-                              <TableCell className="font-medium">{task.name}</TableCell>
-                              <TableCell>
+                      <Chart
+                        options={{
+                          ...tasksChartOptions,
+                          chart: {
+                            ...tasksChartOptions.chart,
+                            fontFamily: 'inherit',
+                          },
+                          colors: ['#10b981', '#f59e0b', '#3b82f6'],
+                          grid: {
+                            strokeDashArray: 4,
+                            borderColor: '#f3f4f6',
+                          },
+                          xaxis: {
+                            ...tasksChartOptions.xaxis,
+                            labels: { style: { colors: '#6b7280', fontSize: '12px' } },
+                          },
+                          yaxis: {
+                            ...tasksChartOptions.yaxis,
+                            labels: { style: { colors: '#6b7280', fontSize: '12px' } },
+                          },
+                        }}
+                        series={dashboardData.tasksOverview.datasets}
+                        type="area"
+                        height={250}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Project Status and Tables */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Project Status Chart */}
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg font-semibold text-gray-900">Project Status</CardTitle>
+                        <span className="text-xs text-gray-500 font-medium">2026</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Chart
+                        options={{
+                          ...projectStatusOptions,
+                          colors: ['#f59e0b', '#3b82f6', '#ef4444', '#10b981'],
+                          legend: {
+                            show: true,
+                            position: 'bottom',
+                            fontSize: '12px',
+                            fontFamily: 'inherit',
+                            labels: { colors: '#6b7280' },
+                          },
+                        }}
+                        series={dashboardData.projectStatus.series}
+                        type="donut"
+                        height={250}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Top Due Projects */}
+                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] lg:col-span-2">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-gray-900">Top Due Projects</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {dashboardData.topDueProjects.map((project) => (
+                          <div key={project.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 mb-1">{project.name}</h4>
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span>{project.remainTask} tasks remaining</span>
+                                <span>•</span>
+                                <span>{project.dueDate}</span>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <IconEye className="h-4 w-4 text-gray-600" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Top Due Tasks */}
+                <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Top Due Tasks</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {dashboardData.topDueTasks.map((task) => (
+                        <div key={task.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900 mb-2">{task.name}</h4>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">Assigned to:</span>
                                 <div className="flex -space-x-2">
                                   {task.assignedTo.map((person, idx) => (
                                     <div
                                       key={idx}
-                                      className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs border-2 border-background"
+                                      className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-medium border-2 border-white"
                                       title={person}
                                     >
                                       {person.charAt(0)}
                                     </div>
                                   ))}
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{task.stage}</Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
+                              </div>
+                              <Badge variant="outline" className="text-xs">{task.stage}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         </div>

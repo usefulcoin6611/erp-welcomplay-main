@@ -70,14 +70,14 @@
   --account-tabs-active-text: oklch(0.30 0.15 145); /* Green-900 for active tab text */
   --account-tabs-hover: oklch(0.95 0.05 145); /* Green-50 for tab hover */
   --radius: 0.625rem;
-  --sidebar: oklch(0.98 0 0); /* very light gray */
+  --sidebar: oklch(0.985 0 0); /* very light gray (slightly darker than white) */
   --sidebar-foreground: oklch(0.25 0 0); /* dark gray text */
   --sidebar-primary: oklch(0.20 0 0); /* black */
   --sidebar-primary-foreground: oklch(0.98 0 0); /* white */
-  --sidebar-accent: oklch(0.92 0 0); /* light gray hover */
+  --sidebar-accent: oklch(0.96 0 0); /* light gray hover */
   --sidebar-accent-foreground: oklch(0.15 0 0); /* near-black text on hover */
-  --sidebar-accent-background: oklch(0.95 0 0); /* very light gray bg */
-  --sidebar-border: oklch(0.88 0 0); /* medium gray border */
+  --sidebar-accent-background: oklch(0.96 0 0); /* light gray bg */
+  --sidebar-border: oklch(0.93 0 0); /* light gray border */
   --sidebar-ring: oklch(0.60 0 0); /* medium gray ring */
 }
 

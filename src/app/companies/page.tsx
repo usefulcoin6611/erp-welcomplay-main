@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Plus, MoreVertical, Pencil, Trash, Lock, Calendar, Clock, Users, Building2 } from 'lucide-react'
+import { Plus, MoreVertical, Pencil, Trash, Lock, Calendar, Clock, Users, Building2, RotateCcw, LogIn, LogOut, ShoppingCart, Check } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -46,13 +46,21 @@ interface Company {
   total_vendors?: number
 }
 
+interface CompanyUser {
+  id: string
+  name: string
+  avatar?: string
+  is_disable: boolean
+}
+
 // Mock data for Super Admin - Companies
+// Plan names disesuaikan dengan halaman /plans (Free Plan, Silver, Gold, Platinum)
 const mockCompanies: Company[] = [
   {
     id: '1',
     name: 'Acme Corporation',
     email: 'admin@acme.com',
-    plan: 'Premium Plan',
+    plan: 'Platinum',
     plan_expire_date: '2024-12-31',
     is_active: true,
     is_enable_login: true,
@@ -66,7 +74,7 @@ const mockCompanies: Company[] = [
     id: '2',
     name: 'Tech Solutions Inc',
     email: 'admin@techsolutions.com',
-    plan: 'Basic Plan',
+    plan: 'Gold',
     plan_expire_date: '2024-06-30',
     is_active: true,
     is_enable_login: true,
@@ -80,8 +88,9 @@ const mockCompanies: Company[] = [
     id: '3',
     name: 'Global Enterprises',
     email: 'admin@global.com',
-    plan: 'Enterprise Plan',
-    plan_expire_date: null, // Lifetime
+    plan: 'Free Plan',
+    // Tidak lifetime, gunakan tanggal expired seperti plan lain
+    plan_expire_date: '2024-03-31',
     is_active: true,
     is_enable_login: false,
     last_login_at: '2024-01-13 09:15:00',
@@ -92,7 +101,49 @@ const mockCompanies: Company[] = [
   },
 ]
 
-const plans = ['Basic Plan', 'Premium Plan', 'Enterprise Plan', 'Lifetime']
+// Opsi plan harus konsisten dengan mockPlans di halaman /plans
+const plans = ['Free Plan', 'Silver', 'Gold', 'Platinum']
+
+// Ringkasan plan untuk dialog Upgrade Plan (disamakan dengan /plans)
+const planSummaries: Record<
+  string,
+  {
+    price: number
+    durationLabel: string
+    max_users: number
+    max_customers: number
+    max_vendors: number
+  }
+> = {
+  'Free Plan': {
+    price: 0,
+    durationLabel: 'lifetime',
+    max_users: 5,
+    max_customers: 5,
+    max_vendors: 5,
+  },
+  Silver: {
+    price: 250000,
+    durationLabel: 'month',
+    max_users: 20,
+    max_customers: 100,
+    max_vendors: 50,
+  },
+  Gold: {
+    price: 750000,
+    durationLabel: 'month',
+    max_users: 50,
+    max_customers: 500,
+    max_vendors: 100,
+  },
+  Platinum: {
+    price: 1500000,
+    durationLabel: 'month',
+    max_users: -1, // Unlimited
+    max_customers: -1,
+    max_vendors: -1,
+  },
+}
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>(mockCompanies)
@@ -103,6 +154,30 @@ export default function CompaniesPage() {
     plan: '',
     password: '',
     login_enable: false,
+  })
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
+  const [adminHubDialogOpen, setAdminHubDialogOpen] = useState(false)
+  
+  // Mock users untuk company (akan diambil dari API nanti)
+  const [companyUsers, setCompanyUsers] = useState<Record<string, CompanyUser[]>>({
+    '1': [
+      { id: '1', name: 'Richard Atkinson', is_disable: false },
+      { id: '2', name: 'Buffy Walter', is_disable: false },
+      { id: '3', name: 'Fapor Slims', is_disable: false },
+      { id: '4', name: 'Maia', is_disable: false },
+      { id: '5', name: 'Ira Bradley', is_disable: false },
+      { id: '6', name: 'Tamekah Wolfe', is_disable: false },
+      { id: '7', name: 'Employee', is_disable: false },
+      { id: '8', name: 'Sonya Sims', is_disable: false },
+      { id: '9', name: 'Abel Callahan', is_disable: false },
+      { id: '10', name: 'Antikstion Grum', is_disable: false },
+      { id: '11', name: 'Anne George', is_disable: false },
+      { id: '12', name: 'Kirsten Benson', is_disable: false },
+      { id: '13', name: 'Curran Robles', is_disable: false },
+    ],
+    '2': [],
+    '3': [],
   })
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -278,41 +353,46 @@ export default function CompaniesPage() {
                   <CardContent className="p-4 flex flex-col flex-1">
                     {/* Header with Plan Badge and Actions */}
                     <div className="flex items-center justify-between mb-3">
-                      <Badge className="bg-blue-500 text-white">
+                      <Badge className="bg-blue-100 text-blue-700 border-blue-200">
                         {company.plan || 'No Plan'}
                       </Badge>
-                      {company.is_active && company.is_enable_login ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Trash className="mr-2 h-4 w-4" /> {company.delete_status === 0 ? 'Restore' : 'Delete'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Building2 className="mr-2 h-4 w-4" /> Login As Company
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <RotateCcw className="mr-2 h-4 w-4" /> Reset Password
+                          </DropdownMenuItem>
+                          {company.is_enable_login ? (
+                            <DropdownMenuItem className="text-destructive">
+                              <LogOut className="mr-2 h-4 w-4" /> Login Disable
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Trash className="mr-2 h-4 w-4" /> Delete
+                          ) : (
+                            <DropdownMenuItem className="text-green-600">
+                              <LogIn className="mr-2 h-4 w-4" /> Login Enable
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Building2 className="mr-2 h-4 w-4" /> Login As Company
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Lock className="mr-2 h-4 w-4" /> Reset Password
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <Lock className="h-5 w-5 text-muted-foreground" />
-                      )}
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
 
                     {/* Company Info */}
                     <div className="flex items-center gap-3 border-b pb-3 mb-3">
-                      <Avatar className="h-16 w-16 border-2 border-primary">
+                      <Avatar className="h-16 w-16 border-2 border-blue-200">
                         <AvatarImage src={company.avatar} />
-                        <AvatarFallback className="text-lg">
+                        <AvatarFallback className="text-base bg-blue-100 text-blue-700">
                           {getInitials(company.name)}
                         </AvatarFallback>
                       </Avatar>
@@ -325,8 +405,8 @@ export default function CompaniesPage() {
                       </div>
                     </div>
 
-                    {/* Last Login Date & Time */}
-                    <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b">
+                    {/* Last Login Date & Time - Separated */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
                           <Calendar className="h-4 w-4 text-white" />
@@ -343,10 +423,26 @@ export default function CompaniesPage() {
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 border-b border-t py-3 my-3">
-                      <Button variant="default" size="sm" className="flex-1 shadow-none">
+                      <Button
+                        variant="blue"
+                        size="sm"
+                        className="flex-1 shadow-none"
+                        onClick={() => {
+                          setSelectedCompany(company)
+                          setUpgradeDialogOpen(true)
+                        }}
+                      >
                         Upgrade Plan
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1 shadow-none">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 shadow-none"
+                        onClick={() => {
+                          setSelectedCompany(company)
+                          setAdminHubDialogOpen(true)
+                        }}
+                      >
                         Admin Hub
                       </Button>
                     </div>
@@ -382,26 +478,196 @@ export default function CompaniesPage() {
                   </CardContent>
                 </Card>
               ))}
-
-              {/* Add New Company Card */}
-              <Card className="border-2 border-dashed border-primary cursor-pointer hover:border-blue-500 transition-colors">
-                <CardContent className="p-6 flex flex-col items-center justify-center h-full min-h-[400px]">
-                  <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                    <DialogTrigger asChild>
-                      <div className="flex flex-col items-center cursor-pointer">
-                        <div className="h-16 w-16 rounded-full bg-blue-500 flex items-center justify-center mb-4">
-                          <Plus className="h-8 w-8 text-white" />
-                        </div>
-                        <h6 className="text-lg font-semibold mb-2">Create Company</h6>
-                        <p className="text-sm text-muted-foreground text-center">
-                          Click here to add new company
-                        </p>
-                      </div>
-                    </DialogTrigger>
-                  </Dialog>
-                </CardContent>
-              </Card>
             </div>
+
+            {/* Dialog: Upgrade Plan */}
+            <Dialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Upgrade Plan</DialogTitle>
+                  <DialogDescription>
+                    Pilih plan baru untuk {selectedCompany?.name ?? ''}
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedCompany && (
+                  <div className="space-y-3">
+                    {plans.map((plan) => {
+                      const planData = planSummaries[plan]
+                      const isCurrentPlan = plan === selectedCompany.plan
+                      const formatLimit = (limit: number) => (limit === -1 ? 'Unlimited' : limit.toString())
+                      const formatDuration = (duration: string) => {
+                        if (duration === 'lifetime') return 'lifetime'
+                        if (duration === 'month') return 'month'
+                        if (duration === 'year') return 'year'
+                        return duration
+                      }
+
+                      return (
+                        <div
+                          key={plan}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold">{plan}</h4>
+                              <span className="text-sm text-muted-foreground">
+                                ({new Intl.NumberFormat('id-ID', {
+                                  style: 'currency',
+                                  currency: 'IDR',
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0,
+                                }).format(planData.price)} / {formatDuration(planData.durationLabel)})
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>Users: {formatLimit(planData.max_users)}</span>
+                              <span>Customers: {formatLimit(planData.max_customers)}</span>
+                              <span>Vendors: {formatLimit(planData.max_vendors)}</span>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            {isCurrentPlan ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-10 w-10 p-0 bg-green-500 hover:bg-green-600 text-white border-green-500"
+                                disabled
+                              >
+                                <Check className="h-5 w-5" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="blue"
+                                size="sm"
+                                className="h-10 w-10 p-0 shadow-none"
+                                onClick={() => {
+                                  // Update company plan
+                                  setCompanies(
+                                    companies.map((c) =>
+                                      c.id === selectedCompany.id ? { ...c, plan: plan } : c
+                                    )
+                                  )
+                                  setUpgradeDialogOpen(false)
+                                  setSelectedCompany(null)
+                                }}
+                              >
+                                <ShoppingCart className="h-5 w-5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setUpgradeDialogOpen(false)
+                      setSelectedCompany(null)
+                    }}
+                  >
+                    Tutup
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Admin Hub (Company Info) */}
+            <Dialog open={adminHubDialogOpen} onOpenChange={setAdminHubDialogOpen}>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Company Info</DialogTitle>
+                </DialogHeader>
+                {selectedCompany && (
+                  <div className="space-y-6">
+                    {/* Summary cards */}
+                    <div className="bg-white rounded-lg border p-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">Total User</p>
+                            <p className="text-lg font-semibold">
+                              {companyUsers[selectedCompany.id]?.length ?? 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">Active User</p>
+                            <p className="text-lg font-semibold">
+                              {companyUsers[selectedCompany.id]?.filter((u) => !u.is_disable).length ?? 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">Disable User</p>
+                            <p className="text-lg font-semibold">
+                              {companyUsers[selectedCompany.id]?.filter((u) => u.is_disable).length ?? 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User List */}
+                    {companyUsers[selectedCompany.id] && companyUsers[selectedCompany.id].length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {companyUsers[selectedCompany.id].map((user) => (
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between p-3 border border-green-200 rounded-lg bg-white"
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <Avatar className="h-10 w-10 border-2 border-green-200">
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback className="bg-green-100 text-green-700 text-sm">
+                                  {getInitials(user.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium text-sm">{user.name}</span>
+                            </div>
+                            <Switch
+                              checked={!user.is_disable}
+                              onCheckedChange={(checked) => {
+                                setCompanyUsers((prev) => ({
+                                  ...prev,
+                                  [selectedCompany.id]: prev[selectedCompany.id].map((u) =>
+                                    u.id === user.id ? { ...u, is_disable: !checked } : u
+                                  ),
+                                }))
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No users found for this company</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setAdminHubDialogOpen(false)}>
+                    Tutup
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </SidebarInset>

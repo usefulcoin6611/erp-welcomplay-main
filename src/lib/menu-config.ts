@@ -89,7 +89,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
           {
             title: "Plan Request",
             url: "/plan_request",
-            icon: IconFileText,
+            icon: IconClipboardCheck,
           },
           
           // ========== REFERRAL PROGRAM ==========
@@ -103,7 +103,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
           {
             title: "Coupon",
             url: "/coupons",
-            icon: IconCash,
+            icon: IconReceipt,
           },
           
           // ========== ORDER ==========
@@ -117,14 +117,14 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
           {
             title: "Email Template",
             url: "/email_template",
-            icon: IconBell,
+            icon: IconMessage,
           },
           
           // ========== LANDING PAGE ==========
           {
             title: "Landing Page",
             url: "/landingpage",
-            icon: IconFileText,
+            icon: IconDeviceDesktopAnalytics,
           },
         ],
         navSecondary: commonSecondary,

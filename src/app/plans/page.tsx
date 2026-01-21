@@ -68,7 +68,7 @@ const mockPlans: Plan[] = [
   {
     id: '2',
     name: 'Silver',
-    price: 49,
+    price: 250000,
     duration: 'month',
     max_users: 20,
     max_customers: 100,
@@ -87,7 +87,7 @@ const mockPlans: Plan[] = [
   {
     id: '3',
     name: 'Gold',
-    price: 99,
+    price: 750000,
     duration: 'month',
     max_users: 50,
     max_customers: 500,
@@ -106,7 +106,7 @@ const mockPlans: Plan[] = [
   {
     id: '4',
     name: 'Platinum',
-    price: 199,
+    price: 1500000,
     duration: 'month',
     max_users: -1,
     max_customers: -1,
@@ -254,7 +254,12 @@ export default function PlansPage() {
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID').format(price)
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
   }
 
   const formatLimit = (limit: number) => {
@@ -450,6 +455,7 @@ export default function PlansPage() {
                               onCheckedChange={(checked) =>
                                 setFormData({ ...formData, account: checked })
                               }
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
                             <Label htmlFor="account">Account</Label>
                           </div>
@@ -458,6 +464,7 @@ export default function PlansPage() {
                               id="crm"
                               checked={formData.crm}
                               onCheckedChange={(checked) => setFormData({ ...formData, crm: checked })}
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
                             <Label htmlFor="crm">CRM</Label>
                           </div>
@@ -466,6 +473,7 @@ export default function PlansPage() {
                               id="hrm"
                               checked={formData.hrm}
                               onCheckedChange={(checked) => setFormData({ ...formData, hrm: checked })}
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
                             <Label htmlFor="hrm">HRM</Label>
                           </div>
@@ -476,6 +484,7 @@ export default function PlansPage() {
                               onCheckedChange={(checked) =>
                                 setFormData({ ...formData, project: checked })
                               }
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
                             <Label htmlFor="project">Project</Label>
                           </div>
@@ -484,6 +493,7 @@ export default function PlansPage() {
                               id="pos"
                               checked={formData.pos}
                               onCheckedChange={(checked) => setFormData({ ...formData, pos: checked })}
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
                             <Label htmlFor="pos">POS</Label>
                           </div>
@@ -494,6 +504,7 @@ export default function PlansPage() {
                               onCheckedChange={(checked) =>
                                 setFormData({ ...formData, chatgpt: checked })
                               }
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
                             <Label htmlFor="chatgpt">Chat GPT</Label>
                           </div>
@@ -518,10 +529,10 @@ export default function PlansPage() {
             </div>
 
             {/* Plans Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {plans.map((plan) => (
                 <Card key={plan.id} className="relative">
-                  <CardContent className="p-6">
+                  <CardContent className="p-5">
                     {/* Plan Badge */}
                     <div className="flex items-center justify-between mb-4">
                       <Badge className="bg-blue-500 text-white text-sm px-3 py-1">
@@ -536,6 +547,7 @@ export default function PlansPage() {
                                 plans.map((p) => (p.id === plan.id ? { ...p, is_disable: checked } : p))
                               )
                             }}
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                         </div>
                       )}
@@ -543,21 +555,21 @@ export default function PlansPage() {
 
                     {/* Price */}
                     <div className="mb-4">
-                      <h1 className="text-3xl font-semibold mb-0">
-                        ${formatPrice(plan.price)}
-                        <small className="text-sm text-muted-foreground ml-1">
+                      <h1 className="text-2xl font-semibold mb-0">
+                        {formatPrice(plan.price)}
+                        <small className="text-xs text-muted-foreground ml-1">
                           /{getDurationLabel(plan.duration)}
                         </small>
                       </h1>
-                      <p className="text-sm text-muted-foreground mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         Free Trial Days : {plan.trial_days || 0}
                       </p>
                     </div>
 
                     {/* Features */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-2 gap-3 mb-5">
                       <div>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-1.5 text-xs">
                           <li className="flex items-center gap-2">
                             <CirclePlus className="h-4 w-4 text-blue-500" />
                             {formatLimit(plan.max_users)} Users
@@ -581,7 +593,7 @@ export default function PlansPage() {
                         </ul>
                       </div>
                       <div>
-                        <ul className="space-y-2 text-sm">
+                        <ul className="space-y-1.5 text-xs">
                           <li className="flex items-center gap-2">
                             {plan.account ? (
                               <CirclePlus className="h-4 w-4 text-blue-500" />
@@ -846,6 +858,7 @@ export default function PlansPage() {
                             onCheckedChange={(checked) =>
                               setFormData({ ...formData, account: checked })
                             }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                           <Label htmlFor="edit_account">Account</Label>
                         </div>
@@ -854,6 +867,7 @@ export default function PlansPage() {
                             id="edit_crm"
                             checked={formData.crm}
                             onCheckedChange={(checked) => setFormData({ ...formData, crm: checked })}
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                           <Label htmlFor="edit_crm">CRM</Label>
                         </div>
@@ -862,6 +876,7 @@ export default function PlansPage() {
                             id="edit_hrm"
                             checked={formData.hrm}
                             onCheckedChange={(checked) => setFormData({ ...formData, hrm: checked })}
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                           <Label htmlFor="edit_hrm">HRM</Label>
                         </div>
@@ -872,6 +887,7 @@ export default function PlansPage() {
                             onCheckedChange={(checked) =>
                               setFormData({ ...formData, project: checked })
                             }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                           <Label htmlFor="edit_project">Project</Label>
                         </div>
@@ -880,6 +896,7 @@ export default function PlansPage() {
                             id="edit_pos"
                             checked={formData.pos}
                             onCheckedChange={(checked) => setFormData({ ...formData, pos: checked })}
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                           <Label htmlFor="edit_pos">POS</Label>
                         </div>
@@ -890,6 +907,7 @@ export default function PlansPage() {
                             onCheckedChange={(checked) =>
                               setFormData({ ...formData, chatgpt: checked })
                             }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                           <Label htmlFor="edit_chatgpt">Chat GPT</Label>
                         </div>

@@ -27,14 +27,14 @@ interface Order {
   is_refund: number
 }
 
-// Mock data
+// Mock data - Harga dalam rupiah (sesuai dengan harga plan)
 const mockOrders: Order[] = [
   {
     id: '1',
     order_id: 'ORD-001',
     user_name: 'Acme Corporation',
     plan_name: 'Gold',
-    price: 99,
+    price: 750000,
     payment_status: 'success',
     payment_type: 'STRIPE',
     date: '2024-01-15',
@@ -47,7 +47,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-002',
     user_name: 'Tech Solutions Inc',
     plan_name: 'Platinum',
-    price: 199,
+    price: 1500000,
     payment_status: 'Pending',
     payment_type: 'Bank Transfer',
     date: '2024-01-14',
@@ -59,7 +59,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-003',
     user_name: 'Global Enterprises',
     plan_name: 'Silver',
-    price: 49,
+    price: 250000,
     payment_status: 'Approved',
     payment_type: 'Manually',
     date: '2024-01-13',
@@ -81,7 +81,12 @@ const mockOrders: Order[] = [
 ]
 
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('id-ID').format(price)
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price)
 }
 
 const formatDate = (dateString: string) => {
@@ -237,7 +242,7 @@ export default function OrdersPage() {
                           <td className="px-4 py-3">
                             <Badge className="bg-blue-100 text-blue-700">{order.plan_name}</Badge>
                           </td>
-                          <td className="px-4 py-3">${formatPrice(order.price)}</td>
+                          <td className="px-4 py-3">{formatPrice(order.price)}</td>
                           <td className="px-4 py-3">{getStatusBadge(order.payment_status)}</td>
                           <td className="px-4 py-3 text-sm">{order.payment_type}</td>
                           <td className="px-4 py-3 text-sm">{formatDate(order.date)}</td>

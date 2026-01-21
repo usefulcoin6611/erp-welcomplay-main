@@ -42,25 +42,25 @@ interface ReferralSettings {
   guideline: string
 }
 
-// Mock data
+// Mock data - Harga dalam rupiah
 const mockTransactions: ReferralTransaction[] = [
   {
     id: '1',
     company_name: 'Acme Corporation',
     referral_company_name: 'Tech Solutions Inc',
     plan_name: 'Gold',
-    plan_price: 99,
+    plan_price: 750000,
     commission: 10,
-    commission_amount: 9.9,
+    commission_amount: 75000,
   },
   {
     id: '2',
     company_name: 'Global Enterprises',
     referral_company_name: 'Startup Company',
     plan_name: 'Platinum',
-    plan_price: 199,
+    plan_price: 1500000,
     commission: 10,
-    commission_amount: 19.9,
+    commission_amount: 150000,
   },
 ]
 
@@ -69,22 +69,24 @@ const mockPayoutRequests: PayoutRequest[] = [
     id: '1',
     company_name: 'Acme Corporation',
     requested_date: '2024-01-15',
-    requested_amount: 50,
+    requested_amount: 50000,
     status: 0, // Pending
   },
   {
     id: '2',
     company_name: 'Tech Solutions Inc',
     requested_date: '2024-01-14',
-    requested_amount: 100,
+    requested_amount: 100000,
     status: 1, // Approved
   },
 ]
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('id-ID', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(price)
 }
 
@@ -122,7 +124,7 @@ export default function ReferralProgramPage() {
   const [settings, setSettings] = useState<ReferralSettings>({
     is_enable: true,
     percentage: 10,
-    minimum_threshold_amount: 50,
+    minimum_threshold_amount: 50000,
     guideline: 'Refer companies and earn commission on their subscription plans.',
   })
 
@@ -185,10 +187,10 @@ export default function ReferralProgramPage() {
                             {transaction.plan_name}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3">${formatPrice(transaction.plan_price)}</td>
+                        <td className="px-4 py-3">{formatPrice(transaction.plan_price)}</td>
                         <td className="px-4 py-3">{transaction.commission}%</td>
                         <td className="px-4 py-3">
-                          ${formatPrice(transaction.commission_amount)}
+                          {formatPrice(transaction.commission_amount)}
                         </td>
                       </tr>
                     ))}
@@ -222,7 +224,7 @@ export default function ReferralProgramPage() {
                         <td className="px-4 py-3">{index + 1}</td>
                         <td className="px-4 py-3">{request.company_name}</td>
                         <td className="px-4 py-3">{formatDate(request.requested_date)}</td>
-                        <td className="px-4 py-3">${formatPrice(request.requested_amount)}</td>
+                        <td className="px-4 py-3">{formatPrice(request.requested_amount)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
                             <Button
@@ -291,26 +293,20 @@ export default function ReferralProgramPage() {
                     <Label htmlFor="minimum_threshold_amount">
                       Minimum Threshold Amount <span className="text-red-500">*</span>
                     </Label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm">
-                        $
-                      </span>
-                      <Input
-                        id="minimum_threshold_amount"
-                        type="number"
-                        value={settings.minimum_threshold_amount}
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            minimum_threshold_amount: parseFloat(e.target.value),
-                          })
-                        }
-                        placeholder="Enter Minimum Payout"
-                        required
-                        disabled={!settings.is_enable}
-                        className="rounded-l-none"
-                      />
-                    </div>
+                    <Input
+                      id="minimum_threshold_amount"
+                      type="number"
+                      value={settings.minimum_threshold_amount}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          minimum_threshold_amount: parseFloat(e.target.value),
+                        })
+                      }
+                      placeholder="Enter Minimum Payout (Rupiah)"
+                      required
+                      disabled={!settings.is_enable}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -416,10 +412,10 @@ export default function ReferralProgramPage() {
                             {transaction.plan_name}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3">${formatPrice(transaction.plan_price)}</td>
+                        <td className="px-4 py-3">{formatPrice(transaction.plan_price)}</td>
                         <td className="px-4 py-3">{transaction.commission}%</td>
                         <td className="px-4 py-3">
-                          ${formatPrice(transaction.commission_amount)}
+                          {formatPrice(transaction.commission_amount)}
                         </td>
                       </tr>
                     ))}
@@ -463,7 +459,9 @@ export default function ReferralProgramPage() {
                           <span className="text-sm text-muted-foreground block mb-1">Total</span>
                           <h2 className="text-lg font-semibold mb-0">Commission Amount</h2>
                         </div>
-                        <h3 className="text-xl font-semibold">$150.00</h3>
+                        <h3 className="text-xl font-semibold">
+                          {formatPrice(150000)}
+                        </h3>
                       </div>
                     </CardContent>
                   </Card>
@@ -488,7 +486,9 @@ export default function ReferralProgramPage() {
                           <span className="text-sm text-muted-foreground block mb-1">Paid</span>
                           <h2 className="text-lg font-semibold mb-0">Paid Amount</h2>
                         </div>
-                        <h3 className="text-xl font-semibold">$50.00</h3>
+                        <h3 className="text-xl font-semibold">
+                          {formatPrice(50000)}
+                        </h3>
                       </div>
                     </CardContent>
                   </Card>
@@ -518,7 +518,7 @@ export default function ReferralProgramPage() {
                           <td className="px-4 py-3">
                             {request.status !== undefined && getStatusBadge(request.status)}
                           </td>
-                          <td className="px-4 py-3">${formatPrice(request.requested_amount)}</td>
+                          <td className="px-4 py-3">{formatPrice(request.requested_amount)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -557,12 +557,14 @@ export default function ReferralProgramPage() {
             {/* Tabs */}
             <Card>
               <CardContent className="p-0">
-                <SmoothTab
-                  items={tabItems}
-                  defaultTabId={activeTab}
-                  onChange={handleTabChange}
-                  activeColor="bg-white dark:bg-gray-700 shadow-xs"
-                />
+                <div className="px-4 pt-4">
+                  <SmoothTab
+                    items={tabItems}
+                    defaultTabId={activeTab}
+                    onChange={handleTabChange}
+                    activeColor="bg-white dark:bg-gray-700 shadow-xs"
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>
