@@ -215,17 +215,17 @@ export default function PlanRequestPage() {
                             <td className="px-4 py-3">
                               <div className="flex items-center justify-center gap-2">
                                 <Button
-                                  variant="blue"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7"
+                                  className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                   title="Approve"
                                 >
                                   <Check className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  variant="destructive"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Reject"
                                 >
                                   <X className="h-4 w-4" />

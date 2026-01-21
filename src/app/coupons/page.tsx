@@ -304,20 +304,24 @@ export default function CouponsPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center gap-2">
                               <Button
-                                variant="secondary"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                                 onClick={() => handleView(coupon)}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="blue" size="sm" className="shadow-none h-7">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none h-7"
+                                className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                 onClick={() => handleDelete(coupon.id)}
                               >
                                 <Trash className="h-4 w-4" />

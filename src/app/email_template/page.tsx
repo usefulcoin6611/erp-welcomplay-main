@@ -150,9 +150,9 @@ export default function EmailTemplatePage() {
                               {isSuperAdmin ? (
                                 <Link href={`/email_template/${template.id}`}>
                                   <Button
-                                    variant="secondary"
+                                    variant="outline"
                                     size="sm"
-                                    className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                    className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>

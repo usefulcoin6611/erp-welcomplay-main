@@ -650,15 +650,19 @@ export default function PlansPage() {
                     {isSuperAdmin ? (
                       <div className="flex items-center justify-center gap-2 pt-4 border-t">
                         <Button
-                          variant="blue"
+                          variant="outline"
                           size="sm"
-                          className="shadow-none"
+                          className="shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                           onClick={() => handleEdit(plan)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {plan.id !== '1' && (
-                          <Button variant="destructive" size="sm" className="shadow-none">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                          >
                             <Trash className="h-4 w-4" />
                           </Button>
                         )}
