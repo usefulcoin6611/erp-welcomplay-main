@@ -133,12 +133,29 @@ const formatDate = (dateString: string) => {
 export default function PlanRequestPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [planRequests, setPlanRequests] = useState<PlanRequest[]>(mockPlanRequests)
   
   // Calculate pagination
-  const totalCount = mockPlanRequests.length
+  const totalCount = planRequests.length
   const startIndex = (currentPage - 1) * pageSize
   const endIndex = startIndex + pageSize
-  const paginatedRequests = mockPlanRequests.slice(startIndex, endIndex)
+  const paginatedRequests = planRequests.slice(startIndex, endIndex)
+
+  const handleApprove = (id: string) => {
+    if (confirm('Are you sure you want to approve this plan request?')) {
+      console.log('Approve plan request:', id)
+      // Remove approved request from list
+      setPlanRequests(planRequests.filter((r) => r.id !== id))
+    }
+  }
+
+  const handleReject = (id: string) => {
+    if (confirm('Are you sure you want to reject this plan request?')) {
+      console.log('Reject plan request:', id)
+      // Remove rejected request from list
+      setPlanRequests(planRequests.filter((r) => r.id !== id))
+    }
+  }
   
   return (
     <SidebarProvider
@@ -219,6 +236,7 @@ export default function PlanRequestPage() {
                                   size="sm"
                                   className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                   title="Approve"
+                                  onClick={() => handleApprove(request.id)}
                                 >
                                   <Check className="h-4 w-4" />
                                 </Button>
@@ -227,6 +245,7 @@ export default function PlanRequestPage() {
                                   size="sm"
                                   className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Reject"
+                                  onClick={() => handleReject(request.id)}
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>

@@ -253,6 +253,12 @@ export default function PlansPage() {
     })
   }
 
+  const handleDelete = (id: string) => {
+    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
+      setPlans(plans.filter((p) => p.id !== id))
+    }
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -662,6 +668,7 @@ export default function PlansPage() {
                             variant="outline"
                             size="sm"
                             className="shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            onClick={() => handleDelete(plan.id)}
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
