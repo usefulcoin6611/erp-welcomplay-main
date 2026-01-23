@@ -4,13 +4,14 @@ import { useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // Types
 interface ProductStock {
@@ -81,7 +82,6 @@ export default function ProductStockPage() {
 
   // Pagination calculations
   const totalRecords = mockProductStocks.length
-  const totalPages = Math.ceil(totalRecords / pageSize)
 
   return (
     <SidebarProvider
@@ -99,86 +99,82 @@ export default function ProductStockPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold">Product Stock</h1>
-                <p className="text-sm text-muted-foreground mt-1">Manage product stock quantities</p>
               </div>
             </div>
 
             {/* Main Content */}
-            <Card>
-              <div className="pt-4 pb-0">
-                <div className="px-6 mb-3">
-                  <CardTitle className="text-base">Product Stock List</CardTitle>
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table className="w-full min-w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-4 py-3">Name</TableHead>
+                        <TableHead className="px-4 py-3">Sku</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Current Quantity</TableHead>
+                        <TableHead className="px-4 py-3">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            No products found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedData.map((product) => (
+                          <TableRow key={product.id} className="font-style">
+                            <TableCell className="px-4 py-3 font-medium">{product.name}</TableCell>
+                            <TableCell className="px-4 py-3 text-muted-foreground">{product.sku}</TableCell>
+                            <TableCell className="px-4 py-3 text-right">
+                              {(() => {
+                                const q = product.quantity
+                                const cls =
+                                  q === 0
+                                    ? 'bg-red-100 text-red-700 border-red-200'
+                                    : q < 10
+                                      ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                      : 'bg-green-100 text-green-700 border-green-200'
+                                return (
+                                  <span className={`${cls} px-2 py-0.5 rounded text-sm font-medium border`}>
+                                    {q}
+                                  </span>
+                                )
+                              })()}
+                            </TableCell>
+                            <TableCell className="px-4 py-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                                title="Update Quantity"
+                                onClick={() => handleUpdateQuantity(product)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              </div>
 
-              <CardContent className="pt-0">
-                <div style={{ minHeight: '400px' }}>
-                  <div className="p-4 space-y-4">
-                    {/* Table */}
-                    <div className="rounded-md border overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Name</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">SKU</th>
-                            <th className="px-3 py-2 text-right text-xs font-medium">Current Quantity</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedData.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                                No products found
-                              </td>
-                            </tr>
-                          ) : (
-                            paginatedData.map((product) => (
-                              <tr key={product.id} className="border-t hover:bg-muted/50">
-                                <td className="px-3 py-2 text-sm font-medium">{product.name}</td>
-                                <td className="px-3 py-2 text-sm text-muted-foreground">{product.sku}</td>
-                                <td className="px-3 py-2 text-sm text-right">
-                                  {(() => {
-                                    const q = product.quantity
-                                    const cls = q === 0 ? 'bg-red-100 text-red-600' : q < 10 ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'
-                                    return <span className={`${cls} px-2 py-0.5 rounded text-sm font-medium`}>{q}</span>
-                                  })()}
-                                </td>
-                                <td className="px-3 py-2 text-sm text-center">
-                                  <Button
-                                    variant="blue"
-                                    size="sm"
-                                    className="shadow-none h-7"
-                                    title="Update Quantity"
-                                    onClick={() => handleUpdateQuantity(product)}
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination */}
-                    {totalRecords > 0 && (
-                      <div className="mt-4">
-                        <SimplePagination
-                          currentPage={currentPage}
-                          totalCount={totalRecords}
-                          onPageChange={setCurrentPage}
-                          pageSize={pageSize}
-                          onPageSizeChange={(size) => {
-                            setPageSize(size)
-                            setCurrentPage(1)
-                          }}
-                        />
-                      </div>
-                    )}
+                {totalRecords > 0 && (
+                  <div className="mt-4 px-4 pb-4">
+                    <SimplePagination
+                      currentPage={currentPage}
+                      totalCount={totalRecords}
+                      onPageChange={setCurrentPage}
+                      pageSize={pageSize}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -187,9 +183,6 @@ export default function ProductStockPage() {
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Update Quantity</DialogTitle>
-                  <DialogDescription>
-                    Update the quantity for the selected product
-                  </DialogDescription>
                 </DialogHeader>
                 {selectedProduct && (
                   <form onSubmit={handleSaveQuantity} className="space-y-4">
@@ -240,6 +233,7 @@ export default function ProductStockPage() {
     </SidebarProvider>
   )
 }
+
 
 
 

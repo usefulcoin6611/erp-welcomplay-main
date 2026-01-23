@@ -400,12 +400,12 @@ export default function SupportPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="shadow-none">
+                <Button variant="outline" size="sm" className="shadow-none h-7">
                   <LayoutGrid className="mr-2 h-4 w-4" /> Grid View
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none">
+                    <Button size="sm" variant="blue" className="shadow-none h-7">
                       <Plus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
@@ -543,7 +543,7 @@ export default function SupportPage() {
                         >
                           Cancel
                         </Button>
-                        <Button type="submit" variant="blue">Create</Button>
+                        <Button type="submit" variant="blue" className="shadow-none">Create</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -552,7 +552,7 @@ export default function SupportPage() {
             </div>
 
             {/* Search */}
-            <Card className="shadow-none">
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -581,80 +581,68 @@ export default function SupportPage() {
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Total Tickets */}
-              <Card className="shadow-none border-l-4 border-l-blue-500">
-                <CardContent className="p-4">
+              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 rounded-lg bg-blue-100">
-                        <TicketIcon className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-1">Total</p>
-                        <h3 className="text-2xl font-semibold">Ticket</h3>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Total Tickets</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalTickets}</h3>
                     </div>
-                    <h3 className="text-2xl font-bold">{totalTickets}</h3>
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <TicketIcon className="w-6 h-6 text-blue-600" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Open Tickets */}
-              <Card className="shadow-none border-l-4 border-l-success">
-                <CardContent className="p-4">
+              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 rounded-lg bg-success/10">
-                        <CheckCircle2 className="h-5 w-5 text-success" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-1">Open</p>
-                        <h3 className="text-2xl font-semibold">Ticket</h3>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Open Tickets</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{openTickets}</h3>
                     </div>
-                    <h3 className="text-2xl font-bold">{openTickets}</h3>
+                    <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-green-600" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* On Hold Tickets */}
-              <Card className="shadow-none border-l-4 border-l-warning">
-                <CardContent className="p-4">
+              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 rounded-lg bg-warning/10">
-                        <PauseCircle className="h-5 w-5 text-warning" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-1">On Hold</p>
-                        <h3 className="text-2xl font-semibold">Ticket</h3>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">On Hold Tickets</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{onHoldTickets}</h3>
                     </div>
-                    <h3 className="text-2xl font-bold">{onHoldTickets}</h3>
+                    <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
+                      <PauseCircle className="w-6 h-6 text-yellow-600" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Close Tickets */}
-              <Card className="shadow-none border-l-4 border-l-destructive">
-                <CardContent className="p-4">
+              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 rounded-lg bg-destructive/10">
-                        <XCircle className="h-5 w-5 text-destructive" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-1">Close</p>
-                        <h3 className="text-2xl font-semibold">Ticket</h3>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Close Tickets</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{closeTickets}</h3>
                     </div>
-                    <h3 className="text-2xl font-bold">{closeTickets}</h3>
+                    <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
+                      <XCircle className="w-6 h-6 text-gray-600" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Support Table */}
-            <Card className="shadow-none">
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
@@ -709,10 +697,10 @@ export default function SupportPage() {
                           <TableCell>
                             {support.attachment ? (
                               <div className="flex items-center gap-2">
-                                <Button variant="blue" size="sm" className="shadow-none h-7">
+                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
                                   <Download className="h-3 w-3" />
                                 </Button>
-                                <Button variant="secondary" size="sm" className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white">
+                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100">
                                   <Eye className="h-3 w-3" />
                                 </Button>
                               </div>
@@ -730,23 +718,23 @@ export default function SupportPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Button
-                                variant="default"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none bg-yellow-500 hover:bg-yellow-600 text-white"
+                                className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                               >
                                 <Reply className="h-4 w-4" />
                               </Button>
                               <Button 
-                                variant="blue" 
+                                variant="outline" 
                                 size="sm" 
-                                className="shadow-none"
+                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none"
+                                className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                 onClick={() => handleDelete(support.id)}
                               >
                                 <Trash className="h-4 w-4" />

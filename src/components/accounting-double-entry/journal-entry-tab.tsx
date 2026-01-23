@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,12 +15,12 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
-  IconCalendar,
-  IconSearch,
-  IconPlus,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react'
+  Plus,
+  Search,
+  RefreshCw,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 
 const journalEntries = [
   {
@@ -83,76 +82,84 @@ export function JournalEntryTab() {
 
   const totalRecords = filteredData.length
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, date])
+
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
       <div className="flex items-center justify-end">
-        <Button asChild variant="blue" size="sm" className="shadow-none h-7">
+        <Button asChild variant="blue" size="sm" className="shadow-none h-7" title="Create">
           <Link href="/accounting/journal-entry/create">
-            <IconPlus className="h-3 w-3 mr-2" />
-            Create Journal
+            <Plus className="h-3 w-3" />
           </Link>
         </Button>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Search journal entries by date or description.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="px-4 py-3">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+            }}
+            className="flex flex-col gap-4 md:flex-row md:items-end"
+          >
             <div className="flex-1 min-w-0">
-              <label className="mb-1 block text-sm font-medium">Search</label>
-              <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                <Input
-                  placeholder="Search journal number or description..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="pl-10"
-                />
-              </div>
+              <label className="text-sm font-medium">Search</label>
+              <Input
+                placeholder="Search journal number or description..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9"
+              />
             </div>
             <div className="w-full md:w-44">
-              <label className="mb-1 block text-sm font-medium">Date</label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <label className="text-sm font-medium">Date</label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9" />
+            </div>
+            <div className="flex items-end gap-2">
+              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Search">
+                <Search className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                title="Reset"
+                onClick={() => {
+                  setSearch('')
+                  setDate('')
+                }}
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
 
       {/* Journal Entries Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Journal List</CardTitle>
-          <CardDescription>
-            Summary of general journal entries, total debit and credit must be balanced.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto w-full">
+            <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Journal ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-4 py-3">Journal ID</TableHead>
+                  <TableHead className="px-4 py-3">Date</TableHead>
+                  <TableHead className="px-4 py-3">Amount</TableHead>
+                  <TableHead className="px-4 py-3">Description</TableHead>
+                  <TableHead className="px-4 py-3">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <Button
                           asChild
                           variant="outline"
@@ -164,35 +171,30 @@ export function JournalEntryTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <IconCalendar className="h-3 w-3" />
-                          <span>{entry.date}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-4 py-3">{entry.date}</TableCell>
+                      <TableCell className="px-4 py-3 font-medium">
                         {formatPrice(entry.amount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <span className="text-sm">{entry.description || '-'}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
                             asChild
                           >
                             <Link href={`/accounting/journal-entry/${entry.id}/edit`}>
-                              <IconPencil className="h-3 w-3" />
+                              <Pencil className="h-3 w-3" />
                             </Link>
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
                             onClick={() => {
                               if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
@@ -200,7 +202,7 @@ export function JournalEntryTab() {
                               }
                             }}
                           >
-                            <IconTrash className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
@@ -216,17 +218,23 @@ export function JournalEntryTab() {
               </TableBody>
             </Table>
           </div>
-          <div className="mt-4">
-            <SimplePagination
-              totalCount={totalRecords}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-            />
-          </div>
+          {totalRecords > 0 && (
+            <div className="mt-4 px-4 pb-4">
+              <SimplePagination
+                totalCount={totalRecords}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
+

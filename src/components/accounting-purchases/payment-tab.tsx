@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -33,15 +33,14 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
-  IconCalendar,
-  IconSearch,
-  IconPlus,
-  IconRefresh,
-  IconDownload,
-  IconEye,
-  IconEdit,
-  IconTrash,
-} from '@tabler/icons-react'
+  Plus,
+  Search,
+  RefreshCw,
+  Download,
+  Eye,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 
 // Mock payments
 const payments = [
@@ -114,6 +113,7 @@ export function PaymentTab() {
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -165,122 +165,145 @@ export function PaymentTab() {
 
   const totalRecords = filteredData.length
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters.date, filters.account, filters.vendor, filters.category])
+
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
       <div className="flex items-center justify-end">
-        <Dialog>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7">
-              <IconPlus className="h-3 w-3 mr-2" />
-              Create Payment
+            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
+              <Plus className="h-3 w-3" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Payment</DialogTitle>
-              <DialogDescription>
-                Record a new payment transaction.
-              </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="create-vendor">
+                    Vendor <span className="text-red-500">*</span>
+                  </Label>
+                  <Select required>
+                    <SelectTrigger id="create-vendor">
+                      <SelectValue placeholder="Select Vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendors.map((vendor) => (
+                        <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create vendor here.{' '}
+                    <Link className="font-medium text-primary" href="/accounting/purchases?tab=supplier">
+                      Create vendor
+                    </Link>
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="create-date">
                     Date <span className="text-red-500">*</span>
                   </Label>
                   <Input id="create-date" type="date" required />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="create-amount">
                     Amount <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="create-amount" type="number" step="0.01" placeholder="0.00" required />
+                  <Input id="create-amount" type="number" step="0.01" placeholder="Enter Amount" required />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-account">
-                  Account <span className="text-red-500">*</span>
-                </Label>
-                <Select required>
-                  <SelectTrigger id="create-account">
-                    <SelectValue placeholder="Select Account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id.toString()}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-vendor">
-                  Vendor <span className="text-red-500">*</span>
-                </Label>
-                <Select required>
-                  <SelectTrigger id="create-vendor">
-                    <SelectValue placeholder="Select Vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendors.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id.toString()}>
-                        {vendor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-category">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <Select required>
-                  <SelectTrigger id="create-category">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-reference">Reference</Label>
-                <Input id="create-reference" placeholder="Enter reference" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-description">Description</Label>
-                <Textarea id="create-description" placeholder="Enter description" rows={3} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-receipt">Payment Receipt</Label>
-                <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+
+                <div className="space-y-2">
+                  <Label htmlFor="create-category">
+                    Category <span className="text-red-500">*</span>
+                  </Label>
+                  <Select required>
+                    <SelectTrigger id="create-category">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create category here.{' '}
+                    <Link className="font-medium text-primary" href="/accounting/setup?tab=category">
+                      Create category
+                    </Link>
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="create-account">
+                    Account <span className="text-red-500">*</span>
+                  </Label>
+                  <Select required>
+                    <SelectTrigger id="create-account">
+                      <SelectValue placeholder="Select Account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id.toString()}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create account here.{' '}
+                    <Link className="font-medium text-primary" href="/accounting/bank-account">
+                      Create account
+                    </Link>
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="create-reference">Reference</Label>
+                  <Input id="create-reference" placeholder="Enter Reference" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="create-receipt">Payment Receipt</Label>
+                  <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="create-description">Description</Label>
+                  <Textarea id="create-description" placeholder="Enter Description" rows={3} />
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" className="shadow-none">Cancel</Button>
-              <Button variant="blue" className="shadow-none">Create</Button>
+              <Button variant="secondary" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="blue" className="shadow-none">
+                Create
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Search and filter payments by date, account, vendor, and category.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={(e) => { e.preventDefault(); handleApply(); }}>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="px-4 py-3">
+          <form onSubmit={(e) => { e.preventDefault(); handleApply(); }} className="flex flex-col gap-4 md:flex-row md:items-end">
+            <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
                 <Input
@@ -288,6 +311,7 @@ export function PaymentTab() {
                   type="date"
                   value={filters.date}
                   onChange={(e) => handleFilterChange('date', e.target.value)}
+                  className="h-9"
                 />
               </div>
               <div className="space-y-2">
@@ -296,7 +320,7 @@ export function PaymentTab() {
                   value={filters.account}
                   onValueChange={(value) => handleFilterChange('account', value)}
                 >
-                  <SelectTrigger id="account">
+                  <SelectTrigger id="account" className="h-9">
                     <SelectValue placeholder="Select Account" />
                   </SelectTrigger>
                   <SelectContent>
@@ -314,7 +338,7 @@ export function PaymentTab() {
                   value={filters.vendor}
                   onValueChange={(value) => handleFilterChange('vendor', value)}
                 >
-                  <SelectTrigger id="vendor">
+                  <SelectTrigger id="vendor" className="h-9">
                     <SelectValue placeholder="Select Vendor" />
                   </SelectTrigger>
                   <SelectContent>
@@ -332,7 +356,7 @@ export function PaymentTab() {
                   value={filters.category}
                   onValueChange={(value) => handleFilterChange('category', value)}
                 >
-                  <SelectTrigger id="category">
+                  <SelectTrigger id="category" className="h-9">
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -345,25 +369,25 @@ export function PaymentTab() {
                 </Select>
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-end gap-2">
               <Button
                 type="submit"
-                variant="blue"
                 size="sm"
-                className="shadow-none h-7"
+                variant="outline"
+                className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
               >
-                <IconSearch className="h-3 w-3 mr-2" />
-                Apply
+                <Search className="h-3 w-3" />
               </Button>
               <Button
                 type="button"
-                variant="destructive"
                 size="sm"
-                className="shadow-none h-7"
+                variant="outline"
+                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                 onClick={handleReset}
+                title="Reset"
               >
-                <IconRefresh className="h-3 w-3 mr-2" />
-                Reset
+                <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
           </form>
@@ -371,85 +395,79 @@ export function PaymentTab() {
       </Card>
 
       {/* Payments Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment List</CardTitle>
-          <CardDescription>
-            Overview of vendor payments.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto w-full">
+            <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Payment Receipt</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="px-4 py-3">Date</TableHead>
+                  <TableHead className="px-4 py-3">Amount</TableHead>
+                  <TableHead className="px-4 py-3">Account</TableHead>
+                  <TableHead className="px-4 py-3">Vendor</TableHead>
+                  <TableHead className="px-4 py-3">Category</TableHead>
+                  <TableHead className="px-4 py-3">Reference</TableHead>
+                  <TableHead className="px-4 py-3">Description</TableHead>
+                  <TableHead className="px-4 py-3">Payment Receipt</TableHead>
+                  <TableHead className="px-4 py-3">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {formatDate(payment.date)}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-4 py-3 font-medium">
                         {formatPrice(payment.amount)}
                       </TableCell>
-                      <TableCell>{payment.account}</TableCell>
-                      <TableCell>{payment.vendor}</TableCell>
-                      <TableCell>{payment.category}</TableCell>
-                      <TableCell>{payment.reference || '-'}</TableCell>
-                      <TableCell>{payment.description || '-'}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">{payment.account}</TableCell>
+                      <TableCell className="px-4 py-3">{payment.vendor}</TableCell>
+                      <TableCell className="px-4 py-3">{payment.category}</TableCell>
+                      <TableCell className="px-4 py-3">{payment.reference || '-'}</TableCell>
+                      <TableCell className="px-4 py-3">{payment.description || '-'}</TableCell>
+                      <TableCell className="px-4 py-3">
                         {payment.paymentReceipt ? (
                           <div className="flex items-center gap-2">
                             <Button
-                              variant="secondary"
                               size="sm"
-                              className="shadow-none h-7 bg-blue-500 hover:bg-blue-600 text-white"
+                              variant="outline"
+                              className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                               title="Download"
                               onClick={() => console.log('Download:', payment.paymentReceipt)}
                             >
-                              <IconDownload className="h-3 w-3" />
+                              <Download className="h-3 w-3" />
                             </Button>
                             <Button
-                              variant="secondary"
                               size="sm"
-                              className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white"
+                              variant="outline"
+                              className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                               title="Preview"
                               onClick={() => console.log('Preview:', payment.paymentReceipt)}
                             >
-                              <IconEye className="h-3 w-3" />
+                              <Eye className="h-3 w-3" />
                             </Button>
                           </div>
                         ) : (
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
-                            variant="secondary"
                             size="sm"
-                            className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            variant="outline"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
                             onClick={() => console.log('Edit payment:', payment.id)}
                           >
-                            <IconEdit className="h-3 w-3" />
+                            <Pencil className="h-3 w-3" />
                           </Button>
                           <Button
-                            variant="destructive"
                             size="sm"
-                            className="shadow-none h-7"
+                            variant="outline"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
                             onClick={() => {
                               if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
@@ -457,7 +475,7 @@ export function PaymentTab() {
                               }
                             }}
                           >
-                            <IconTrash className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
@@ -473,17 +491,23 @@ export function PaymentTab() {
               </TableBody>
             </Table>
           </div>
-          <div className="mt-4">
+          {totalRecords > 0 && (
+          <div className="mt-4 px-4 pb-4">
             <SimplePagination
               totalCount={totalRecords}
               currentPage={currentPage}
               pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
             />
           </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
+

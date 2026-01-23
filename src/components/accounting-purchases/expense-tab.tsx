@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,14 +23,13 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
-  IconCalendar,
-  IconSearch,
-  IconPlus,
-  IconRefresh,
-  IconEye,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react'
+  Plus,
+  Search,
+  RefreshCw,
+  Eye,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 
 // Mock expenses
 const expenses = [
@@ -56,9 +55,9 @@ const expenses = [
 
 function getExpenseStatusClasses(status: string) {
   switch (status) {
-    case 'Paid': return 'bg-green-100 text-green-700 border-none'
-    case 'Pending': return 'bg-yellow-100 text-yellow-700 border-none'
-    default: return 'bg-slate-100 text-slate-700 border-none'
+    case 'Paid': return 'bg-green-100 text-green-700 border-green-200'
+    case 'Pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+    default: return 'bg-slate-100 text-slate-700 border-slate-200'
   }
 }
 
@@ -102,54 +101,53 @@ export function ExpenseTab() {
     setCurrentPage(1)
   }
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [paymentDate, category])
+
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
       <div className="flex items-center justify-end">
-        <Button asChild variant="blue" size="sm" className="shadow-none h-7">
-          <Link href="/accounting/expense/create">
-            <IconPlus className="h-3 w-3" />
+        <Button asChild variant="blue" size="sm" className="shadow-none h-7" title="Create">
+          <Link href="/accounting/expense/create/0">
+            <Plus className="h-3 w-3" />
           </Link>
         </Button>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Search and filter expenses by payment date and category.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="px-4 py-3">
           <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex-1 min-w-0">
-              <label className="mb-1 block text-sm font-medium">Payment Date</label>
-              <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+            <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Payment Date</label>
+                <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="h-9" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Category</label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Select Category</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="w-full md:w-40">
-              <label className="mb-1 block text-sm font-medium">Category</label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Select Category</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" variant="blue" size="sm" className="shadow-none h-7">
-                <IconSearch className="h-3 w-3 mr-2" />
-                Apply
+            <div className="flex items-end gap-2">
+              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+                <Search className="h-3 w-3" />
               </Button>
-              <Button type="button" variant="destructive" size="sm" className="shadow-none h-7" onClick={handleReset}>
-                <IconRefresh className="h-3 w-3" />
+              <Button type="button" variant="outline" size="sm" className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" onClick={handleReset} title="Reset">
+                <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
           </form>
@@ -157,30 +155,24 @@ export function ExpenseTab() {
       </Card>
 
       {/* Expenses Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Expense List</CardTitle>
-          <CardDescription>
-            Overview of all recorded expenses.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto w-full">
+            <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Expense</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="px-4 py-3">Expense</TableHead>
+                  <TableHead className="px-4 py-3">Category</TableHead>
+                  <TableHead className="px-4 py-3">Date</TableHead>
+                  <TableHead className="px-4 py-3">Status</TableHead>
+                  <TableHead className="px-4 py-3">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((exp) => (
                     <TableRow key={exp.id}>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <Button
                           asChild
                           variant="outline"
@@ -192,49 +184,44 @@ export function ExpenseTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{exp.category}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <IconCalendar className="h-3 w-3" />
-                          <span>{exp.date}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">{exp.category}</TableCell>
+                      <TableCell className="px-4 py-3">{exp.date}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <Badge className={getExpenseStatusClasses(exp.status)}>
                           {exp.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                            className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                             title="View"
                             asChild
                           >
                             <Link href={`/accounting/expense/${exp.id}`}>
-                              <IconEye className="h-3 w-3" />
+                              <Eye className="h-3 w-3" />
                             </Link>
                           </Button>
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
                             asChild
                           >
                             <Link href={`/accounting/expense/${exp.id}/edit`}>
-                              <IconPencil className="h-3 w-3" />
+                              <Pencil className="h-3 w-3" />
                             </Link>
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
                           >
-                            <IconTrash className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
@@ -250,17 +237,23 @@ export function ExpenseTab() {
               </TableBody>
             </Table>
           </div>
-          <div className="mt-4">
-            <SimplePagination
-              totalCount={totalRecords}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-            />
-          </div>
+          {totalRecords > 0 && (
+            <div className="mt-4 px-4 pb-4">
+              <SimplePagination
+                totalCount={totalRecords}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
+

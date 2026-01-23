@@ -42,12 +42,12 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
-  IconPlus,
-  IconPencil,
-  IconTrash,
-  IconSearch,
-  IconX,
-} from '@tabler/icons-react'
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  X,
+} from 'lucide-react'
 
 // Mock data based on reference
 const goalTypes = [
@@ -153,7 +153,15 @@ export default function FinancialGoalPage() {
 
   const totalRecords = filteredData.length
 
+  const isFormValid =
+    formData.name.trim().length > 0 &&
+    formData.amount.trim().length > 0 &&
+    formData.type.trim().length > 0 &&
+    formData.from.trim().length > 0 &&
+    formData.to.trim().length > 0
+
   const handleCreate = () => {
+    if (!isFormValid) return
     const newGoal = {
       id: goals.length + 1,
       ...formData,
@@ -186,6 +194,8 @@ export default function FinancialGoalPage() {
   }
 
   const handleUpdate = () => {
+    if (!editingGoal) return
+    if (!isFormValid) return
     setGoals(
       goals.map((g) =>
         g.id === editingGoal.id
@@ -237,16 +247,13 @@ export default function FinancialGoalPage() {
               </div>
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="blue" size="sm" className="shadow-none h-7">
-                    <IconPlus className="h-3 w-3" />
+                  <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
+                    <Plus className="h-3 w-3" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create New Goal</DialogTitle>
-                    <DialogDescription>
-                      Add a new financial goal to track your progress.
-                    </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -338,12 +345,12 @@ export default function FinancialGoalPage() {
                   </div>
                   <DialogFooter>
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       onClick={() => setCreateDialogOpen(false)}
                     >
                       Cancel
                     </Button>
-                    <Button variant="blue" onClick={handleCreate}>
+                    <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
                       Create
                     </Button>
                   </DialogFooter>
@@ -352,206 +359,96 @@ export default function FinancialGoalPage() {
             </div>
 
             {/* Search */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="relative">
-                  <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardContent className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search goals by name, type, or date..."
+                    placeholder="Search goals..."
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value)
                       setCurrentPage(1)
                     }}
-                    className="pl-10 pr-10"
+                    className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
                   />
                   {search && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setSearch('')
                         setCurrentPage(1)
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 transform text-muted-foreground hover:text-foreground"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
                     >
-                      <IconX className="h-4 w-4" />
-                    </button>
+                      <X className="h-4 w-4" />
+                    </Button>
                   )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Goals Table */}
-            <Card>
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>From</TableHead>
-                        <TableHead>To</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Is Dashboard Display</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="px-4 py-3">Name</TableHead>
+                        <TableHead className="px-4 py-3">Type</TableHead>
+                        <TableHead className="px-4 py-3">From</TableHead>
+                        <TableHead className="px-4 py-3">To</TableHead>
+                        <TableHead className="px-4 py-3">Amount</TableHead>
+                        <TableHead className="px-4 py-3">Is Dashboard Display</TableHead>
+                        <TableHead className="px-4 py-3">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((goal) => (
                           <TableRow key={goal.id}>
-                            <TableCell className="font-style">{goal.name}</TableCell>
-                            <TableCell className="font-style">{goal.type}</TableCell>
-                            <TableCell className="font-style">{goal.from}</TableCell>
-                            <TableCell className="font-style">{goal.to}</TableCell>
-                            <TableCell className="font-style">
+                            <TableCell className="px-4 py-3 font-style">{goal.name}</TableCell>
+                            <TableCell className="px-4 py-3 font-style">{goal.type}</TableCell>
+                            <TableCell className="px-4 py-3 font-style">{goal.from}</TableCell>
+                            <TableCell className="px-4 py-3 font-style">{goal.to}</TableCell>
+                            <TableCell className="px-4 py-3 font-style">
                               {formatPrice(goal.amount)}
                             </TableCell>
-                            <TableCell className="font-style">
-                              {goal.is_display === 1 ? 'Yes' : 'No'}
+                            <TableCell className="px-4 py-3 font-style">
+                              <Badge
+                                className={
+                                  goal.is_display === 1
+                                    ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                    : 'bg-red-100 text-red-700 border-red-200'
+                                }
+                              >
+                                {goal.is_display === 1 ? 'Yes' : 'No'}
+                              </Badge>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2 justify-start">
-                                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
-                                    title="Edit"
-                                    onClick={() => handleEdit(goal)}
-                                  >
-                                    <IconPencil className="h-3 w-3" />
-                                  </Button>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Edit Goal</DialogTitle>
-                                      <DialogDescription>
-                                        Update the financial goal details.
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                          <Label htmlFor="edit-name">
-                                            Name <span className="text-red-500">*</span>
-                                          </Label>
-                                          <Input
-                                            id="edit-name"
-                                            placeholder="Enter Name"
-                                            value={formData.name}
-                                            onChange={(e) =>
-                                              setFormData({ ...formData, name: e.target.value })
-                                            }
-                                            required
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label htmlFor="edit-amount">
-                                            Amount <span className="text-red-500">*</span>
-                                          </Label>
-                                          <Input
-                                            id="edit-amount"
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="Enter Amount"
-                                            value={formData.amount}
-                                            onChange={(e) =>
-                                              setFormData({ ...formData, amount: e.target.value })
-                                            }
-                                            required
-                                          />
-                                        </div>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor="edit-type">
-                                          Type <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select
-                                          value={formData.type}
-                                          onValueChange={(value) =>
-                                            setFormData({ ...formData, type: value })
-                                          }
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select Type" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {goalTypes.map((type) => (
-                                              <SelectItem key={type.value} value={type.value}>
-                                                {type.label}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                          <Label htmlFor="edit-from">
-                                            From <span className="text-red-500">*</span>
-                                          </Label>
-                                          <Input
-                                            id="edit-from"
-                                            type="date"
-                                            value={formData.from}
-                                            onChange={(e) =>
-                                              setFormData({ ...formData, from: e.target.value })
-                                            }
-                                            required
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label htmlFor="edit-to">
-                                            To <span className="text-red-500">*</span>
-                                          </Label>
-                                          <Input
-                                            id="edit-to"
-                                            type="date"
-                                            value={formData.to}
-                                            onChange={(e) =>
-                                              setFormData({ ...formData, to: e.target.value })
-                                            }
-                                            required
-                                          />
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id="edit-is_display"
-                                          checked={formData.is_display}
-                                          onCheckedChange={(checked) =>
-                                            setFormData({
-                                              ...formData,
-                                              is_display: checked as boolean,
-                                            })
-                                          }
-                                        />
-                                        <Label htmlFor="edit-is_display" className="cursor-pointer">
-                                          Display On Dashboard
-                                        </Label>
-                                      </div>
-                                    </div>
-                                    <DialogFooter>
-                                      <Button
-                                        variant="secondary"
-                                        onClick={() => setEditDialogOpen(false)}
-                                      >
-                                        Cancel
-                                      </Button>
-                                      <Button variant="blue" onClick={handleUpdate}>
-                                        Update
-                                      </Button>
-                                    </DialogFooter>
-                                  </DialogContent>
-                                </Dialog>
+                            <TableCell className="px-4 py-3">
+                              <div className="flex items-center gap-2">
                                 <Button
-                                  variant="destructive"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7"
+                                  className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                                  title="Edit"
+                                  onClick={() => handleEdit(goal)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Delete"
                                   onClick={() => handleDelete(goal.id)}
                                 >
-                                  <IconTrash className="h-3 w-3" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -578,6 +475,111 @@ export default function FinancialGoalPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Edit Dialog (single instance) */}
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Goal</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name">
+                        Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-name"
+                        placeholder="Enter Name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-amount">
+                        Amount <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-amount"
+                        type="number"
+                        step="0.01"
+                        placeholder="Enter Amount"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-type">
+                      Type <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {goalTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-from">
+                        From <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-from"
+                        type="date"
+                        value={formData.from}
+                        onChange={(e) => setFormData({ ...formData, from: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-to">
+                        To <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-to"
+                        type="date"
+                        value={formData.to}
+                        onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-is_display"
+                      checked={formData.is_display}
+                      onCheckedChange={(checked) =>
+                        setFormData({
+                          ...formData,
+                          is_display: checked as boolean,
+                        })
+                      }
+                    />
+                    <Label htmlFor="edit-is_display" className="cursor-pointer">
+                      Display On Dashboard
+                    </Label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid} className="shadow-none">
+                    Update
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </SidebarInset>

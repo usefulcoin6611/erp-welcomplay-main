@@ -1,9 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -24,7 +22,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -32,15 +29,15 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  IconPlus, 
-  IconEdit, 
-  IconTrash,
-  IconSearch,
-  IconRefresh,
-  IconDownload,
-  IconEye,
-} from '@tabler/icons-react'
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  RefreshCw,
+  Download,
+  Eye,
+} from 'lucide-react'
 
 // Mock data
 const revenueData = [
@@ -167,142 +164,42 @@ export function RevenueTab() {
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7">
-              <IconPlus className="h-3 w-3 mr-2" />
-              Create Revenue
+            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create Revenue">
+              <Plus className="h-3 w-3" />
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Revenue</DialogTitle>
-              <DialogDescription>
-                Add a new revenue transaction to the system.
-              </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="create-date">
-                    Date <span className="text-red-500">*</span>
-                  </Label>
-                  <Input id="create-date" type="date" required />
+            <form onSubmit={(e) => { e.preventDefault(); }}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="create-date">
+                      Date <span className="text-red-500">*</span>
+                    </Label>
+                    <Input id="create-date" type="date" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="create-amount">
+                      Amount <span className="text-red-500">*</span>
+                    </Label>
+                    <Input id="create-amount" type="number" step="0.01" placeholder="Enter Amount" required />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="create-amount">
-                    Amount <span className="text-red-500">*</span>
-                  </Label>
-                  <Input id="create-amount" type="number" step="0.01" placeholder="0.00" required />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-account">
-                  Account <span className="text-red-500">*</span>
-                </Label>
-                <Select required>
-                  <SelectTrigger id="create-account">
-                    <SelectValue placeholder="Select Account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id.toString()}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-customer">
-                  Customer <span className="text-red-500">*</span>
-                </Label>
-                <Select required>
-                  <SelectTrigger id="create-customer">
-                    <SelectValue placeholder="Select Customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-category">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <Select required>
-                  <SelectTrigger id="create-category">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-reference">Reference</Label>
-                <Input id="create-reference" placeholder="Enter reference" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-description">Description</Label>
-                <Textarea id="create-description" placeholder="Enter description" rows={3} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-receipt">Payment Receipt</Label>
-                <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" className="shadow-none">
-                Cancel
-              </Button>
-              <Button variant="blue" className="shadow-none">
-                Create
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Search and filter revenue by date, account, customer, and category.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={(e) => { e.preventDefault(); handleApply(); }}>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={filters.date}
-                  onChange={(e) => handleFilterChange('date', e.target.value)}
-                  placeholder="Select Date"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="account">Account</Label>
-                <Select
-                  value={filters.account}
-                  onValueChange={(value) => handleFilterChange('account', value)}
-                >
-                  <SelectTrigger id="account">
-                    <SelectValue placeholder="Select Account" />
-                  </SelectTrigger>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="create-account">
+                      Account <span className="text-red-500">*</span>
+                    </Label>
+                    <Select required>
+                      <SelectTrigger id="create-account">
+                        <SelectValue placeholder="Select Account" />
+                      </SelectTrigger>
                       <SelectContent>
                         {accounts.map((account) => (
                           <SelectItem key={account.id} value={account.id.toString()}>
@@ -310,17 +207,19 @@ export function RevenueTab() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customer">Customer</Label>
-                <Select
-                  value={filters.customer}
-                  onValueChange={(value) => handleFilterChange('customer', value)}
-                >
-                  <SelectTrigger id="customer">
-                    <SelectValue placeholder="Select Customer" />
-                  </SelectTrigger>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Create account here. <span className="font-medium text-primary cursor-pointer">Create account</span>
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="create-customer">
+                      Customer <span className="text-red-500">*</span>
+                    </Label>
+                    <Select required>
+                      <SelectTrigger id="create-customer">
+                        <SelectValue placeholder="Select Customer" />
+                      </SelectTrigger>
                       <SelectContent>
                         {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
@@ -328,17 +227,25 @@ export function RevenueTab() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={filters.category}
-                  onValueChange={(value) => handleFilterChange('category', value)}
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Create customer here. <span className="font-medium text-primary cursor-pointer">Create customer</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-description">Description</Label>
+                  <Textarea id="create-description" placeholder="Enter Description" rows={3} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="create-category">
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    <Select required>
+                      <SelectTrigger id="create-category">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id.toString()}>
@@ -346,133 +253,224 @@ export function RevenueTab() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                </Select>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Create category here. <span className="font-medium text-primary cursor-pointer">Create category</span>
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="create-reference">Reference</Label>
+                    <Input id="create-reference" placeholder="Enter Reference" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-receipt">Payment Receipt</Label>
+                  <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <Button
-                type="submit"
-                variant="blue"
-                size="sm"
-                className="shadow-none h-7"
-              >
-                <IconSearch className="h-3 w-3 mr-2" />
-                Apply
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="shadow-none h-7"
-                onClick={handleReset}
-              >
-                <IconRefresh className="h-3 w-3 mr-2" />
-                Reset
-              </Button>
+              <DialogFooter>
+                <Button type="button" variant="outline" className="shadow-none">
+                  Cancel
+                </Button>
+                <Button type="submit" variant="blue" className="shadow-none">
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Filters */}
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="pt-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleApply(); }}>
+            <div className="flex items-end gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={filters.date}
+                    onChange={(e) => handleFilterChange('date', e.target.value)}
+                    placeholder="Select Date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="account">Account</Label>
+                  <Select
+                    value={filters.account}
+                    onValueChange={(value) => handleFilterChange('account', value)}
+                  >
+                    <SelectTrigger id="account">
+                      <SelectValue placeholder="Select Account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id.toString()}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Customer</Label>
+                  <Select
+                    value={filters.customer}
+                    onValueChange={(value) => handleFilterChange('customer', value)}
+                  >
+                    <SelectTrigger id="customer">
+                      <SelectValue placeholder="Select Customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={filters.category}
+                    onValueChange={(value) => handleFilterChange('category', value)}
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                  title="Apply"
+                >
+                  <Search className="h-3 w-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                  title="Reset"
+                  onClick={handleReset}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>
       </Card>
 
       {/* Revenue Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Revenue List</CardTitle>
-          <CardDescription>
-            Manage and view all revenue transactions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Payment Receipt</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="px-4 py-3">Date</TableHead>
+                  <TableHead className="px-4 py-3">Amount</TableHead>
+                  <TableHead className="px-4 py-3">Account</TableHead>
+                  <TableHead className="px-4 py-3">Customer</TableHead>
+                  <TableHead className="px-4 py-3">Category</TableHead>
+                  <TableHead className="px-4 py-3">Reference</TableHead>
+                  <TableHead className="px-4 py-3">Description</TableHead>
+                  <TableHead className="px-4 py-3">Payment Receipt</TableHead>
+                  <TableHead className="px-4 py-3">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.length > 0 ? (
                   filteredData.map((revenue) => (
                     <TableRow key={revenue.id}>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {formatDate(revenue.date)}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-4 py-3 font-medium">
                         {formatPrice(revenue.amount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {revenue.account}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {revenue.customer || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {revenue.category || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {revenue.reference || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {revenue.description || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {revenue.paymentReceipt ? (
                           <div className="flex items-center gap-2">
                             <Button
-                              variant="secondary"
+                              variant="outline"
                               size="sm"
-                              className="shadow-none h-7 bg-blue-500 hover:bg-blue-600 text-white"
+                              className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                               title="Download"
                               onClick={() => {
                                 // Handle download
                                 console.log('Download:', revenue.paymentReceipt)
                               }}
                             >
-                              <IconDownload className="h-3 w-3" />
+                              <Download className="h-3 w-3" />
                             </Button>
                             <Button
-                              variant="secondary"
+                              variant="outline"
                               size="sm"
-                              className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white"
+                              className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                               title="Preview"
                               onClick={() => {
                                 // Handle preview
                                 console.log('Preview:', revenue.paymentReceipt)
                               }}
                             >
-                              <IconEye className="h-3 w-3" />
+                              <Eye className="h-3 w-3" />
                             </Button>
                           </div>
                         ) : (
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
                             onClick={() => {
                               // Handle edit
                               console.log('Edit revenue:', revenue.id)
                             }}
                           >
-                            <IconEdit className="h-3 w-3" />
+                            <Pencil className="h-3 w-3" />
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
                             onClick={() => {
                               if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
@@ -480,7 +478,7 @@ export function RevenueTab() {
                               }
                             }}
                           >
-                            <IconTrash className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
@@ -501,3 +499,4 @@ export function RevenueTab() {
     </div>
   )
 }
+

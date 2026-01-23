@@ -131,7 +131,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
       }
 
     case 'company':
-      // Company has access to all systems except user management and system setup
+      // Company access (includes User Management per UI requirement)
       return {
         navMain: [
           {
@@ -379,8 +379,16 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               { title: "Product Stock", url: "/products/stock" },
             ],
           },
-          // User Management - Company should NOT have access
-          // Removed from company menu based on ROLE_BASED_ACCESS.md line 40
+          {
+            title: t("userManagement"),
+            url: "#",
+            icon: IconUsersGroup,
+            items: [
+              { title: t("users"), url: "/users" },
+              { title: "Roles", url: "/users/roles" },
+              { title: "Client", url: "/users/clients" },
+            ],
+          },
           {
             title: t("supportSystem"),
             url: "/support",
@@ -483,11 +491,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             url: "#",
             icon: IconUsers,
             items: [
-              { title: "Leave Management", url: "/hrm/leave" },
-              { title: "Event Setup", url: "/hrm/events" },
-              { title: "Meeting", url: "/hrm/meetings" },
-              { title: "My Documents", url: "/hrm/documents" },
-              { title: "Company Policy", url: "/hrm/policies" },
+              { title: "Employees Asset Setup", url: "/hrm/assets" },
             ],
           },
           {
@@ -519,17 +523,6 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             ],
           },
           {
-            title: t("projectSystem"),
-            url: "#",
-            icon: IconShare,
-            items: [
-              { title: "My Tasks", url: "/projects/task" },
-              { title: "Timesheet", url: "/projects/timesheet/list" },
-              { title: "Task Calendar", url: "/projects/task/calendar" },
-              { title: "Time Tracker", url: "/projects/time-tracker" },
-            ],
-          },
-          {
             title: t("userManagement"),
             url: "#",
             icon: IconUsersGroup,
@@ -555,19 +548,14 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
         ],
         navSecondary: [
           {
+            title: "Messenger",
+            url: "/messenger",
+            icon: IconMessage,
+          },
+          {
             title: "Zoom Meeting",
             url: "/zoom",
             icon: IconVideo,
-          },
-          {
-            title: "Notification Template",
-            url: "/notifications",
-            icon: IconBell,
-          },
-          {
-            title: "Settings",
-            url: "/settings",
-            icon: IconSettings,
           },
         ],
       }

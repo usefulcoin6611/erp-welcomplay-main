@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/auth-context'
 import {
-  IconPrinter,
-  IconFileExport,
-  IconFilter,
-  IconSearch,
-} from '@tabler/icons-react'
+  Printer,
+  FileDown,
+  Filter,
+  Search,
+  RefreshCw,
+} from 'lucide-react'
 
 // Mock data based on reference structure
 const totalAccounts = {
@@ -90,9 +91,9 @@ export function TrialBalanceTab() {
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2">
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
-          className="shadow-none h-7"
+          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
           onClick={() => {
             const printContents = document.getElementById('printableArea')?.innerHTML
             if (printContents) {
@@ -102,26 +103,28 @@ export function TrialBalanceTab() {
               document.body.innerHTML = originalContents
             }
           }}
+          title="Print"
         >
-          <IconPrinter className="h-3 w-3" />
+          <Printer className="h-3 w-3" />
         </Button>
-        <Button variant="secondary" size="sm" className="shadow-none h-7">
-          <IconFileExport className="h-3 w-3" />
+        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
+          <FileDown className="h-3 w-3" />
         </Button>
         <Button
           variant="blue"
           size="sm"
           className="shadow-none h-7"
           onClick={() => setShowFilter(!showFilter)}
+          title="Filter"
         >
-          <IconFilter className="h-3 w-3" />
+          <Filter className="h-3 w-3" />
         </Button>
       </div>
 
       {/* Filters */}
       {showFilter && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+          <CardContent className="px-4 py-3">
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -148,20 +151,21 @@ export function TrialBalanceTab() {
                 />
               </div>
               <div className="flex gap-2">
-                <Button type="submit" variant="blue" size="sm" className="shadow-none h-7">
-                  <IconSearch className="h-3 w-3" />
+                <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+                  <Search className="h-3 w-3" />
                 </Button>
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
-                  className="shadow-none h-7"
+                  className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                   onClick={() => {
                     setStartDate('2025-01-01')
                     setEndDate('2025-12-31')
                   }}
+                  title="Reset"
                 >
-                  <IconSearch className="h-3 w-3 rotate-180" />
+                  <RefreshCw className="h-3 w-3" />
                 </Button>
               </div>
             </form>
@@ -173,8 +177,8 @@ export function TrialBalanceTab() {
       <div id="printableArea">
         <div className="flex justify-center">
           <div className="w-full max-w-5xl">
-            <Card>
-              <div className="card-header p-4 border-b">
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <div className="p-4 border-b">
                 <h5 className="text-lg font-semibold">
                   Trial Balance of {userName} as of {startDateRange} to {endDateRange}
                 </h5>
@@ -227,3 +231,4 @@ export function TrialBalanceTab() {
     </div>
   )
 }
+

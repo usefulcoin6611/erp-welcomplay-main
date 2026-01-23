@@ -5,15 +5,16 @@ import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { RotateCcw, Search, FileSpreadsheet, FileDown, Plus, Upload, Download, Eye, Pencil, Trash, Package, ShoppingBag, DollarSign } from 'lucide-react'
+import { Eye, Pencil, Trash2, Plus, Search, RefreshCw, FileUp, FileDown } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 // Types
 interface ProductService {
@@ -99,7 +100,6 @@ function formatRupiah(amount: number): string {
 export default function ProductServicesPage() {
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories')
-  const [search, setSearch] = useState('')
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -128,18 +128,8 @@ export default function ProductServicesPage() {
     if (selectedCategory !== 'All Categories') {
       result = result.filter(p => p.category === selectedCategory)
     }
-    
-    // Search filter
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.sku.toLowerCase().includes(q)
-      )
-    }
-    
     return result
-  }, [selectedCategory, search])
+  }, [selectedCategory])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -148,21 +138,6 @@ export default function ProductServicesPage() {
     return filteredData.slice(startIndex, endIndex)
   }, [filteredData, currentPage, pageSize])
 
-  // Summary statistics
-  const summaryStats = useMemo(() => {
-    const totalProducts = filteredData.filter(p => p.type === 'product').length
-    const totalServices = filteredData.filter(p => p.type === 'service').length
-    const totalItems = filteredData.length
-    const totalValue = filteredData.reduce((sum, p) => sum + (p.purchase_price * (p.quantity || 0)), 0)
-
-    return {
-      totalItems,
-      totalProducts,
-      totalServices,
-      totalValue,
-    }
-  }, [filteredData])
-
   // Handlers
   const handleApplyFilters = () => {
     setCurrentPage(1)
@@ -170,7 +145,6 @@ export default function ProductServicesPage() {
 
   const handleReset = () => {
     setSelectedCategory('All Categories')
-    setSearch('')
     setCurrentPage(1)
   }
 
@@ -227,8 +201,6 @@ export default function ProductServicesPage() {
 
   // Pagination calculations
   const totalRecords = filteredData.length
-  const totalPages = Math.ceil(totalRecords / pageSize)
-
   return (
     <SidebarProvider
       style={{
@@ -245,27 +217,28 @@ export default function ProductServicesPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold">Product & Services</h1>
-                <p className="text-sm text-muted-foreground mt-1">Manage your products and services</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="shadow-none">
-                  <Upload className="mr-2 h-4 w-4" /> Import
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-7 bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                  title="Import"
+                >
+                  <FileUp className="h-3 w-3" />
                 </Button>
-                <Button variant="outline" size="sm" className="shadow-none">
-                  <Download className="mr-2 h-4 w-4" /> Export
+                <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
+                  <FileDown className="h-3 w-3" />
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none">
-                      <Plus className="mr-2 h-4 w-4" /> Create
+                    <Button size="sm" variant="blue" className="shadow-none h-7" title="Create">
+                      <Plus className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create New Product & Service</DialogTitle>
-                      <DialogDescription>
-                        Add a new product or service to your inventory
-                      </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit} className="space-y-6">
                       <div className="grid gap-4 md:grid-cols-2">
@@ -469,14 +442,13 @@ export default function ProductServicesPage() {
             </div>
 
             {/* Filter Section */}
-            <Card className="shadow-none">
-              <CardContent className="px-4 py-2">
-                <div className="flex flex-col lg:flex-row lg:items-end gap-3">
-                  {/* Category */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <Label htmlFor="category" className="text-xs font-medium text-muted-foreground">Category</Label>
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardContent className="px-4 py-3">
+                <div className="flex flex-col md:flex-row md:items-end gap-3">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <Label htmlFor="category">Category</Label>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger id="category" className="h-9 w-full bg-white dark:bg-gray-700 shadow-xs border-gray-200 dark:border-gray-600">
+                      <SelectTrigger id="category" className="h-9">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
@@ -488,212 +460,124 @@ export default function ProductServicesPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 lg:ml-auto">
+                  <div className="flex items-center gap-2 md:ml-auto">
                     <Button
+                      variant="outline"
                       size="sm"
-                      variant="blue"
+                      className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                      title="Apply"
                       onClick={handleApplyFilters}
-                      className="h-9 px-4 shadow-none"
                     >
-                      <Search className="w-4 h-4 mr-2" />
-                      Apply
+                      <Search className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                      title="Reset"
                       onClick={handleReset}
-                      className="h-9 px-3 shadow-none"
                     >
-                      <RotateCcw className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 px-4 shadow-none"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Export
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="blue"
-                      className="h-9 px-4 shadow-none"
-                    >
-                      <FileDown className="w-4 h-4 mr-2" />
-                      Download
+                      <RefreshCw className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="shadow-none">
-                <CardContent className="px-3 py-2 flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
-                    <Package className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Total Items</p>
-                    <p className="text-lg font-bold">{summaryStats.totalItems}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-none">
-                <CardContent className="px-3 py-2 flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
-                    <ShoppingBag className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Products</p>
-                    <p className="text-lg font-bold text-green-600">{summaryStats.totalProducts}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-none">
-                <CardContent className="px-3 py-2 flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
-                    <Package className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Services</p>
-                    <p className="text-lg font-bold text-purple-600">{summaryStats.totalServices}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-none">
-                <CardContent className="px-3 py-2 flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100">
-                    <DollarSign className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Total Value</p>
-                    <p className="text-lg font-bold text-orange-600">{formatRupiah(summaryStats.totalValue)}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main Content */}
-            <Card>
-              <div className="pt-4 pb-0">
-                <div className="px-6 mb-3">
-                  <CardTitle className="text-base">Product & Services List</CardTitle>
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table className="w-full min-w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-4 py-3">Name</TableHead>
+                        <TableHead className="px-4 py-3">Sku</TableHead>
+                        <TableHead className="px-4 py-3">Sale Price</TableHead>
+                        <TableHead className="px-4 py-3">Purchase Price</TableHead>
+                        <TableHead className="px-4 py-3">Tax</TableHead>
+                        <TableHead className="px-4 py-3">Category</TableHead>
+                        <TableHead className="px-4 py-3">Unit</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Quantity</TableHead>
+                        <TableHead className="px-4 py-3">Type</TableHead>
+                        <TableHead className="px-4 py-3">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                            No product & services found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedData.map((item) => (
+                          <TableRow key={item.id} className="font-style">
+                            <TableCell className="px-4 py-3 font-medium">{item.name}</TableCell>
+                            <TableCell className="px-4 py-3 text-muted-foreground">{item.sku}</TableCell>
+                            <TableCell className="px-4 py-3">{formatRupiah(item.sale_price)}</TableCell>
+                            <TableCell className="px-4 py-3">{formatRupiah(item.purchase_price)}</TableCell>
+                            <TableCell className="px-4 py-3">{item.tax || '-'}</TableCell>
+                            <TableCell className="px-4 py-3">{item.category}</TableCell>
+                            <TableCell className="px-4 py-3">{item.unit}</TableCell>
+                            <TableCell className="px-4 py-3 text-right">
+                              {item.type === 'product' ? item.quantity ?? 0 : '-'}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 capitalize">{item.type}</TableCell>
+                            <TableCell className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                  title="Warehouse Details"
+                                >
+                                  <Link href={`/products/services/${item.id}`}>
+                                    <Eye className="h-4 w-4" />
+                                  </Link>
+                                </Button>
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                                  title="Edit"
+                                >
+                                  <Link href={`/products/services/${item.id}/edit`}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Link>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  title="Delete"
+                                  onClick={() => handleDelete(item.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              </div>
-
-              <CardContent className="pt-0">
-                <div style={{ minHeight: '400px' }}>
-                  <div className="p-4 space-y-4">
-                    {/* Table */}
-                    <div className="rounded-md border overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Name</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">SKU</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Sale Price</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Purchase Price</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Tax</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Category</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Unit</th>
-                            <th className="px-3 py-2 text-right text-xs font-medium">Quantity</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium">Type</th>
-                            <th className="px-3 py-2 text-center text-xs font-medium">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedData.length === 0 ? (
-                            <tr>
-                              <td colSpan={10} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                                No products or services found
-                              </td>
-                            </tr>
-                          ) : (
-                            paginatedData.map((item) => (
-                              <tr key={item.id} className="border-t hover:bg-muted/50">
-                                <td className="px-3 py-2 text-sm font-medium">{item.name}</td>
-                                <td className="px-3 py-2 text-sm text-muted-foreground">{item.sku}</td>
-                                <td className="px-3 py-2 text-sm">{formatRupiah(item.sale_price)}</td>
-                                <td className="px-3 py-2 text-sm">{formatRupiah(item.purchase_price)}</td>
-                                <td className="px-3 py-2 text-sm">{item.tax || '-'}</td>
-                                <td className="px-3 py-2 text-sm">{item.category}</td>
-                                <td className="px-3 py-2 text-sm">{item.unit}</td>
-                                <td className="px-3 py-2 text-sm text-right">
-                                  {item.type === 'product' ? (
-                                    <span className="font-medium">{item.quantity ?? 0}</span>
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </td>
-                                <td className="px-3 py-2 text-sm">
-                                  <span className="text-blue-600 font-medium capitalize">{item.type}</span>
-                                </td>
-                                <td className="px-3 py-2 text-sm text-center">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Button
-                                      asChild
-                                      variant="secondary"
-                                      size="sm"
-                                      className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white"
-                                      title="View"
-                                    >
-                                      <Link href={`/products/services/${item.id}`}>
-                                        <Eye className="w-4 h-4" />
-                                      </Link>
-                                    </Button>
-                                    <Button
-                                      asChild
-                                      variant="blue"
-                                      size="sm"
-                                      className="shadow-none h-7"
-                                      title="Edit"
-                                    >
-                                      <Link href={`/products/services/${item.id}/edit`}>
-                                        <Pencil className="w-4 h-4" />
-                                      </Link>
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      className="shadow-none h-7"
-                                      title="Delete"
-                                      onClick={() => handleDelete(item.id)}
-                                    >
-                                      <Trash className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination */}
-                    {totalRecords > 0 && (
-                      <div className="mt-4">
-                        <SimplePagination
-                          currentPage={currentPage}
-                          totalCount={totalRecords}
-                          onPageChange={setCurrentPage}
-                          pageSize={pageSize}
-                          onPageSizeChange={(size) => {
-                            setPageSize(size)
-                            setCurrentPage(1)
-                          }}
-                        />
-                      </div>
-                    )}
+                {totalRecords > 0 && (
+                  <div className="mt-4 px-4 pb-4">
+                    <SimplePagination
+                      currentPage={currentPage}
+                      totalCount={totalRecords}
+                      onPageChange={setCurrentPage}
+                      pageSize={pageSize}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

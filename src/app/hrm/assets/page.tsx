@@ -471,7 +471,7 @@ export default function EmployeesAssetSetupPage() {
             </div>
 
             {/* Search */}
-            <Card className="shadow-none">
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -498,7 +498,7 @@ export default function EmployeesAssetSetupPage() {
             </Card>
 
             {/* Assets Table */}
-            <Card>
+            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardHeader>
                 <CardTitle>Assets List</CardTitle>
               </CardHeader>
@@ -553,18 +553,18 @@ export default function EmployeesAssetSetupPage() {
                             <TableCell>
                               <div className="flex items-center gap-2 justify-start">
                                 <Button
-                                  variant="secondary"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                                  className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                   title="Edit"
                                   onClick={() => handleEdit(asset)}
                                 >
                                   <IconPencil className="h-3 w-3" />
                                 </Button>
                                 <Button
-                                  variant="destructive"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Delete"
                                   onClick={() => handleDelete(asset.id)}
                                 >

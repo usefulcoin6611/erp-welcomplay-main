@@ -10,11 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Plus, MoreVertical, Pencil, Trash, Lock, Calendar, Clock, UserCheck, Users, Building2 } from 'lucide-react'
+import { Plus, MoreVertical, Pencil, Trash2, Lock, Calendar, Clock, UserCheck, Users, Building2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -45,6 +44,18 @@ interface Company {
   total_users?: number
   total_customers?: number
   total_vendors?: number
+}
+
+type AppUser = {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+  type: string
+  is_active: boolean
+  is_enable_login: boolean
+  delete_status: number
+  last_login_at: string
 }
 
 // Mock data for Super Admin - Companies
@@ -95,11 +106,45 @@ const mockCompanies: Company[] = [
 
 const plans = ['Basic Plan', 'Premium Plan', 'Enterprise Plan', 'Lifetime']
 
+const mockUsers: AppUser[] = [
+  {
+    id: 'u1',
+    name: 'Admin User',
+    email: 'admin@company.com',
+    type: 'Admin',
+    is_active: true,
+    is_enable_login: true,
+    delete_status: 1,
+    last_login_at: '2025-01-15 10:30:00',
+  },
+  {
+    id: 'u2',
+    name: 'Staff User',
+    email: 'staff@company.com',
+    type: 'Staff',
+    is_active: true,
+    is_enable_login: true,
+    delete_status: 1,
+    last_login_at: '2025-01-14 14:20:00',
+  },
+  {
+    id: 'u3',
+    name: 'HR User',
+    email: 'hr@company.com',
+    type: 'HR',
+    is_active: false,
+    is_enable_login: false,
+    delete_status: 1,
+    last_login_at: '2025-01-13 09:15:00',
+  },
+]
+
 export default function UsersPage() {
   const { user } = useAuth()
   const isSuperAdmin = user?.type === 'super admin'
   
   const [companies, setCompanies] = useState<Company[]>(mockCompanies)
+  const [users, setUsers] = useState<AppUser[]>(mockUsers)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -155,6 +200,8 @@ export default function UsersPage() {
     return expireDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
   }
 
+  const filteredUsers = users
+
   return (
     <SidebarProvider
       style={
@@ -175,32 +222,27 @@ export default function UsersPage() {
                 <h1 className="text-2xl font-semibold">
                   {isSuperAdmin ? 'Manage Companies' : 'Manage User'}
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  {isSuperAdmin
-                    ? 'Create and manage companies in your system'
-                    : 'Create and manage users in your system'}
-                </p>
               </div>
               <div className="flex items-center gap-2">
                 {!isSuperAdmin && (
-                  <Button variant="outline" size="sm" className="shadow-none">
-                    <UserCheck className="mr-2 h-4 w-4" /> User Logs
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                    title="User Logs"
+                  >
+                    <UserCheck className="h-4 w-4" />
                   </Button>
                 )}
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none">
-                      <Plus className="mr-2 h-4 w-4" /> {isSuperAdmin ? 'Create Company' : 'Create User'}
+                    <Button size="sm" variant="blue" className="shadow-none h-7" title={isSuperAdmin ? 'Create Company' : 'Create User'}>
+                      <Plus className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{isSuperAdmin ? 'Create Company' : 'Create User'}</DialogTitle>
-                      <DialogDescription>
-                        {isSuperAdmin
-                          ? 'Add a new company to your system. Fill in the required information.'
-                          : 'Add a new user to your system. Fill in the required information.'}
-                      </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit}>
                       <div className="grid gap-4 py-4">
@@ -292,11 +334,14 @@ export default function UsersPage() {
             {isSuperAdmin ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {companies.map((company) => (
-                  <Card key={company.id} className="flex flex-col h-full">
+                  <Card
+                    key={company.id}
+                    className="flex flex-col h-full border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow"
+                  >
                     <CardContent className="p-4 flex flex-col flex-1">
                       {/* Header with Plan Badge and Actions */}
                       <div className="flex items-center justify-between mb-3">
-                        <Badge className="bg-blue-500 text-white">
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
                           {company.plan || 'No Plan'}
                         </Badge>
                         {company.is_active && company.is_enable_login ? (
@@ -311,7 +356,7 @@ export default function UsersPage() {
                                 <Pencil className="mr-2 h-4 w-4" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem>
-                                <Trash className="mr-2 h-4 w-4" /> Delete
+                                <Trash2 className="mr-2 h-4 w-4" /> {company.delete_status !== 0 ? 'Delete' : 'Restore'}
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Building2 className="mr-2 h-4 w-4" /> Login As Company
@@ -337,7 +382,7 @@ export default function UsersPage() {
                         <div className="flex-1 min-w-0">
                           <h5 className="font-semibold mb-1 truncate">{company.name}</h5>
                           {company.delete_status === 0 && (
-                            <Badge variant="destructive" className="text-xs mb-1">Soft Deleted</Badge>
+                            <Badge className="bg-red-100 text-red-700 border-red-200 text-xs mb-1">Soft Deleted</Badge>
                           )}
                           <p className="text-sm text-muted-foreground truncate">{company.email}</p>
                         </div>
@@ -346,14 +391,14 @@ export default function UsersPage() {
                       {/* Last Login Date & Time */}
                       <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
-                            <Calendar className="h-4 w-4 text-white" />
+                          <div className="h-8 w-8 rounded bg-blue-50 flex items-center justify-center">
+                            <Calendar className="h-4 w-4 text-blue-600" />
                           </div>
                           <span className="text-sm">{formatDate(company.last_login_at)}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
-                            <Clock className="h-4 w-4 text-white" />
+                          <div className="h-8 w-8 rounded bg-blue-50 flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-blue-600" />
                           </div>
                           <span className="text-sm">{formatTime(company.last_login_at)}</span>
                         </div>
@@ -361,10 +406,14 @@ export default function UsersPage() {
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-2 border-b border-t py-3 my-3">
-                        <Button variant="default" size="sm" className="flex-1 shadow-none">
+                        <Button variant="blue" size="sm" className="flex-1 shadow-none">
                           Upgrade Plan
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1 shadow-none">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
                           Admin Hub
                         </Button>
                       </div>
@@ -379,20 +428,20 @@ export default function UsersPage() {
                       {/* Stats */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2" title="Users">
-                          <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
-                            <Users className="h-4 w-4 text-white" />
+                          <div className="h-8 w-8 rounded bg-blue-50 flex items-center justify-center">
+                            <Users className="h-4 w-4 text-blue-600" />
                           </div>
                           <span className="text-sm font-medium">{company.total_users || 0}</span>
                         </div>
                         <div className="flex items-center gap-2" title="Customers">
-                          <div className="h-8 w-8 rounded bg-green-500 flex items-center justify-center">
-                            <Users className="h-4 w-4 text-white" />
+                          <div className="h-8 w-8 rounded bg-green-50 flex items-center justify-center">
+                            <Users className="h-4 w-4 text-green-600" />
                           </div>
                           <span className="text-sm font-medium">{company.total_customers || 0}</span>
                         </div>
                         <div className="flex items-center gap-2" title="Vendors">
-                          <div className="h-8 w-8 rounded bg-purple-500 flex items-center justify-center">
-                            <Users className="h-4 w-4 text-white" />
+                          <div className="h-8 w-8 rounded bg-purple-50 flex items-center justify-center">
+                            <Users className="h-4 w-4 text-purple-600" />
                           </div>
                           <span className="text-sm font-medium">{company.total_vendors || 0}</span>
                         </div>
@@ -402,86 +451,130 @@ export default function UsersPage() {
                 ))}
 
                 {/* Add New Company Card */}
-                <Card className="border-2 border-dashed border-primary cursor-pointer hover:border-blue-500 transition-colors">
+                <Card
+                  className="border-2 border-dashed border-blue-200 cursor-pointer hover:border-blue-400 transition-colors bg-white"
+                  onClick={() => setDialogOpen(true)}
+                >
                   <CardContent className="p-6 flex flex-col items-center justify-center h-full min-h-[400px]">
-                    <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                      <DialogTrigger asChild>
-                        <div className="flex flex-col items-center cursor-pointer">
-                          <div className="h-16 w-16 rounded-full bg-blue-500 flex items-center justify-center mb-4">
-                            <Plus className="h-8 w-8 text-white" />
-                          </div>
-                          <h6 className="text-lg font-semibold mb-2">Create Company</h6>
-                          <p className="text-sm text-muted-foreground text-center">
-                            Click here to add new company
-                          </p>
-                        </div>
-                      </DialogTrigger>
-                    </Dialog>
+                    <div className="flex flex-col items-center">
+                      <div className="h-14 w-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4">
+                        <Plus className="h-7 w-7 text-white" />
+                      </div>
+                      <h6 className="text-lg font-semibold mb-2">Create Company</h6>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Click here to add new company
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             ) : (
               /* Users Table (Company/HR) */
-              <Card>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Email</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Last Login</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mockCompanies.slice(0, 3).map((company) => (
-                          <tr key={company.id} className="border-t hover:bg-muted/50">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarFallback>{getInitials(company.name)}</AvatarFallback>
-                                </Avatar>
-                                <span className="font-medium">{company.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground">{company.email}</td>
-                            <td className="px-4 py-3">
-                              <Badge className="bg-blue-100 text-blue-700">Admin</Badge>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Badge
-                                className={
-                                  company.is_active
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-gray-100 text-gray-700'
-                                }
-                              >
-                                {company.is_active ? 'Active' : 'Inactive'}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredUsers.map((u) => (
+                    <Card
+                      key={u.id}
+                      className="flex flex-col h-full border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow"
+                    >
+                      <CardContent className="p-4 flex flex-col flex-1">
+                        {/* Header with Type Badge and Actions */}
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                            {u.type}
+                          </Badge>
+                          {u.is_active && u.is_enable_login ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (
+                                      confirm(
+                                        'Are You Sure? This action can not be undone. Do you want to continue?',
+                                      )
+                                    ) {
+                                      setUsers((prev) => prev.filter((x) => x.id !== u.id))
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" /> {u.delete_status !== 0 ? 'Delete' : 'Restore'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Lock className="mr-2 h-4 w-4" /> Reset Password
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <UserCheck className="mr-2 h-4 w-4" /> {u.is_enable_login ? 'Login Disable' : 'Login Enable'}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Lock className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+
+                        {/* User Info */}
+                        <div className="flex items-center gap-3 border-b pb-3 mb-3">
+                          <Avatar className="h-16 w-16 border-2 border-blue-500">
+                            <AvatarImage src={u.avatar} />
+                            <AvatarFallback className="text-lg">{getInitials(u.name)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-semibold mb-1 truncate">{u.name}</h5>
+                            {u.delete_status === 0 && (
+                              <Badge className="bg-red-100 text-red-700 border-red-200 text-xs mb-1">
+                                Soft Deleted
                               </Badge>
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {formatDate(company.last_login_at)} {formatTime(company.last_login_at)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <Button variant="blue" size="sm" className="shadow-none h-7">
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button variant="destructive" size="sm" className="shadow-none h-7">
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                            )}
+                            <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                        </div>
+
+                        {/* Last Login Date & Time */}
+                        <div className="flex items-center justify-between gap-2 mt-auto">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                              <Calendar className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <span className="text-sm">{formatDate(u.last_login_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                              <Clock className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <span className="text-sm">{formatTime(u.last_login_at)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Add New User Card */}
+                  <Card
+                    className="border-2 border-dashed border-blue-200 cursor-pointer hover:border-blue-400 transition-colors bg-white"
+                    onClick={() => setDialogOpen(true)}
+                  >
+                    <CardContent className="p-4 flex flex-col items-center justify-center h-full min-h-[280px] text-center">
+                      <div className="flex flex-col items-center">
+                        <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 mb-3">
+                          <Plus className="h-8 w-8 text-white" />
+                        </div>
+                        <h6 className="text-lg font-semibold mb-2">Create User</h6>
+                        <p className="text-sm text-muted-foreground text-center">
+                          Click here to add new user
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -489,3 +582,4 @@ export default function UsersPage() {
     </SidebarProvider>
   )
 }
+

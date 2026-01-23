@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,49 +24,71 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { SimplePagination } from '@/components/ui/simple-pagination'
+import { Switch } from '@/components/ui/switch'
 import {
-  IconPlus,
-  IconSearch,
-  IconEye,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react'
+  Activity,
+  Plus,
+  RefreshCw,
+  Search,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 
-const accountTypes = [
+type ChartAccount = {
+  id: number
+  code: string
+  name: string
+  subType: string
+  parentAccountName: string
+  balance: number
+  isEnabled: boolean
+}
+
+const accountTypeOptions: { group: string; items: string[] }[] = [
+  { group: 'Assets', items: ['Current Assets', 'Fixed Assets'] },
+  { group: 'Liabilities', items: ['Current Liabilities', 'Long Term Liabilities'] },
+  { group: 'Equity', items: ['Equity'] },
+  { group: 'Income', items: ['Income'] },
+  { group: 'Expenses', items: ['Expenses'] },
+  { group: 'Costs of Goods Sold', items: ['Costs of Goods Sold'] },
+]
+
+const chartAccountsByType: { type: string; accounts: ChartAccount[] }[] = [
   {
     type: 'Assets',
     accounts: [
       {
+        id: 1,
         code: '1000',
         name: 'Cash & Bank',
         subType: 'Current Assets',
         parentAccountName: '-',
         balance: 250_000_000,
-        status: 'Active',
+        isEnabled: true,
       },
       {
+        id: 2,
         code: '1100',
         name: 'Accounts Receivable',
         subType: 'Current Assets',
         parentAccountName: 'Cash & Bank',
         balance: 125_000_000,
-        status: 'Active',
+        isEnabled: true,
       },
       {
+        id: 3,
         code: '1200',
         name: 'Inventory',
         subType: 'Current Assets',
         parentAccountName: 'Cash & Bank',
         balance: 80_000_000,
-        status: 'Active',
+        isEnabled: true,
       },
     ],
   },
@@ -73,20 +96,22 @@ const accountTypes = [
     type: 'Liabilities',
     accounts: [
       {
+        id: 4,
         code: '2000',
         name: 'Accounts Payable',
         subType: 'Current Liabilities',
         parentAccountName: '-',
         balance: 75_000_000,
-        status: 'Active',
+        isEnabled: true,
       },
       {
+        id: 5,
         code: '2100',
         name: 'Taxes Payable',
         subType: 'Current Liabilities',
         parentAccountName: 'Accounts Payable',
         balance: 20_000_000,
-        status: 'Active',
+        isEnabled: false,
       },
     ],
   },
@@ -94,23 +119,83 @@ const accountTypes = [
     type: 'Equity',
     accounts: [
       {
+        id: 6,
         code: '3000',
         name: 'Owner Equity',
         subType: 'Equity',
         parentAccountName: '-',
         balance: 250_000_000,
-        status: 'Active',
+        isEnabled: true,
+      },
+    ],
+  },
+  {
+    type: 'Income',
+    accounts: [
+      {
+        id: 7,
+        code: '4000',
+        name: 'Sales Revenue',
+        subType: 'Income',
+        parentAccountName: '-',
+        balance: 420_000_000,
+        isEnabled: true,
+      },
+      {
+        id: 8,
+        code: '4100',
+        name: 'Service Revenue',
+        subType: 'Income',
+        parentAccountName: 'Sales Revenue',
+        balance: 80_000_000,
+        isEnabled: true,
+      },
+    ],
+  },
+  {
+    type: 'Costs of Goods Sold',
+    accounts: [
+      {
+        id: 9,
+        code: '5000',
+        name: 'Cost of Goods Sold',
+        subType: 'Costs of Goods Sold',
+        parentAccountName: '-',
+        balance: 220_000_000,
+        isEnabled: true,
+      },
+    ],
+  },
+  {
+    type: 'Expenses',
+    accounts: [
+      {
+        id: 10,
+        code: '6000',
+        name: 'Operating Expenses',
+        subType: 'Expenses',
+        parentAccountName: '-',
+        balance: 90_000_000,
+        isEnabled: true,
+      },
+      {
+        id: 11,
+        code: '6100',
+        name: 'Marketing Expenses',
+        subType: 'Expenses',
+        parentAccountName: 'Operating Expenses',
+        balance: 25_000_000,
+        isEnabled: true,
       },
     ],
   },
 ]
 
-function getAccountStatusClasses(status: string) {
-  switch (status) {
-    case 'Active': return 'bg-green-100 text-green-700 border-none'
-    case 'Inactive': return 'bg-gray-100 text-gray-700 border-none'
-    default: return 'bg-slate-100 text-slate-700 border-none'
+function getEnabledBadge(isEnabled: boolean) {
+  if (isEnabled) {
+    return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Enabled</Badge>
   }
+  return <Badge className="bg-red-100 text-red-700 border-red-200">Disabled</Badge>
 }
 
 function formatPrice(amount: number) {
@@ -123,256 +208,289 @@ function formatPrice(amount: number) {
 }
 
 export function ChartOfAccountTab() {
-  const [search, setSearch] = useState('')
-  const [accountType, setAccountType] = useState('all')
-  const [status, setStatus] = useState('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [startDate, setStartDate] = useState('2025-01-01')
+  const [endDate, setEndDate] = useState('2025-12-31')
 
-  // Flatten all accounts for filtering and pagination
-  const allAccounts = useMemo(() => {
-    return accountTypes.flatMap(group =>
-      group.accounts.map(account => ({
-        ...account,
-        type: group.type,
-      }))
-    )
-  }, [])
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    code: '',
+    subType: '',
+    isEnabled: true,
+    makeSubAccount: false,
+    parent: '',
+    description: '',
+  })
 
-  // Filter data
-  const filteredData = useMemo(() => {
-    return allAccounts.filter((account) => {
-      if (search.trim()) {
-        const q = search.trim().toLowerCase()
-        if (
-          !account.code.toLowerCase().includes(q) &&
-          !account.name.toLowerCase().includes(q) &&
-          !account.subType.toLowerCase().includes(q)
-        ) return false
-      }
-      if (accountType !== 'all' && account.type.toLowerCase() !== accountType.toLowerCase()) return false
-      if (status !== 'all' && account.status.toLowerCase() !== status.toLowerCase()) return false
-      return true
-    })
-  }, [allAccounts, search, accountType, status])
+  const allAccounts = useMemo(
+    () => chartAccountsByType.flatMap((g) => g.accounts),
+    [],
+  )
 
-  // Paginate data
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize
-    const endIndex = startIndex + pageSize
-    return filteredData.slice(startIndex, endIndex)
-  }, [filteredData, currentPage, pageSize])
-
-  const totalRecords = filteredData.length
+  const parentAccountsForSelectedType = useMemo(() => {
+    if (!createForm.subType) return []
+    return allAccounts.filter((a) => a.subType === createForm.subType)
+  }, [allAccounts, createForm.subType])
 
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
       <div className="flex items-center justify-end">
-        <Dialog>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7">
-              <IconPlus className="h-3 w-3 mr-2" />
-              Create Account
+            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
+              <Plus className="h-3 w-3" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Account</DialogTitle>
-              <DialogDescription>
-                Add a new account to the chart of accounts.
-              </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-              <div className="grid gap-2">
-                <Label htmlFor="code">Account Code</Label>
-                <Input id="code" placeholder="e.g. 1000" />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                console.log('Create COA:', createForm)
+                setCreateDialogOpen(false)
+              }}
+            >
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="coa-name">
+                    Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="coa-name"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    placeholder="Enter Name"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="coa-code">
+                      Code <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="coa-code"
+                      type="number"
+                      value={createForm.code}
+                      onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
+                      placeholder="Enter Code"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="coa-subtype">
+                      Account Type <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={createForm.subType}
+                      onValueChange={(value) => setCreateForm({ ...createForm, subType: value, makeSubAccount: false, parent: '' })}
+                      required
+                    >
+                      <SelectTrigger id="coa-subtype">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypeOptions.map((group) => (
+                          <div key={group.group}>
+                            <SelectItem value={`__group_${group.group}`} disabled className="font-semibold">
+                              {group.group}
+                            </SelectItem>
+                            {group.items.map((item) => (
+                              <SelectItem key={item} value={item}>
+                                {item}
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={createForm.isEnabled}
+                    onCheckedChange={(checked) => setCreateForm({ ...createForm, isEnabled: checked })}
+                    id="coa-enabled"
+                  />
+                  <Label htmlFor="coa-enabled">Is Enabled</Label>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    id="coa-subaccount"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={createForm.makeSubAccount}
+                    onChange={(e) => setCreateForm({ ...createForm, makeSubAccount: e.target.checked })}
+                    disabled={!createForm.subType}
+                  />
+                  <Label htmlFor="coa-subaccount">Make this a sub-account</Label>
+                </div>
+
+                {createForm.makeSubAccount && (
+                  <div className="space-y-2">
+                    <Label htmlFor="coa-parent">
+                      Parent Account <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={createForm.parent}
+                      onValueChange={(value) => setCreateForm({ ...createForm, parent: value })}
+                      required
+                    >
+                      <SelectTrigger id="coa-parent">
+                        <SelectValue placeholder="Select Parent Account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {parentAccountsForSelectedType.map((a) => (
+                          <SelectItem key={a.id} value={String(a.id)}>
+                            {a.code} - {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="coa-desc">Description</Label>
+                  <Input
+                    id="coa-desc"
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                    placeholder="Enter Description"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="name">Account Name</Label>
-                <Input id="name" placeholder="e.g. Cash & Bank" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="type">Account Type</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="assets">Assets</SelectItem>
-                    <SelectItem value="liabilities">Liabilities</SelectItem>
-                    <SelectItem value="equity">Equity</SelectItem>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             <DialogFooter>
-              <Button variant="outline" className="shadow-none">Cancel</Button>
-              <Button variant="blue" className="shadow-none">Create</Button>
+              <Button type="button" variant="secondary" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="blue" className="shadow-none">
+                Create
+              </Button>
             </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Filter accounts by type, sub type, and status.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex-1 min-w-0">
-              <label className="mb-1 block text-sm font-medium">Search</label>
-              <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                <Input
-                  placeholder="Search account name or code..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="pl-10"
-                />
-              </div>
+      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="px-4 py-3">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              // mock apply
+              console.log('Apply filter:', { startDate, endDate })
+            }}
+            className="flex flex-col gap-4 md:flex-row md:items-end md:justify-end"
+          >
+            <div className="w-full md:w-44">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9" />
             </div>
             <div className="w-full md:w-44">
-              <label className="mb-1 block text-sm font-medium">Account Type</label>
-              <Select value={accountType} onValueChange={setAccountType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="assets">Assets</SelectItem>
-                  <SelectItem value="liabilities">Liabilities</SelectItem>
-                  <SelectItem value="equity">Equity</SelectItem>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="endDate">End Date</Label>
+              <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9" />
             </div>
-            <div className="w-full md:w-40">
-              <label className="mb-1 block text-sm font-medium">Status</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-end gap-2">
+              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+                <Search className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                title="Reset"
+                onClick={() => {
+                  setStartDate('')
+                  setEndDate('')
+                }}
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
 
-      {/* Accounts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Chart of Accounts</CardTitle>
-          <CardDescription>
-            Overview of all accounts in the system.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Parent Account Name</TableHead>
-                  <TableHead>Balance</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((account) => (
-                    <TableRow key={account.code}>
-                      <TableCell>
-                        <span className="text-sm font-medium">{account.code}</span>
+      {chartAccountsByType.map((group) => (
+        <Card key={group.type} className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+          <CardContent className="p-0">
+            <div className="px-4 py-3 border-b">
+              <div className="text-sm font-semibold">{group.type}</div>
+            </div>
+            <div className="overflow-x-auto w-full">
+              <Table className="w-full min-w-full table-auto">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-4 py-3">Code</TableHead>
+                    <TableHead className="px-4 py-3">Name</TableHead>
+                    <TableHead className="px-4 py-3">Type</TableHead>
+                    <TableHead className="px-4 py-3">Parent Account Name</TableHead>
+                    <TableHead className="px-4 py-3">Balance</TableHead>
+                    <TableHead className="px-4 py-3">Status</TableHead>
+                    <TableHead className="px-4 py-3">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {group.accounts.map((account) => (
+                    <TableRow key={account.id}>
+                      <TableCell className="px-4 py-3">{account.code}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Link
+                          className="text-sm font-medium text-primary hover:underline"
+                          href={`/accounting/double-entry?tab=ledger&account=${account.id}`}
+                        >
+                          {account.name}
+                        </Link>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">{account.name}</div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{account.subType}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {account.parentAccountName || '-'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {formatPrice(account.balance)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getAccountStatusClasses(account.status)}>
-                          {account.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">{account.subType}</TableCell>
+                      <TableCell className="px-4 py-3 text-muted-foreground">{account.parentAccountName || '-'}</TableCell>
+                      <TableCell className="px-4 py-3 font-medium">{formatPrice(account.balance)}</TableCell>
+                      <TableCell className="px-4 py-3">{getEnabledBadge(account.isEnabled)}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                            className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                             title="Transaction Summary"
                           >
-                            <IconEye className="h-3 w-3" />
+                            <Activity className="h-3 w-3" />
                           </Button>
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
                           >
-                            <IconPencil className="h-3 w-3" />
+                            <Pencil className="h-3 w-3" />
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
-                            className="shadow-none h-7"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
                           >
-                            <IconTrash className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No accounts found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="mt-4">
-            <SimplePagination
-              totalCount={totalRecords}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-            />
-          </div>
-        </CardContent>
-      </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
+

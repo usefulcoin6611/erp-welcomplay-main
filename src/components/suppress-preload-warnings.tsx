@@ -12,34 +12,58 @@ import { useEffect } from 'react'
 export function SuppressPreloadWarnings() {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
+      const shouldSuppressMessage = (msg: string) => {
+        // Preload warnings
+        if (msg.includes('preload') || msg.includes('preloaded')) return true
+
+        // Performance measure errors (common with immediate redirects)
+        if (
+          msg.includes("Failed to execute 'measure'") ||
+          msg.includes('cannot have a negative time stamp') ||
+          msg.includes('RootPage')
+        ) {
+          return true
+        }
+
+        // Next.js/Turbopack sourcemap noise (doesn't affect runtime)
+        if (
+          msg.includes('Invalid source map') ||
+          msg.includes('Only conformant source maps') ||
+          msg.includes('sourceMapURL could not be parsed')
+        ) {
+          return true
+        }
+
+        return false
+      }
+
       // Suppress console warnings
       const originalWarn = console.warn
       console.warn = function (...args: any[]) {
         // Suppress preload-related warnings
-        if (
-          args[0] &&
-          typeof args[0] === 'string' &&
-          (args[0].includes('preload') || args[0].includes('preloaded'))
-        ) {
-          return
+        const first = args?.[0]
+        if (typeof first === 'string' && shouldSuppressMessage(first)) return
+        try {
+          if (typeof originalWarn === 'function') {
+            originalWarn.call(console, ...args)
+          }
+        } catch {
+          // Never let console plumbing break the app/dev overlay
         }
-        originalWarn.apply(console, args)
       }
 
       // Suppress Performance API errors (RootPage negative timestamp)
       const originalError = console.error
       console.error = function (...args: any[]) {
-        // Suppress performance measure errors
-        if (
-          args[0] &&
-          typeof args[0] === 'string' &&
-          (args[0].includes('Failed to execute \'measure\'') ||
-           args[0].includes('cannot have a negative time stamp') ||
-           args[0].includes('RootPage'))
-        ) {
-          return
+        const first = args?.[0]
+        if (typeof first === 'string' && shouldSuppressMessage(first)) return
+        try {
+          if (typeof originalError === 'function') {
+            originalError.call(console, ...args)
+          }
+        } catch {
+          // Never let console plumbing break the app/dev overlay
         }
-        originalError.apply(console, args)
       }
 
       // Wrap performance.measure to catch errors silently
