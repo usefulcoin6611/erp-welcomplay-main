@@ -62,7 +62,9 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null)
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null)
   const [codeType, setCodeType] = useState<'manual' | 'auto'>('manual')
   const [formData, setFormData] = useState({
     name: '',
@@ -104,6 +106,56 @@ export default function CouponsPage() {
   const handleView = (coupon: Coupon) => {
     setSelectedCoupon(coupon)
     setViewDialogOpen(true)
+  }
+
+  const handleEdit = (coupon: Coupon) => {
+    setEditingCoupon(coupon)
+    setFormData({
+      name: coupon.name,
+      discount: coupon.discount.toString(),
+      limit: coupon.limit.toString(),
+      manualCode: coupon.code,
+      autoCode: '',
+    })
+    setCodeType('manual')
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingCoupon) return
+
+    const code = codeType === 'manual' ? formData.manualCode.toUpperCase() : formData.autoCode
+    if (!code) {
+      alert('Coupon code is required')
+      return
+    }
+
+    // Update coupon in state
+    setCoupons(
+      coupons.map((c) =>
+        c.id === editingCoupon.id
+          ? {
+              ...c,
+              name: formData.name,
+              code: code,
+              discount: parseFloat(formData.discount),
+              limit: parseInt(formData.limit),
+            }
+          : c
+      )
+    )
+
+    setEditDialogOpen(false)
+    setEditingCoupon(null)
+    setFormData({
+      name: '',
+      discount: '',
+      limit: '',
+      manualCode: '',
+      autoCode: '',
+    })
+    setCodeType('manual')
   }
 
   const handleDelete = (id: string) => {
@@ -315,6 +367,7 @@ export default function CouponsPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                onClick={() => handleEdit(coupon)}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -386,6 +439,146 @@ export default function CouponsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Edit Coupon Dialog */}
+            {editingCoupon && (
+              <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Edit Coupon</DialogTitle>
+                    <DialogDescription>
+                      Update discount coupon information.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleUpdateSubmit}>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit_name">
+                          Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="edit_name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Enter Name"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit_discount">
+                            Discount (%) <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="edit_discount"
+                            type="number"
+                            step="0.01"
+                            value={formData.discount}
+                            onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                            placeholder="Enter Discount"
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">Note: Discount in Percentage</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit_limit">
+                            Limit <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="edit_limit"
+                            type="number"
+                            value={formData.limit}
+                            onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
+                            placeholder="Enter Limit"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Code <span className="text-red-500">*</span></Label>
+                        <RadioGroup
+                          value={codeType}
+                          onValueChange={(value) => {
+                            setCodeType(value as 'manual' | 'auto')
+                            if (value === 'manual') {
+                              setFormData({ ...formData, autoCode: '' })
+                            } else {
+                              setFormData({ ...formData, manualCode: '' })
+                            }
+                          }}
+                          className="flex gap-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="manual" id="edit_manual_code" />
+                            <Label htmlFor="edit_manual_code">Manual</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="auto" id="edit_auto_code" />
+                            <Label htmlFor="edit_auto_code">Auto Generate</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                      {codeType === 'manual' ? (
+                        <div className="space-y-2">
+                          <Input
+                            id="edit_manual-code"
+                            value={formData.manualCode}
+                            onChange={(e) =>
+                              setFormData({ ...formData, manualCode: e.target.value.toUpperCase() })
+                            }
+                            placeholder="Enter Code"
+                            className="uppercase"
+                            required
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            id="edit_auto-code"
+                            value={formData.autoCode}
+                            onChange={(e) => setFormData({ ...formData, autoCode: e.target.value })}
+                            placeholder="Enter Code"
+                            className="flex-1"
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={generateCode}
+                            className="shadow-none"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setEditDialogOpen(false)
+                          setEditingCoupon(null)
+                          setFormData({
+                            name: '',
+                            discount: '',
+                            limit: '',
+                            manualCode: '',
+                            autoCode: '',
+                          })
+                          setCodeType('manual')
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="blue" className="shadow-none">
+                        Update Coupon
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
       </SidebarInset>
