@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from "next/link"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { MainContentWrapper } from "@/components/main-content-wrapper"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
@@ -258,15 +259,9 @@ export default function BugsReportPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Bug Report</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage and track bug reports
-                </p>
-              </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="flex items-center justify-end">
               <div className="flex gap-2">
                 {view === "list" ? (
                   <Button
@@ -306,7 +301,7 @@ export default function BugsReportPage() {
             </div>
 
             {/* Search */}
-            <Card className="shadow-none">
+            <Card className="border-0 shadow-none">
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -315,7 +310,7 @@ export default function BugsReportPage() {
                       placeholder="Search bugs..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
                     />
                     {search.length > 0 && (
                       <Button
@@ -473,7 +468,7 @@ export default function BugsReportPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

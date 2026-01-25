@@ -2,6 +2,7 @@ import React from "react"
 import Link from "next/link"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   SidebarInset,
   SidebarProvider,
@@ -118,12 +119,9 @@ export default function DealsPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Deals</h1>
-              </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="flex items-center justify-end">
               <Dialog>
                 <div className="flex gap-2">
                   <Button
@@ -193,54 +191,54 @@ export default function DealsPage() {
 
             {/* Summary Cards - 4 cards like reference */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Total Deals</p>
-                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+              <Card className="rounded-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Total Deals</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
                     </div>
-                    <div className="h-10 w-10 rounded-lg bg-cyan-100 flex items-center justify-center">
-                      <IconCalendar className="h-5 w-5 text-cyan-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">This Month Total Deals</p>
-                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
-                    </div>
-                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <IconCalendar className="h-5 w-5 text-blue-600" />
+                    <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-cyan-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">This Week Total Deals</p>
-                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+              <Card className="rounded-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">This Month Total Deals</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
                     </div>
-                    <div className="h-10 w-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-                      <IconCalendar className="h-5 w-5 text-yellow-600" />
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Last 30 Days Total Deals</p>
-                      <h3 className="text-2xl font-bold">{totalDeals}</h3>
+              <Card className="rounded-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">This Week Total Deals</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
                     </div>
-                    <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                      <IconCalendar className="h-5 w-5 text-red-600" />
+                    <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Last 30 Days Total Deals</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-red-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -248,39 +246,36 @@ export default function DealsPage() {
             </div>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Deal List</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead>Tasks</TableHead>
-                      <TableHead>Users</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="px-4 py-3">Name</TableHead>
+                      <TableHead className="px-4 py-3">Price</TableHead>
+                      <TableHead className="px-4 py-3">Stage</TableHead>
+                      <TableHead className="px-4 py-3">Tasks</TableHead>
+                      <TableHead className="px-4 py-3">Users</TableHead>
+                      <TableHead className="px-4 py-3">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {deals.map((deal) => (
                       <TableRow key={deal.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="px-4 py-3 font-medium">
                           {deal.name}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           Rp {deal.price.toLocaleString()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           <Badge className={getStageBadge(deal.stage)}>
                             {deal.stage}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           {deal.tasks.completed}/{deal.tasks.total}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           <div className="flex -space-x-2">
                             {deal.users.map((user) => (
                               <Avatar
@@ -296,7 +291,7 @@ export default function DealsPage() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-start">
                             <Button
                               variant="secondary"
@@ -334,7 +329,7 @@ export default function DealsPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

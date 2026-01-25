@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -195,16 +196,10 @@ export default function CouponsPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">Manage Coupon</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create and manage discount coupons
-                </p>
-              </div>
+            <div className="flex items-center justify-end">
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" variant="blue" className="shadow-none">
@@ -352,7 +347,7 @@ export default function CouponsPage() {
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-muted/50">
+                    <thead className="bg-white">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
                         <th className="px-4 py-3 text-left text-xs font-medium">Code</th>
@@ -620,7 +615,7 @@ export default function CouponsPage() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

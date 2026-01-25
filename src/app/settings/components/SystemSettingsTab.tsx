@@ -43,7 +43,7 @@ const modernInputClass = cn(
   'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
   'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
   'focus-visible:ring-offset-0',
-  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  ' hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
   'placeholder:text-gray-400 dark:placeholder:text-gray-500',
   'text-gray-900 dark:text-gray-100'
 )
@@ -56,7 +56,7 @@ const modernTextareaClass = cn(
   'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
   'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
   'focus-visible:ring-offset-0',
-  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  ' hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
   'placeholder:text-gray-400 dark:placeholder:text-gray-500',
   'text-gray-900 dark:text-gray-100',
   'resize-none'
@@ -73,7 +73,7 @@ const modernSelectTriggerClass = cn(
   'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
   'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
   'focus-visible:ring-offset-0',
-  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  ' hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
   'text-gray-900 dark:text-gray-100',
   'data-[placeholder]:text-gray-400 dark:data-[placeholder]:text-gray-500'
 )
@@ -178,7 +178,7 @@ function BrandSettingsContent() {
   ]
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Brand Settings</CardTitle>
       </CardHeader>
@@ -186,7 +186,7 @@ function BrandSettingsContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Logo Dark Card */}
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className=" rounded-lg">
               <CardHeader className="px-3 py-2 rounded-t-lg">
                 <CardTitle className="text-sm font-medium">Logo Dark</CardTitle>
               </CardHeader>
@@ -230,7 +230,7 @@ function BrandSettingsContent() {
             </Card>
 
             {/* Logo Light Card */}
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className=" rounded-lg">
               <CardHeader className="px-3 py-2 rounded-t-lg">
                 <CardTitle className="text-sm font-medium">Logo Light</CardTitle>
               </CardHeader>
@@ -274,7 +274,7 @@ function BrandSettingsContent() {
             </Card>
 
             {/* Favicon Card */}
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className=" rounded-lg">
               <CardHeader className="px-3 py-2 rounded-t-lg">
                 <CardTitle className="text-sm font-medium">Favicon</CardTitle>
               </CardHeader>
@@ -368,7 +368,7 @@ function BrandSettingsContent() {
 
           {/* Feature Toggles */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className=" rounded-lg">
               <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                 <CardTitle className="text-sm font-medium">Landing Page</CardTitle>
               </CardHeader>
@@ -387,7 +387,7 @@ function BrandSettingsContent() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className=" rounded-lg">
               <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                 <CardTitle className="text-sm font-medium">Enable Sign-Up Page</CardTitle>
               </CardHeader>
@@ -406,7 +406,7 @@ function BrandSettingsContent() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className=" rounded-lg">
               <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                 <CardTitle className="text-sm font-medium">Email Verification</CardTitle>
               </CardHeader>
@@ -431,7 +431,7 @@ function BrandSettingsContent() {
             <h3 className="text-sm font-medium">Theme Customizer</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Primary Color Settings */}
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+              <Card className=" rounded-lg">
                 <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <Palette className="h-4 w-4" />
@@ -474,7 +474,7 @@ function BrandSettingsContent() {
               </Card>
 
               {/* Sidebar Settings */}
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+              <Card className=" rounded-lg">
                 <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <Layout className="h-4 w-4" />
@@ -497,7 +497,7 @@ function BrandSettingsContent() {
               </Card>
 
               {/* Layout Settings */}
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+              <Card className=" rounded-lg">
                 <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <Sun className="h-4 w-4" />
@@ -520,7 +520,7 @@ function BrandSettingsContent() {
               </Card>
 
               {/* Enable RTL */}
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+              <Card className=" rounded-lg">
                 <CardHeader className="px-2 py-1.5 border-b rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <AlignLeft className="h-4 w-4" />
@@ -593,7 +593,7 @@ function EmailSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Email Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -742,7 +742,7 @@ function PaymentSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Payment Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -989,7 +989,7 @@ function PusherSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Pusher Settings</CardTitle>
       </CardHeader>
@@ -1073,7 +1073,7 @@ function ReCaptchaSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 !flex !flex-row !items-start !justify-between">
         <div>
           <CardTitle className="text-base font-medium leading-none">ReCaptcha Settings</CardTitle>
@@ -1188,7 +1188,7 @@ function StorageSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Storage Settings</CardTitle>
       </CardHeader>
@@ -1540,7 +1540,7 @@ function SEOSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">SEO Settings</CardTitle>
       </CardHeader>
@@ -1631,7 +1631,7 @@ function CookieSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 !flex !flex-row !items-center !justify-between">
         <CardTitle className="text-base font-medium leading-none">Cookie Settings</CardTitle>
         <div className="flex items-center gap-2">
@@ -1650,7 +1650,7 @@ function CookieSettingsContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+              <Card className=" rounded-lg">
                 <CardContent className="px-2 py-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="cookie_logging" className="text-sm">Enable logging</Label>
@@ -1692,7 +1692,7 @@ function CookieSettingsContent() {
               </div>
             </div>
             <div className="space-y-4">
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+              <Card className=" rounded-lg">
                 <CardContent className="px-2 py-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="necessary_cookies" className="text-sm">Strictly necessary cookies</Label>
@@ -1788,7 +1788,7 @@ function CacheSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Cache Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -1842,7 +1842,7 @@ function ChatGPTSettingsContent() {
   }
 
   return (
-    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+    <Card className=" rounded-lg">
       <CardHeader className="p-3 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Chat GPT Settings</CardTitle>
       </CardHeader>
@@ -1947,7 +1947,7 @@ function SystemSettingsContent() {
     <div className="grid gap-4 xl:grid-cols-12">
       {/* Vertical Sidebar - col-xl-3 (25%) */}
       <div className="xl:col-span-3">
-        <Card className="h-fit xl:sticky xl:top-6 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg border-r">
+        <Card className="h-fit xl:sticky xl:top-6  rounded-lg border-r">
           <CardContent className="p-1">
             <div className="space-y-0">
               {systemMenuItems.map((item) => {

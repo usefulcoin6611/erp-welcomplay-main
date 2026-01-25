@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Search, FileText } from 'lucide-react'
 import {
   Table,
@@ -142,7 +143,7 @@ export function OrderTab() {
   }
 
   return (
-    <Card className="shadow-none">
+    <Card>
       <CardHeader>
         <CardTitle>Orders</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -161,7 +162,7 @@ export function OrderTab() {
                 setSearch(e.target.value)
                 setCurrentPage(1)
               }}
-              className="pl-9"
+              className="pl-9 border-0 focus-visible:border-0 focus-visible:ring-0 bg-gray-50 hover:bg-gray-100 shadow-none"
             />
           </div>
         </div>
@@ -194,7 +195,11 @@ export function OrderTab() {
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-sm">{order.order_id}</TableCell>
                     <TableCell>{order.name}</TableCell>
-                    <TableCell>{order.plan_name}</TableCell>
+                    <TableCell>
+                      <Badge className={getPlanBadgeColors(order.plan_name)}>
+                        {order.plan_name}
+                      </Badge>
+                    </TableCell>
                     <TableCell>${formatPrice(order.price)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>

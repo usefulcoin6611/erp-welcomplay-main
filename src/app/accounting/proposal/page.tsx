@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { MainContentWrapper } from "@/components/main-content-wrapper"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -121,17 +122,11 @@ export default function ProposalPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Proposals</h1>
-                <p className="text-muted-foreground">
-                  Manage customer proposals before converting them to invoices.
-                </p>
-              </div>
-        <div className="flex gap-2">
+            <div className="flex items-center justify-end">
+              <div className="flex gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -146,7 +141,7 @@ export default function ProposalPage() {
             className="shadow-none h-7"
           >
             <Link href="/accounting/proposal/create">
-              <IconPlus className="h-3 w-3" />
+              <IconPlus className="mr-2 h-4 w-4" /> Create
             </Link>
           </Button>
         </div>
@@ -220,7 +215,7 @@ export default function ProposalPage() {
                     </label>
                     <div className="relative">
                       <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                      <Input placeholder="Search proposals..." className="pl-10" />
+                      <Input placeholder="Search proposals..." className="pl-10 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors" />
                     </div>
                   </div>
                   <div className="w-full md:w-44">
@@ -355,8 +350,8 @@ export default function ProposalPage() {
           </Table>
         </CardContent>
       </Card>
-    </div>
-        </div>
+          </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

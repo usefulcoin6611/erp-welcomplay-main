@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -389,16 +390,10 @@ export default function SupportPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Support</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage support tickets and customer inquiries
-                </p>
-              </div>
+            <div className="flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" className="shadow-none h-7">
                   <LayoutGrid className="mr-2 h-4 w-4" /> Grid View
@@ -552,7 +547,7 @@ export default function SupportPage() {
             </div>
 
             {/* Search */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+            <Card className="border-0 shadow-none">
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -561,7 +556,7 @@ export default function SupportPage() {
                       placeholder="Search support tickets..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
                     />
                     {search.length > 0 && (
                       <Button
@@ -581,7 +576,7 @@ export default function SupportPage() {
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Total Tickets */}
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+              <Card className="rounded-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -596,7 +591,7 @@ export default function SupportPage() {
               </Card>
 
               {/* Open Tickets */}
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+              <Card className="rounded-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -611,7 +606,7 @@ export default function SupportPage() {
               </Card>
 
               {/* On Hold Tickets */}
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+              <Card className="rounded-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -626,7 +621,7 @@ export default function SupportPage() {
               </Card>
 
               {/* Close Tickets */}
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+              <Card className="rounded-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -642,27 +637,27 @@ export default function SupportPage() {
             </div>
 
             {/* Support Table */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+            <Card>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Created By</TableHead>
-                        <TableHead>Ticket</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Attachment</TableHead>
-                        <TableHead>Assign User</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created At</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="px-4 py-3">Created By</TableHead>
+                        <TableHead className="px-4 py-3">Ticket</TableHead>
+                        <TableHead className="px-4 py-3">Code</TableHead>
+                        <TableHead className="px-4 py-3">Attachment</TableHead>
+                        <TableHead className="px-4 py-3">Assign User</TableHead>
+                        <TableHead className="px-4 py-3">Status</TableHead>
+                        <TableHead className="px-4 py-3">Created At</TableHead>
+                        <TableHead className="px-4 py-3">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((support) => (
                         <TableRow key={support.id}>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="relative">
                                 <Avatar className="h-8 w-8 border-2 border-primary">
@@ -745,7 +740,7 @@ export default function SupportPage() {
                       ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                             No support tickets found
                           </TableCell>
                         </TableRow>
@@ -754,7 +749,7 @@ export default function SupportPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4 px-4 pb-4">
+                  <div className="px-4 py-3 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -770,7 +765,7 @@ export default function SupportPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

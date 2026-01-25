@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -85,24 +86,10 @@ export default function EmailTemplatePage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">
-                  {isCompany ? 'Email Notification' : 'Email Templates'}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {isCompany
-                    ? 'Manage your email notification settings'
-                    : 'Manage email templates for your system'}
-                </p>
-              </div>
-            </div>
-
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Search */}
-            <Card className="shadow-none">
+            <Card>
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -111,7 +98,7 @@ export default function EmailTemplatePage() {
                       placeholder="Search email templates..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
                     />
                     {search.length > 0 && (
                       <Button
@@ -133,7 +120,7 @@ export default function EmailTemplatePage() {
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-muted/50">
+                    <thead className="bg-white">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
                         <th className="px-4 py-3 text-left text-xs font-medium">
@@ -200,7 +187,7 @@ export default function EmailTemplatePage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

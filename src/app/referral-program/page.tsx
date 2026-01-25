@@ -5,11 +5,13 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Check, X, Copy, Send } from 'lucide-react'
@@ -212,7 +214,7 @@ export default function ReferralProgramPage() {
                         <TableCell>{transaction.company_name}</TableCell>
                         <TableCell>{transaction.referral_company_name}</TableCell>
                         <TableCell>
-                          <Badge className="bg-blue-100 text-blue-700">
+                          <Badge className={getPlanBadgeColors(transaction.plan_name)}>
                             {transaction.plan_name}
                           </Badge>
                         </TableCell>
@@ -282,7 +284,7 @@ export default function ReferralProgramPage() {
           id: 'settings',
           title: 'Settings',
           content: (
-            <Card className="shadow-none">
+            <Card>
               <form onSubmit={handleSaveSettings}>
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between gap-4">
@@ -443,7 +445,7 @@ export default function ReferralProgramPage() {
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{transaction.referral_company_name}</TableCell>
                         <TableCell>
-                          <Badge className="bg-blue-100 text-blue-700">
+                          <Badge className={getPlanBadgeColors(transaction.plan_name)}>
                             {transaction.plan_name}
                           </Badge>
                         </TableCell>
@@ -575,20 +577,10 @@ export default function ReferralProgramPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">Referral Program</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage referral program settings and transactions
-                </p>
-              </div>
-            </div>
-
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Tabs */}
-            <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <Card className="rounded-lg">
               <CardContent className="p-0">
                 <div className="px-4 pt-4 pb-0">
                   <SmoothTab
@@ -601,7 +593,7 @@ export default function ReferralProgramPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
 
       {/* Approve Payout Confirmation Dialog */}

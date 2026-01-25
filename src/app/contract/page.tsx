@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from "next/link"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   SidebarInset,
   SidebarProvider,
@@ -229,15 +230,9 @@ export default function ContractPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Contracts</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage contracts and agreements
-                </p>
-              </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="flex items-center justify-end">
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
@@ -250,7 +245,7 @@ export default function ContractPage() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="blue" size="sm" className="shadow-none h-7">
-                      <IconPlus className="h-3 w-3" />
+                      <IconPlus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[560px]">
@@ -320,7 +315,7 @@ export default function ContractPage() {
             </div>
 
             {/* Search */}
-            <Card className="shadow-none">
+            <Card className="border-0 shadow-none">
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -329,7 +324,7 @@ export default function ContractPage() {
                       placeholder="Search contracts..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
                     />
                     {search.length > 0 && (
                       <Button
@@ -444,7 +439,7 @@ export default function ContractPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Plus, MoreVertical, Pencil, Trash, Lock, Calendar, Clock, Users, Building2, RotateCcw, LogIn, LogOut, ShoppingCart, Check } from 'lucide-react'
 import {
@@ -272,23 +274,16 @@ export default function CompaniesPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">Manage Companies</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create and manage companies in your system
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none">
-                      <Plus className="mr-2 h-4 w-4" /> Create Company
-                    </Button>
-                  </DialogTrigger>
+            <div className="flex items-center justify-end">
+              <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="blue" className="shadow-none">
+                    <Plus className="mr-2 h-4 w-4" /> Create Company
+                  </Button>
+                </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create Company</DialogTitle>
@@ -377,7 +372,6 @@ export default function CompaniesPage() {
                     </form>
                   </DialogContent>
                 </Dialog>
-              </div>
             </div>
 
             {/* Companies Grid */}
@@ -387,7 +381,7 @@ export default function CompaniesPage() {
                   <CardContent className="p-4 flex flex-col flex-1">
                     {/* Header with Plan Badge and Actions */}
                     <div className="flex items-center justify-between mb-3">
-                      <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                      <Badge className={getPlanBadgeColors(company.plan || 'No Plan')}>
                         {company.plan || 'No Plan'}
                       </Badge>
                       <DropdownMenu>
@@ -733,7 +727,7 @@ export default function CompaniesPage() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

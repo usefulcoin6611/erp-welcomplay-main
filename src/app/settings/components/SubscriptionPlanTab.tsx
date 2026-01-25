@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
 import { Plus, Check, X, Pencil, CirclePlus, CircleMinus } from 'lucide-react'
 import {
   Dialog,
@@ -184,7 +185,7 @@ export function SubscriptionPlanTab() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => (
           <Card key={plan.id} className="shadow-none relative">
-            <Badge className="absolute top-4 right-4 bg-primary">{plan.name}</Badge>
+            <Badge className={`absolute top-4 right-4 ${getPlanBadgeColorsSolid(plan.name)}`}>{plan.name}</Badge>
             {plan.is_active && (
               <div className="absolute top-4 left-4">
                 <div className="flex items-center gap-1 text-xs text-primary">
