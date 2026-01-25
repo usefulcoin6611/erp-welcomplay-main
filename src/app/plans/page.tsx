@@ -18,6 +18,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -136,7 +146,9 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>(mockPlans)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -253,9 +265,16 @@ export default function PlansPage() {
     })
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setPlans(plans.filter((p) => p.id !== id))
+  const handleDeleteClick = (plan: Plan) => {
+    setPlanToDelete(plan)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (planToDelete) {
+      setPlans(plans.filter((p) => p.id !== planToDelete.id))
+      setDeleteDialogOpen(false)
+      setPlanToDelete(null)
     }
   }
 
@@ -300,7 +319,7 @@ export default function PlansPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Manage Plan</h1>
+                <h1 className="text-2xl font-medium">Manage Plan</h1>
                 <p className="text-sm text-muted-foreground">
                   Create and manage subscription plans
                 </p>
@@ -323,7 +342,7 @@ export default function PlansPage() {
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="name">
+                            <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Name <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -335,7 +354,7 @@ export default function PlansPage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="price">
+                            <Label htmlFor="price" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Price <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -350,7 +369,7 @@ export default function PlansPage() {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="duration">
+                          <Label htmlFor="duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Duration <span className="text-red-500">*</span>
                           </Label>
                           <Select
@@ -371,7 +390,7 @@ export default function PlansPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="max_users">
+                            <Label htmlFor="max_users" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Maximum Users <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -387,7 +406,7 @@ export default function PlansPage() {
                             <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="max_customers">
+                            <Label htmlFor="max_customers" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Maximum Customers <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -405,7 +424,7 @@ export default function PlansPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="max_venders">
+                            <Label htmlFor="max_venders" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Maximum Vendors <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -421,7 +440,7 @@ export default function PlansPage() {
                             <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="max_clients">
+                            <Label htmlFor="max_clients" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Maximum Clients <span className="text-red-500">*</span>
                             </Label>
                             <Input
@@ -438,7 +457,7 @@ export default function PlansPage() {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="storage_limit">
+                          <Label htmlFor="storage_limit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Storage Limit <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -463,7 +482,7 @@ export default function PlansPage() {
                               }
                               className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
-                            <Label htmlFor="account">Account</Label>
+                            <Label htmlFor="account" className="text-sm font-medium text-gray-700 dark:text-gray-300">Account</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Switch
@@ -472,7 +491,7 @@ export default function PlansPage() {
                               onCheckedChange={(checked) => setFormData({ ...formData, crm: checked })}
                               className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
-                            <Label htmlFor="crm">CRM</Label>
+                            <Label htmlFor="crm" className="text-sm font-medium text-gray-700 dark:text-gray-300">CRM</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Switch
@@ -481,7 +500,7 @@ export default function PlansPage() {
                               onCheckedChange={(checked) => setFormData({ ...formData, hrm: checked })}
                               className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
-                            <Label htmlFor="hrm">HRM</Label>
+                            <Label htmlFor="hrm" className="text-sm font-medium text-gray-700 dark:text-gray-300">HRM</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Switch
@@ -492,7 +511,7 @@ export default function PlansPage() {
                               }
                               className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
-                            <Label htmlFor="project">Project</Label>
+                            <Label htmlFor="project" className="text-sm font-medium text-gray-700 dark:text-gray-300">Project</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Switch
@@ -501,7 +520,7 @@ export default function PlansPage() {
                               onCheckedChange={(checked) => setFormData({ ...formData, pos: checked })}
                               className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                             />
-                            <Label htmlFor="pos">POS</Label>
+                            <Label htmlFor="pos" className="text-sm font-medium text-gray-700 dark:text-gray-300">POS</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Switch
@@ -561,13 +580,13 @@ export default function PlansPage() {
 
                     {/* Price */}
                     <div className="mb-4">
-                      <h1 className="text-2xl font-semibold mb-0">
+                      <h1 className="text-xl font-medium mb-0">
                         {formatPrice(plan.price)}
-                        <small className="text-xs text-muted-foreground ml-1">
+                        <small className="text-sm text-muted-foreground ml-1">
                           /{getDurationLabel(plan.duration)}
                         </small>
                       </h1>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-sm text-muted-foreground mt-2">
                         Free Trial Days : {plan.trial_days || 0}
                       </p>
                     </div>
@@ -575,7 +594,7 @@ export default function PlansPage() {
                     {/* Features */}
                     <div className="grid grid-cols-2 gap-3 mb-5">
                       <div>
-                        <ul className="space-y-1.5 text-xs">
+                        <ul className="space-y-1.5 text-sm">
                           <li className="flex items-center gap-2">
                             <CirclePlus className="h-4 w-4 text-blue-500" />
                             {formatLimit(plan.max_users)} Users
@@ -599,7 +618,7 @@ export default function PlansPage() {
                         </ul>
                       </div>
                       <div>
-                        <ul className="space-y-1.5 text-xs">
+                        <ul className="space-y-1.5 text-sm">
                           <li className="flex items-center gap-2">
                             {plan.account ? (
                               <CirclePlus className="h-4 w-4 text-blue-500" />
@@ -668,7 +687,7 @@ export default function PlansPage() {
                             variant="outline"
                             size="sm"
                             className="shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                            onClick={() => handleDelete(plan.id)}
+                            onClick={() => handleDeleteClick(plan)}
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
@@ -712,7 +731,7 @@ export default function PlansPage() {
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="edit_name">
+                          <Label htmlFor="edit_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Name <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -726,7 +745,7 @@ export default function PlansPage() {
                         {editingPlan.id !== '1' && (
                           <>
                             <div className="space-y-2">
-                              <Label htmlFor="edit_price">
+                              <Label htmlFor="edit_price" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Price <span className="text-red-500">*</span>
                               </Label>
                               <Input
@@ -740,7 +759,7 @@ export default function PlansPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="edit_duration">
+                              <Label htmlFor="edit_duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Duration <span className="text-red-500">*</span>
                               </Label>
                               <Select
@@ -848,7 +867,7 @@ export default function PlansPage() {
                       </div>
                       {editingPlan.id !== '1' && (
                         <div className="space-y-2">
-                          <Label htmlFor="edit_trial_days">Trial Days</Label>
+                          <Label htmlFor="edit_trial_days" className="text-sm font-medium text-gray-700 dark:text-gray-300">Trial Days</Label>
                           <Input
                             id="edit_trial_days"
                             type="number"
@@ -880,7 +899,7 @@ export default function PlansPage() {
                             onCheckedChange={(checked) => setFormData({ ...formData, crm: checked })}
                             className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
-                          <Label htmlFor="edit_crm">CRM</Label>
+                          <Label htmlFor="edit_crm" className="text-sm font-medium text-gray-700 dark:text-gray-300">CRM</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -889,7 +908,7 @@ export default function PlansPage() {
                             onCheckedChange={(checked) => setFormData({ ...formData, hrm: checked })}
                             className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
-                          <Label htmlFor="edit_hrm">HRM</Label>
+                          <Label htmlFor="edit_hrm" className="text-sm font-medium text-gray-700 dark:text-gray-300">HRM</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -900,7 +919,7 @@ export default function PlansPage() {
                             }
                             className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
-                          <Label htmlFor="edit_project">Project</Label>
+                          <Label htmlFor="edit_project" className="text-sm font-medium text-gray-700 dark:text-gray-300">Project</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -909,7 +928,7 @@ export default function PlansPage() {
                             onCheckedChange={(checked) => setFormData({ ...formData, pos: checked })}
                             className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
-                          <Label htmlFor="edit_pos">POS</Label>
+                          <Label htmlFor="edit_pos" className="text-sm font-medium text-gray-700 dark:text-gray-300">POS</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -920,7 +939,7 @@ export default function PlansPage() {
                             }
                             className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
-                          <Label htmlFor="edit_chatgpt">Chat GPT</Label>
+                          <Label htmlFor="edit_chatgpt" className="text-sm font-medium text-gray-700 dark:text-gray-300">Chat GPT</Label>
                         </div>
                       </div>
                     </div>
@@ -943,6 +962,27 @@ export default function PlansPage() {
                 </DialogContent>
               </Dialog>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{planToDelete?.name}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

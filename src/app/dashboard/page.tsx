@@ -173,10 +173,10 @@ export default function DashboardPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-8 p-8">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             {/* Page Header */}
             <div className="mb-2">
-              <h1 className="text-2xl font-semibold text-gray-900">
+              <h1 className="text-2xl font-medium text-gray-900">
                 {isSuperAdmin 
                   ? 'Super Admin Dashboard' 
                   : isClient 
@@ -191,7 +191,7 @@ export default function DashboardPage() {
                 {/* Stats Cards - Minimalist Design */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Total Companies */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -209,7 +209,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Total Orders */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Total Plans */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -253,9 +253,9 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Recent Order Chart - Clean Design */}
-                <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg font-semibold text-gray-900">Recent Orders</CardTitle>
+                <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                  <CardHeader className="p-3">
+                    <CardTitle className="text-lg font-medium text-gray-900">Recent Orders</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Chart
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                 {/* Stats Cards - Minimalist */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Total Deals */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
@@ -318,7 +318,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Total Tasks */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow">
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
@@ -336,9 +336,9 @@ export default function DashboardPage() {
                 {/* Charts and Progress Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Project Progress - Compact */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg font-semibold text-gray-900">Project Progress</CardTitle>
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                    <CardHeader className="p-3">
+                      <CardTitle className="text-lg font-medium text-gray-900">Project Progress</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="space-y-2">
@@ -381,10 +381,10 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Tasks Overview Chart */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] lg:col-span-2">
-                    <CardHeader className="pb-4">
+                  <Card className="border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] lg:col-span-2">
+                    <CardHeader className="p-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold text-gray-900">Tasks Overview</CardTitle>
+                        <CardTitle className="text-lg font-medium text-gray-900">Tasks Overview</CardTitle>
                         <span className="text-xs text-gray-500 font-medium">Last 7 Days</span>
                       </div>
                     </CardHeader>
@@ -421,10 +421,10 @@ export default function DashboardPage() {
                 {/* Project Status and Tables */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Project Status Chart */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                    <CardHeader className="pb-4">
+                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                    <CardHeader className="p-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold text-gray-900">Project Status</CardTitle>
+                        <CardTitle className="text-lg font-medium text-gray-900">Project Status</CardTitle>
                         <span className="text-xs text-gray-500 font-medium">2026</span>
                       </div>
                     </CardHeader>
@@ -449,9 +449,9 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Top Due Projects */}
-                  <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] lg:col-span-2">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg font-semibold text-gray-900">Top Due Projects</CardTitle>
+                  <Card className="border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] lg:col-span-2">
+                    <CardHeader className="p-3">
+                      <CardTitle className="text-lg font-medium text-gray-900">Top Due Projects</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
@@ -476,9 +476,9 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Top Due Tasks */}
-                <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg font-semibold text-gray-900">Top Due Tasks</CardTitle>
+                <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                  <CardHeader className="p-3">
+                    <CardTitle className="text-lg font-medium text-gray-900">Top Due Tasks</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">

@@ -10,7 +10,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Save, ChevronRight, Plus, Pencil, Trash, Upload } from 'lucide-react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Save, Plus, Pencil, Trash, Upload } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
@@ -22,7 +32,64 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
+
+// Modern minimalist input styling (same as settings page)
+const modernInputClass = cn(
+  'rounded-lg',
+  'border-gray-200 dark:border-gray-700',
+  'bg-white dark:bg-gray-900/50',
+  'transition-all duration-200 ease-in-out',
+  'hover:border-gray-300 dark:hover:border-gray-600',
+  'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
+  'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
+  'focus-visible:ring-offset-0',
+  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+  'text-gray-900 dark:text-gray-100'
+)
+
+const modernTextareaClass = cn(
+  'rounded-lg',
+  'border-gray-200 dark:border-gray-700',
+  'bg-white dark:bg-gray-900/50',
+  'transition-all duration-200 ease-in-out',
+  'hover:border-gray-300 dark:hover:border-gray-600',
+  'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
+  'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
+  'focus-visible:ring-offset-0',
+  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+  'text-gray-900 dark:text-gray-100',
+  'resize-none'
+)
+
+// Modern minimalist select styling (same as settings page)
+const modernSelectTriggerClass = cn(
+  'w-full',
+  'h-9',
+  'rounded-lg',
+  'border-gray-200 dark:border-gray-700',
+  'bg-white dark:bg-gray-900/50',
+  'transition-all duration-200 ease-in-out',
+  'hover:border-gray-300 dark:hover:border-gray-600',
+  'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
+  'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
+  'focus-visible:ring-offset-0',
+  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  'text-gray-900 dark:text-gray-100',
+  'data-[placeholder]:text-gray-400 dark:data-[placeholder]:text-gray-500'
+)
 
 // Types
 interface LandingPageSettings {
@@ -198,7 +265,52 @@ const mockScreenshots: Screenshot[] = []
 const mockFAQs: FAQ[] = []
 const mockTestimonials: Testimonial[] = []
 const mockJoinUsUsers: JoinUsUser[] = []
-const mockCustomPages: CustomPage[] = []
+const mockCustomPages: CustomPage[] = [
+  {
+    id: '1',
+    menubar_page_name: 'About Us',
+    page_slug: 'about_us',
+    template_name: 'page_content',
+    menubar_page_contant: '<h1>About Us</h1><p>Learn more about our company and mission.</p>',
+    page_url: '',
+    header: true,
+    footer: true,
+    login: false,
+  },
+  {
+    id: '2',
+    menubar_page_name: 'Terms and Conditions',
+    page_slug: 'terms_and_conditions',
+    template_name: 'page_content',
+    menubar_page_contant: '<h1>Terms and Conditions</h1><p>Please read our terms and conditions carefully.</p>',
+    page_url: '',
+    header: true,
+    footer: true,
+    login: false,
+  },
+  {
+    id: '3',
+    menubar_page_name: 'Privacy Policy',
+    page_slug: 'privacy_policy',
+    template_name: 'page_content',
+    menubar_page_contant: '<h1>Privacy Policy</h1><p>Your privacy is important to us.</p>',
+    page_url: '',
+    header: true,
+    footer: true,
+    login: false,
+  },
+  {
+    id: '4',
+    menubar_page_name: 'Contact',
+    page_slug: 'contact',
+    template_name: 'page_url',
+    menubar_page_contant: '',
+    page_url: 'https://example.com/contact',
+    header: true,
+    footer: true,
+    login: false,
+  },
+]
 
 type Section = 
   | 'topbar' 
@@ -241,6 +353,9 @@ export default function LandingPagePage() {
   const [createPageDialogOpen, setCreatePageDialogOpen] = useState(false)
   const [editPageDialogOpen, setEditPageDialogOpen] = useState(false)
   const [editingPage, setEditingPage] = useState<CustomPage | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteType, setDeleteType] = useState<'feature' | 'discover' | 'screenshot' | 'faq' | 'testimonial' | 'joinus' | 'custompage' | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [pageFormData, setPageFormData] = useState({
     menubar_page_name: '',
     template_name: 'page_content' as 'page_content' | 'page_url',
@@ -258,39 +373,39 @@ export default function LandingPagePage() {
   }
 
   const handleDeleteFeature = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setFeatures(features.filter((f) => f.id !== id))
-    }
+    setDeleteType('feature')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
   }
 
   const handleDeleteDiscover = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setDiscoverItems(discoverItems.filter((d) => d.id !== id))
-    }
+    setDeleteType('discover')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
   }
 
   const handleDeleteScreenshot = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setScreenshots(screenshots.filter((s) => s.id !== id))
-    }
+    setDeleteType('screenshot')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
   }
 
   const handleDeleteFAQ = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setFaqs(faqs.filter((f) => f.id !== id))
-    }
+    setDeleteType('faq')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
   }
 
   const handleDeleteTestimonial = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setTestimonials(testimonials.filter((t) => t.id !== id))
-    }
+    setDeleteType('testimonial')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
   }
 
   const handleDeleteJoinUsUser = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setJoinUsUsers(joinUsUsers.filter((u) => u.id !== id))
-    }
+    setDeleteType('joinus')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
   }
 
   const handleCreatePage = () => {
@@ -364,8 +479,61 @@ export default function LandingPagePage() {
       alert('This page cannot be deleted.')
       return
     }
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setCustomPages(customPages.filter((p) => p.id !== id))
+    setDeleteType('custompage')
+    setDeleteId(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!deleteId || !deleteType) return
+
+    switch (deleteType) {
+      case 'feature':
+        setFeatures(features.filter((f) => f.id !== deleteId))
+        break
+      case 'discover':
+        setDiscoverItems(discoverItems.filter((d) => d.id !== deleteId))
+        break
+      case 'screenshot':
+        setScreenshots(screenshots.filter((s) => s.id !== deleteId))
+        break
+      case 'faq':
+        setFaqs(faqs.filter((f) => f.id !== deleteId))
+        break
+      case 'testimonial':
+        setTestimonials(testimonials.filter((t) => t.id !== deleteId))
+        break
+      case 'joinus':
+        setJoinUsUsers(joinUsUsers.filter((u) => u.id !== deleteId))
+        break
+      case 'custompage':
+        setCustomPages(customPages.filter((p) => p.id !== deleteId))
+        break
+    }
+
+    setDeleteDialogOpen(false)
+    setDeleteId(null)
+    setDeleteType(null)
+  }
+
+  const getDeleteMessage = () => {
+    switch (deleteType) {
+      case 'feature':
+        return 'Are you sure you want to delete this feature? This action cannot be undone.'
+      case 'discover':
+        return 'Are you sure you want to delete this discover item? This action cannot be undone.'
+      case 'screenshot':
+        return 'Are you sure you want to delete this screenshot? This action cannot be undone.'
+      case 'faq':
+        return 'Are you sure you want to delete this FAQ? This action cannot be undone.'
+      case 'testimonial':
+        return 'Are you sure you want to delete this testimonial? This action cannot be undone.'
+      case 'joinus':
+        return 'Are you sure you want to delete this join us user? This action cannot be undone.'
+      case 'custompage':
+        return 'Are you sure you want to delete this custom page? This action cannot be undone.'
+      default:
+        return 'Are you sure you want to delete this item? This action cannot be undone.'
     }
   }
 
@@ -384,7 +552,7 @@ export default function LandingPagePage() {
           <SiteHeader />
           <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-              <Card className="shadow-none">
+              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                 <CardContent className="p-6">
                   <p className="text-center text-muted-foreground">Permission denied.</p>
                 </CardContent>
@@ -410,36 +578,35 @@ export default function LandingPagePage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="mb-2">
-              <h1 className="text-2xl font-semibold">Landing Page</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Dashboard {'>'} Landing Page
-              </p>
-            </div>
-
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Sidebar Navigation */}
               <div className="lg:col-span-1">
-                <Card className="shadow-none sticky" style={{ top: '30px' }}>
-                  <CardContent className="p-0">
-                    <div className="flex flex-col">
-                      {sections.map((section) => (
-                        <button
-                          key={section.key}
-                          onClick={() => setActiveSection(section.key)}
-                          className={cn(
-                            'px-4 py-3 text-left text-sm transition-colors border-0 bg-transparent hover:bg-muted/50 flex items-center justify-between w-full',
-                            activeSection === section.key
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'text-foreground'
-                          )}
-                        >
-                          <span>{section.label}</span>
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      ))}
+                <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg sticky border-r" style={{ top: '30px' }}>
+                  <CardContent className="p-1">
+                    <div className="space-y-0">
+                      {sections.map((section) => {
+                        const isActive = activeSection === section.key
+                        return (
+                          <button
+                            key={section.key}
+                            onClick={() => setActiveSection(section.key)}
+                            className={`relative w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-300 ease-out border-0 cursor-pointer rounded-md mx-1 my-0.5 group ${
+                              isActive
+                                ? 'bg-gradient-to-r from-blue-50/80 to-transparent dark:from-blue-950/50 dark:to-transparent text-blue-700 dark:text-blue-300 font-medium border-l-2 border-blue-500 dark:border-blue-400'
+                                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                            }`}
+                          >
+                            <span className="relative z-10">{section.label}</span>
+                            {isActive && (
+                              <span className="relative z-10 text-blue-600 dark:text-blue-400 text-xs font-medium">→</span>
+                            )}
+                            {!isActive && (
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground text-xs">→</span>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -450,26 +617,24 @@ export default function LandingPagePage() {
                 {/* Top Bar Section */}
                 {activeSection === 'topbar' && (
                   <form onSubmit={handleSubmit}>
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Top Bar</CardTitle>
-                          <Switch
-                            id="topbar_status"
-                            checked={settings.topbar_status === 'on'}
-                            onCheckedChange={(checked) =>
-                              setSettings({
-                                ...settings,
-                                topbar_status: checked ? 'on' : 'off',
-                              })
-                            }
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Top Bar</CardTitle>
+                        <Switch
+                          id="topbar_status"
+                          checked={settings.topbar_status === 'on'}
+                          onCheckedChange={(checked) =>
+                            setSettings({
+                              ...settings,
+                              topbar_status: checked ? 'on' : 'off',
+                            })
+                          }
+                          className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                        />
                       </CardHeader>
-                      <CardContent className="pt-0">
+                      <CardContent className="p-3">
                         <div className="space-y-2">
-                          <Label htmlFor="topbar_notification_msg">
+                          <Label htmlFor="topbar_notification_msg" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Message <span className="text-red-500">*</span>
                           </Label>
                           <Textarea
@@ -483,13 +648,13 @@ export default function LandingPagePage() {
                             }
                             rows={4}
                             required
-                            className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                            className={modernTextareaClass}
                             placeholder="Write here..."
                           />
                         </div>
                       </CardContent>
-                      <CardFooter className="pt-6">
-                        <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                      <CardFooter className="p-3 flex justify-end">
+                        <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -500,14 +665,15 @@ export default function LandingPagePage() {
                 {/* Home Section */}
                 {activeSection === 'home' && (
                   <form onSubmit={handleSubmit}>
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-lg font-semibold">Home Section</CardTitle>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <CardHeader className="p-3 rounded-t-lg">
+                        <CardTitle className="text-base font-medium leading-none">Home Section</CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                      <CardContent className="p-3">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="home_offer_text">Offer Text</Label>
+                            <Label htmlFor="home_offer_text" className="text-sm font-medium text-gray-700 dark:text-gray-300">Offer Text</Label>
                             <Input
                               id="home_offer_text"
                               value={settings.home_offer_text}
@@ -515,11 +681,11 @@ export default function LandingPagePage() {
                                 setSettings({ ...settings, home_offer_text: e.target.value })
                               }
                               placeholder="70% Special Offer"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              className={modernInputClass}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="home_title">Title</Label>
+                            <Label htmlFor="home_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</Label>
                             <Input
                               id="home_title"
                               value={settings.home_title}
@@ -527,12 +693,12 @@ export default function LandingPagePage() {
                                 setSettings({ ...settings, home_title: e.target.value })
                               }
                               placeholder="Enter Title"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              className={modernInputClass}
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="home_heading">Heading</Label>
+                          <Label htmlFor="home_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">Heading</Label>
                           <Input
                             id="home_heading"
                             value={settings.home_heading}
@@ -540,11 +706,11 @@ export default function LandingPagePage() {
                               setSettings({ ...settings, home_heading: e.target.value })
                             }
                             placeholder="Enter Heading"
-                            className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                            className={modernInputClass}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="home_description">Description</Label>
+                          <Label htmlFor="home_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
                           <Input
                             id="home_description"
                             value={settings.home_description}
@@ -552,11 +718,11 @@ export default function LandingPagePage() {
                               setSettings({ ...settings, home_description: e.target.value })
                             }
                             placeholder="Enter Description"
-                            className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                            className={modernInputClass}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="home_trusted_by">Trusted by</Label>
+                          <Label htmlFor="home_trusted_by" className="text-sm font-medium text-gray-700 dark:text-gray-300">Trusted by</Label>
                           <Input
                             id="home_trusted_by"
                             value={settings.home_trusted_by}
@@ -564,12 +730,12 @@ export default function LandingPagePage() {
                               setSettings({ ...settings, home_trusted_by: e.target.value })
                             }
                             placeholder="1,000+ customers"
-                            className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                            className={modernInputClass}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="home_live_demo_link">Live Demo Link</Label>
+                            <Label htmlFor="home_live_demo_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Live Demo Link</Label>
                             <Input
                               id="home_live_demo_link"
                               value={settings.home_live_demo_link}
@@ -577,11 +743,11 @@ export default function LandingPagePage() {
                                 setSettings({ ...settings, home_live_demo_link: e.target.value })
                               }
                               placeholder="Enter Link"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              className={modernInputClass}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="home_buy_now_link">Buy Now Link</Label>
+                            <Label htmlFor="home_buy_now_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Buy Now Link</Label>
                             <Input
                               id="home_buy_now_link"
                               value={settings.home_buy_now_link}
@@ -589,20 +755,20 @@ export default function LandingPagePage() {
                                 setSettings({ ...settings, home_buy_now_link: e.target.value })
                               }
                               placeholder="Enter Link"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              className={modernInputClass}
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="home_banner">Banner</Label>
+                          <Label htmlFor="home_banner" className="text-sm font-medium text-gray-700 dark:text-gray-300">Banner</Label>
                           <div className="flex items-center gap-2">
                             <Input
                               id="home_banner"
                               type="file"
                               accept="image/*"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              className={modernInputClass}
                             />
-                            <Button type="button" variant="outline" size="sm" className="shadow-none">
+                            <Button type="button" variant="outline" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                               <Upload className="mr-2 h-4 w-4" />
                               Choose file here
                             </Button>
@@ -611,14 +777,15 @@ export default function LandingPagePage() {
                         <div className="space-y-2">
                           <Label>Logo</Label>
                           <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="sm" className="shadow-none">
+                            <Button type="button" variant="outline" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                               <Plus className="mr-2 h-4 w-4" /> Create
                             </Button>
                           </div>
+                          </div>
                         </div>
                       </CardContent>
-                      <CardFooter className="pt-6">
-                        <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                      <CardFooter className="p-3 flex justify-end">
+                        <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -630,242 +797,240 @@ export default function LandingPagePage() {
                 {activeSection === 'features' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">Feature</CardTitle>
-                            <Switch
-                              id="feature_status"
-                              checked={settings.feature_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  feature_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">Feature</CardTitle>
+                          <Switch
+                            id="feature_status"
+                            checked={settings.feature_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                feature_status: checked ? 'on' : 'off',
+                              })
+                            }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          />
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="feature_title">
-                                Title <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="feature_title"
-                                value={settings.feature_title}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, feature_title: e.target.value })
-                                }
-                                placeholder="Enter Title"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="feature_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Title <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="feature_title"
+                                  value={settings.feature_title}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, feature_title: e.target.value })
+                                  }
+                                  placeholder="Enter Title"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="feature_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="feature_heading"
+                                  value={settings.feature_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, feature_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="feature_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="feature_heading"
-                                value={settings.feature_heading}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, feature_heading: e.target.value })
-                                }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="feature_description">Description</Label>
-                              <Input
-                                id="feature_description"
-                                value={settings.feature_description}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, feature_description: e.target.value })
-                                }
-                                placeholder="Enter Description"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="feature_buy_now_link">Buy Now Link</Label>
-                              <Input
-                                id="feature_buy_now_link"
-                                value={settings.feature_buy_now_link}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, feature_buy_now_link: e.target.value })
-                                }
-                                placeholder="Enter Link"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="feature_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+                                <Input
+                                  id="feature_description"
+                                  value={settings.feature_description}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, feature_description: e.target.value })
+                                  }
+                                  placeholder="Enter Description"
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="feature_buy_now_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Buy Now Link</Label>
+                                <Input
+                                  id="feature_buy_now_link"
+                                  value={settings.feature_buy_now_link}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, feature_buy_now_link: e.target.value })
+                                  }
+                                  placeholder="Enter Link"
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Features List</CardTitle>
-                          <Button variant="blue" size="sm" className="shadow-none">
-                            <Plus className="mr-2 h-4 w-4" /> Create Feature
-                          </Button>
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Features List</CardTitle>
+                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Plus className="mr-2 h-4 w-4" /> Create Feature
+                        </Button>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {features.length > 0 ? (
                                 features.map((feature, index) => (
-                                  <tr key={feature.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{index + 1}</td>
-                                    <td className="px-4 py-3">{feature.feature_heading}</td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-2">
+                                  <TableRow key={feature.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{feature.feature_heading}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteFeature(feature.id)}
                                         >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                     No features found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
 
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <CardTitle className="text-lg font-semibold">Feature</CardTitle>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg">
+                          <CardTitle className="text-base font-medium leading-none">Feature</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="highlight_feature_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="highlight_feature_heading"
-                                value={settings.highlight_feature_heading}
-                                onChange={(e) =>
-                                  setSettings({
-                                    ...settings,
-                                    highlight_feature_heading: e.target.value,
-                                  })
-                                }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="highlight_feature_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="highlight_feature_heading"
+                                  value={settings.highlight_feature_heading}
+                                  onChange={(e) =>
+                                    setSettings({
+                                      ...settings,
+                                      highlight_feature_heading: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="highlight_feature_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+                                <Input
+                                  id="highlight_feature_description"
+                                  value={settings.highlight_feature_description}
+                                  onChange={(e) =>
+                                    setSettings({
+                                      ...settings,
+                                      highlight_feature_description: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Enter Description"
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="highlight_feature_description">Description</Label>
-                              <Input
-                                id="highlight_feature_description"
-                                value={settings.highlight_feature_description}
-                                onChange={(e) =>
-                                  setSettings({
-                                    ...settings,
-                                    highlight_feature_description: e.target.value,
-                                  })
-                                }
-                                placeholder="Enter Description"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="highlight_feature_image">Logo</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                id="highlight_feature_image"
-                                type="file"
-                                accept="image/*"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                              <Button type="button" variant="outline" size="sm" className="shadow-none">
-                                <Upload className="mr-2 h-4 w-4" />
-                                Choose file here
-                              </Button>
+                              <Label htmlFor="highlight_feature_image" className="text-sm font-medium text-gray-700 dark:text-gray-300">Logo</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  id="highlight_feature_image"
+                                  type="file"
+                                  accept="image/*"
+                                  className={modernInputClass}
+                                />
+                                <Button type="button" variant="outline" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  Choose file here
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Features Block</CardTitle>
-                          <Button variant="blue" size="sm" className="shadow-none">
-                            <Plus className="mr-2 h-4 w-4" /> Create Feature Block
-                          </Button>
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Features Block</CardTitle>
+                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Plus className="mr-2 h-4 w-4" /> Create Feature Block
+                        </Button>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                   No feature blocks found
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -876,146 +1041,144 @@ export default function LandingPagePage() {
                 {activeSection === 'discover' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">Discover</CardTitle>
-                            <Switch
-                              id="discover_status"
-                              checked={settings.discover_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  discover_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">Discover</CardTitle>
+                          <Switch
+                            id="discover_status"
+                            checked={settings.discover_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                discover_status: checked ? 'on' : 'off',
+                              })
+                            }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          />
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="discover_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="discover_heading"
-                                value={settings.discover_heading}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, discover_heading: e.target.value })
-                                }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="discover_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="discover_heading"
+                                  value={settings.discover_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, discover_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="discover_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Description <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="discover_description"
+                                  value={settings.discover_description}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, discover_description: e.target.value })
+                                  }
+                                  placeholder="Enter Description"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="discover_description">
-                                Description <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="discover_description"
-                                value={settings.discover_description}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, discover_description: e.target.value })
-                                }
-                                placeholder="Enter Description"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="discover_live_demo_link">Live Demo Link</Label>
-                              <Input
-                                id="discover_live_demo_link"
-                                value={settings.discover_live_demo_link}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, discover_live_demo_link: e.target.value })
-                                }
-                                placeholder="Enter Link"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="discover_buy_now_link">Buy Now Link</Label>
-                              <Input
-                                id="discover_buy_now_link"
-                                value={settings.discover_buy_now_link}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, discover_buy_now_link: e.target.value })
-                                }
-                                placeholder="Enter Link"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="discover_live_demo_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Live Demo Link</Label>
+                                <Input
+                                  id="discover_live_demo_link"
+                                  value={settings.discover_live_demo_link}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, discover_live_demo_link: e.target.value })
+                                  }
+                                  placeholder="Enter Link"
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="discover_buy_now_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Buy Now Link</Label>
+                                <Input
+                                  id="discover_buy_now_link"
+                                  value={settings.discover_buy_now_link}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, discover_buy_now_link: e.target.value })
+                                  }
+                                  placeholder="Enter Link"
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Discover List</CardTitle>
-                          <Button variant="blue" size="sm" className="shadow-none">
-                            <Plus className="mr-2 h-4 w-4" /> Create Discover
-                          </Button>
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Discover List</CardTitle>
+                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Plus className="mr-2 h-4 w-4" /> Create Discover
+                        </Button>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {discoverItems.length > 0 ? (
                                 discoverItems.map((item, index) => (
-                                  <tr key={item.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{index + 1}</td>
-                                    <td className="px-4 py-3">{item.discover_heading}</td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-2">
+                                  <TableRow key={item.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{item.discover_heading}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteDiscover(item.id)}
                                         >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                     No discover items found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -1026,120 +1189,118 @@ export default function LandingPagePage() {
                 {activeSection === 'screenshots' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">Screenshots</CardTitle>
-                            <Switch
-                              id="screenshots_status"
-                              checked={settings.screenshots_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  screenshots_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">Screenshots</CardTitle>
+                          <Switch
+                            id="screenshots_status"
+                            checked={settings.screenshots_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                screenshots_status: checked ? 'on' : 'off',
+                              })
+                            }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          />
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="screenshots_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="screenshots_heading"
-                                value={settings.screenshots_heading}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, screenshots_heading: e.target.value })
-                                }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="screenshots_description">
-                                Description <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="screenshots_description"
-                                value={settings.screenshots_description}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, screenshots_description: e.target.value })
-                                }
-                                placeholder="Enter Description"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="screenshots_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="screenshots_heading"
+                                  value={settings.screenshots_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, screenshots_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="screenshots_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Description <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="screenshots_description"
+                                  value={settings.screenshots_description}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, screenshots_description: e.target.value })
+                                  }
+                                  placeholder="Enter Description"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Screenshots List</CardTitle>
-                          <Button variant="blue" size="sm" className="shadow-none">
-                            <Plus className="mr-2 h-4 w-4" /> Create ScreenShot
-                          </Button>
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Screenshots List</CardTitle>
+                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Plus className="mr-2 h-4 w-4" /> Create ScreenShot
+                        </Button>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {screenshots.length > 0 ? (
                                 screenshots.map((screenshot, index) => (
-                                  <tr key={screenshot.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{index + 1}</td>
-                                    <td className="px-4 py-3">{screenshot.screenshots_heading}</td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-2">
+                                  <TableRow key={screenshot.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{screenshot.screenshots_heading}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteScreenshot(screenshot.id)}
                                         >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                     No screenshots found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -1149,71 +1310,71 @@ export default function LandingPagePage() {
                 {/* Pricing Plan Section */}
                 {activeSection === 'pricing_plan' && (
                   <form onSubmit={handleSubmit}>
-                    <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">Plan Section</CardTitle>
-                            <Switch
-                              id="plan_status"
-                              checked={settings.plan_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  plan_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="plan_title">
-                              Title <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="plan_title"
-                              value={settings.plan_title}
-                              onChange={(e) =>
-                                setSettings({ ...settings, plan_title: e.target.value })
-                              }
-                              placeholder="Enter Title"
-                              required
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="plan_heading">
-                              Heading <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="plan_heading"
-                              value={settings.plan_heading}
-                              onChange={(e) =>
-                                setSettings({ ...settings, plan_heading: e.target.value })
-                              }
-                              placeholder="Enter Heading"
-                              required
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="plan_description">Description</Label>
-                          <Input
-                            id="plan_description"
-                            value={settings.plan_description}
-                            onChange={(e) =>
-                              setSettings({ ...settings, plan_description: e.target.value })
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">Plan Section</CardTitle>
+                          <Switch
+                            id="plan_status"
+                            checked={settings.plan_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                plan_status: checked ? 'on' : 'off',
+                              })
                             }
-                            placeholder="Enter Description"
-                            className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
-                        </div>
-                      </CardContent>
-                      <CardFooter className="pt-6">
-                        <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        </CardHeader>
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="plan_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Title <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="plan_title"
+                                  value={settings.plan_title}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, plan_title: e.target.value })
+                                  }
+                                  placeholder="Enter Title"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="plan_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="plan_heading"
+                                  value={settings.plan_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, plan_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="plan_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+                              <Input
+                                id="plan_description"
+                                value={settings.plan_description}
+                                onChange={(e) =>
+                                  setSettings({ ...settings, plan_description: e.target.value })
+                                }
+                                placeholder="Enter Description"
+                                className={modernInputClass}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -1225,132 +1386,130 @@ export default function LandingPagePage() {
                 {activeSection === 'faq' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">FAQ</CardTitle>
-                            <Switch
-                              id="faq_status"
-                              checked={settings.faq_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  faq_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">FAQ</CardTitle>
+                          <Switch
+                            id="faq_status"
+                            checked={settings.faq_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                faq_status: checked ? 'on' : 'off',
+                              })
+                            }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          />
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="faq_title">
-                                Title <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="faq_title"
-                                value={settings.faq_title}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, faq_title: e.target.value })
-                                }
-                                placeholder="Enter Title"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="faq_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Title <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="faq_title"
+                                  value={settings.faq_title}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, faq_title: e.target.value })
+                                  }
+                                  placeholder="Enter Title"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="faq_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="faq_heading"
+                                  value={settings.faq_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, faq_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="faq_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
+                              <Label htmlFor="faq_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
                               <Input
-                                id="faq_heading"
-                                value={settings.faq_heading}
+                                id="faq_description"
+                                value={settings.faq_description}
                                 onChange={(e) =>
-                                  setSettings({ ...settings, faq_heading: e.target.value })
+                                  setSettings({ ...settings, faq_description: e.target.value })
                                 }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                placeholder="Enter Description"
+                                className={modernInputClass}
                               />
                             </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="faq_description">Description</Label>
-                            <Input
-                              id="faq_description"
-                              value={settings.faq_description}
-                              onChange={(e) =>
-                                setSettings({ ...settings, faq_description: e.target.value })
-                              }
-                              placeholder="Enter Description"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                            />
                           </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">FAQ List</CardTitle>
-                          <Button variant="blue" size="sm" className="shadow-none">
-                            <Plus className="mr-2 h-4 w-4" /> Create FAQ
-                          </Button>
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">FAQ List</CardTitle>
+                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Plus className="mr-2 h-4 w-4" /> Create FAQ
+                        </Button>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {faqs.length > 0 ? (
                                 faqs.map((faq, index) => (
-                                  <tr key={faq.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{index + 1}</td>
-                                    <td className="px-4 py-3">{faq.faq_questions}</td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-2">
+                                  <TableRow key={faq.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{faq.faq_questions}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteFAQ(faq.id)}
                                         >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                     No FAQs found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -1361,139 +1520,137 @@ export default function LandingPagePage() {
                 {activeSection === 'testimonials' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">Testimonial</CardTitle>
-                            <Switch
-                              id="testimonials_status"
-                              checked={settings.testimonials_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  testimonials_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">Testimonial</CardTitle>
+                          <Switch
+                            id="testimonials_status"
+                            checked={settings.testimonials_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                testimonials_status: checked ? 'on' : 'off',
+                              })
+                            }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          />
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="testimonials_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="testimonials_heading"
-                                value={settings.testimonials_heading}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, testimonials_heading: e.target.value })
-                                }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="testimonials_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="testimonials_heading"
+                                  value={settings.testimonials_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, testimonials_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="testimonials_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Description <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="testimonials_description"
+                                  value={settings.testimonials_description}
+                                  onChange={(e) =>
+                                    setSettings({
+                                      ...settings,
+                                      testimonials_description: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Enter Description"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="testimonials_description">
-                                Description <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="testimonials_description"
-                                value={settings.testimonials_description}
+                              <Label htmlFor="testimonials_long_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Long Description</Label>
+                              <Textarea
+                                id="testimonials_long_description"
+                                value={settings.testimonials_long_description}
                                 onChange={(e) =>
                                   setSettings({
                                     ...settings,
-                                    testimonials_description: e.target.value,
+                                    testimonials_long_description: e.target.value,
                                   })
                                 }
-                                placeholder="Enter Description"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                rows={4}
+                                placeholder="Enter Long Description"
+                                className={modernTextareaClass}
                               />
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="testimonials_long_description">Long Description</Label>
-                            <Textarea
-                              id="testimonials_long_description"
-                              value={settings.testimonials_long_description}
-                              onChange={(e) =>
-                                setSettings({
-                                  ...settings,
-                                  testimonials_long_description: e.target.value,
-                                })
-                              }
-                              rows={4}
-                              placeholder="Enter Long Description"
-                              className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                            />
-                          </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Testimonials List</CardTitle>
-                          <Button variant="blue" size="sm" className="shadow-none">
-                            <Plus className="mr-2 h-4 w-4" /> Create Testimonial
-                          </Button>
-                        </div>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Testimonials List</CardTitle>
+                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Plus className="mr-2 h-4 w-4" /> Create Testimonial
+                        </Button>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {testimonials.length > 0 ? (
                                 testimonials.map((testimonial, index) => (
-                                  <tr key={testimonial.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{index + 1}</td>
-                                    <td className="px-4 py-3">{testimonial.testimonials_title}</td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-2">
+                                  <TableRow key={testimonial.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{testimonial.testimonials_title}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteTestimonial(testimonial.id)}
                                         >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                     No testimonials found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -1504,101 +1661,103 @@ export default function LandingPagePage() {
                 {activeSection === 'join_us' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <CardTitle className="text-lg font-semibold">Join User</CardTitle>
-                            <Switch
-                              id="joinus_status"
-                              checked={settings.joinus_status === 'on'}
-                              onCheckedChange={(checked) =>
-                                setSettings({
-                                  ...settings,
-                                  joinus_status: checked ? 'on' : 'off',
-                                })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                          </div>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                          <CardTitle className="text-base font-medium leading-none">Join User</CardTitle>
+                          <Switch
+                            id="joinus_status"
+                            checked={settings.joinus_status === 'on'}
+                            onCheckedChange={(checked) =>
+                              setSettings({
+                                ...settings,
+                                joinus_status: checked ? 'on' : 'off',
+                              })
+                            }
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          />
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="joinus_heading">
-                                Heading <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="joinus_heading"
-                                value={settings.joinus_heading}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, joinus_heading: e.target.value })
-                                }
-                                placeholder="Enter Heading"
-                                required
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="joinus_description">Description</Label>
-                              <Input
-                                id="joinus_description"
-                                value={settings.joinus_description}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, joinus_description: e.target.value })
-                                }
-                                placeholder="Enter Description"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="joinus_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Heading <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="joinus_heading"
+                                  value={settings.joinus_heading}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, joinus_heading: e.target.value })
+                                  }
+                                  placeholder="Enter Heading"
+                                  required
+                                  className={modernInputClass}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="joinus_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+                                <Input
+                                  id="joinus_description"
+                                  value={settings.joinus_description}
+                                  onChange={(e) =>
+                                    setSettings({ ...settings, joinus_description: e.target.value })
+                                  }
+                                  placeholder="Enter Description"
+                                  className={modernInputClass}
+                                />
+                              </div>
                             </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <CardTitle className="text-lg font-semibold">Join Us User</CardTitle>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg">
+                          <CardTitle className="text-base font-medium leading-none">Join Us User</CardTitle>
                         </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Email</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Email</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {joinUsUsers.length > 0 ? (
                                 joinUsUsers.map((user) => (
-                                  <tr key={user.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{user.email}</td>
-                                    <td className="px-4 py-3">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                        onClick={() => handleDeleteJoinUsUser(user.id)}
-                                      >
-                                        <Trash className="h-4 w-4" />
-                                      </Button>
-                                    </td>
-                                  </tr>
+                                  <TableRow key={user.id}>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          onClick={() => handleDeleteJoinUsUser(user.id)}
+                                        >
+                                          <Trash className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={2} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
                                     No join us users found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -1609,85 +1768,84 @@ export default function LandingPagePage() {
                 {activeSection === 'custom_page' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                          <CardTitle className="text-lg font-semibold">Custom Page</CardTitle>
+                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <CardHeader className="p-3 rounded-t-lg">
+                          <CardTitle className="text-base font-medium leading-none">Custom Page</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-0 space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                              <Label htmlFor="site_logo">Site Logo</Label>
-                              <div className="mt-4">
-                                <div className="w-32 h-32 border-2 border-dashed border-muted rounded-lg flex items-center justify-center bg-muted/50">
-                                  {settings.site_logo ? (
-                                    <img
-                                      src={settings.site_logo}
-                                      alt="Site Logo"
-                                      className="max-w-full max-h-full object-contain"
+                        <CardContent className="p-3">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="site_logo" className="text-sm font-medium text-gray-700 dark:text-gray-300">Site Logo</Label>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-20 h-20 border-2 border-dashed border-muted rounded-lg flex items-center justify-center bg-muted/50 flex-shrink-0">
+                                    {settings.site_logo ? (
+                                      <img
+                                        src={settings.site_logo}
+                                        alt="Site Logo"
+                                        className="max-w-full max-h-full object-contain rounded"
+                                      />
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">No logo</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <Input
+                                      id="site_logo"
+                                      type="file"
+                                      accept="image/*"
+                                      className={modernInputClass}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file) {
+                                          const reader = new FileReader()
+                                          reader.onloadend = () => {
+                                            setSettings({
+                                              ...settings,
+                                              site_logo: reader.result as string,
+                                            })
+                                          }
+                                          reader.readAsDataURL(file)
+                                        }
+                                      }}
                                     />
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">No logo</span>
-                                  )}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 mt-4">
-                                <Input
-                                  id="site_logo"
-                                  type="file"
-                                  accept="image/*"
-                                  className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0]
-                                    if (file) {
-                                      const reader = new FileReader()
-                                      reader.onloadend = () => {
-                                        setSettings({
-                                          ...settings,
-                                          site_logo: reader.result as string,
-                                        })
-                                      }
-                                      reader.readAsDataURL(file)
+                              <div className="space-y-2">
+                                <Label htmlFor="site_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Site Description</Label>
+                                <div className="pt-5">
+                                  <Input
+                                    id="site_description"
+                                    value={settings.site_description}
+                                    onChange={(e) =>
+                                      setSettings({ ...settings, site_description: e.target.value })
                                     }
-                                  }}
-                                />
-                                <Button type="button" variant="outline" size="sm" className="shadow-none">
-                                  <Upload className="mr-2 h-4 w-4" />
-                                  Choose file here
-                                </Button>
+                                    placeholder="Enter Description"
+                                    className={modernInputClass}
+                                  />
+                                </div>
                               </div>
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="site_description">Site Description</Label>
-                              <Input
-                                id="site_description"
-                                value={settings.site_description}
-                                onChange={(e) =>
-                                  setSettings({ ...settings, site_description: e.target.value })
-                                }
-                                placeholder="Enter Description"
-                                className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              />
-                            </div>
                           </div>
-                        </CardContent>
-                        <CardFooter className="pt-6">
-                          <Button type="submit" variant="blue" className="shadow-none ml-auto">
-                            <Save className="mr-2 h-4 w-4" /> Save Changes
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    </form>
+                      </CardContent>
+                      <CardFooter className="p-3 flex justify-end">
+                        <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Save className="mr-2 h-4 w-4" /> Save Changes
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </form>
 
-                    <Card className="shadow-none">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <CardTitle className="text-lg font-semibold">Menu Bar</CardTitle>
-                          <Dialog open={createPageDialogOpen} onOpenChange={setCreatePageDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button variant="blue" size="sm" className="shadow-none">
-                                <Plus className="mr-2 h-4 w-4" /> Create Page
-                              </Button>
-                            </DialogTrigger>
+                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                      <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Menu Bar</CardTitle>
+                        <Dialog open={createPageDialogOpen} onOpenChange={setCreatePageDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                              <Plus className="mr-2 h-4 w-4" /> Create Page
+                            </Button>
+                          </DialogTrigger>
                             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Create Page</DialogTitle>
@@ -1696,7 +1854,7 @@ export default function LandingPagePage() {
                               <form onSubmit={handleCreatePageSubmit}>
                                 <div className="space-y-4 py-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="create_page_name">
+                                    <Label htmlFor="create_page_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                       Page Name <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
@@ -1707,7 +1865,7 @@ export default function LandingPagePage() {
                                       }
                                       placeholder="Enter Page Name"
                                       required
-                                      className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                      className={modernInputClass}
                                     />
                                   </div>
                                   <div className="space-y-2">
@@ -1755,7 +1913,7 @@ export default function LandingPagePage() {
                                   </div>
                                   {pageFormData.template_name === 'page_url' ? (
                                     <div className="space-y-2">
-                                      <Label htmlFor="create_page_url_input">Page URL</Label>
+                                      <Label htmlFor="create_page_url_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page URL</Label>
                                       <Input
                                         id="create_page_url_input"
                                         value={pageFormData.page_url}
@@ -1763,22 +1921,25 @@ export default function LandingPagePage() {
                                           setPageFormData({ ...pageFormData, page_url: e.target.value })
                                         }
                                         placeholder="Enter Page URL"
-                                        className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                        className={modernInputClass}
                                       />
                                     </div>
                                   ) : (
                                     <div className="space-y-2">
-                                      <Label htmlFor="create_page_content_input">Page Content</Label>
+                                      <Label htmlFor="create_page_content_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page Content</Label>
                                       <Textarea
                                         id="create_page_content_input"
                                         value={pageFormData.menubar_page_contant}
                                         onChange={(e) =>
                                           setPageFormData({ ...pageFormData, menubar_page_contant: e.target.value })
                                         }
-                                        rows={5}
-                                        placeholder="Enter Page Content"
-                                        className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                        rows={10}
+                                        placeholder="Enter Page Content (HTML supported)"
+                                        className={modernTextareaClass}
                                       />
+                                      <p className="text-xs text-muted-foreground">
+                                        You can use HTML tags for formatting (e.g., &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;a&gt;)
+                                      </p>
                                     </div>
                                   )}
                                   <div className="flex gap-4">
@@ -1834,37 +1995,36 @@ export default function LandingPagePage() {
                                   >
                                     Cancel
                                   </Button>
-                                  <Button type="submit" variant="blue" className="shadow-none">
+                                  <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                                     Create
                                   </Button>
                                 </DialogFooter>
                               </form>
                             </DialogContent>
                           </Dialog>
-                        </div>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-muted/50">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium">No</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                      <CardContent className="p-3">
+                        <div className="rounded-lg border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-16">No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="w-32 text-right">Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {customPages.length > 0 ? (
                                 customPages.map((page, index) => (
-                                  <tr key={page.id} className="border-t hover:bg-muted/50">
-                                    <td className="px-4 py-3">{index + 1}</td>
-                                    <td className="px-4 py-3">{page.menubar_page_name}</td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-2">
+                                  <TableRow key={page.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{page.menubar_page_name}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-end gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                           onClick={() => handleEditPage(page)}
                                         >
                                           <Pencil className="h-4 w-4" />
@@ -1875,25 +2035,25 @@ export default function LandingPagePage() {
                                             <Button
                                               variant="outline"
                                               size="sm"
-                                              className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                              className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                               onClick={() => handleDeleteCustomPage(page.id)}
                                             >
                                               <Trash className="h-4 w-4" />
                                             </Button>
                                           )}
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))
                               ) : (
-                                <tr>
-                                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                                <TableRow>
+                                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                     No custom pages found
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
                       </CardContent>
                     </Card>
@@ -1909,7 +2069,7 @@ export default function LandingPagePage() {
                           <form onSubmit={handleUpdatePageSubmit}>
                             <div className="space-y-4 py-4">
                               <div className="space-y-2">
-                                <Label htmlFor="edit_page_name">
+                                <Label htmlFor="edit_page_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                   Page Name <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
@@ -1925,7 +2085,7 @@ export default function LandingPagePage() {
                                     editingPage.page_slug === 'about_us' ||
                                     editingPage.page_slug === 'privacy_policy'
                                   }
-                                  className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                  className={modernInputClass}
                                 />
                               </div>
                               <div className="space-y-2">
@@ -1973,7 +2133,7 @@ export default function LandingPagePage() {
                               </div>
                               {pageFormData.template_name === 'page_url' ? (
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit_page_url_input">Page URL</Label>
+                                  <Label htmlFor="edit_page_url_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page URL</Label>
                                   <Input
                                     id="edit_page_url_input"
                                     value={pageFormData.page_url}
@@ -1981,22 +2141,25 @@ export default function LandingPagePage() {
                                       setPageFormData({ ...pageFormData, page_url: e.target.value })
                                     }
                                     placeholder="Enter Page URL"
-                                    className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                    className={modernInputClass}
                                   />
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  <Label htmlFor="edit_page_content_input">Page Content</Label>
+                                  <Label htmlFor="edit_page_content_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page Content</Label>
                                   <Textarea
                                     id="edit_page_content_input"
                                     value={pageFormData.menubar_page_contant}
                                     onChange={(e) =>
                                       setPageFormData({ ...pageFormData, menubar_page_contant: e.target.value })
                                     }
-                                    rows={5}
-                                    placeholder="Enter Page Content"
-                                    className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                    rows={10}
+                                    placeholder="Enter Page Content (HTML supported)"
+                                    className={modernTextareaClass}
                                   />
+                                  <p className="text-xs text-muted-foreground">
+                                    You can use HTML tags for formatting (e.g., &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;a&gt;)
+                                  </p>
                                 </div>
                               )}
                               <div className="flex gap-4">
@@ -2055,7 +2218,7 @@ export default function LandingPagePage() {
                               >
                                 Cancel
                               </Button>
-                              <Button type="submit" variant="blue" className="shadow-none">
+                              <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
                                 Update
                               </Button>
                             </DialogFooter>
@@ -2070,6 +2233,29 @@ export default function LandingPagePage() {
           </div>
         </div>
       </SidebarInset>
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {getDeleteMessage()}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => {
+                    setDeleteId(null)
+                    setDeleteType(null)
+                  }}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
     </SidebarProvider>
   )
 }

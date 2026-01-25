@@ -16,6 +16,12 @@ const nextConfig = {
   },
   // Configure Turbopack (Next.js 16 default)
   turbopack: {},
+  // Webpack configuration for when using --webpack flag
+  webpack: (config, { isServer }) => {
+    // Only modify webpack config if needed
+    // Next.js handles CSS extraction automatically
+    return config;
+  },
   // Enable development mode features for MCP
   env: {
     MCP_ENABLED: 'true',

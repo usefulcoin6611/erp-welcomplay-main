@@ -18,6 +18,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 // Types
@@ -63,8 +73,10 @@ export default function CouponsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null)
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null)
+  const [couponToDelete, setCouponToDelete] = useState<string | null>(null)
   const [codeType, setCodeType] = useState<'manual' | 'auto'>('manual')
   const [formData, setFormData] = useState({
     name: '',
@@ -158,9 +170,16 @@ export default function CouponsPage() {
     setCodeType('manual')
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setCoupons(coupons.filter((c) => c.id !== id))
+  const handleDeleteClick = (id: string) => {
+    setCouponToDelete(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (couponToDelete) {
+      setCoupons(coupons.filter((c) => c.id !== couponToDelete))
+      setDeleteDialogOpen(false)
+      setCouponToDelete(null)
     }
   }
 
@@ -181,7 +200,7 @@ export default function CouponsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Manage Coupon</h1>
+                <h1 className="text-2xl font-medium">Manage Coupon</h1>
                 <p className="text-sm text-muted-foreground">
                   Create and manage discount coupons
                 </p>
@@ -202,7 +221,7 @@ export default function CouponsPage() {
                   <form onSubmit={handleCreateSubmit}>
                     <div className="grid gap-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">
+                        <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           Name <span className="text-red-500">*</span>
                         </Label>
                         <Input
@@ -215,7 +234,7 @@ export default function CouponsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="discount">
+                          <Label htmlFor="discount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Discount (%) <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -230,7 +249,7 @@ export default function CouponsPage() {
                           <p className="text-xs text-muted-foreground">Note: Discount in Percentage</p>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="limit">
+                          <Label htmlFor="limit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Limit <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -244,7 +263,7 @@ export default function CouponsPage() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Code <span className="text-red-500">*</span></Label>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Code <span className="text-red-500">*</span></Label>
                         <RadioGroup
                           value={codeType}
                           onValueChange={(value) => {
@@ -259,11 +278,11 @@ export default function CouponsPage() {
                         >
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="manual" id="manual_code" />
-                            <Label htmlFor="manual_code">Manual</Label>
+                            <Label htmlFor="manual_code" className="text-sm font-medium text-gray-700 dark:text-gray-300">Manual</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="auto" id="auto_code" />
-                            <Label htmlFor="auto_code">Auto Generate</Label>
+                            <Label htmlFor="auto_code" className="text-sm font-medium text-gray-700 dark:text-gray-300">Auto Generate</Label>
                           </div>
                         </RadioGroup>
                       </div>
@@ -346,7 +365,7 @@ export default function CouponsPage() {
                     <tbody>
                       {coupons.map((coupon) => (
                         <tr key={coupon.id} className="border-t hover:bg-muted/50">
-                          <td className="px-4 py-3 font-medium">{coupon.name}</td>
+                          <td className="px-4 py-3">{coupon.name}</td>
                           <td className="px-4 py-3">
                             <code className="px-2 py-1 bg-muted rounded text-sm">{coupon.code}</code>
                           </td>
@@ -375,7 +394,7 @@ export default function CouponsPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                onClick={() => handleDelete(coupon.id)}
+                                onClick={() => handleDeleteClick(coupon.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -402,22 +421,22 @@ export default function CouponsPage() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-muted-foreground">Coupon Name</Label>
-                        <p className="font-medium">{selectedCoupon.name}</p>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Coupon Name</Label>
+                        <p className="font-normal">{selectedCoupon.name}</p>
                       </div>
                       <div>
-                        <Label className="text-muted-foreground">Coupon Code</Label>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Coupon Code</Label>
                         <p className="font-medium">
                           <code className="px-2 py-1 bg-muted rounded">{selectedCoupon.code}</code>
                         </p>
                       </div>
                       <div>
-                        <Label className="text-muted-foreground">Discount</Label>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Discount</Label>
                         <p className="font-medium">{selectedCoupon.discount}%</p>
                       </div>
                       <div>
-                        <Label className="text-muted-foreground">Used / Limit</Label>
-                        <p className="font-medium">
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Used / Limit</Label>
+                        <p className="font-normal">
                           {selectedCoupon.used} / {selectedCoupon.limit}
                         </p>
                       </div>
@@ -453,7 +472,7 @@ export default function CouponsPage() {
                   <form onSubmit={handleUpdateSubmit}>
                     <div className="grid gap-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="edit_name">
+                        <Label htmlFor="edit_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           Name <span className="text-red-500">*</span>
                         </Label>
                         <Input
@@ -466,7 +485,7 @@ export default function CouponsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="edit_discount">
+                          <Label htmlFor="edit_discount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Discount (%) <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -481,7 +500,7 @@ export default function CouponsPage() {
                           <p className="text-xs text-muted-foreground">Note: Discount in Percentage</p>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit_limit">
+                          <Label htmlFor="edit_limit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Limit <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -495,7 +514,7 @@ export default function CouponsPage() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Code <span className="text-red-500">*</span></Label>
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Code <span className="text-red-500">*</span></Label>
                         <RadioGroup
                           value={codeType}
                           onValueChange={(value) => {
@@ -510,11 +529,11 @@ export default function CouponsPage() {
                         >
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="manual" id="edit_manual_code" />
-                            <Label htmlFor="edit_manual_code">Manual</Label>
+                            <Label htmlFor="edit_manual_code" className="text-sm font-medium text-gray-700 dark:text-gray-300">Manual</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="auto" id="edit_auto_code" />
-                            <Label htmlFor="edit_auto_code">Auto Generate</Label>
+                            <Label htmlFor="edit_auto_code" className="text-sm font-medium text-gray-700 dark:text-gray-300">Auto Generate</Label>
                           </div>
                         </RadioGroup>
                       </div>
@@ -579,6 +598,27 @@ export default function CouponsPage() {
                 </DialogContent>
               </Dialog>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Coupon</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this coupon? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setCouponToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

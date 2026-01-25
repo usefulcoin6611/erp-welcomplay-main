@@ -146,12 +146,12 @@ function DataGridPagination(props: DataGridPaginationProps) {
                   table.setPageSize(newPageSize);
                 }}
               >
-                <SelectTrigger className="w-16 h-6 ml-2" size="sm">
+                <SelectTrigger className="w-20 h-7 ml-2 px-2" size="sm">
                   <SelectValue placeholder={`${pageSize}`} />
                 </SelectTrigger>
-                <SelectContent side="top" className="min-w-[50px]">
+                <SelectContent side="top" className="min-w-[60px]">
                   {mergedProps?.sizes?.map((size: number) => (
-                    <SelectItem key={size} value={`${size}`}>
+                    <SelectItem key={size} value={`${size}`} className="justify-center">
                       {size}
                     </SelectItem>
                   ))}

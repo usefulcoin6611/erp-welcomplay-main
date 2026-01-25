@@ -9,6 +9,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Check, X } from 'lucide-react'
 import SimplePagination from '@/components/ui/simple-pagination'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // Types
 interface PlanRequest {
@@ -134,6 +144,9 @@ export default function PlanRequestPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [planRequests, setPlanRequests] = useState<PlanRequest[]>(mockPlanRequests)
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [requestToAction, setRequestToAction] = useState<PlanRequest | null>(null)
   
   // Calculate pagination
   const totalCount = planRequests.length
@@ -141,19 +154,33 @@ export default function PlanRequestPage() {
   const endIndex = startIndex + pageSize
   const paginatedRequests = planRequests.slice(startIndex, endIndex)
 
-  const handleApprove = (id: string) => {
-    if (confirm('Are you sure you want to approve this plan request?')) {
-      console.log('Approve plan request:', id)
+  const handleApproveClick = (request: PlanRequest) => {
+    setRequestToAction(request)
+    setApproveDialogOpen(true)
+  }
+
+  const handleRejectClick = (request: PlanRequest) => {
+    setRequestToAction(request)
+    setRejectDialogOpen(true)
+  }
+
+  const handleConfirmApprove = () => {
+    if (requestToAction) {
+      console.log('Approve plan request:', requestToAction.id)
       // Remove approved request from list
-      setPlanRequests(planRequests.filter((r) => r.id !== id))
+      setPlanRequests(planRequests.filter((r) => r.id !== requestToAction.id))
+      setApproveDialogOpen(false)
+      setRequestToAction(null)
     }
   }
 
-  const handleReject = (id: string) => {
-    if (confirm('Are you sure you want to reject this plan request?')) {
-      console.log('Reject plan request:', id)
+  const handleConfirmReject = () => {
+    if (requestToAction) {
+      console.log('Reject plan request:', requestToAction.id)
       // Remove rejected request from list
-      setPlanRequests(planRequests.filter((r) => r.id !== id))
+      setPlanRequests(planRequests.filter((r) => r.id !== requestToAction.id))
+      setRejectDialogOpen(false)
+      setRequestToAction(null)
     }
   }
   
@@ -174,7 +201,7 @@ export default function PlanRequestPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Plan Request</h1>
+                <h1 className="text-2xl font-medium">Plan Request</h1>
                 <p className="text-sm text-muted-foreground">
                   Manage plan requests from companies
                 </p>
@@ -204,7 +231,7 @@ export default function PlanRequestPage() {
                         paginatedRequests.map((request) => (
                           <tr key={request.id} className="border-t hover:bg-muted/50">
                             <td className="px-4 py-3">
-                              <div className="font-medium">{request.user_name}</div>
+                              <div className="font-normal">{request.user_name}</div>
                             </td>
                             <td className="px-4 py-3">
                               <Badge className="bg-blue-100 text-blue-700">
@@ -236,7 +263,7 @@ export default function PlanRequestPage() {
                                   size="sm"
                                   className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                   title="Approve"
-                                  onClick={() => handleApprove(request.id)}
+                                  onClick={() => handleApproveClick(request)}
                                 >
                                   <Check className="h-4 w-4" />
                                 </Button>
@@ -245,7 +272,7 @@ export default function PlanRequestPage() {
                                   size="sm"
                                   className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Reject"
-                                  onClick={() => handleReject(request.id)}
+                                  onClick={() => handleRejectClick(request)}
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -280,6 +307,48 @@ export default function PlanRequestPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Approve Confirmation Dialog */}
+            <AlertDialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Approve Plan Request</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to approve the plan request from "{requestToAction?.user_name}" for "{requestToAction?.plan_name}" plan?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setRequestToAction(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmApprove}
+                    className="bg-blue-500 hover:bg-blue-600"
+                  >
+                    Approve
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Reject Confirmation Dialog */}
+            <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reject Plan Request</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to reject the plan request from "{requestToAction?.user_name}" for "{requestToAction?.plan_name}" plan? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setRequestToAction(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmReject}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Reject
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

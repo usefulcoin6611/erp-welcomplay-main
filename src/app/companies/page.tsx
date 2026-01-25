@@ -21,6 +21,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -158,6 +168,8 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const [adminHubDialogOpen, setAdminHubDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null)
   
   // Mock users untuk company (akan diambil dari API nanti)
   const [companyUsers, setCompanyUsers] = useState<Record<string, CompanyUser[]>>({
@@ -226,6 +238,28 @@ export default function CompaniesPage() {
     return expireDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
   }
 
+  const handleConfirmDelete = () => {
+    if (companyToDelete) {
+      if (companyToDelete.delete_status === 0) {
+        // Restore
+        setCompanies(
+          companies.map((c) =>
+            c.id === companyToDelete.id ? { ...c, delete_status: 1 } : c
+          )
+        )
+      } else {
+        // Delete (soft delete)
+        setCompanies(
+          companies.map((c) =>
+            c.id === companyToDelete.id ? { ...c, delete_status: 0 } : c
+          )
+        )
+      }
+      setDeleteDialogOpen(false)
+      setCompanyToDelete(null)
+    }
+  }
+
   return (
     <SidebarProvider
       style={
@@ -243,7 +277,7 @@ export default function CompaniesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Manage Companies</h1>
+                <h1 className="text-2xl font-medium">Manage Companies</h1>
                 <p className="text-sm text-muted-foreground">
                   Create and manage companies in your system
                 </p>
@@ -265,7 +299,7 @@ export default function CompaniesPage() {
                     <form onSubmit={handleCreateSubmit}>
                       <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                          <Label htmlFor="name">
+                          <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Company Name <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -277,7 +311,7 @@ export default function CompaniesPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="email">
+                          <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Email <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -290,7 +324,7 @@ export default function CompaniesPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="plan">Plan</Label>
+                          <Label htmlFor="plan" className="text-sm font-medium text-gray-700 dark:text-gray-300">Plan</Label>
                           <Select
                             value={formData.plan}
                             onValueChange={(value) => setFormData({ ...formData, plan: value })}
@@ -308,7 +342,7 @@ export default function CompaniesPage() {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="password">Password</Label>
+                          <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</Label>
                           <Input
                             id="password"
                             type="password"
@@ -318,7 +352,7 @@ export default function CompaniesPage() {
                           />
                         </div>
                         <div className="flex items-center justify-between">
-                          <Label htmlFor="login_enable">Enable Login</Label>
+                          <Label htmlFor="login_enable" className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Login</Label>
                           <Switch
                             id="login_enable"
                             checked={formData.login_enable}
@@ -366,7 +400,12 @@ export default function CompaniesPage() {
                           <DropdownMenuItem>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setCompanyToDelete(company)
+                              setDeleteDialogOpen(true)
+                            }}
+                          >
                             <Trash className="mr-2 h-4 w-4" /> {company.delete_status === 0 ? 'Restore' : 'Delete'}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
@@ -397,7 +436,7 @@ export default function CompaniesPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-semibold mb-1 truncate">{company.name}</h5>
+                        <h5 className="font-medium mb-1 truncate">{company.name}</h5>
                         {company.delete_status === 0 && (
                           <Badge variant="destructive" className="text-xs mb-1">Soft Deleted</Badge>
                         )}
@@ -460,19 +499,19 @@ export default function CompaniesPage() {
                         <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
                           <Users className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium">{company.total_users || 0}</span>
+                        <span className="text-sm font-normal">{company.total_users || 0}</span>
                       </div>
                       <div className="flex items-center gap-2" title="Customers">
                         <div className="h-8 w-8 rounded bg-green-500 flex items-center justify-center">
                           <Users className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium">{company.total_customers || 0}</span>
+                        <span className="text-sm font-normal">{company.total_customers || 0}</span>
                       </div>
                       <div className="flex items-center gap-2" title="Vendors">
                         <div className="h-8 w-8 rounded bg-purple-500 flex items-center justify-center">
                           <Users className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium">{company.total_vendors || 0}</span>
+                        <span className="text-sm font-normal">{company.total_vendors || 0}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -509,7 +548,7 @@ export default function CompaniesPage() {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold">{plan}</h4>
+                              <h4 className="font-medium">{plan}</h4>
                               <span className="text-sm text-muted-foreground">
                                 ({new Intl.NumberFormat('id-ID', {
                                   style: 'currency',
@@ -592,7 +631,7 @@ export default function CompaniesPage() {
                           </div>
                           <div>
                             <p className="text-xs font-medium text-muted-foreground">Total User</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-lg font-medium">
                               {companyUsers[selectedCompany.id]?.length ?? 0}
                             </p>
                           </div>
@@ -603,7 +642,7 @@ export default function CompaniesPage() {
                           </div>
                           <div>
                             <p className="text-xs font-medium text-muted-foreground">Active User</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-lg font-medium">
                               {companyUsers[selectedCompany.id]?.filter((u) => !u.is_disable).length ?? 0}
                             </p>
                           </div>
@@ -614,7 +653,7 @@ export default function CompaniesPage() {
                           </div>
                           <div>
                             <p className="text-xs font-medium text-muted-foreground">Disable User</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-lg font-medium">
                               {companyUsers[selectedCompany.id]?.filter((u) => u.is_disable).length ?? 0}
                             </p>
                           </div>
@@ -637,7 +676,7 @@ export default function CompaniesPage() {
                                   {getInitials(user.name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium text-sm">{user.name}</span>
+                              <span className="font-normal text-sm">{user.name}</span>
                             </div>
                             <Switch
                               checked={!user.is_disable}
@@ -668,6 +707,31 @@ export default function CompaniesPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Delete/Restore Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {companyToDelete?.delete_status === 0 ? 'Restore Company' : 'Delete Company'}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {companyToDelete?.delete_status === 0
+                      ? `Are you sure you want to restore "${companyToDelete?.name}"? This will make the company active again.`
+                      : `Are you sure you want to delete "${companyToDelete?.name}"? This action will soft delete the company and cannot be undone.`}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setCompanyToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDelete}
+                    className={companyToDelete?.delete_status === 0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}
+                  >
+                    {companyToDelete?.delete_status === 0 ? 'Restore' : 'Delete'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

@@ -11,6 +11,16 @@ import { Input } from '@/components/ui/input'
 import { FileText, Trash, CheckCircle, RotateCcw, Search, X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // Types
 interface Order {
@@ -116,6 +126,12 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null)
+  const [paymentStatusDialogOpen, setPaymentStatusDialogOpen] = useState(false)
+  const [orderToUpdatePayment, setOrderToUpdatePayment] = useState<string | null>(null)
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false)
+  const [orderToRefund, setOrderToRefund] = useState<string | null>(null)
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -142,18 +158,43 @@ export default function OrdersPage() {
   // Pagination calculations
   const totalRecords = filteredData.length
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      console.log('Delete order:', id)
+  const handleDeleteClick = (id: string) => {
+    setOrderToDelete(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (orderToDelete) {
+      console.log('Delete order:', orderToDelete)
+      setDeleteDialogOpen(false)
+      setOrderToDelete(null)
     }
   }
 
-  const handlePaymentStatus = (id: string) => {
-    console.log('Update payment status for order:', id)
+  const handlePaymentStatusClick = (id: string) => {
+    setOrderToUpdatePayment(id)
+    setPaymentStatusDialogOpen(true)
   }
 
-  const handleRefund = (id: string) => {
-    console.log('Refund order:', id)
+  const handleConfirmPaymentStatus = () => {
+    if (orderToUpdatePayment) {
+      console.log('Update payment status for order:', orderToUpdatePayment)
+      setPaymentStatusDialogOpen(false)
+      setOrderToUpdatePayment(null)
+    }
+  }
+
+  const handleRefundClick = (id: string) => {
+    setOrderToRefund(id)
+    setRefundDialogOpen(true)
+  }
+
+  const handleConfirmRefund = () => {
+    if (orderToRefund) {
+      console.log('Refund order:', orderToRefund)
+      setRefundDialogOpen(false)
+      setOrderToRefund(null)
+    }
   }
 
   const handleSearchChange = (value: string) => {
@@ -178,7 +219,7 @@ export default function OrdersPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Orders</h1>
+                <h1 className="text-2xl font-medium">Orders</h1>
                 <p className="text-sm text-muted-foreground">
                   Manage subscription orders and payments
                 </p>
@@ -237,7 +278,7 @@ export default function OrdersPage() {
                       {paginatedData.length > 0 ? (
                         paginatedData.map((order) => (
                         <tr key={order.id} className="border-t hover:bg-muted/50">
-                          <td className="px-4 py-3 font-medium">{order.order_id}</td>
+                          <td className="px-4 py-3">{order.order_id}</td>
                           <td className="px-4 py-3">{order.user_name}</td>
                           <td className="px-4 py-3">
                             <Badge className="bg-blue-100 text-blue-700">{order.plan_name}</Badge>
@@ -282,7 +323,7 @@ export default function OrdersPage() {
                                   variant="outline"
                                   size="sm"
                                   className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                  onClick={() => handleDelete(order.id)}
+                                  onClick={() => handleDeleteClick(order.id)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -292,7 +333,7 @@ export default function OrdersPage() {
                                       variant="outline"
                                       size="sm"
                                       className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                      onClick={() => handlePaymentStatus(order.id)}
+                                      onClick={() => handlePaymentStatusClick(order.id)}
                                     >
                                       <CheckCircle className="h-4 w-4" />
                                     </Button>
@@ -304,7 +345,7 @@ export default function OrdersPage() {
                                       variant="outline"
                                       size="sm"
                                       className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
-                                      onClick={() => handleRefund(order.id)}
+                                      onClick={() => handleRefundClick(order.id)}
                                     >
                                       <RotateCcw className="h-4 w-4" />
                                     </Button>
@@ -345,6 +386,69 @@ export default function OrdersPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this order? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setOrderToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Payment Status Confirmation Dialog */}
+            <AlertDialog open={paymentStatusDialogOpen} onOpenChange={setPaymentStatusDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Approve Payment</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to approve this payment? This will mark the order as paid.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setOrderToUpdatePayment(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmPaymentStatus}
+                    className="bg-blue-500 hover:bg-blue-600"
+                  >
+                    Approve
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Refund Confirmation Dialog */}
+            <AlertDialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Refund Order</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to refund this order? This action cannot be undone and will process a refund to the customer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setOrderToRefund(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmRefund}
+                    className="bg-yellow-500 hover:bg-yellow-600"
+                  >
+                    Refund
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

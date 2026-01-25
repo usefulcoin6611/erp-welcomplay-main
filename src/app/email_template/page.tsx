@@ -90,7 +90,7 @@ export default function EmailTemplatePage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">
+                <h1 className="text-2xl font-medium">
                   {isCompany ? 'Email Notification' : 'Email Templates'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ export default function EmailTemplatePage() {
                       {paginatedData.length > 0 ? (
                         paginatedData.map((template) => (
                           <tr key={template.id} className="border-t hover:bg-muted/50">
-                            <td className="px-4 py-3 font-medium">{template.name}</td>
+                            <td className="px-4 py-3">{template.name}</td>
                             <td className="px-4 py-3">
                               {isSuperAdmin ? (
                                 <Link href={`/email_template/${template.id}`}>
