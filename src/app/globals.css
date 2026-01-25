@@ -456,3 +456,13 @@
     animation: collapsible-up 0.2s cubic-bezier(0.32, 0.72, 0, 1);
   }
 }
+
+/* Page transition optimizations */
+[data-slot="page-transition"] {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  isolation: isolate;
+}

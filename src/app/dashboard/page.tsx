@@ -24,6 +24,7 @@ import { Building2, Users, FileText, ShoppingCart, TrendingUp, DollarSign } from
 import dynamic from 'next/dynamic'
 import React from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 
 // Import ApexCharts dynamically to avoid SSR issues
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
@@ -172,26 +173,15 @@ export default function DashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Page Header */}
-            <div className="mb-2">
-              <h1 className="text-2xl font-medium text-gray-900">
-                {isSuperAdmin 
-                  ? 'Super Admin Dashboard' 
-                  : isClient 
-                    ? 'Client Dashboard' 
-                    : 'Dashboard'}
-              </h1>
-            </div>
-
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Super Admin Dashboard */}
             {isSuperAdmin ? (
               <div className="space-y-8">
                 {/* Stats Cards - Minimalist Design */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Total Companies */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
+                  <Card className="rounded-lg">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -209,7 +199,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Total Orders */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
+                  <Card className="rounded-lg">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -234,7 +224,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Total Plans */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
+                  <Card className="rounded-lg">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -253,7 +243,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Recent Order Chart - Clean Design */}
-                <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                <Card className="rounded-lg">
                   <CardHeader className="p-3">
                     <CardTitle className="text-lg font-medium text-gray-900">Recent Orders</CardTitle>
                   </CardHeader>
@@ -303,7 +293,7 @@ export default function DashboardPage() {
                 {/* Stats Cards - Minimalist */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Total Deals */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
+                  <Card className="rounded-lg">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
@@ -318,7 +308,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Total Tasks */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] transition-shadow">
+                  <Card className="rounded-lg">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
@@ -336,7 +326,7 @@ export default function DashboardPage() {
                 {/* Charts and Progress Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Project Progress - Compact */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                  <Card className="rounded-lg">
                     <CardHeader className="p-3">
                       <CardTitle className="text-lg font-medium text-gray-900">Project Progress</CardTitle>
                     </CardHeader>
@@ -381,7 +371,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Tasks Overview Chart */}
-                  <Card className="border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] lg:col-span-2">
+                  <Card className="  lg:col-span-2">
                     <CardHeader className="p-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-medium text-gray-900">Tasks Overview</CardTitle>
@@ -421,7 +411,7 @@ export default function DashboardPage() {
                 {/* Project Status and Tables */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Project Status Chart */}
-                  <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                  <Card className="rounded-lg">
                     <CardHeader className="p-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-medium text-gray-900">Project Status</CardTitle>
@@ -449,7 +439,7 @@ export default function DashboardPage() {
                   </Card>
 
                   {/* Top Due Projects */}
-                  <Card className="border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] lg:col-span-2">
+                  <Card className="  lg:col-span-2">
                     <CardHeader className="p-3">
                       <CardTitle className="text-lg font-medium text-gray-900">Top Due Projects</CardTitle>
                     </CardHeader>
@@ -476,7 +466,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Top Due Tasks */}
-                <Card className="rounded-lg border border-gray-200 shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)]">
+                <Card className="rounded-lg">
                   <CardHeader className="p-3">
                     <CardTitle className="text-lg font-medium text-gray-900">Top Due Tasks</CardTitle>
                   </CardHeader>
@@ -512,7 +502,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

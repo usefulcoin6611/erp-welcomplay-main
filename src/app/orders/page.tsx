@@ -4,9 +4,11 @@ import { useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Input } from '@/components/ui/input'
 import { FileText, Trash, CheckCircle, RotateCcw, Search, X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
@@ -214,20 +216,10 @@ export default function OrdersPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">Orders</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage subscription orders and payments
-                </p>
-              </div>
-            </div>
-
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Search and Filter */}
-            <Card className="shadow-none">
+            <Card>
               <CardContent className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
@@ -236,7 +228,7 @@ export default function OrdersPage() {
                       placeholder="Search orders..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
                     />
                     {search.length > 0 && (
                       <Button
@@ -258,7 +250,7 @@ export default function OrdersPage() {
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-muted/50">
+                    <thead className="bg-white">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium">Order Id</th>
                         <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
@@ -281,7 +273,7 @@ export default function OrdersPage() {
                           <td className="px-4 py-3">{order.order_id}</td>
                           <td className="px-4 py-3">{order.user_name}</td>
                           <td className="px-4 py-3">
-                            <Badge className="bg-blue-100 text-blue-700">{order.plan_name}</Badge>
+                            <Badge className={getPlanBadgeColors(order.plan_name)}>{order.plan_name}</Badge>
                           </td>
                           <td className="px-4 py-3">{formatPrice(order.price)}</td>
                           <td className="px-4 py-3">{getStatusBadge(order.payment_status)}</td>
@@ -450,7 +442,7 @@ export default function OrdersPage() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

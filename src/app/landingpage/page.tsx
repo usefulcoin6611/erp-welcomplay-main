@@ -54,7 +54,7 @@ const modernInputClass = cn(
   'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
   'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
   'focus-visible:ring-offset-0',
-  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  ' hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
   'placeholder:text-gray-400 dark:placeholder:text-gray-500',
   'text-gray-900 dark:text-gray-100'
 )
@@ -68,7 +68,7 @@ const modernTextareaClass = cn(
   'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
   'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
   'focus-visible:ring-offset-0',
-  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  ' hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
   'placeholder:text-gray-400 dark:placeholder:text-gray-500',
   'text-gray-900 dark:text-gray-100',
   'resize-none'
@@ -86,7 +86,7 @@ const modernSelectTriggerClass = cn(
   'focus-visible:border-blue-500 dark:focus-visible:border-blue-400',
   'focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:ring-blue-400/20',
   'focus-visible:ring-offset-0',
-  'shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
+  ' hover:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)] focus-visible:shadow-[0_1px_2px_0_rgb(0_0_0_/_.03)]',
   'text-gray-900 dark:text-gray-100',
   'data-[placeholder]:text-gray-400 dark:data-[placeholder]:text-gray-500'
 )
@@ -551,8 +551,8 @@ export default function LandingPagePage() {
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-              <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+              <Card className=" rounded-lg">
                 <CardContent className="p-6">
                   <p className="text-center text-muted-foreground">Permission denied.</p>
                 </CardContent>
@@ -577,12 +577,12 @@ export default function LandingPagePage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Sidebar Navigation */}
               <div className="lg:col-span-1">
-                <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg sticky border-r" style={{ top: '30px' }}>
+                <Card className="rounded-lg sticky" style={{ top: '30px' }}>
                   <CardContent className="p-1">
                     <div className="space-y-0">
                       {sections.map((section) => {
@@ -617,7 +617,7 @@ export default function LandingPagePage() {
                 {/* Top Bar Section */}
                 {activeSection === 'topbar' && (
                   <form onSubmit={handleSubmit}>
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                    <Card className="rounded-lg">
                       <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Top Bar</CardTitle>
                         <Switch
@@ -654,7 +654,7 @@ export default function LandingPagePage() {
                         </div>
                       </CardContent>
                       <CardFooter className="p-3 flex justify-end">
-                        <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button type="submit" variant="blue" className=" rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -665,7 +665,7 @@ export default function LandingPagePage() {
                 {/* Home Section */}
                 {activeSection === 'home' && (
                   <form onSubmit={handleSubmit}>
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                    <Card className="rounded-lg">
                       <CardHeader className="p-3 rounded-t-lg">
                         <CardTitle className="text-base font-medium leading-none">Home Section</CardTitle>
                       </CardHeader>
@@ -768,7 +768,7 @@ export default function LandingPagePage() {
                               accept="image/*"
                               className={modernInputClass}
                             />
-                            <Button type="button" variant="outline" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                            <Button type="button" variant="outline" size="sm" className=" rounded-lg">
                               <Upload className="mr-2 h-4 w-4" />
                               Choose file here
                             </Button>
@@ -777,7 +777,7 @@ export default function LandingPagePage() {
                         <div className="space-y-2">
                           <Label>Logo</Label>
                           <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                            <Button type="button" variant="outline" size="sm" className=" rounded-lg">
                               <Plus className="mr-2 h-4 w-4" /> Create
                             </Button>
                           </div>
@@ -785,7 +785,7 @@ export default function LandingPagePage() {
                         </div>
                       </CardContent>
                       <CardFooter className="p-3 flex justify-end">
-                        <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button type="submit" variant="blue" className=" rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -797,7 +797,7 @@ export default function LandingPagePage() {
                 {activeSection === 'features' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">Feature</CardTitle>
                           <Switch
@@ -875,22 +875,22 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Features List</CardTitle>
-                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button variant="blue" size="sm" className=" rounded-lg">
                           <Plus className="mr-2 h-4 w-4" /> Create Feature
                         </Button>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -910,14 +910,14 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className=" rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteFeature(feature.id)}
                                         >
                                           <Trash className="h-4 w-4" />
@@ -940,7 +940,7 @@ export default function LandingPagePage() {
                     </Card>
 
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg">
                           <CardTitle className="text-base font-medium leading-none">Feature</CardTitle>
                         </CardHeader>
@@ -990,7 +990,7 @@ export default function LandingPagePage() {
                                   accept="image/*"
                                   className={modernInputClass}
                                 />
-                                <Button type="button" variant="outline" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                                <Button type="button" variant="outline" size="sm" className=" rounded-lg">
                                   <Upload className="mr-2 h-4 w-4" />
                                   Choose file here
                                 </Button>
@@ -999,22 +999,22 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Features Block</CardTitle>
-                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button variant="blue" size="sm" className=" rounded-lg">
                           <Plus className="mr-2 h-4 w-4" /> Create Feature Block
                         </Button>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1041,7 +1041,7 @@ export default function LandingPagePage() {
                 {activeSection === 'discover' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">Discover</CardTitle>
                           <Switch
@@ -1119,22 +1119,22 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Discover List</CardTitle>
-                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button variant="blue" size="sm" className=" rounded-lg">
                           <Plus className="mr-2 h-4 w-4" /> Create Discover
                         </Button>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1154,14 +1154,14 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className=" rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteDiscover(item.id)}
                                         >
                                           <Trash className="h-4 w-4" />
@@ -1189,7 +1189,7 @@ export default function LandingPagePage() {
                 {activeSection === 'screenshots' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">Screenshots</CardTitle>
                           <Switch
@@ -1241,22 +1241,22 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Screenshots List</CardTitle>
-                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button variant="blue" size="sm" className=" rounded-lg">
                           <Plus className="mr-2 h-4 w-4" /> Create ScreenShot
                         </Button>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1276,14 +1276,14 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className=" rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteScreenshot(screenshot.id)}
                                         >
                                           <Trash className="h-4 w-4" />
@@ -1310,7 +1310,7 @@ export default function LandingPagePage() {
                 {/* Pricing Plan Section */}
                 {activeSection === 'pricing_plan' && (
                   <form onSubmit={handleSubmit}>
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                    <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">Plan Section</CardTitle>
                           <Switch
@@ -1374,7 +1374,7 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -1386,7 +1386,7 @@ export default function LandingPagePage() {
                 {activeSection === 'faq' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">FAQ</CardTitle>
                           <Switch
@@ -1450,22 +1450,22 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">FAQ List</CardTitle>
-                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button variant="blue" size="sm" className=" rounded-lg">
                           <Plus className="mr-2 h-4 w-4" /> Create FAQ
                         </Button>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1485,14 +1485,14 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className=" rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteFAQ(faq.id)}
                                         >
                                           <Trash className="h-4 w-4" />
@@ -1520,7 +1520,7 @@ export default function LandingPagePage() {
                 {activeSection === 'testimonials' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">Testimonial</CardTitle>
                           <Switch
@@ -1591,22 +1591,22 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Testimonials List</CardTitle>
-                        <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button variant="blue" size="sm" className=" rounded-lg">
                           <Plus className="mr-2 h-4 w-4" /> Create Testimonial
                         </Button>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1626,14 +1626,14 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className=" rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                         >
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteTestimonial(testimonial.id)}
                                         >
                                           <Trash className="h-4 w-4" />
@@ -1661,7 +1661,7 @@ export default function LandingPagePage() {
                 {activeSection === 'join_us' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
                           <CardTitle className="text-base font-medium leading-none">Join User</CardTitle>
                           <Switch
@@ -1710,19 +1710,19 @@ export default function LandingPagePage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
                             <Save className="mr-2 h-4 w-4" /> Save Changes
                           </Button>
                         </CardFooter>
                       </Card>
                     </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                    <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg">
                           <CardTitle className="text-base font-medium leading-none">Join Us User</CardTitle>
                         </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1740,7 +1740,7 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                          className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                           onClick={() => handleDeleteJoinUsUser(user.id)}
                                         >
                                           <Trash className="h-4 w-4" />
@@ -1768,7 +1768,7 @@ export default function LandingPagePage() {
                 {activeSection === 'custom_page' && (
                   <>
                     <form onSubmit={handleSubmit}>
-                      <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                      <Card className="rounded-lg">
                         <CardHeader className="p-3 rounded-t-lg">
                           <CardTitle className="text-base font-medium leading-none">Custom Page</CardTitle>
                         </CardHeader>
@@ -1830,19 +1830,19 @@ export default function LandingPagePage() {
                           </div>
                       </CardContent>
                       <CardFooter className="p-3 flex justify-end">
-                        <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                        <Button type="submit" variant="blue" className=" rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
                     </Card>
                   </form>
 
-                    <Card className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg overflow-hidden">
+                    <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
                         <CardTitle className="text-base font-medium leading-none">Menu Bar</CardTitle>
                         <Dialog open={createPageDialogOpen} onOpenChange={setCreatePageDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button variant="blue" size="sm" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                            <Button variant="blue" size="sm" className=" rounded-lg">
                               <Plus className="mr-2 h-4 w-4" /> Create Page
                             </Button>
                           </DialogTrigger>
@@ -1995,7 +1995,7 @@ export default function LandingPagePage() {
                                   >
                                     Cancel
                                   </Button>
-                                  <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                                  <Button type="submit" variant="blue" className=" rounded-lg">
                                     Create
                                   </Button>
                                 </DialogFooter>
@@ -2004,7 +2004,7 @@ export default function LandingPagePage() {
                           </Dialog>
                       </CardHeader>
                       <CardContent className="p-3">
-                        <div className="rounded-lg border">
+                        <div className="rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -2024,7 +2024,7 @@ export default function LandingPagePage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                          className=" rounded-lg h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                           onClick={() => handleEditPage(page)}
                                         >
                                           <Pencil className="h-4 w-4" />
@@ -2035,7 +2035,7 @@ export default function LandingPagePage() {
                                             <Button
                                               variant="outline"
                                               size="sm"
-                                              className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                              className=" rounded-lg h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                               onClick={() => handleDeleteCustomPage(page.id)}
                                             >
                                               <Trash className="h-4 w-4" />
@@ -2218,7 +2218,7 @@ export default function LandingPagePage() {
                               >
                                 Cancel
                               </Button>
-                              <Button type="submit" variant="blue" className="shadow-[0_1px_1px_0_rgb(0_0_0_/_.02)] rounded-lg">
+                              <Button type="submit" variant="blue" className=" rounded-lg">
                                 Update
                               </Button>
                             </DialogFooter>

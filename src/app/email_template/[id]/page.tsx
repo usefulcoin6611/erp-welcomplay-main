@@ -328,7 +328,7 @@ export default function EmailTemplateDetailPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -355,7 +355,7 @@ export default function EmailTemplateDetailPage() {
             {/* Name and Variables Layout */}
             <div className="grid gap-4 lg:grid-cols-2">
               {/* Name Card */}
-              <Card className="shadow-none">
+              <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
@@ -398,7 +398,7 @@ export default function EmailTemplateDetailPage() {
               </Card>
 
               {/* Variables Card */}
-              <Card className="shadow-none">
+              <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
@@ -422,7 +422,7 @@ export default function EmailTemplateDetailPage() {
 
               {/* Language Sidebar */}
               <div className="lg:col-span-1">
-                <Card className="shadow-none sticky top-4">
+                <Card className="sticky top-4">
                   <CardContent className="p-0">
                     <div className="flex flex-col">
                       {languages.map((lang) => (
@@ -446,7 +446,7 @@ export default function EmailTemplateDetailPage() {
 
               {/* Form Content */}
               <div className="lg:col-span-3">
-                <Card className="shadow-none">
+                <Card>
                   <CardContent className="p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div className="space-y-2">

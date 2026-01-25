@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Check, X } from 'lucide-react'
 import SimplePagination from '@/components/ui/simple-pagination'
 import {
@@ -196,24 +198,14 @@ export default function PlanRequestPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">Plan Request</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage plan requests from companies
-                </p>
-              </div>
-            </div>
-
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Plan Requests Table */}
             <Card>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-muted/50">
+                    <thead className="bg-white">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
                         <th className="px-4 py-3 text-left text-xs font-medium">Plan Name</th>
@@ -234,7 +226,7 @@ export default function PlanRequestPage() {
                               <div className="font-normal">{request.user_name}</div>
                             </td>
                             <td className="px-4 py-3">
-                              <Badge className="bg-blue-100 text-blue-700">
+                              <Badge className={getPlanBadgeColors(request.plan_name)}>
                                 {request.plan_name}
                               </Badge>
                             </td>
@@ -350,7 +342,7 @@ export default function PlanRequestPage() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

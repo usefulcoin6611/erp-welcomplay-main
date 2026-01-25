@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Pencil, Trash, Check, X, CirclePlus, CircleMinus } from 'lucide-react'
 import {
@@ -314,16 +316,10 @@ export default function PlansPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-medium">Manage Plan</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create and manage subscription plans
-                </p>
-              </div>
+            <div className="flex items-center justify-end">
               {isSuperAdmin && (
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                   <DialogTrigger asChild>
@@ -560,7 +556,7 @@ export default function PlansPage() {
                   <CardContent className="p-5">
                     {/* Plan Badge */}
                     <div className="flex items-center justify-between mb-4">
-                      <Badge className="bg-blue-500 text-white text-sm px-3 py-1">
+                      <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-sm px-3 py-1`}>
                         {plan.name}
                       </Badge>
                       {isSuperAdmin && plan.price > 0 && (
@@ -984,7 +980,7 @@ export default function PlansPage() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

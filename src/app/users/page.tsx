@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Plus, MoreVertical, Pencil, Trash2, Lock, Calendar, Clock, UserCheck, Users, Building2 } from 'lucide-react'
 import {
@@ -214,8 +216,8 @@ export default function UsersPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
@@ -341,7 +343,7 @@ export default function UsersPage() {
                     <CardContent className="p-4 flex flex-col flex-1">
                       {/* Header with Plan Badge and Actions */}
                       <div className="flex items-center justify-between mb-3">
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                        <Badge className={getPlanBadgeColors(company.plan || 'No Plan')}>
                           {company.plan || 'No Plan'}
                         </Badge>
                         {company.is_active && company.is_enable_login ? (
@@ -577,7 +579,7 @@ export default function UsersPage() {
               </div>
             )}
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

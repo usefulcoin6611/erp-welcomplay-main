@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useTranslations } from 'next-intl'
-import { IconBriefcase } from "@tabler/icons-react";
 
 import { SidebarMenu } from '@/components/SidebarMenu'
 import {
@@ -51,7 +50,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           className="data-[slot=sidebar-menu-button]:!p-1.5"
         >
           <a href="#">
-            <IconBriefcase className="!size-5" />
             <div className="flex flex-col items-start flex-1">
               <span className="text-base font-semibold">WelcomplayERP</span>
             </div>
