@@ -97,23 +97,31 @@ export function LedgerTab() {
 
   return (
     <div className="space-y-4">
-      {/* Action Button */}
-      <div className="flex items-center justify-end">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="shadow-none h-7"
-          onClick={() => {
-            const element = document.getElementById('printableArea')
-            if (element) {
-              // In real app, would use html2pdf library
-              console.log('Download ledger as PDF')
-            }
-          }}
-          title="Download"
-        >
-          <Download className="h-3 w-3" />
-        </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Ledger</h2>
+          <p className="text-sm text-muted-foreground">
+            View ledger summary by account and date range.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            onClick={() => {
+              const element = document.getElementById('printableArea')
+              if (element) {
+                // In real app, would use html2pdf library
+                console.log('Download ledger as PDF')
+              }
+            }}
+            title="Download"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download Ledger
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -123,7 +131,7 @@ export function LedgerTab() {
             onSubmit={(e) => {
               e.preventDefault()
             }}
-            className="flex flex-col gap-4 md:flex-row md:items-end md:justify-end"
+            className="flex flex-col gap-4 md:flex-row md:items-end"
           >
             <div className="w-full md:w-44">
               <label className="text-sm font-medium">Start Date</label>

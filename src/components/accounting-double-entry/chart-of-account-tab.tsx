@@ -29,6 +29,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -208,7 +218,11 @@ function formatPrice(amount: number) {
 }
 
 export function ChartOfAccountTab() {
+  const [groups, setGroups] = useState(() => chartAccountsByType)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [accountToDelete, setAccountToDelete] = useState<{ id: number; groupType: string } | null>(null)
   const [startDate, setStartDate] = useState('2025-01-01')
   const [endDate, setEndDate] = useState('2025-12-31')
 
@@ -223,34 +237,144 @@ export function ChartOfAccountTab() {
   })
 
   const allAccounts = useMemo(
-    () => chartAccountsByType.flatMap((g) => g.accounts),
-    [],
+    () => groups.flatMap((g) => g.accounts),
+    [groups],
   )
 
   const parentAccountsForSelectedType = useMemo(() => {
     if (!createForm.subType) return []
-    return allAccounts.filter((a) => a.subType === createForm.subType)
-  }, [allAccounts, createForm.subType])
+    return allAccounts.filter((a) => a.subType === createForm.subType && a.id !== editingId)
+  }, [allAccounts, createForm.subType, editingId])
+
+  const dialogTitle = editingId ? 'Edit Account' : 'Create New Account'
+
+  const resetForm = () => {
+    setEditingId(null)
+    setCreateForm({
+      name: '',
+      code: '',
+      subType: '',
+      isEnabled: true,
+      makeSubAccount: false,
+      parent: '',
+      description: '',
+    })
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open)
+    if (!open) resetForm()
+  }
+
+  const groupTypeFromSubType = (subType: string) =>
+    accountTypeOptions.find((g) => g.items.includes(subType))?.group ?? 'Other'
+
+  const handleEdit = (account: ChartAccount) => {
+    setEditingId(account.id)
+    const parent = allAccounts.find((a) => a.name === account.parentAccountName)
+    setCreateForm({
+      name: account.name,
+      code: account.code,
+      subType: account.subType,
+      isEnabled: account.isEnabled,
+      makeSubAccount: Boolean(account.parentAccountName && account.parentAccountName !== '-'),
+      parent: parent ? String(parent.id) : '',
+      description: '',
+    })
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (account: ChartAccount, groupType: string) => {
+    setAccountToDelete({ id: account.id, groupType })
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!accountToDelete) return
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.type !== accountToDelete.groupType
+          ? g
+          : { ...g, accounts: g.accounts.filter((a) => a.id !== accountToDelete.id) },
+      ),
+    )
+    setAccountToDelete(null)
+    setDeleteDialogOpen(false)
+  }
 
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end">
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Chart of Accounts</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage accounts and organize your financial structure.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Account
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Account</DialogTitle>
+              <DialogTitle>{dialogTitle}</DialogTitle>
             </DialogHeader>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                console.log('Create COA:', createForm)
-                setCreateDialogOpen(false)
+                const groupType = groupTypeFromSubType(createForm.subType)
+                const parentName = createForm.makeSubAccount
+                  ? (allAccounts.find((a) => String(a.id) === createForm.parent)?.name ?? '-')
+                  : '-'
+
+                if (editingId) {
+                  setGroups((prev) =>
+                    prev.map((g) => ({
+                      ...g,
+                      accounts: g.accounts.map((a) =>
+                        a.id === editingId
+                          ? {
+                              ...a,
+                              code: createForm.code,
+                              name: createForm.name,
+                              subType: createForm.subType,
+                              isEnabled: createForm.isEnabled,
+                              parentAccountName: parentName,
+                            }
+                          : a,
+                      ),
+                    })),
+                  )
+                } else {
+                  const nextId = allAccounts.length > 0 ? Math.max(...allAccounts.map((a) => a.id)) + 1 : 1
+                  const newAccount: ChartAccount = {
+                    id: nextId,
+                    code: createForm.code,
+                    name: createForm.name,
+                    subType: createForm.subType,
+                    parentAccountName: parentName,
+                    balance: 0,
+                    isEnabled: createForm.isEnabled,
+                  }
+                  setGroups((prev) =>
+                    prev.map((g) =>
+                      g.type === groupType ? { ...g, accounts: [newAccount, ...g.accounts] } : g,
+                    ),
+                  )
+                }
+
+                handleDialogOpenChange(false)
               }}
             >
               <div className="grid gap-4 py-4">
@@ -366,16 +490,17 @@ export function ChartOfAccountTab() {
                 </div>
               </div>
             <DialogFooter>
-              <Button type="button" variant="secondary" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+              <Button type="button" variant="secondary" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                 Cancel
               </Button>
               <Button type="submit" variant="blue" className="shadow-none">
-                Create
+                {editingId ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
@@ -387,7 +512,7 @@ export function ChartOfAccountTab() {
               // mock apply
               console.log('Apply filter:', { startDate, endDate })
             }}
-            className="flex flex-col gap-4 md:flex-row md:items-end md:justify-end"
+            className="flex flex-col gap-4 md:flex-row md:items-end"
           >
             <div className="w-full md:w-44">
               <Label htmlFor="startDate">Start Date</Label>
@@ -419,7 +544,7 @@ export function ChartOfAccountTab() {
         </CardContent>
       </Card>
 
-      {chartAccountsByType.map((group) => (
+      {groups.map((group) => (
         <Card key={group.type} className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
           <CardContent className="p-0">
             <div className="px-4 py-3 border-b">
@@ -469,6 +594,7 @@ export function ChartOfAccountTab() {
                             size="sm"
                             className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
+                            onClick={() => handleEdit(account)}
                           >
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -477,6 +603,7 @@ export function ChartOfAccountTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
+                            onClick={() => handleDeleteClick(account, group.type)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -490,6 +617,24 @@ export function ChartOfAccountTab() {
           </CardContent>
         </Card>
       ))}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this account? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAccountToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -156,8 +156,14 @@ export function ProfitLossTab() {
 
   return (
     <div className="space-y-4">
-      {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Profit &amp; Loss</h2>
+          <p className="text-sm text-muted-foreground">
+            View profit and loss report for a period.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
         <Button
           variant="outline"
           size="sm"
@@ -175,8 +181,14 @@ export function ProfitLossTab() {
         >
           <Printer className="h-3 w-3" />
         </Button>
-        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
-          <FileDown className="h-3 w-3" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+          title="Export"
+        >
+          <FileDown className="mr-2 h-4 w-4" />
+          Export Profit &amp; Loss
         </Button>
         <Button
           variant="blue"
@@ -190,6 +202,7 @@ export function ProfitLossTab() {
         <Button variant="secondary" size="sm" className="shadow-none h-7" title="Horizontal View">
           <Columns2 className="h-3 w-3" />
         </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -201,7 +214,7 @@ export function ProfitLossTab() {
                 e.preventDefault()
                 setShowFilter(false)
               }}
-              className="flex flex-col gap-4 md:flex-row md:items-end md:justify-end"
+              className="flex flex-col gap-4 md:flex-row md:items-end"
             >
               <div className="w-full md:w-44">
                 <label className="mb-1 block text-sm font-medium">Start Date</label>

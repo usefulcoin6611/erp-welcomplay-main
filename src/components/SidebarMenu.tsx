@@ -25,6 +25,17 @@ interface SidebarMenuProps {
   items: MenuItem[]
 }
 
+const normalizeUrl = (url: string) => {
+  const base = url.split("?")[0]
+  return base.endsWith("/") && base !== "/" ? base.slice(0, -1) : base
+}
+
+const isActiveUrl = (pathname: string, url: string) => {
+  if (!url || url === "#") return false
+  const base = normalizeUrl(url)
+  return pathname === base || pathname.startsWith(base + "/")
+}
+
 const MenuItemComponent = ({ 
   item, 
   level = 0, 
@@ -39,30 +50,20 @@ const MenuItemComponent = ({
   const pathname = usePathname()
   const itemKey = `${level}-${item.title}`
   const isOpen = openItems[itemKey]
-  const isActive = pathname === item.url
+  const isActive = isActiveUrl(pathname, item.url)
   const hasChildren = item.items && item.items.length > 0
   
   // Check if any child is active
   const childIsActive = hasChildren && item.items?.some(subItem => {
-    if (pathname === subItem.url) return true
+    if (isActiveUrl(pathname, subItem.url)) return true
     if (subItem.items) {
-      return subItem.items.some(subSub => pathname === subSub.url)
+      return subItem.items.some(subSub => isActiveUrl(pathname, subSub.url))
     }
     return false
   })
 
-  // Track manual close state
-  const [manualClosed, setManualClosed] = useState(false)
-  
-  // Reset manual close when navigating to different route
-  useEffect(() => {
-    setManualClosed(false)
-  }, [pathname])
-
-  // Keep dropdown open if child is active, unless manually closed
-  const effectiveOpen = hasChildren
-    ? (isOpen && !manualClosed) || (childIsActive && !manualClosed)
-    : isOpen
+  // Keep dropdown open if child is active
+  const effectiveOpen = hasChildren ? Boolean(isOpen) || Boolean(childIsActive) : Boolean(isOpen)
   
   // Determine padding based on level for proper indentation
   const paddingLeft = level === 0 ? "pl-3" : level === 1 ? "pl-7" : level === 2 ? "pl-12" : "pl-16"
@@ -73,9 +74,16 @@ const MenuItemComponent = ({
         <Collapsible
           open={effectiveOpen}
           onOpenChange={(open) => {
-            setOpenItems(prev => ({ ...prev, [itemKey]: open }))
-            if (!open) setManualClosed(true)
-            else setManualClosed(false)
+            // Accordion behavior: only keep one open per level
+            setOpenItems((prev) => {
+              const next: Record<string, boolean> = { ...prev }
+              const levelPrefix = `${level}-`
+              Object.keys(next).forEach((k) => {
+                if (k.startsWith(levelPrefix)) next[k] = false
+              })
+              next[itemKey] = open
+              return next
+            })
           }}
         >
           <CollapsibleTrigger asChild>
@@ -157,10 +165,35 @@ const MenuItemComponent = ({
 }
 
 function SidebarMenuInner({ items }: SidebarMenuProps) {
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>({
-    // Auto-open Dashboard by default
-    "0-Dashboard": true
-  })
+  const pathname = usePathname()
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({})
+
+  // Auto-open ONLY the current active branch (so other menus collapse)
+  useEffect(() => {
+    const next: Record<string, boolean> = {}
+
+    const walk = (nodes: MenuItem[], level: number): boolean => {
+      let anyActive = false
+      for (const node of nodes) {
+        const nodeKey = `${level}-${node.title}`
+        const nodeActive = isActiveUrl(pathname, node.url)
+
+        if (node.items && node.items.length > 0) {
+          const childActive = walk(node.items, level + 1)
+          if (childActive || nodeActive) {
+            next[nodeKey] = true
+            anyActive = true
+          }
+        } else if (nodeActive) {
+          anyActive = true
+        }
+      }
+      return anyActive
+    }
+
+    walk(items, 0)
+    setOpenItems(next)
+  }, [pathname, items])
 
   return (
     <div className="flex flex-col space-y-1 p-2">

@@ -33,6 +33,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
 
 export function AccountTab() {
@@ -40,6 +50,9 @@ export function AccountTab() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [accountToDelete, setAccountToDelete] = useState<BankAccountRow | null>(null)
   const [formData, setFormData] = useState({
     chartOfAccount: '',
     paymentGateway: '',
@@ -64,9 +77,36 @@ export function AccountTab() {
     { value: 'PayPal', label: 'PayPal' },
   ]
 
+  type BankAccountRow = {
+    id: string
+    chartOfAccount: string
+    name: string
+    bank: string
+    accountNumber: string
+    currentBalance: string
+    contactNumber: string
+    paymentGateway: string
+  }
+
+  const formatRupiah = (amount: number) =>
+    `Rp ${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(amount)}`
+
+  const parseRupiahToNumber = (value: string) => {
+    const digits = value.replace(/[^\d]/g, '')
+    return digits ? Number(digits) : 0
+  }
+
+  const coaLabelFromValue = (value: string) => chartOfAccounts.find((c) => c.value === value)?.label ?? value
+
+  const coaValueFromLabel = (label: string) => {
+    const code = label.split(' - ')[0]?.trim()
+    return chartOfAccounts.find((c) => c.value === code)?.value ?? ''
+  }
+
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         chartOfAccount: '',
         paymentGateway: '',
@@ -82,12 +122,49 @@ export function AccountTab() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log('Form data:', formData)
+
+    // Mock submit (create/update) to reflect changes in table like reference
+    setAccounts((prev) => {
+      if (editingId) {
+        return prev.map((a) => {
+          if (a.id !== editingId) return a
+          const nextBalance =
+            formData.openingBalance.trim().length > 0
+              ? formatRupiah(Number(formData.openingBalance))
+              : a.currentBalance
+
+          return {
+            ...a,
+            chartOfAccount: coaLabelFromValue(formData.chartOfAccount),
+            name: formData.holderName,
+            bank: formData.bank,
+            accountNumber: formData.accountNumber,
+            contactNumber: formData.contactNumber,
+            paymentGateway: formData.paymentGateway,
+            currentBalance: nextBalance,
+          }
+        })
+      }
+
+      const newId = `${Date.now()}`
+      const opening = formData.openingBalance.trim().length > 0 ? Number(formData.openingBalance) : 0
+      const newRow: BankAccountRow = {
+        id: newId,
+        chartOfAccount: coaLabelFromValue(formData.chartOfAccount),
+        name: formData.holderName,
+        bank: formData.bank,
+        accountNumber: formData.accountNumber,
+        currentBalance: formatRupiah(opening),
+        contactNumber: formData.contactNumber,
+        paymentGateway: formData.paymentGateway,
+      }
+      return [newRow, ...prev]
+    })
+
     handleDialogOpenChange(false)
   }
 
-  const accounts = [
+  const [accounts, setAccounts] = useState<BankAccountRow[]>(() => [
     {
       id: '1',
       chartOfAccount: '1010 - Cash in Bank',
@@ -138,7 +215,35 @@ export function AccountTab() {
       contactNumber: '+62 812-7777-8888',
       paymentGateway: 'Xendit',
     },
-  ]
+  ])
+
+  const handleEdit = (row: BankAccountRow) => {
+    setEditingId(row.id)
+    setFormData({
+      chartOfAccount: coaValueFromLabel(row.chartOfAccount),
+      paymentGateway: row.paymentGateway,
+      holderName: row.name,
+      bank: row.bank,
+      accountNumber: row.accountNumber,
+      openingBalance: `${parseRupiahToNumber(row.currentBalance)}`,
+      contactNumber: row.contactNumber,
+      bankAddress: '',
+    })
+    setDialogOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    const row = accounts.find((a) => a.id === id) ?? null
+    setAccountToDelete(row)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!accountToDelete) return
+    setAccounts((prev) => prev.filter((a) => a.id !== accountToDelete.id))
+    setAccountToDelete(null)
+    setDeleteDialogOpen(false)
+  }
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -153,7 +258,7 @@ export function AccountTab() {
         account.chartOfAccount.toLowerCase().includes(q) ||
         account.paymentGateway.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, accounts])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -171,26 +276,40 @@ export function AccountTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Bank Account</h2>
           <p className="text-sm text-muted-foreground">
             Daftar akun bank beserta saldo dan informasi gateway pembayaran.
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 shadow-none"
+          >
+            Export CSV
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="blue" className="shadow-none h-7">
+              <Button
+                size="sm"
+                variant="blue"
+                className="shadow-none h-7"
+                onClick={() => {
+                  setEditingId(null)
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Buat Akun Bank
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create Bank Account</DialogTitle>
+                <DialogTitle>{editingId ? 'Edit Akun Bank' : 'Buat Akun Bank'}</DialogTitle>
                 <DialogDescription>
-                  Add a new bank account to your system.
+                  {editingId ? 'Perbarui informasi akun bank.' : 'Tambahkan akun bank baru ke sistem.'}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit}>
@@ -342,19 +461,12 @@ export function AccountTab() {
                     Cancel
                   </Button>
                   <Button type="submit" variant="blue" className="shadow-none">
-                    Create
+                    {editingId ? 'Update' : 'Create'}
                   </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 shadow-none"
-          >
-            Export CSV
-          </Button>
         </div>
       </div>
 
@@ -423,6 +535,7 @@ export function AccountTab() {
                           size="sm"
                           className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                           aria-label={`Edit ${a.name}`}
+                          onClick={() => handleEdit(a)}
                         >
                           <Pencil className="h-3 w-3" />
                         </Button>
@@ -431,6 +544,7 @@ export function AccountTab() {
                           size="sm"
                           className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                           aria-label={`Delete ${a.name}`}
+                          onClick={() => handleDelete(a.id)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -463,6 +577,24 @@ export function AccountTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Bank Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this bank account? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAccountToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -826,23 +958,26 @@ export function TransferTab() {
                   // Apply filter logic
                   setCurrentPage(1)
                 }}
-                variant="blue"
+                variant="outline"
                 size="sm"
-                className="shadow-none h-7"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                aria-label="Apply filter"
+                title="Apply"
               >
-                Apply
+                <Search className="h-3 w-3" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 aria-label="Reset filter"
+                title="Reset"
                 onClick={() => {
                   setFilters({ date: '', fromAccount: '', toAccount: '' })
                   setCurrentPage(1)
                 }}
-                className="h-7 shadow-none"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
           </div>

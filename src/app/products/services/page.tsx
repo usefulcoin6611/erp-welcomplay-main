@@ -222,18 +222,26 @@ export default function ProductServicesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="shadow-none h-7 bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                  className="shadow-none h-7 px-4 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
                   title="Import"
                 >
-                  <FileUp className="h-3 w-3" />
+                  <FileUp className="mr-2 h-4 w-4" />
+                  Import Product & Services
                 </Button>
-                <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
-                  <FileDown className="h-3 w-3" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                  title="Export"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export Product & Services
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none h-7" title="Create">
-                      <Plus className="h-3 w-3" />
+                    <Button size="sm" variant="blue" className="shadow-none h-7 px-4" title="Create">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Product & Service
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -464,20 +472,20 @@ export default function ProductServicesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                      className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                       title="Apply"
                       onClick={handleApplyFilters}
                     >
-                      <Search className="h-4 w-4" />
+                      <Search className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                      className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                       title="Reset"
                       onClick={handleReset}
                     >
-                      <RefreshCw className="h-4 w-4" />
+                      <RefreshCw className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>

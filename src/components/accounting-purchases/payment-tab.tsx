@@ -29,6 +29,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription as AlertDialogDescriptionText,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SimplePagination } from '@/components/ui/simple-pagination'
@@ -105,6 +115,22 @@ function formatPrice(amount: number) {
 }
 
 export function PaymentTab() {
+  type PaymentRow = (typeof payments)[number]
+
+  const [rows, setRows] = useState<PaymentRow[]>(payments)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [paymentToDelete, setPaymentToDelete] = useState<PaymentRow | null>(null)
+  const [formData, setFormData] = useState({
+    vendor: '',
+    date: '',
+    amount: '',
+    category: '',
+    account: '',
+    reference: '',
+    description: '',
+    paymentReceipt: '',
+  })
   const [filters, setFilters] = useState({
     date: '',
     account: '',
@@ -133,9 +159,97 @@ export function PaymentTab() {
     setCurrentPage(1)
   }
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open)
+    if (!open) {
+      setEditingId(null)
+      setFormData({
+        vendor: '',
+        date: '',
+        amount: '',
+        category: '',
+        account: '',
+        reference: '',
+        description: '',
+        paymentReceipt: '',
+      })
+    }
+  }
+
+  const handleEdit = (payment: PaymentRow) => {
+    setEditingId(payment.id)
+    setFormData({
+      vendor: vendors.find((v) => v.name === payment.vendor)?.id ?? '',
+      date: payment.date,
+      amount: String(payment.amount),
+      category: categories.find((c) => c.name === payment.category)?.id ?? '',
+      account: accounts.find((a) => a.name === payment.account)?.id ?? '',
+      reference: payment.reference || '',
+      description: payment.description || '',
+      paymentReceipt: payment.paymentReceipt || '',
+    })
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (payment: PaymentRow) => {
+    setPaymentToDelete(payment)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!paymentToDelete) return
+    setRows((prev) => prev.filter((p) => p.id !== paymentToDelete.id))
+    setPaymentToDelete(null)
+    setDeleteDialogOpen(false)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const vendorName = vendors.find((v) => v.id === formData.vendor)?.name ?? ''
+    const categoryName = categories.find((c) => c.id === formData.category)?.name ?? ''
+    const accountName = accounts.find((a) => a.id === formData.account)?.name ?? ''
+    const nextAmount = Number(formData.amount) || 0
+
+    if (editingId) {
+      setRows((prev) =>
+        prev.map((p) =>
+          p.id === editingId
+            ? {
+                ...p,
+                vendor: vendorName,
+                date: formData.date,
+                amount: nextAmount,
+                category: categoryName,
+                account: accountName,
+                reference: formData.reference,
+                description: formData.description,
+                paymentReceipt: formData.paymentReceipt || null,
+              }
+            : p,
+        ),
+      )
+    } else {
+      const newId = `PAY-${new Date().getFullYear()}-${String(rows.length + 1).padStart(3, '0')}`
+      const newRow: PaymentRow = {
+        id: newId,
+        vendor: vendorName,
+        date: formData.date,
+        amount: nextAmount,
+        category: categoryName,
+        account: accountName,
+        reference: formData.reference,
+        description: formData.description,
+        paymentReceipt: formData.paymentReceipt || null,
+      }
+      setRows((prev) => [newRow, ...prev])
+    }
+
+    handleDialogOpenChange(false)
+  }
+
   // Filter data based on filters
   const filteredData = useMemo(() => {
-    return payments.filter((payment) => {
+    return rows.filter((payment) => {
       if (filters.account) {
         const accountName = accounts.find(a => a.id === filters.account)?.name
         if (accountName && payment.account !== accountName) return false
@@ -154,7 +268,7 @@ export function PaymentTab() {
       }
       return true
     })
-  }, [filters])
+  }, [filters, rows])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -172,24 +286,39 @@ export function PaymentTab() {
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end">
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Payment</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage payments to vendors and suppliers.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Payment
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Payment</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Payment' : 'Create New Payment'}</DialogTitle>
             </DialogHeader>
+            <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="create-vendor">
                     Vendor <span className="text-red-500">*</span>
                   </Label>
-                  <Select required>
+                  <Select value={formData.vendor} onValueChange={(value) => setFormData({ ...formData, vendor: value })} required>
                     <SelectTrigger id="create-vendor">
                       <SelectValue placeholder="Select Vendor" />
                     </SelectTrigger>
@@ -213,21 +342,21 @@ export function PaymentTab() {
                   <Label htmlFor="create-date">
                     Date <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="create-date" type="date" required />
+                  <Input id="create-date" type="date" required value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="create-amount">
                     Amount <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="create-amount" type="number" step="0.01" placeholder="Enter Amount" required />
+                  <Input id="create-amount" type="number" step="0.01" placeholder="Enter Amount" required value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="create-category">
                     Category <span className="text-red-500">*</span>
                   </Label>
-                  <Select required>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })} required>
                     <SelectTrigger id="create-category">
                       <SelectValue placeholder="Select Category" />
                     </SelectTrigger>
@@ -251,7 +380,7 @@ export function PaymentTab() {
                   <Label htmlFor="create-account">
                     Account <span className="text-red-500">*</span>
                   </Label>
-                  <Select required>
+                  <Select value={formData.account} onValueChange={(value) => setFormData({ ...formData, account: value })} required>
                     <SelectTrigger id="create-account">
                       <SelectValue placeholder="Select Account" />
                     </SelectTrigger>
@@ -273,108 +402,102 @@ export function PaymentTab() {
 
                 <div className="space-y-2">
                   <Label htmlFor="create-reference">Reference</Label>
-                  <Input id="create-reference" placeholder="Enter Reference" />
+                  <Input id="create-reference" placeholder="Enter Reference" value={formData.reference} onChange={(e) => setFormData({ ...formData, reference: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="create-receipt">Payment Receipt</Label>
-                  <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                  <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setFormData({ ...formData, paymentReceipt: e.target.files?.[0]?.name ?? '' })} />
+                  {formData.paymentReceipt ? (
+                    <p className="text-xs text-muted-foreground">Selected: {formData.paymentReceipt}</p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="create-description">Description</Label>
-                  <Textarea id="create-description" placeholder="Enter Description" rows={3} />
+                  <Textarea id="create-description" placeholder="Enter Description" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="secondary" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+              <Button variant="secondary" type="button" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                 Cancel
               </Button>
-              <Button variant="blue" className="shadow-none">
-                Create
+              <Button variant="blue" type="submit" className="shadow-none">
+                {editingId ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
+            </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardContent className="px-4 py-3">
           <form onSubmit={(e) => { e.preventDefault(); handleApply(); }} className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={filters.date}
-                  onChange={(e) => handleFilterChange('date', e.target.value)}
-                  className="h-9"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="account">Account</Label>
-                <Select
-                  value={filters.account}
-                  onValueChange={(value) => handleFilterChange('account', value)}
-                >
-                  <SelectTrigger id="account" className="h-9">
-                    <SelectValue placeholder="Select Account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id.toString()}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="vendor">Vendor</Label>
-                <Select
-                  value={filters.vendor}
-                  onValueChange={(value) => handleFilterChange('vendor', value)}
-                >
-                  <SelectTrigger id="vendor" className="h-9">
-                    <SelectValue placeholder="Select Vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendors.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id.toString()}>
-                        {vendor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={filters.category}
-                  onValueChange={(value) => handleFilterChange('category', value)}
-                >
-                  <SelectTrigger id="category" className="h-9">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium" htmlFor="date">Date</label>
+              <Input
+                id="date"
+                type="date"
+                value={filters.date}
+                onChange={(e) => handleFilterChange('date', e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium" htmlFor="account">Account</label>
+              <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
+                <SelectTrigger id="account" className="h-9 w-full">
+                  <SelectValue placeholder="Select Account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id.toString()}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium" htmlFor="vendor">Vendor</label>
+              <Select value={filters.vendor} onValueChange={(value) => handleFilterChange('vendor', value)}>
+                <SelectTrigger id="vendor" className="h-9 w-full">
+                  <SelectValue placeholder="Select Vendor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vendors.map((vendor) => (
+                    <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                      {vendor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium" htmlFor="category">Category</label>
+              <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
+                <SelectTrigger id="category" className="h-9 w-full">
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-end gap-2">
               <Button
                 type="submit"
                 size="sm"
                 variant="outline"
-                className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                 title="Apply"
               >
                 <Search className="h-3 w-3" />
@@ -383,7 +506,7 @@ export function PaymentTab() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                 onClick={handleReset}
                 title="Reset"
               >
@@ -460,7 +583,7 @@ export function PaymentTab() {
                             variant="outline"
                             className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
-                            onClick={() => console.log('Edit payment:', payment.id)}
+                            onClick={() => handleEdit(payment)}
                           >
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -469,11 +592,7 @@ export function PaymentTab() {
                             variant="outline"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
-                            onClick={() => {
-                              if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-                                console.log('Delete payment:', payment.id)
-                              }
-                            }}
+                            onClick={() => handleDeleteClick(payment)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -507,6 +626,24 @@ export function PaymentTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+            <AlertDialogDescriptionText>
+              Are you sure you want to delete this payment? This action cannot be undone.
+            </AlertDialogDescriptionText>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPaymentToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

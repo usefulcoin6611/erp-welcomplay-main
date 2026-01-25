@@ -58,11 +58,12 @@ function getPriorityClasses(priority: string) {
 }
 
 interface TaskDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function TaskDetailPage({ params }: TaskDetailPageProps) {
-  const id = Number(params.id)
+export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
+  const { id: idParam } = await params
+  const id = Number(idParam)
   const task = tasks.find((t) => t.id === id)
 
   if (!task) {

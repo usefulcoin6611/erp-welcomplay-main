@@ -32,6 +32,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -118,24 +128,7 @@ const mockTaxes = [
 ]
 
 export function InvoiceTab() {
-  const [invoices, setInvoices] = useState(mockInvoices)
-  const [filteredInvoices, setFilteredInvoices] = useState(mockInvoices)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [dateFilter, setDateFilter] = useState('')
-  const [customerFilter, setCustomerFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    customer: '',
-    category: '',
-    issueDate: '',
-    dueDate: '',
-    refNumber: '',
-    description: '',
-  })
-  const [invoiceNumber] = useState(`INV-2025-${String(mockInvoices.length + 1).padStart(3, '0')}`)
-  const [items, setItems] = useState<Array<{
+  type InvoiceItem = {
     id: string
     item: string
     quantity: string
@@ -145,7 +138,55 @@ export function InvoiceTab() {
     taxRate: string
     description: string
     amount: number
-  }>>([])
+  }
+
+  type InvoiceRow = (typeof mockInvoices)[number] & {
+    customer: string
+    category: string
+    refNumber: string
+    description: string
+    items: InvoiceItem[]
+  }
+
+  const [invoices, setInvoices] = useState<InvoiceRow[]>(() =>
+    mockInvoices.map((inv) => ({
+      ...inv,
+      customer: '',
+      category: '',
+      refNumber: '',
+      description: '',
+      items: [],
+    })),
+  )
+  const [filteredInvoices, setFilteredInvoices] = useState<InvoiceRow[]>(() =>
+    mockInvoices.map((inv) => ({
+      ...inv,
+      customer: '',
+      category: '',
+      refNumber: '',
+      description: '',
+      items: [],
+    })),
+  )
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [dateFilter, setDateFilter] = useState('')
+  const [customerFilter, setCustomerFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<InvoiceRow | null>(null)
+  const [formData, setFormData] = useState({
+    customer: '',
+    category: '',
+    issueDate: '',
+    dueDate: '',
+    refNumber: '',
+    description: '',
+  })
+  const [invoiceNumber] = useState(`INV-2025-${String(mockInvoices.length + 1).padStart(3, '0')}`)
+  const [items, setItems] = useState<InvoiceItem[]>([])
 
   // Calculate item amount
   const calculateItemAmount = (item: typeof items[0]) => {
@@ -183,6 +224,32 @@ export function InvoiceTab() {
     const totalAmount = subTotal - totalDiscount + totalTax
     
     return { subTotal, totalDiscount, totalTax, totalAmount }
+  }
+
+  const handleEdit = (invoice: InvoiceRow) => {
+    setEditingId(invoice.id)
+    setFormData({
+      customer: invoice.customer,
+      category: invoice.category,
+      issueDate: invoice.issueDate,
+      dueDate: invoice.dueDate,
+      refNumber: invoice.refNumber,
+      description: invoice.description,
+    })
+    setItems(invoice.items)
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (invoice: InvoiceRow) => {
+    setInvoiceToDelete(invoice)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!invoiceToDelete) return
+    setInvoices((prev) => prev.filter((i) => i.id !== invoiceToDelete.id))
+    setInvoiceToDelete(null)
+    setDeleteDialogOpen(false)
   }
 
   const addItem = () => {
@@ -229,17 +296,44 @@ export function InvoiceTab() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const newId = `INV-2025-${String(invoices.length + 1).padStart(3, '0')}`
     const { totalAmount } = calculateTotals()
-    const newInvoice = {
-      id: newId,
-      issueDate: formData.issueDate,
-      dueDate: formData.dueDate,
-      dueAmount: totalAmount,
-      status: 0,
+
+    if (editingId) {
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv.id === editingId
+            ? {
+                ...inv,
+                customer: formData.customer,
+                category: formData.category,
+                issueDate: formData.issueDate,
+                dueDate: formData.dueDate,
+                refNumber: formData.refNumber,
+                description: formData.description,
+                items,
+                dueAmount: totalAmount,
+              }
+            : inv,
+        ),
+      )
+    } else {
+      const newId = `INV-2025-${String(invoices.length + 1).padStart(3, '0')}`
+      const newInvoice: InvoiceRow = {
+        id: newId,
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
+        dueAmount: totalAmount,
+        status: 0,
+        customer: formData.customer,
+        category: formData.category,
+        refNumber: formData.refNumber,
+        description: formData.description,
+        items,
+      }
+      setInvoices((prev) => [...prev, newInvoice])
     }
-    setInvoices([...invoices, newInvoice])
     setCreateDialogOpen(false)
+    setEditingId(null)
     setFormData({
       customer: '',
       category: '',
@@ -254,6 +348,7 @@ export function InvoiceTab() {
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         customer: '',
         category: '',
@@ -312,21 +407,41 @@ export function InvoiceTab() {
   return (
     <div className="space-y-4 w-full">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
-          <Download className="h-3 w-3" />
-        </Button>
-        <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Invoice</h2>
+          <p className="text-sm text-muted-foreground">
+            Create and manage invoices for customers.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Invoice
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Invoice
+              </Button>
+            </DialogTrigger>
           <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto" style={{ width: '95vw', maxWidth: '95vw' }}>
             <DialogHeader>
-              <DialogTitle>Create Invoice</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Invoice' : 'Create Invoice'}</DialogTitle>
               <DialogDescription>
-                Create a new invoice. Fill in the required information.
+                {editingId ? 'Update invoice information' : 'Create a new invoice. Fill in the required information.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
@@ -639,12 +754,13 @@ export function InvoiceTab() {
                   Cancel
                 </Button>
                 <Button variant="blue" type="submit" className="shadow-none">
-                  Create
+                    {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
@@ -656,19 +772,20 @@ export function InvoiceTab() {
               e.preventDefault()
             }}
           >
-            <div className="w-full md:w-64">
+            <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium">Issue Date</label>
               <Input 
                 type="date" 
                 name="issue_date" 
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
+                className="h-9"
               />
             </div>
             <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium">Customer</label>
               <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 w-full">
                   <SelectValue placeholder="Select Customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -684,7 +801,7 @@ export function InvoiceTab() {
             <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium">Status</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 w-full">
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -696,10 +813,10 @@ export function InvoiceTab() {
               </Select>
             </div>
             <div className="flex gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
                 <Search className="h-3 w-3" />
               </Button>
-              <Button type="button" variant="outline" size="sm" className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Reset" onClick={handleReset}>
+              <Button type="button" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Reset" onClick={handleReset}>
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
@@ -753,13 +870,23 @@ export function InvoiceTab() {
                             </Link>
                           </Button>
                           {(invoice.status !== 3 && invoice.status !== 4) && (
-                            <Button variant="outline" size="sm" className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100" title="Edit" asChild>
-                              <Link href={`/accounting/invoice/${invoice.id}/edit`}>
-                                <Pencil className="h-3 w-3" />
-                              </Link>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                              title="Edit"
+                              onClick={() => handleEdit(invoice)}
+                            >
+                              <Pencil className="h-3 w-3" />
                             </Button>
                           )}
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Delete">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            title="Delete"
+                            onClick={() => handleDeleteClick(invoice)}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -794,6 +921,24 @@ export function InvoiceTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this invoice? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -23,7 +23,7 @@ import {
 import { IconCalendar } from '@tabler/icons-react'
 
 type ExpenseDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Mock expense detail based on ExpenseController::show / expense()
@@ -59,8 +59,8 @@ const mockExpense = {
   grandTotal: 2221250,
 }
 
-export default function ExpenseDetailPage({ params }: ExpenseDetailPageProps) {
-  const id = params.id
+export default async function ExpenseDetailPage({ params }: ExpenseDetailPageProps) {
+  const { id } = await params
   const expense = mockExpense
 
   return (

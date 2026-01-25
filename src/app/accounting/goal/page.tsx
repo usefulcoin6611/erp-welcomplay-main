@@ -247,8 +247,9 @@ export default function FinancialGoalPage() {
               </div>
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-                    <Plus className="h-3 w-3" />
+                  <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Goal
                   </Button>
                 </DialogTrigger>
                 <DialogContent>

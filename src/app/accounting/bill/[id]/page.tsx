@@ -24,7 +24,7 @@ import {
 import { IconCalendar, IconDownload, IconPrinter } from '@tabler/icons-react'
 
 type BillDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Temporary mock detail based on Laravel BillController::show structure
@@ -82,8 +82,8 @@ function getBillStatusClasses(status: string) {
   }
 }
 
-export default function BillDetailPage({ params }: BillDetailPageProps) {
-  const id = params.id
+export default async function BillDetailPage({ params }: BillDetailPageProps) {
+  const { id } = await params
 
   // In the future this should fetch by `id`, for now we reuse mockBill
   const bill = mockBill

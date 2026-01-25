@@ -34,6 +34,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -203,6 +213,9 @@ export default function EmployeesAssetSetupPage() {
   const [pageSize, setPageSize] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [rows, setRows] = useState<Asset[]>(assets)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     employeeIds: [] as number[],
@@ -214,16 +227,16 @@ export default function EmployeesAssetSetupPage() {
 
   // Filtered data
   const filteredData = useMemo(() => {
-    if (!search.trim()) return assets
+    if (!search.trim()) return rows
     
     const q = search.trim().toLowerCase()
-    return assets.filter(
+    return rows.filter(
       (asset) =>
         asset.name.toLowerCase().includes(q) ||
         asset.description.toLowerCase().includes(q) ||
         asset.employees.some((emp) => emp.name.toLowerCase().includes(q))
     )
-  }, [search])
+  }, [search, rows])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -275,9 +288,16 @@ export default function EmployeesAssetSetupPage() {
   }
 
   const handleDelete = (id: number) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      console.log('Delete asset:', id)
-    }
+    const row = rows.find((a) => a.id === id) ?? null
+    setAssetToDelete(row)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!assetToDelete) return
+    setRows((prev) => prev.filter((a) => a.id !== assetToDelete.id))
+    setAssetToDelete(null)
+    setDeleteDialogOpen(false)
   }
 
   return (
@@ -303,8 +323,9 @@ export default function EmployeesAssetSetupPage() {
               </div>
               <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
-                  <Button variant="blue" size="sm" className="shadow-none h-7">
-                    <IconPlus className="h-3 w-3" />
+                  <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create Asset">
+                    <IconPlus className="mr-2 h-4 w-4" />
+                    Create Asset
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[600px]">
@@ -600,6 +621,24 @@ export default function EmployeesAssetSetupPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Asset</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this asset? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setAssetToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

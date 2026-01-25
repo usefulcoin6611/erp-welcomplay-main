@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -103,6 +113,10 @@ function formatPrice(amount: number) {
 
 export function DebitNoteTab() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [rows, setRows] = useState<typeof debitNotes>(debitNotes)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [noteToDelete, setNoteToDelete] = useState<(typeof debitNotes)[number] | null>(null)
   const [pendingSearch, setPendingSearch] = useState('')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -137,16 +151,16 @@ export function DebitNoteTab() {
   }
 
   const filteredData = useMemo(() => {
-    if (!search.trim()) return debitNotes
+    if (!search.trim()) return rows
     const q = search.trim().toLowerCase()
-    return debitNotes.filter((n) => {
+    return rows.filter((n) => {
       return (
         formatDebitNoteId(n.debitId).toLowerCase().includes(q) ||
         n.bill.toLowerCase().includes(q) ||
         n.description.toLowerCase().includes(q)
       )
     })
-  }, [search])
+  }, [search, rows])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -173,6 +187,7 @@ export function DebitNoteTab() {
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         bill: '',
         item: '',
@@ -183,26 +198,96 @@ export function DebitNoteTab() {
     }
   }
 
+  const handleEdit = (note: (typeof debitNotes)[number]) => {
+    setEditingId(note.id)
+    setFormData({
+      bill: String(note.billId),
+      item: '',
+      amount: String(note.amount),
+      date: note.date,
+      description: note.description || '',
+    })
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (note: (typeof debitNotes)[number]) => {
+    setNoteToDelete(note)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!noteToDelete) return
+    setRows((prev) => prev.filter((n) => n.id !== noteToDelete.id))
+    setNoteToDelete(null)
+    setDeleteDialogOpen(false)
+  }
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // mock create only (no persistence)
-    console.log('Create Debit Note:', formData)
-    setCreateDialogOpen(false)
+    const billLabel = mockBills.find((b) => b.id === formData.bill)?.label ?? ''
+    const nextAmount = Number(formData.amount) || 0
+
+    if (editingId) {
+      setRows((prev) =>
+        prev.map((n) =>
+          n.id === editingId
+            ? {
+                ...n,
+                bill: billLabel || n.bill,
+                billId: parseInt(formData.bill) || n.billId,
+                date: formData.date,
+                amount: nextAmount,
+                description: formData.description || '-',
+              }
+            : n,
+        ),
+      )
+    } else {
+      const nextId = rows.length > 0 ? Math.max(...rows.map((n) => n.id)) + 1 : 1
+      const nextDebitId = rows.length > 0 ? Math.max(...rows.map((n) => n.debitId)) + 1 : 1
+      const newRow = {
+        id: nextId,
+        debitId: nextDebitId,
+        bill: billLabel,
+        billId: parseInt(formData.bill) || 0,
+        date: formData.date,
+        amount: nextAmount,
+        description: formData.description || '-',
+        status: 0,
+      }
+      setRows((prev) => [newRow, ...prev])
+    }
+
+    handleDialogOpenChange(false)
   }
 
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end">
-        <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Debit Note</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage debit notes for supplier bills.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Debit Note
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Create New Debit Note</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Debit Note' : 'Create New Debit Note'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
@@ -310,12 +395,13 @@ export function DebitNoteTab() {
                   Cancel
                 </Button>
                 <Button type="submit" variant="blue" className="shadow-none">
-                  Create
+                  {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}
@@ -328,8 +414,8 @@ export function DebitNoteTab() {
             }}
             className="flex flex-col gap-4 md:flex-row md:items-end"
           >
-            <div className="flex-1 min-w-0">
-              <Label htmlFor="search">Search</Label>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium" htmlFor="search">Search</label>
               <Input
                 id="search"
                 value={pendingSearch}
@@ -343,7 +429,7 @@ export function DebitNoteTab() {
                 type="submit"
                 variant="outline"
                 size="sm"
-                className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                 title="Search"
               >
                 <Search className="h-3 w-3" />
@@ -352,7 +438,7 @@ export function DebitNoteTab() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                 title="Reset"
                 onClick={handleSearchReset}
               >
@@ -406,17 +492,16 @@ export function DebitNoteTab() {
                             size="sm"
                             className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
-                            asChild
+                            onClick={() => handleEdit(note)}
                           >
-                            <Link href={`/accounting/debit-note/${note.id}/edit`}>
-                              <Pencil className="h-3 w-3" />
-                            </Link>
+                            <Pencil className="h-3 w-3" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
+                            onClick={() => handleDeleteClick(note)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -450,6 +535,24 @@ export function DebitNoteTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Debit Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this debit note? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

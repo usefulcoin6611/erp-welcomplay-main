@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { IconCalendar, IconCreditCard } from '@tabler/icons-react'
 
 type PaymentDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Mock payment detail based on PaymentController::index/show-like data
@@ -31,8 +31,8 @@ const mockPayment = {
   status: 'Completed',
 }
 
-export default function PaymentDetailPage({ params }: PaymentDetailPageProps) {
-  const id = params.id
+export default async function PaymentDetailPage({ params }: PaymentDetailPageProps) {
+  const { id } = await params
   const payment = mockPayment
 
   return (

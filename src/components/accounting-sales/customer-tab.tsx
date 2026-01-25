@@ -22,6 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -58,8 +68,49 @@ const customers = [
 ]
 
 export function CustomerTab() {
+  type CustomerRow = (typeof customers)[number] & {
+    taxNumber?: string
+    billingName?: string
+    billingPhone?: string
+    billingAddress?: string
+    billingCity?: string
+    billingState?: string
+    billingCountry?: string
+    billingZip?: string
+    shippingName?: string
+    shippingPhone?: string
+    shippingAddress?: string
+    shippingCity?: string
+    shippingState?: string
+    shippingCountry?: string
+    shippingZip?: string
+  }
+
+  const [rows, setRows] = useState<CustomerRow[]>(() =>
+    customers.map((c) => ({
+      ...c,
+      taxNumber: '',
+      billingName: '',
+      billingPhone: '',
+      billingAddress: '',
+      billingCity: '',
+      billingState: '',
+      billingCountry: '',
+      billingZip: '',
+      shippingName: '',
+      shippingPhone: '',
+      shippingAddress: '',
+      shippingCity: '',
+      shippingState: '',
+      shippingCountry: '',
+      shippingZip: '',
+    })),
+  )
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<CustomerRow | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -86,7 +137,7 @@ export function CustomerTab() {
   })
 
   // Filter customers by search
-  const filteredCustomers = customers.filter((customer) => {
+  const filteredCustomers = rows.filter((customer) => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return (
@@ -110,6 +161,34 @@ export function CustomerTab() {
     setCurrentPage(1)
   }, [search])
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open)
+    if (!open) {
+      setEditingId(null)
+      setFormData({
+        name: '',
+        contact: '',
+        email: '',
+        taxNumber: '',
+        balance: '',
+        billingName: '',
+        billingPhone: '',
+        billingAddress: '',
+        billingCity: '',
+        billingState: '',
+        billingCountry: '',
+        billingZip: '',
+        shippingName: '',
+        shippingPhone: '',
+        shippingAddress: '',
+        shippingCity: '',
+        shippingState: '',
+        shippingCountry: '',
+        shippingZip: '',
+      })
+    }
+  }
+
   const handleShippingSameAsBilling = () => {
     setFormData({
       ...formData,
@@ -125,78 +204,177 @@ export function CustomerTab() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    console.log('Form data:', formData)
-    setCreateDialogOpen(false)
-    // Reset form
+
+    if (editingId) {
+      setRows((prev) =>
+        prev.map((c) =>
+          c.id === editingId
+            ? {
+                ...c,
+                name: formData.name,
+                contact: formData.contact,
+                email: formData.email,
+                balance: Number(formData.balance) || 0,
+                taxNumber: formData.taxNumber,
+                billingName: formData.billingName,
+                billingPhone: formData.billingPhone,
+                billingAddress: formData.billingAddress,
+                billingCity: formData.billingCity,
+                billingState: formData.billingState,
+                billingCountry: formData.billingCountry,
+                billingZip: formData.billingZip,
+                shippingName: formData.shippingName,
+                shippingPhone: formData.shippingPhone,
+                shippingAddress: formData.shippingAddress,
+                shippingCity: formData.shippingCity,
+                shippingState: formData.shippingState,
+                shippingCountry: formData.shippingCountry,
+                shippingZip: formData.shippingZip,
+              }
+            : c,
+        ),
+      )
+    } else {
+      const nextId = rows.length > 0 ? Math.max(...rows.map((c) => c.id)) + 1 : 1
+      const nextCode = `CUST-${String(nextId).padStart(3, '0')}`
+      const newCustomer: CustomerRow = {
+        id: nextId,
+        customerCode: nextCode,
+        name: formData.name,
+        email: formData.email,
+        contact: formData.contact,
+        balance: Number(formData.balance) || 0,
+        taxNumber: formData.taxNumber,
+        billingName: formData.billingName,
+        billingPhone: formData.billingPhone,
+        billingAddress: formData.billingAddress,
+        billingCity: formData.billingCity,
+        billingState: formData.billingState,
+        billingCountry: formData.billingCountry,
+        billingZip: formData.billingZip,
+        shippingName: formData.shippingName,
+        shippingPhone: formData.shippingPhone,
+        shippingAddress: formData.shippingAddress,
+        shippingCity: formData.shippingCity,
+        shippingState: formData.shippingState,
+        shippingCountry: formData.shippingCountry,
+        shippingZip: formData.shippingZip,
+      }
+      setRows((prev) => [newCustomer, ...prev])
+    }
+
+    handleDialogOpenChange(false)
+  }
+
+  const handleEdit = (customer: CustomerRow) => {
+    setEditingId(customer.id)
     setFormData({
-      name: '',
-      contact: '',
-      email: '',
-      taxNumber: '',
-      balance: '',
-      billingName: '',
-      billingPhone: '',
-      billingAddress: '',
-      billingCity: '',
-      billingState: '',
-      billingCountry: '',
-      billingZip: '',
-      shippingName: '',
-      shippingPhone: '',
-      shippingAddress: '',
-      shippingCity: '',
-      shippingState: '',
-      shippingCountry: '',
-      shippingZip: '',
+      name: customer.name,
+      contact: customer.contact,
+      email: customer.email,
+      taxNumber: customer.taxNumber || '',
+      balance: String(customer.balance ?? 0),
+      billingName: customer.billingName || '',
+      billingPhone: customer.billingPhone || '',
+      billingAddress: customer.billingAddress || '',
+      billingCity: customer.billingCity || '',
+      billingState: customer.billingState || '',
+      billingCountry: customer.billingCountry || '',
+      billingZip: customer.billingZip || '',
+      shippingName: customer.shippingName || '',
+      shippingPhone: customer.shippingPhone || '',
+      shippingAddress: customer.shippingAddress || '',
+      shippingCity: customer.shippingCity || '',
+      shippingState: customer.shippingState || '',
+      shippingCountry: customer.shippingCountry || '',
+      shippingZip: customer.shippingZip || '',
     })
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (customer: CustomerRow) => {
+    setCustomerToDelete(customer)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!customerToDelete) return
+    setRows((prev) => prev.filter((c) => c.id !== customerToDelete.id))
+    setCustomerToDelete(null)
+    setDeleteDialogOpen(false)
   }
 
   return (
     <div className="space-y-4">
       {/* Header with Action Buttons */}
-      <div className="flex items-center justify-end gap-2">
-        <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="!bg-amber-600 hover:!bg-amber-700 !text-white !border-amber-600 shadow-none h-7" title="Import">
-              <FileUp className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Import customer CSV file</DialogTitle>
-              <DialogDescription>
-                Upload a CSV file to import customers.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="csv-file">CSV File</Label>
-                <Input id="csv-file" type="file" accept=".csv" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Customer</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage customers, contacts, and balances.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-none h-7 px-4 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                title="Import"
+              >
+                <FileUp className="mr-2 h-4 w-4" />
+                Import Customer
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Import customer CSV file</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file to import customers.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="csv-file">CSV File</Label>
+                  <Input id="csv-file" type="file" accept=".csv" />
+                </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" className="shadow-none" onClick={() => setImportDialogOpen(false)}>
-                Cancel
+              <DialogFooter>
+                <Button variant="outline" className="shadow-none" onClick={() => setImportDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="blue" className="shadow-none">
+                  Import
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export Customer
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Customer
               </Button>
-              <Button variant="blue" className="shadow-none">
-                Import
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
-          <FileDown className="h-3 w-3" />
-        </Button>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+            </DialogTrigger>
           <DialogContent className="max-w-[70vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create Customer</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Customer' : 'Create Customer'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
               <div className="space-y-6 py-4">
@@ -418,16 +596,17 @@ export function CustomerTab() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" type="button" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+                <Button variant="outline" type="button" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                   Cancel
                 </Button>
                 <Button variant="blue" type="submit" className="shadow-none">
-                  Create
+                  {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}
@@ -503,10 +682,22 @@ export function CustomerTab() {
                         <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100">
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                          title="Edit"
+                          onClick={() => handleEdit(customer)}
+                        >
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="outline" size="sm" className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                          title="Delete"
+                          onClick={() => handleDeleteClick(customer)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -540,6 +731,24 @@ export function CustomerTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this customer? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCustomerToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

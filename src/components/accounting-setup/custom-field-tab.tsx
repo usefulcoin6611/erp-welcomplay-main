@@ -112,13 +112,21 @@ export function CustomFieldTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Custom Field</h2>
+          <p className="text-sm text-muted-foreground">
+            Configure custom fields used across modules.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create">
+                <Plus className="mr-2 h-4 w-4" />
+                Create Custom Field
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Custom Field</DialogTitle>
@@ -184,7 +192,8 @@ export function CustomFieldTab() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">

@@ -46,11 +46,12 @@ const mockDeals = [
 ] as const
 
 interface DealDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function DealDetailPage({ params }: DealDetailPageProps) {
-  const deal = mockDeals.find((d) => d.id === params.id) ?? mockDeals[0]
+export default async function DealDetailPage({ params }: DealDetailPageProps) {
+  const { id } = await params
+  const deal = mockDeals.find((d) => d.id === id) ?? mockDeals[0]
 
   return (
     <SidebarProvider

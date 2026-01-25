@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 type VendorDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Mock vendor detail based loosely on VenderController::show
@@ -45,8 +45,8 @@ const mockVendor = {
   },
 }
 
-export default function VendorDetailPage({ params }: VendorDetailPageProps) {
-  const id = params.id
+export default async function VendorDetailPage({ params }: VendorDetailPageProps) {
+  const { id } = await params
   const vendor = mockVendor
 
   return (

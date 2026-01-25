@@ -525,7 +525,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               { title: "Financial Goal", url: "/accounting/goal" },
               {
                 title: "Accounting Setup",
-                url: "/accounting/setup",
+                url: "/accounting/setup/custom-field?tab=taxes",
               },
             ],
           },

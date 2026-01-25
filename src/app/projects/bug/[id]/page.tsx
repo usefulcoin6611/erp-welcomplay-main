@@ -67,11 +67,12 @@ function getStatusClasses(status: string) {
 }
 
 interface BugDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function BugDetailPage({ params }: BugDetailPageProps) {
-  const id = Number(params.id)
+export default async function BugDetailPage({ params }: BugDetailPageProps) {
+  const { id: idParam } = await params
+  const id = Number(idParam)
   const bug = bugs.find((b) => b.id === id)
 
   if (!bug) {

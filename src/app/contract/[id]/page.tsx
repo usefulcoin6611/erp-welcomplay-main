@@ -60,14 +60,15 @@ function getStatusBadge(status: string) {
 }
 
 interface ContractDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function ContractDetailPage({
+export default async function ContractDetailPage({
   params,
 }: ContractDetailPageProps) {
+  const { id } = await params
   const contract =
-    mockContracts.find((c) => c.id === params.id) ?? mockContracts[0]
+    mockContracts.find((c) => c.id === id) ?? mockContracts[0]
 
   return (
     <SidebarProvider

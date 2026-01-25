@@ -32,6 +32,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -169,20 +179,7 @@ function getProposalStatusClasses(status: number) {
 }
 
 export function EstimateTab() {
-  const [proposals, setProposals] = useState(mockProposals)
-  const [filteredProposals, setFilteredProposals] = useState(mockProposals)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [dateFilter, setDateFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    customer: '',
-    category: '',
-    issueDate: '',
-    description: '',
-  })
-  const [items, setItems] = useState<Array<{
+  type ProposalItem = {
     id: string
     item: string
     quantity: string
@@ -192,7 +189,48 @@ export function EstimateTab() {
     taxRate: string
     description: string
     amount: number
-  }>>([])
+  }
+
+  type ProposalRow = (typeof mockProposals)[number] & {
+    customerId: string
+    categoryId: string
+    description: string
+    items: ProposalItem[]
+  }
+
+  const [proposals, setProposals] = useState<ProposalRow[]>(() =>
+    mockProposals.map((p) => ({
+      ...p,
+      customerId: '',
+      categoryId: '',
+      description: '',
+      items: [],
+    })),
+  )
+  const [filteredProposals, setFilteredProposals] = useState<ProposalRow[]>(() =>
+    mockProposals.map((p) => ({
+      ...p,
+      customerId: '',
+      categoryId: '',
+      description: '',
+      items: [],
+    })),
+  )
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [dateFilter, setDateFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [proposalToDelete, setProposalToDelete] = useState<ProposalRow | null>(null)
+  const [formData, setFormData] = useState({
+    customer: '',
+    category: '',
+    issueDate: '',
+    description: '',
+  })
+  const [items, setItems] = useState<ProposalItem[]>([])
 
   // Mock customers and categories
   const mockCustomers = [
@@ -256,6 +294,37 @@ export function EstimateTab() {
     return { subTotal, totalDiscount, totalTax, totalAmount }
   }
 
+  const handleEdit = (proposal: ProposalRow) => {
+    const customerId =
+      proposal.customerId ||
+      (mockCustomers.find((c) => c.name === proposal.customer)?.id.toString() ?? '')
+    const categoryId =
+      proposal.categoryId ||
+      (mockCategories.find((c) => c.name === proposal.category)?.id.toString() ?? '')
+
+    setEditingId(proposal.id)
+    setFormData({
+      customer: customerId,
+      category: categoryId,
+      issueDate: proposal.issueDate,
+      description: proposal.description || '',
+    })
+    setItems(proposal.items || [])
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (proposal: ProposalRow) => {
+    setProposalToDelete(proposal)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!proposalToDelete) return
+    setProposals((prev) => prev.filter((p) => p.id !== proposalToDelete.id))
+    setProposalToDelete(null)
+    setDeleteDialogOpen(false)
+  }
+
   const addItem = () => {
     const newItem = {
       id: `item-${Date.now()}`,
@@ -302,19 +371,45 @@ export function EstimateTab() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Generate new proposal ID
-    const newId = `PR-2025-${String(proposals.length + 1).padStart(3, '0')}`
     const { totalAmount } = calculateTotals()
-    const newProposal = {
-      id: newId,
-      customer: mockCustomers.find(c => c.id.toString() === formData.customer)?.name || '',
-      category: mockCategories.find(c => c.id.toString() === formData.category)?.name || '',
-      issueDate: formData.issueDate,
-      status: 0, // Draft
-      total: totalAmount,
+
+    if (editingId) {
+      setProposals((prev) =>
+        prev.map((p) =>
+          p.id === editingId
+            ? {
+                ...p,
+                customerId: formData.customer,
+                categoryId: formData.category,
+                customer: mockCustomers.find((c) => c.id.toString() === formData.customer)?.name || p.customer,
+                category: mockCategories.find((c) => c.id.toString() === formData.category)?.name || p.category,
+                issueDate: formData.issueDate,
+                description: formData.description,
+                items,
+                total: totalAmount,
+              }
+            : p,
+        ),
+      )
+    } else {
+      // Generate new proposal ID
+      const newId = `PR-2025-${String(proposals.length + 1).padStart(3, '0')}`
+      const newProposal: ProposalRow = {
+        id: newId,
+        customerId: formData.customer,
+        categoryId: formData.category,
+        customer: mockCustomers.find((c) => c.id.toString() === formData.customer)?.name || '',
+        category: mockCategories.find((c) => c.id.toString() === formData.category)?.name || '',
+        issueDate: formData.issueDate,
+        status: 0, // Draft
+        total: totalAmount,
+        description: formData.description,
+        items,
+      }
+      setProposals((prev) => [...prev, newProposal])
     }
-    setProposals([...proposals, newProposal])
     setCreateDialogOpen(false)
+    setEditingId(null)
     setFormData({
       customer: '',
       category: '',
@@ -327,6 +422,7 @@ export function EstimateTab() {
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         customer: '',
         category: '',
@@ -369,21 +465,41 @@ export function EstimateTab() {
   return (
     <div className="space-y-4 w-full">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
-          <Download className="h-3 w-3" />
-        </Button>
-        <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Estimate</h2>
+          <p className="text-sm text-muted-foreground">
+            Create and manage estimates for customers.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Estimate
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Estimate
+              </Button>
+            </DialogTrigger>
           <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto" style={{ width: '95vw', maxWidth: '95vw' }}>
             <DialogHeader>
-              <DialogTitle>Create Proposal</DialogTitle>
+                <DialogTitle>{editingId ? 'Edit Proposal' : 'Create Proposal'}</DialogTitle>
               <DialogDescription>
-                Create a new proposal. Fill in the required information.
+                  {editingId ? 'Update proposal information.' : 'Create a new proposal. Fill in the required information.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
@@ -662,12 +778,13 @@ export function EstimateTab() {
                   Cancel
                 </Button>
                 <Button variant="blue" type="submit" className="shadow-none">
-                  Create
+                  {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
@@ -680,34 +797,48 @@ export function EstimateTab() {
               // Filter is handled by useEffect
             }}
           >
-            <div className="w-full md:w-64">
+            <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium">Date</label>
               <Input 
                 type="date" 
                 name="issue_date" 
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
+                className="h-9"
               />
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Status</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Select Status</SelectItem>
-                  {Object.entries(statusMap).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>{value.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+            <div className="flex items-end gap-2">
+              <div className="w-full md:w-56">
+                <label className="mb-1 block text-sm font-medium">Status</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Select Status</SelectItem>
+                    {Object.entries(statusMap).map(([key, value]) => (
+                      <SelectItem key={key} value={key}>{value.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
+              >
                 <Search className="h-3 w-3" />
               </Button>
-              <Button type="button" variant="outline" size="sm" className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Reset" onClick={handleReset}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                title="Reset"
+                onClick={handleReset}
+              >
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
@@ -763,12 +894,22 @@ export function EstimateTab() {
                               <Eye className="h-3 w-3" />
                             </Link>
                           </Button>
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Edit" asChild>
-                            <Link href={`/accounting/proposal/${proposal.id}/edit`}>
-                              <Pencil className="h-3 w-3" />
-                            </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                            title="Edit"
+                            onClick={() => handleEdit(proposal)}
+                          >
+                            <Pencil className="h-3 w-3" />
                           </Button>
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Delete">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            title="Delete"
+                            onClick={() => handleDeleteClick(proposal)}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -803,6 +944,24 @@ export function EstimateTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Estimate</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this estimate? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProposalToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

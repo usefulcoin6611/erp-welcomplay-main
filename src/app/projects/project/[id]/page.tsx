@@ -86,11 +86,12 @@ function getStatusClasses(status: string) {
 }
 
 interface ProjectDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-  const id = Number(params.id)
+export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const { id: idParam } = await params
+  const id = Number(idParam)
   const project = projects.find((p) => p.id === id)
 
   if (!project) {

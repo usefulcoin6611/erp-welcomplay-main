@@ -23,6 +23,16 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Search,
   RefreshCw,
   Plus,
@@ -84,6 +94,9 @@ function formatPrice(amount: number) {
 }
 
 export function BillTab() {
+  const [rows, setRows] = useState<typeof bills>(bills)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [billToDelete, setBillToDelete] = useState<(typeof bills)[number] | null>(null)
   const [billDate, setBillDate] = useState('')
   const [status, setStatus] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -91,12 +104,12 @@ export function BillTab() {
 
   // Filter data based on filters
   const filteredData = useMemo(() => {
-    return bills.filter((bill) => {
+    return rows.filter((bill) => {
       if (billDate && bill.billDate !== billDate) return false
       if (status !== 'all' && bill.status.toLowerCase() !== status.toLowerCase()) return false
       return true
     })
-  }, [billDate, status])
+  }, [billDate, status, rows])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -113,6 +126,18 @@ export function BillTab() {
     setCurrentPage(1)
   }
 
+  const handleDeleteClick = (bill: (typeof bills)[number]) => {
+    setBillToDelete(bill)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!billToDelete) return
+    setRows((prev) => prev.filter((b) => b.id !== billToDelete.id))
+    setBillToDelete(null)
+    setDeleteDialogOpen(false)
+  }
+
   useEffect(() => {
     setCurrentPage(1)
   }, [billDate, status])
@@ -120,50 +145,64 @@ export function BillTab() {
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export" asChild>
-          <Link href="/accounting/bill/export">
-            <Download className="h-3 w-3" />
-          </Link>
-        </Button>
-        <Button variant="blue" size="sm" className="shadow-none h-7" title="Create" asChild>
-          <Link href="/accounting/bill/create/0">
-            <Plus className="h-3 w-3" />
-          </Link>
-        </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Bill</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage supplier bills and due dates.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+            asChild
+          >
+            <Link href="/accounting/bill/export">
+              <Download className="mr-2 h-4 w-4" />
+              Export Bill
+            </Link>
+          </Button>
+          <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create" asChild>
+            <Link href="/accounting/bill/create/0">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Bill
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardContent className="px-4 py-3">
           <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Bill Date</label>
-                <Input type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} className="h-9" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Status</label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Select Status</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="partial">Partial</SelectItem>
-                    <SelectItem value="unpaid">Unpaid</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium">Bill Date</label>
+              <Input type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} className="h-9" />
+            </div>
+            <div className="w-full md:w-56">
+              <label className="mb-1 block text-sm font-medium">Status</label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Select Status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="partial">Partial</SelectItem>
+                  <SelectItem value="unpaid">Unpaid</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-end gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
                 <Search className="h-3 w-3" />
               </Button>
-              <Button type="button" variant="outline" size="sm" className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" onClick={handleReset} title="Reset">
+              <Button type="button" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" onClick={handleReset} title="Reset">
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
@@ -230,7 +269,7 @@ export function BillTab() {
                             title="Edit"
                             asChild
                           >
-                            <Link href={`/accounting/bill/${bill.id}/edit`}>
+                            <Link href={`/accounting/bill/create/${bill.id}`}>
                               <Pencil className="h-3 w-3" />
                             </Link>
                           </Button>
@@ -239,6 +278,7 @@ export function BillTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
+                            onClick={() => handleDeleteClick(bill)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -274,6 +314,24 @@ export function BillTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Bill</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this bill? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBillToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

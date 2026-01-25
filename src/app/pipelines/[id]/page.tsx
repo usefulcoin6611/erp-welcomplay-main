@@ -43,13 +43,14 @@ const mockPipelines = [
 ] as const
 
 interface PipelineDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function PipelineDetailPage({
+export default async function PipelineDetailPage({
   params,
 }: PipelineDetailPageProps) {
-  const numericId = Number(params.id)
+  const { id } = await params
+  const numericId = Number(id)
   const pipeline =
     mockPipelines.find((p) => p.id === numericId) ?? mockPipelines[0]
 

@@ -23,7 +23,7 @@ import {
 import { IconCalendar } from '@tabler/icons-react'
 
 type DebitNoteDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Mock debit note detail (mirroring how credit/debit notes are structured in Laravel)
@@ -58,8 +58,8 @@ function getDebitStatusClasses(status: string) {
   }
 }
 
-export default function DebitNoteDetailPage({ params }: DebitNoteDetailPageProps) {
-  const id = params.id
+export default async function DebitNoteDetailPage({ params }: DebitNoteDetailPageProps) {
+  const { id } = await params
   const note = mockDebitNote
 
   return (

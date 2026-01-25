@@ -6,13 +6,13 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SmoothTab } from '@/components/ui/smooth-tab'
-import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const TaxesTab = lazy(() => import('@/components/accounting-setup').then((m) => ({ default: m.TaxesTab })))
-const CategoryTab = lazy(() => import('@/components/accounting-setup').then((m) => ({ default: m.CategoryTab })))
-const UnitTab = lazy(() => import('@/components/accounting-setup').then((m) => ({ default: m.UnitTab })))
-const CustomFieldTab = lazy(() => import('@/components/accounting-setup').then((m) => ({ default: m.CustomFieldTab })))
+// NOTE: Import tabs directly (instead of via barrel `@/components/accounting-setup`) to avoid Turbopack export-eval issues.
+const TaxesTab = lazy(() => import('@/components/accounting-setup/taxes-tab').then((m) => ({ default: m.TaxesTab })))
+const CategoryTab = lazy(() => import('@/components/accounting-setup/category-tab').then((m) => ({ default: m.CategoryTab })))
+const UnitTab = lazy(() => import('@/components/accounting-setup/unit-tab').then((m) => ({ default: m.UnitTab })))
+const CustomFieldTab = lazy(() => import('@/components/accounting-setup/custom-field-tab').then((m) => ({ default: m.CustomFieldTab })))
 
 const TabLoadingSkeleton = () => (
   <div className="space-y-4">
@@ -110,22 +110,12 @@ export default function AccountingSetupTabsPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Account Setup</h1>
-              </div>
-            </div>
-
-            <Card>
-              <CardContent className="p-0">
-                <SmoothTab
-                  items={setupTabs}
-                  defaultTabId={activeTab}
-                  onChange={handleTabChange}
-                  activeColor="bg-white dark:bg-gray-700 shadow-xs"
-                />
-              </CardContent>
-            </Card>
+            <SmoothTab
+              items={setupTabs}
+              defaultTabId={activeTab}
+              onChange={handleTabChange}
+              activeColor="bg-white dark:bg-gray-700 shadow-xs"
+            />
           </div>
         </div>
       </SidebarInset>

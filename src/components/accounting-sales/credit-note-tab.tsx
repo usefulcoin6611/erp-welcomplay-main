@@ -30,6 +30,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -132,6 +142,9 @@ function getStatusBadge(status: number) {
 export function CreditNoteTab() {
   const [creditNotes, setCreditNotes] = useState(mockCreditNotes)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [creditNoteToDelete, setCreditNoteToDelete] = useState<(typeof mockCreditNotes)[number] | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -145,6 +158,7 @@ export function CreditNoteTab() {
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         invoice: '',
         date: '',
@@ -153,24 +167,63 @@ export function CreditNoteTab() {
     }
   }
 
+  const handleEdit = (creditNote: (typeof mockCreditNotes)[number]) => {
+    setEditingId(creditNote.id)
+    setFormData({
+      invoice: creditNote.invoiceId ? String(creditNote.invoiceId) : '',
+      date: creditNote.date,
+      description: creditNote.description === '-' ? '' : creditNote.description,
+    })
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (creditNote: (typeof mockCreditNotes)[number]) => {
+    setCreditNoteToDelete(creditNote)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!creditNoteToDelete) return
+    setCreditNotes((prev) => prev.filter((cn) => cn.id !== creditNoteToDelete.id))
+    setCreditNoteToDelete(null)
+    setDeleteDialogOpen(false)
+  }
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const newCreditId = creditNotes.length > 0 
-      ? Math.max(...creditNotes.map(cn => cn.creditId)) + 1 
-      : 1
     const selectedInvoice = mockInvoices.find(inv => inv.id.toString() === formData.invoice)
-    const newCreditNote = {
-      id: creditNotes.length + 1,
-      creditId: newCreditId,
-      invoice: selectedInvoice?.invoiceId || '',
-      invoiceId: parseInt(formData.invoice) || 0,
-      date: formData.date,
-      amount: 0,
-      description: formData.description || '-',
-      status: 0,
+
+    if (editingId) {
+      setCreditNotes((prev) =>
+        prev.map((cn) =>
+          cn.id === editingId
+            ? {
+                ...cn,
+                invoice: selectedInvoice?.invoiceId || cn.invoice,
+                invoiceId: parseInt(formData.invoice) || cn.invoiceId,
+                date: formData.date,
+                description: formData.description || '-',
+              }
+            : cn,
+        ),
+      )
+    } else {
+      const newCreditId =
+        creditNotes.length > 0 ? Math.max(...creditNotes.map((cn) => cn.creditId)) + 1 : 1
+      const newCreditNote = {
+        id: creditNotes.length + 1,
+        creditId: newCreditId,
+        invoice: selectedInvoice?.invoiceId || '',
+        invoiceId: parseInt(formData.invoice) || 0,
+        date: formData.date,
+        amount: 0,
+        description: formData.description || '-',
+        status: 0,
+      }
+      setCreditNotes([...creditNotes, newCreditNote])
     }
-    setCreditNotes([...creditNotes, newCreditNote])
     setCreateDialogOpen(false)
+    setEditingId(null)
     setFormData({
       invoice: '',
       date: '',
@@ -206,16 +259,30 @@ export function CreditNoteTab() {
   return (
     <div className="space-y-4 w-full">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end gap-2">
-        <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Credit Note</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage credit notes linked to invoices.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Credit Note
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Create Credit Note</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Credit Note' : 'Create Credit Note'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-4 py-4">
@@ -272,12 +339,13 @@ export function CreditNoteTab() {
                   Cancel
                 </Button>
                 <Button type="submit" variant="blue" className="shadow-none">
-                  Create
+                  {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -351,12 +419,22 @@ export function CreditNoteTab() {
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-start">
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100" title="Edit" asChild>
-                            <Link href={`/accounting/credit-note/${creditNote.id}/edit`}>
-                              <Pencil className="h-3 w-3" />
-                            </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                            title="Edit"
+                            onClick={() => handleEdit(creditNote)}
+                          >
+                            <Pencil className="h-3 w-3" />
                           </Button>
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Delete">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            title="Delete"
+                            onClick={() => handleDeleteClick(creditNote)}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -391,6 +469,24 @@ export function CreditNoteTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Credit Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this credit note? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCreditNoteToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

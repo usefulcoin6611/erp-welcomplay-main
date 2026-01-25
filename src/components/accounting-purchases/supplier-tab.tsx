@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SimplePagination } from '@/components/ui/simple-pagination'
@@ -73,7 +83,48 @@ function formatPrice(amount: number) {
 }
 
 export function SupplierTab() {
+  type SupplierRow = (typeof vendors)[number] & {
+    taxNumber?: string
+    billingName?: string
+    billingPhone?: string
+    billingAddress?: string
+    billingCity?: string
+    billingState?: string
+    billingCountry?: string
+    billingZip?: string
+    shippingName?: string
+    shippingPhone?: string
+    shippingAddress?: string
+    shippingCity?: string
+    shippingState?: string
+    shippingCountry?: string
+    shippingZip?: string
+  }
+
+  const [rows, setRows] = useState<SupplierRow[]>(() =>
+    vendors.map((v) => ({
+      ...v,
+      taxNumber: '',
+      billingName: '',
+      billingPhone: '',
+      billingAddress: '',
+      billingCity: '',
+      billingState: '',
+      billingCountry: '',
+      billingZip: '',
+      shippingName: '',
+      shippingPhone: '',
+      shippingAddress: '',
+      shippingCity: '',
+      shippingState: '',
+      shippingCountry: '',
+      shippingZip: '',
+    })),
+  )
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [supplierToDelete, setSupplierToDelete] = useState<SupplierRow | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -102,6 +153,7 @@ export function SupplierTab() {
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         name: '',
         contact: '',
@@ -141,38 +193,72 @@ export function SupplierTab() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    console.log('Form data:', formData)
-    setCreateDialogOpen(false)
-    // Reset form
-    setFormData({
-      name: '',
-      contact: '',
-      email: '',
-      taxNumber: '',
-      balance: '',
-      billingName: '',
-      billingPhone: '',
-      billingAddress: '',
-      billingCity: '',
-      billingState: '',
-      billingCountry: '',
-      billingZip: '',
-      shippingName: '',
-      shippingPhone: '',
-      shippingAddress: '',
-      shippingCity: '',
-      shippingState: '',
-      shippingCountry: '',
-      shippingZip: '',
-    })
+    if (editingId) {
+      setRows((prev) =>
+        prev.map((v) =>
+          v.id === editingId
+            ? {
+                ...v,
+                name: formData.name,
+                contact: formData.contact,
+                email: formData.email,
+                taxNumber: formData.taxNumber,
+                balance: Number(formData.balance) || 0,
+                billingName: formData.billingName,
+                billingPhone: formData.billingPhone,
+                billingAddress: formData.billingAddress,
+                billingCity: formData.billingCity,
+                billingState: formData.billingState,
+                billingCountry: formData.billingCountry,
+                billingZip: formData.billingZip,
+                shippingName: formData.shippingName,
+                shippingPhone: formData.shippingPhone,
+                shippingAddress: formData.shippingAddress,
+                shippingCity: formData.shippingCity,
+                shippingState: formData.shippingState,
+                shippingCountry: formData.shippingCountry,
+                shippingZip: formData.shippingZip,
+              }
+            : v,
+        ),
+      )
+    } else {
+      const nextIdNum = rows.length + 1
+      const newId = `VDR-${String(nextIdNum).padStart(3, '0')}`
+      const newRow: SupplierRow = {
+        id: newId,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.billingPhone || '',
+        contact: formData.contact,
+        balance: Number(formData.balance) || 0,
+        taxNumber: formData.taxNumber,
+        billingName: formData.billingName,
+        billingPhone: formData.billingPhone,
+        billingAddress: formData.billingAddress,
+        billingCity: formData.billingCity,
+        billingState: formData.billingState,
+        billingCountry: formData.billingCountry,
+        billingZip: formData.billingZip,
+        shippingName: formData.shippingName,
+        shippingPhone: formData.shippingPhone,
+        shippingAddress: formData.shippingAddress,
+        shippingCity: formData.shippingCity,
+        shippingState: formData.shippingState,
+        shippingCountry: formData.shippingCountry,
+        shippingZip: formData.shippingZip,
+      }
+      setRows((prev) => [newRow, ...prev])
+    }
+
+    handleDialogOpenChange(false)
   }
 
   // Filter data based on search
   const filteredData = useMemo(() => {
-    if (!search.trim()) return vendors
+    if (!search.trim()) return rows
     const q = search.trim().toLowerCase()
-    return vendors.filter(
+    return rows.filter(
       (vendor) =>
         vendor.name.toLowerCase().includes(q) ||
         vendor.id.toLowerCase().includes(q) ||
@@ -180,7 +266,7 @@ export function SupplierTab() {
         vendor.contact.toLowerCase().includes(q) ||
         vendor.phone.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, rows])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -195,25 +281,89 @@ export function SupplierTab() {
     setCurrentPage(1)
   }, [search])
 
+  const handleEdit = (vendor: SupplierRow) => {
+    setEditingId(vendor.id)
+    setFormData({
+      name: vendor.name,
+      contact: vendor.contact,
+      email: vendor.email,
+      taxNumber: vendor.taxNumber || '',
+      balance: String(vendor.balance ?? 0),
+      billingName: vendor.billingName || '',
+      billingPhone: vendor.billingPhone || '',
+      billingAddress: vendor.billingAddress || '',
+      billingCity: vendor.billingCity || '',
+      billingState: vendor.billingState || '',
+      billingCountry: vendor.billingCountry || '',
+      billingZip: vendor.billingZip || '',
+      shippingName: vendor.shippingName || '',
+      shippingPhone: vendor.shippingPhone || '',
+      shippingAddress: vendor.shippingAddress || '',
+      shippingCity: vendor.shippingCity || '',
+      shippingState: vendor.shippingState || '',
+      shippingCountry: vendor.shippingCountry || '',
+      shippingZip: vendor.shippingZip || '',
+    })
+    setCreateDialogOpen(true)
+  }
+
+  const handleDeleteClick = (vendor: SupplierRow) => {
+    setSupplierToDelete(vendor)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!supplierToDelete) return
+    setRows((prev) => prev.filter((v) => v.id !== supplierToDelete.id))
+    setSupplierToDelete(null)
+    setDeleteDialogOpen(false)
+  }
+
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="secondary" size="sm" className="shadow-none h-7 !bg-amber-600 hover:!bg-amber-700 !text-white !border-amber-600" title="Import">
-          <FileUp className="h-3 w-3" />
-        </Button>
-        <Button variant="secondary" size="sm" className="shadow-none h-7" title="Export">
-          <FileDown className="h-3 w-3" />
-        </Button>
-        <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="blue" size="sm" className="shadow-none h-7" title="Create">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">Supplier</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage suppliers and vendor contacts.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+            title="Import"
+          >
+            <FileUp className="mr-2 h-4 w-4" />
+            Import Supplier
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export Supplier
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button
+                variant="blue"
+                size="sm"
+                className="shadow-none h-7 px-4"
+                title="Create"
+                onClick={() => setEditingId(null)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Supplier
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[70vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Vendor</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Supplier' : 'Create New Vendor'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-6 py-4">
@@ -438,19 +588,20 @@ export function SupplierTab() {
                   Cancel
                 </Button>
                 <Button type="submit" variant="blue" className="shadow-none">
-                  Create
+                  {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search */}
       <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardContent className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative w-full md:w-56">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search suppliers..."
@@ -531,6 +682,7 @@ export function SupplierTab() {
                             size="sm"
                             className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
+                            onClick={() => handleEdit(vendor)}
                           >
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -539,6 +691,7 @@ export function SupplierTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
+                            onClick={() => handleDeleteClick(vendor)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -574,6 +727,24 @@ export function SupplierTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Supplier</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this supplier? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSupplierToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

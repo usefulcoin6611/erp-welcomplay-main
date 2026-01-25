@@ -7,7 +7,6 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
 
 // Lazy load tab components for better performance
 const ChartOfAccountTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.ChartOfAccountTab })))
@@ -122,27 +121,13 @@ export default function DoubleEntryPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Double Entry</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage chart of accounts, journal entries, ledgers, and financial reports
-                </p>
-              </div>
-            </div>
-
             {/* Smooth Tab Navigation with Animated Content */}
-            <Card>
-              <CardContent className="p-0">
-                <SmoothTab
-                  items={doubleEntryTabs}
-                  defaultTabId={activeTab}
-                  onChange={handleTabChange}
-                  activeColor="bg-white dark:bg-gray-700 shadow-xs"
-                />
-              </CardContent>
-            </Card>
+            <SmoothTab
+              items={doubleEntryTabs}
+              defaultTabId={activeTab}
+              onChange={handleTabChange}
+              activeColor="bg-white dark:bg-gray-700 shadow-xs"
+            />
           </div>
         </div>
       </SidebarInset>

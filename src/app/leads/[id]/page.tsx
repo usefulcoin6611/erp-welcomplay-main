@@ -51,11 +51,12 @@ const mockLeads = [
 ] as const
 
 interface LeadDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function LeadDetailPage({ params }: LeadDetailPageProps) {
-  const lead = mockLeads.find((l) => l.id === params.id) ?? mockLeads[0]
+export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
+  const { id } = await params
+  const lead = mockLeads.find((l) => l.id === id) ?? mockLeads[0]
 
   return (
     <SidebarProvider

@@ -51,11 +51,12 @@ const mockFields = [
 ] as const
 
 interface FormDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function FormDetailPage({ params }: FormDetailPageProps) {
-  const form = mockForms.find((f) => f.id === params.id) ?? mockForms[0]
+export default async function FormDetailPage({ params }: FormDetailPageProps) {
+  const { id } = await params
+  const form = mockForms.find((f) => f.id === id) ?? mockForms[0]
 
   return (
     <SidebarProvider
