@@ -16,6 +16,15 @@ const pageTitles: Record<string, string> = {
   '/coupons': 'Coupons',
   '/orders': 'Orders',
   '/email_template': 'Email Templates',
+  '/accounting/proposal': 'Penawaran',
+  '/contract': 'Kontrak',
+  '/projects': 'Proyek',
+  '/project_report': 'Project Report',
+  '/taskboard': 'Tugas',
+  '/bugs-report': 'Bug',
+  '/calendar': 'Task Calendar',
+  '/support': 'Sistem Dukungan',
+  '/deals': 'Deals',
 }
 
 export function SiteHeader() {

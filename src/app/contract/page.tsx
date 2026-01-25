@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from "next/link"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   SidebarInset,
   SidebarProvider,
@@ -229,15 +230,9 @@ export default function ContractPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Contracts</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage contracts and agreements
-                </p>
-              </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="flex items-center justify-end">
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
@@ -444,7 +439,7 @@ export default function ContractPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

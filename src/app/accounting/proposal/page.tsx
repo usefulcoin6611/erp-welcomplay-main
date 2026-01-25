@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { MainContentWrapper } from "@/components/main-content-wrapper"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -121,17 +122,11 @@ export default function ProposalPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Proposals</h1>
-                <p className="text-muted-foreground">
-                  Manage customer proposals before converting them to invoices.
-                </p>
-              </div>
-        <div className="flex gap-2">
+            <div className="flex items-center justify-end">
+              <div className="flex gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -355,8 +350,8 @@ export default function ProposalPage() {
           </Table>
         </CardContent>
       </Card>
-    </div>
-        </div>
+          </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
