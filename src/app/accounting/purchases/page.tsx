@@ -9,19 +9,20 @@ import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load tab components for better performance
-const SupplierTab = lazy(() => import('@/components/accounting-purchases').then(m => ({ default: m.SupplierTab })))
-const BillTab = lazy(() => import('@/components/accounting-purchases').then(m => ({ default: m.BillTab })))
-const ExpenseTab = lazy(() => import('@/components/accounting-purchases').then(m => ({ default: m.ExpenseTab })))
-const PaymentTab = lazy(() => import('@/components/accounting-purchases').then(m => ({ default: m.PaymentTab })))
-const DebitNoteTab = lazy(() => import('@/components/accounting-purchases').then(m => ({ default: m.DebitNoteTab })))
+// NOTE: Use direct imports (avoid barrel exports) to prevent Turbopack "Export X doesn't exist" errors
+const SupplierTab = lazy(() => import('@/components/accounting-purchases/supplier-tab').then(m => ({ default: m.SupplierTab })))
+const BillTab = lazy(() => import('@/components/accounting-purchases/bill-tab').then(m => ({ default: m.BillTab })))
+const ExpenseTab = lazy(() => import('@/components/accounting-purchases/expense-tab').then(m => ({ default: m.ExpenseTab })))
+const PaymentTab = lazy(() => import('@/components/accounting-purchases/payment-tab').then(m => ({ default: m.PaymentTab })))
+const DebitNoteTab = lazy(() => import('@/components/accounting-purchases/debit-note-tab').then(m => ({ default: m.DebitNoteTab })))
 
 // Preload tab modules on hover/focus
 const preloadTab = {
-  'supplier': () => import('@/components/accounting-purchases'),
-  'bill': () => import('@/components/accounting-purchases'),
-  'expense': () => import('@/components/accounting-purchases'),
-  'payment': () => import('@/components/accounting-purchases'),
-  'debit-note': () => import('@/components/accounting-purchases'),
+  'supplier': () => import('@/components/accounting-purchases/supplier-tab'),
+  'bill': () => import('@/components/accounting-purchases/bill-tab'),
+  'expense': () => import('@/components/accounting-purchases/expense-tab'),
+  'payment': () => import('@/components/accounting-purchases/payment-tab'),
+  'debit-note': () => import('@/components/accounting-purchases/debit-note-tab'),
 }
 
 // Loading fallback component

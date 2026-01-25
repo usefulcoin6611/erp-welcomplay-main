@@ -204,8 +204,9 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
                 title: "Attendance Setup", 
                 url: "#",
                 items: [
-                  { title: "Mark Attendance", url: "/hrm/attendance/mark" },
-                  { title: "Bulk Attendance", url: "/hrm/attendance/bulk" },
+                  // Attendance pages live under /hrm/leave tabs in this project
+                  { title: "Mark Attendance", url: "/hrm/leave?tab=mark-attendance" },
+                  { title: "Bulk Attendance", url: "/hrm/leave?tab=bulk-attendance" },
                 ],
               },
               { 

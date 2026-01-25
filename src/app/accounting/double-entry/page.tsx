@@ -9,12 +9,13 @@ import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load tab components for better performance
-const ChartOfAccountTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.ChartOfAccountTab })))
-const JournalEntryTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.JournalEntryTab })))
-const LedgerTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.LedgerTab })))
-const BalanceSheetTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.BalanceSheetTab })))
-const ProfitLossTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.ProfitLossTab })))
-const TrialBalanceTab = lazy(() => import('@/components/accounting-double-entry').then(m => ({ default: m.TrialBalanceTab })))
+// NOTE: Use direct imports (avoid barrel exports) to prevent Turbopack "Export X doesn't exist" errors
+const ChartOfAccountTab = lazy(() => import('@/components/accounting-double-entry/chart-of-account-tab').then(m => ({ default: m.ChartOfAccountTab })))
+const JournalEntryTab = lazy(() => import('@/components/accounting-double-entry/journal-entry-tab').then(m => ({ default: m.JournalEntryTab })))
+const LedgerTab = lazy(() => import('@/components/accounting-double-entry/ledger-tab').then(m => ({ default: m.LedgerTab })))
+const BalanceSheetTab = lazy(() => import('@/components/accounting-double-entry/balance-sheet-tab').then(m => ({ default: m.BalanceSheetTab })))
+const ProfitLossTab = lazy(() => import('@/components/accounting-double-entry/profit-loss-tab').then(m => ({ default: m.ProfitLossTab })))
+const TrialBalanceTab = lazy(() => import('@/components/accounting-double-entry/trial-balance-tab').then(m => ({ default: m.TrialBalanceTab })))
 
 // Loading fallback component
 const TabLoadingSkeleton = () => (

@@ -9,19 +9,20 @@ import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Lazy load tab components for better performance
-const CustomerTab = lazy(() => import('@/components/accounting-sales').then(m => ({ default: m.CustomerTab })))
-const EstimateTab = lazy(() => import('@/components/accounting-sales').then(m => ({ default: m.EstimateTab })))
-const InvoiceTab = lazy(() => import('@/components/accounting-sales').then(m => ({ default: m.InvoiceTab })))
-const RevenueTab = lazy(() => import('@/components/accounting-sales').then(m => ({ default: m.RevenueTab })))
-const CreditNoteTab = lazy(() => import('@/components/accounting-sales').then(m => ({ default: m.CreditNoteTab })))
+// NOTE: Use direct imports (avoid barrel exports) to prevent Turbopack "Export X doesn't exist" errors
+const CustomerTab = lazy(() => import('@/components/accounting-sales/customer-tab').then(m => ({ default: m.CustomerTab })))
+const EstimateTab = lazy(() => import('@/components/accounting-sales/estimate-tab').then(m => ({ default: m.EstimateTab })))
+const InvoiceTab = lazy(() => import('@/components/accounting-sales/invoice-tab').then(m => ({ default: m.InvoiceTab })))
+const RevenueTab = lazy(() => import('@/components/accounting-sales/revenue-tab').then(m => ({ default: m.RevenueTab })))
+const CreditNoteTab = lazy(() => import('@/components/accounting-sales/credit-note-tab').then(m => ({ default: m.CreditNoteTab })))
 
 // Preload tab modules on hover/focus
 const preloadTab = {
-  'customer': () => import('@/components/accounting-sales'),
-  'estimate': () => import('@/components/accounting-sales'),
-  'invoice': () => import('@/components/accounting-sales'),
-  'revenue': () => import('@/components/accounting-sales'),
-  'credit-note': () => import('@/components/accounting-sales'),
+  'customer': () => import('@/components/accounting-sales/customer-tab'),
+  'estimate': () => import('@/components/accounting-sales/estimate-tab'),
+  'invoice': () => import('@/components/accounting-sales/invoice-tab'),
+  'revenue': () => import('@/components/accounting-sales/revenue-tab'),
+  'credit-note': () => import('@/components/accounting-sales/credit-note-tab'),
 }
 
 // Loading fallback component
