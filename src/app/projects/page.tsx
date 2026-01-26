@@ -346,7 +346,7 @@ export default function ProjectsPage() {
                                     </span>
                                   </div>
                                   <Link
-                                    href={`/projects/${project.id}`}
+                                    href={`/projects/project/${project.id}`}
                                     className="text-sm font-medium text-primary hover:underline"
                                   >
                                     {project.name}
@@ -400,7 +400,7 @@ export default function ProjectsPage() {
                                   title="View"
                                   asChild
                                 >
-                                  <Link href={`/projects/${project.id}`}>
+                                  <Link href={`/projects/project/${project.id}`}>
                                     <IconEye className="h-3 w-3" />
                                   </Link>
                                 </Button>
@@ -448,7 +448,7 @@ export default function ProjectsPage() {
                               </span>
                             </div>
                             <Link
-                              href={`/projects/${project.id}`}
+                              href={`/projects/project/${project.id}`}
                               className="text-sm font-semibold text-primary hover:underline truncate"
                             >
                               {project.name}

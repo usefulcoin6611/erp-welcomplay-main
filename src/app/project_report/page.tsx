@@ -379,7 +379,7 @@ export default function ProjectReportPage() {
                             <TableCell className="px-4 py-3">
                               <div className="flex items-center">
                                 <Link
-                                  href={`/projects/${project.id}`}
+                                  href={`/project_report/${project.id}`}
                                   className="text-sm font-medium text-primary hover:underline"
                                 >
                                   {project.name}
