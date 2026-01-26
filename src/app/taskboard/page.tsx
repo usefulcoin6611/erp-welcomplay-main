@@ -499,11 +499,13 @@ export default function TaskboardPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
+            {/* Task List */}
+            <Card>
+              <CardContent className="p-0">
+                {/* Title and Search - Top */}
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">Task List</CardTitle>
+                  <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search by Name"
@@ -523,26 +525,17 @@ export default function TaskboardPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Task List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Task List</CardTitle>
-              </CardHeader>
-              <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Stage</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Assigned To</TableHead>
-                        <TableHead>Completion</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Name</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Stage</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Priority</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Assigned To</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Completion</TableHead>
+                        <TableHead className="px-4 py-3 font-medium"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -551,16 +544,16 @@ export default function TaskboardPage() {
                           const dateInfo = formatDate(task.endDate)
                           return (
                             <TableRow key={task.id}>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="space-y-1">
                                   <Link
                                     href={`/projects/${task.projectId}/tasks/${task.id}`}
-                                    className="text-sm font-semibold text-primary hover:underline block"
+                                    className="text-sm font-medium text-primary hover:underline block"
                                   >
                                     {task.name}
                                   </Link>
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs text-muted-foreground m-0">
+                                    <p className="text-xs text-muted-foreground m-0 font-normal">
                                       {task.projectName}
                                     </p>
                                     {task.isOwner !== undefined && (
@@ -577,24 +570,24 @@ export default function TaskboardPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <span className="text-sm">{task.stage}</span>
+                              <TableCell className="px-4 py-3">
+                                <span className="text-sm font-normal">{task.stage}</span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Badge className={getPriorityClasses(task.priority)}>
                                   {priorityMap[task.priority]?.label || task.priority}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <span
-                                  className={`text-sm ${
-                                    dateInfo.isOverdue ? "text-red-600 font-medium" : ""
+                                  className={`text-sm font-normal ${
+                                    dateInfo.isOverdue ? "text-red-600" : ""
                                   }`}
                                 >
                                   {dateInfo.formatted}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex -space-x-2">
                                   {task.assignedTo.slice(0, 3).map((user, idx) => (
                                     <Avatar
@@ -615,9 +608,9 @@ export default function TaskboardPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="space-y-1">
-                                  <span className="text-sm font-medium">
+                                  <span className="text-sm font-normal">
                                     {task.completion}%
                                   </span>
                                   <div className="h-2 w-full rounded-full bg-slate-100">
@@ -630,7 +623,7 @@ export default function TaskboardPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center gap-3 justify-end">
                                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <IconPaperclip className="h-4 w-4" />
@@ -660,7 +653,7 @@ export default function TaskboardPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-4 py-3 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}

@@ -300,11 +300,13 @@ export default function BugsReportPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
+            {/* Bug List */}
+            <Card>
+              <CardContent className="p-0">
+                {/* Title and Search - Top */}
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">Bug Report List</CardTitle>
+                  <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search bugs..."
@@ -324,26 +326,17 @@ export default function BugsReportPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Bug List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Bug Report List</CardTitle>
-              </CardHeader>
-              <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Bug Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Created By</TableHead>
-                        <TableHead>Assigned To</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Name</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Bug Status</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Priority</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Created By</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Assigned To</TableHead>
+                        <TableHead className="px-4 py-3 font-medium"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -352,16 +345,16 @@ export default function BugsReportPage() {
                           const dateInfo = formatDate(bug.dueDate)
                           return (
                             <TableRow key={bug.id}>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="space-y-1">
                                   <Link
                                     href={`/projects/${bug.projectId}/bugs/${bug.id}`}
-                                    className="text-sm font-semibold text-primary hover:underline block"
+                                    className="text-sm font-medium text-primary hover:underline block"
                                   >
                                     {bug.title}
                                   </Link>
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs text-muted-foreground m-0">
+                                    <p className="text-xs text-muted-foreground m-0 font-normal">
                                       {bug.projectName}
                                     </p>
                                     {bug.isOwner !== undefined && (
@@ -378,31 +371,31 @@ export default function BugsReportPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Badge className={getBugStatusClasses(bug.bugStatus)}>
                                   {bug.bugStatus}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Badge className={getPriorityClasses(bug.priority)}>
                                   {priorityMap[bug.priority]?.label || bug.priority}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <span
-                                  className={`text-sm ${
-                                    dateInfo.isOverdue ? "text-red-600 font-medium" : ""
+                                  className={`text-sm font-normal ${
+                                    dateInfo.isOverdue ? "text-red-600" : ""
                                   }`}
                                 >
                                   {dateInfo.formatted}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center">
-                                  <span className="text-sm">{bug.createdBy}</span>
+                                  <span className="text-sm font-normal">{bug.createdBy}</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex -space-x-2">
                                   {bug.assignedTo.slice(0, 3).map((user, idx) => (
                                     <Avatar
@@ -426,7 +419,7 @@ export default function BugsReportPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center gap-3 justify-end">
                                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <IconPaperclip className="h-4 w-4" />
@@ -452,7 +445,7 @@ export default function BugsReportPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-4 py-3 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}

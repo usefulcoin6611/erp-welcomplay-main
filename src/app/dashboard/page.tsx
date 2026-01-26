@@ -295,20 +295,20 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                   {/* Total Deals */}
                   <Card className="rounded-lg md:col-span-3 bg-pink-50 border-0 relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-20 h-20 bg-pink-100 rounded-tl-full opacity-50"></div>
-                    <CardContent className="p-2.5 relative">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center shadow-sm">
-                            <IconRocket className="w-4 h-4 text-pink-600" />
+                    <div className="absolute bottom-0 right-0 w-24 h-24 bg-pink-100 rounded-tl-full opacity-50"></div>
+                    <CardContent className="p-3 relative">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                            <IconRocket className="w-5 h-5 text-pink-600" />
                           </div>
                           <div>
-                            <p className="text-xs text-gray-700 font-medium mb-0.5">Total</p>
+                            <p className="text-xs text-gray-600 font-medium mb-0.5">Total</p>
                             <h3 className="text-base font-semibold text-gray-900">Deal</h3>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-lg font-semibold text-gray-900">{dashboardData.stats.totalDeals}</span>
+                          <span className="text-xl font-bold text-gray-900">{dashboardData.stats.totalDeals}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -316,20 +316,20 @@ export default function DashboardPage() {
 
                   {/* Total Tasks */}
                   <Card className="rounded-lg md:col-span-3 bg-green-50 border-0 relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-20 h-20 bg-green-100 rounded-tl-full opacity-50"></div>
-                    <CardContent className="p-2.5 relative">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center shadow-sm">
-                            <IconListCheck className="w-4 h-4 text-green-600" />
+                    <div className="absolute bottom-0 right-0 w-24 h-24 bg-green-100 rounded-tl-full opacity-50"></div>
+                    <CardContent className="p-3 relative">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                            <IconListCheck className="w-5 h-5 text-green-600" />
                           </div>
                           <div>
-                            <p className="text-xs text-gray-700 font-medium mb-0.5">Total</p>
+                            <p className="text-xs text-gray-600 font-medium mb-0.5">Total</p>
                             <h3 className="text-base font-semibold text-gray-900">Deal Task</h3>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-lg font-semibold text-gray-900">{dashboardData.stats.totalTasks}</span>
+                          <span className="text-xl font-bold text-gray-900">{dashboardData.stats.totalTasks}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -400,55 +400,65 @@ export default function DashboardPage() {
 
                   {/* Project Status Chart - 4 columns */}
                   <Card className="rounded-lg lg:col-span-4 border-0">
-                    <CardHeader className="p-3 pb-2">
-                      <div className="flex items-center justify-between">
+                    <CardHeader className="pb-2 px-3 py-2">
+                      <div className="flex items-center justify-between w-full">
                         <CardTitle className="text-sm font-medium text-gray-900">Project Status</CardTitle>
-                        <span className="text-xs text-gray-500">2026</span>
+                        <span className="text-xs text-gray-500">Year - 2026</span>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <Chart
-                        options={{
-                          ...projectStatusOptions,
-                          chart: {
-                            ...projectStatusOptions.chart,
-                            height: 200,
-                          },
-                          colors: ['#fbbf24', '#60a5fa', '#f87171', '#34d399'],
-                          legend: {
-                            show: true,
-                            position: 'bottom',
-                            fontSize: '11px',
-                            fontFamily: 'inherit',
-                            labels: { colors: '#6b7280' },
-                            itemMargin: {
-                              horizontal: 6,
-                              vertical: 3,
-                            },
-                            markers: {
-                              width: 8,
-                              height: 8,
-                              radius: 4,
-                            },
-                          },
-                        }}
-                        series={dashboardData.projectStatus.series}
-                        type="donut"
-                        height={200}
-                      />
+                    <CardContent className="px-3 pb-3 pt-0">
+                      <div className="flex items-center gap-3 py-1">
+                        {/* Donut Chart - Left side */}
+                        <div className="flex-shrink-0 w-[200px] h-[200px]">
+                          <Chart
+                            options={{
+                              ...projectStatusOptions,
+                              chart: {
+                                ...projectStatusOptions.chart,
+                                height: 200,
+                                width: 200,
+                              },
+                              colors: ['#fbbf24', '#60a5fa', '#f87171', '#34d399'],
+                              legend: {
+                                show: false,
+                              },
+                            }}
+                            series={dashboardData.projectStatus.series}
+                            type="donut"
+                            height={200}
+                            width={200}
+                          />
+                        </div>
+                        
+                        {/* Custom Legend - Right side */}
+                        <div className="flex flex-col gap-2.5 flex-1 ml-auto">
+                          {dashboardData.projectStatus.labels.map((label, index) => {
+                            const colors = ['#fbbf24', '#60a5fa', '#f87171', '#34d399']
+                            return (
+                              <div key={index} className="flex items-center gap-2.5">
+                                <div 
+                                  className="w-4 h-4 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: colors[index] }}
+                                />
+                                <span className="text-sm text-gray-700 font-medium">{label}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Tasks Overview - Full Width */}
                 <Card className="rounded-lg border-0">
-                  <CardHeader className="p-3 pb-2">
-                    <div className="flex items-center justify-between">
+                  <CardHeader className="pb-2 px-3 py-2">
+                    <div className="flex items-center justify-between w-full">
                       <CardTitle className="text-sm font-medium text-gray-900">Tasks Overview</CardTitle>
                       <span className="text-xs text-gray-500">Last 7 Days</span>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-3 pt-0">
+                  <CardContent className="px-3 pb-3 pt-0">
                     <Chart
                       options={{
                         ...tasksChartOptions,

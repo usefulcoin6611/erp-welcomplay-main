@@ -458,13 +458,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             icon: IconHeadphones,
           },
         ],
-        navSecondary: [
-          {
-            title: "Settings",
-            url: "/settings",
-            icon: IconSettings,
-          },
-        ],
+        navSecondary: [],
       }
 
     case 'employee':

@@ -314,11 +314,13 @@ export default function ContractPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
+            {/* Contract List */}
+            <Card>
+              <CardContent className="p-0">
+                {/* Title and Search - Top */}
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">Contract List</CardTitle>
+                  <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search contracts..."
@@ -338,34 +340,26 @@ export default function ContractPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Contract List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead>Contract Type</TableHead>
-                      <TableHead>Contract Value</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">#</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Subject</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Client</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Project</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Contract Type</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Contract Value</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Start Date</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedData.length > 0 ? (
                       paginatedData.map((contract) => (
                         <TableRow key={contract.id}>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <Button
                               asChild
                               variant="outline"
@@ -377,28 +371,28 @@ export default function ContractPage() {
                               </Link>
                             </Button>
                           </TableCell>
-                          <TableCell className="font-medium">
+                          <TableCell className="px-4 py-3 font-normal">
                             {contract.subject}
                           </TableCell>
-                          <TableCell>{contract.client}</TableCell>
-                          <TableCell>{contract.project}</TableCell>
-                          <TableCell>{contract.type}</TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3 font-normal">{contract.client}</TableCell>
+                          <TableCell className="px-4 py-3 font-normal">{contract.project}</TableCell>
+                          <TableCell className="px-4 py-3 font-normal">{contract.type}</TableCell>
+                          <TableCell className="px-4 py-3 font-normal">
                             Rp {contract.value.toLocaleString()}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm">
+                          <TableCell className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-sm font-normal">
                               <IconCalendar className="h-3 w-3" />
                               <span>{contract.startDate}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm">
+                          <TableCell className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-sm font-normal">
                               <IconCalendar className="h-3 w-3" />
                               <span>{contract.endDate}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <Button
                               variant="secondary"
                               size="sm"
@@ -422,8 +416,9 @@ export default function ContractPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-4 py-3 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}

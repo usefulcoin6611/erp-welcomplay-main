@@ -546,33 +546,6 @@ export default function SupportPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search support tickets..."
-                      value={search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                    />
-                    {search.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                        onClick={() => handleSearchChange('')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Total Tickets */}
@@ -639,18 +612,40 @@ export default function SupportPage() {
             {/* Support Table */}
             <Card>
               <CardContent className="p-0">
+                {/* Search - Top Right */}
+                <div className="px-4 py-3 border-b flex items-center justify-end">
+                  <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search support tickets..."
+                      value={search}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        onClick={() => handleSearchChange('')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3">Created By</TableHead>
-                        <TableHead className="px-4 py-3">Ticket</TableHead>
-                        <TableHead className="px-4 py-3">Code</TableHead>
-                        <TableHead className="px-4 py-3">Attachment</TableHead>
-                        <TableHead className="px-4 py-3">Assign User</TableHead>
-                        <TableHead className="px-4 py-3">Status</TableHead>
-                        <TableHead className="px-4 py-3">Created At</TableHead>
-                        <TableHead className="px-4 py-3">Action</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Created By</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Ticket</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Code</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Attachment</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Assign User</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Status</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Created At</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -670,14 +665,14 @@ export default function SupportPage() {
                                   <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-background" />
                                 )}
                               </div>
-                              <span className="text-sm">{support.created_by.name}</span>
+                              <span className="text-sm font-normal">{support.created_by.name}</span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div>
                               <a
                                 href="#"
-                                className="font-semibold text-sm hover:underline mb-1 block"
+                                className="font-normal text-sm hover:underline mb-1 block"
                               >
                                 {support.subject}
                               </a>
@@ -686,7 +681,7 @@ export default function SupportPage() {
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">
+                          <TableCell className="font-mono text-sm font-normal">
                             {support.ticket_code}
                           </TableCell>
                           <TableCell>
@@ -703,13 +698,13 @@ export default function SupportPage() {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
-                          <TableCell>{support.assign_user || '-'}</TableCell>
+                          <TableCell className="font-normal">{support.assign_user || '-'}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(support.status)}>
                               {support.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{formatDate(support.created_at)}</TableCell>
+                          <TableCell className="font-normal">{formatDate(support.created_at)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Button
