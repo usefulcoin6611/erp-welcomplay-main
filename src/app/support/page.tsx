@@ -401,7 +401,7 @@ export default function SupportPage() {
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="blue" className="shadow-none h-7">
-                      <Plus className="mr-2 h-4 w-4" /> Create
+                      <Plus className="mr-2 h-3 w-3" /> Add Support
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

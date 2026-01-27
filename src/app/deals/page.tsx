@@ -133,7 +133,8 @@ export default function DealsPage() {
                   </Button>
                   <DialogTrigger asChild>
                     <Button variant="blue" size="sm" className="shadow-none h-7">
-                      <IconPlus className="h-3 w-3" />
+                      <IconPlus className="h-3 w-3 mr-2" />
+                      Add Deal
                     </Button>
                   </DialogTrigger>
                 </div>

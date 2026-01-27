@@ -7,8 +7,8 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { AttendanceClock } from '@/components/attendance-clock'
 import { EventCalendar } from '@/components/event-calendar'
-import { StatsCards } from '@/components/stats-cards'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { AnnouncementList } from '@/components/announcement-list'
 import MeetingSchedule from '@/components/meeting-schedule'
 import { useAuth } from '@/contexts/auth-context'
@@ -29,39 +29,24 @@ export default function HrmDashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            {/* Attendance / Mark Attendance (Employee only) */}
-            {isEmployee ? (
-              <div className="grid gap-4">
-                <AttendanceClock />
-              </div>
-            ) : null}
-            
-            {/* Main Content Grid */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Left Column - Calendar */}
-              <div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            {/* Main 2-column layout: Mark Attendance + Event (left), Announcement + Meeting (right) */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Left: Mark Attendance + Event calendar (same width as Event card) */}
+              <div className="space-y-4">
+                {isEmployee ? <AttendanceClock /> : null}
                 <EventCalendar />
               </div>
-              
-              {/* Right Column - Stats */}
+
+              {/* Right: Announcement list + Meeting list */}
               <div className="space-y-4">
-                <StatsCards />
-              </div>
-            </div>
-            
-            {/* Bottom Section - Announcement / Teams widget */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
                 <AnnouncementList compact />
-              </div>
-              <div>
                 <MeetingSchedule compact />
               </div>
             </div>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   );

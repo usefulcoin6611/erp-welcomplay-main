@@ -127,15 +127,6 @@ export function AttendanceClock({
     })
   }
 
-  const getGreeting = () => {
-    if (!currentTime) return t('greeting.welcome')
-    const hour = currentTime.getHours()
-    if (hour < 12) return t('greeting.morning')
-    if (hour < 15) return t('greeting.afternoon')
-    if (hour < 18) return t('greeting.evening')
-    return t('greeting.night')
-  }
-
   const displayName = authUser?.name || user.name
   const displayAvatar = authUser?.avatar || user.avatar
   const isEmployee = authUser?.type === 'employee'
@@ -173,38 +164,124 @@ export function AttendanceClock({
     persistAttendance(next)
   }
 
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {/* Main Clock Card */}
-      <Card className={isEmployee ? "md:col-span-2" : "col-span-1"}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            {t('title')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Time Display */}
-          <div className="text-center space-y-2">
-            <div className="text-3xl font-bold text-primary">
-              {isMounted && currentTime ? formatTime(currentTime) : "--:--:--"}
+  // Layout ringkas & simpel untuk sisi employee
+  if (isEmployee) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b bg-gradient-to-r from-blue-50/80 to-indigo-50/60">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white">
+              <Clock className="h-4 w-4" />
             </div>
-            <div className="text-sm text-muted-foreground">
-              {isMounted && currentTime ? formatDate(currentTime) : "Loading..."}
+            <CardTitle className="text-sm font-medium">
+              {t('title')}
+            </CardTitle>
+          </div>
+          <Badge
+            variant="outline"
+            className={
+              attendance.clockOutTime
+                ? "bg-gray-50 text-gray-700 border-gray-100"
+                : attendance.isClockIn
+                  ? "bg-green-50 text-green-700 border-green-100"
+                  : "bg-blue-50 text-blue-700 border-blue-100"
+            }
+          >
+            {attendance.clockOutTime ? 'Checked out' : attendance.isClockIn ? 'Checked in' : 'Ready'}
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-2">
+          {/* Baris jam & tanggal */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-3xl font-semibold tracking-tight text-primary">
+                {isMounted && currentTime ? formatTime(currentTime) : "--:--:--"}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {isMounted && currentTime ? formatDate(currentTime) : "Loading..."}
+              </div>
+            </div>
+            <div className="grid gap-2 text-xs">
+              <div className="rounded-md bg-muted/60 px-3 py-1.5">
+                <div className="text-muted-foreground">{t('clockInTime')}</div>
+                <div className="mt-0.5 font-medium text-sm">
+                  {attendance.clockInTime || '-'}
+                </div>
+              </div>
+              <div className="rounded-md bg-muted/60 px-3 py-1.5">
+                <div className="text-muted-foreground">{t('clockOutTime')}</div>
+                <div className="mt-0.5 font-medium text-sm">
+                  {attendance.clockOutTime || '-'}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* User Info */}
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={displayAvatar} alt={displayName} />
-              <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="font-medium">{getGreeting()}, {displayName}!</div>
-              <div className="text-sm text-muted-foreground">
-                {attendance.clockInTime || attendance.isClockIn ? t('clockedIn') : t('notClockedIn')}
+          {/* Status singkat + tombol utama */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-2 border-t pt-3">
+            <div className="text-xs text-muted-foreground">
+              {attendance.isClockIn && !attendance.clockOutTime
+                ? t('statusWorking')
+                : attendance.clockOutTime
+                  ? t('statusCompleted')
+                  : t('statusReady')}
+            </div>
+            <div className="flex w-full sm:w-auto justify-end">
+              {!attendance.isClockIn && !attendance.clockOutTime ? (
+                <Button
+                  type="button"
+                  variant="blue"
+                  size="sm"
+                  className="h-8 px-6 shadow-none text-xs font-semibold uppercase tracking-wide w-full sm:w-auto sm:min-w-[140px]"
+                  onClick={handleClockIn}
+                >
+                  {t('clockIn')}
+                </Button>
+              ) : !attendance.clockOutTime ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-6 shadow-none text-xs font-semibold uppercase tracking-wide w-full sm:w-auto sm:min-w-[140px] bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                  onClick={handleClockOut}
+                >
+                  {t('clockOut')}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-4 shadow-none text-xs font-medium w-full sm:w-auto sm:min-w-[120px] bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                  onClick={() => {
+                    const next: AttendanceState = { date: todayKey || '', isClockIn: false }
+                    setAttendance(next)
+                    persistAttendance(next)
+                  }}
+                >
+                  Reset
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {/* Main Clock Card - hanya untuk non-employee (admin/HR) */}
+      <Card className="col-span-1">
+        <CardHeader className="pb-3 border-b bg-gradient-to-r from-blue-50/80 to-indigo-50/60">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white">
+                <Clock className="h-4 w-4" />
               </div>
+              <CardTitle className="text-sm font-medium">
+                {t('title')}
+              </CardTitle>
             </div>
             {isEmployee && (
               <Badge
@@ -221,59 +298,71 @@ export function AttendanceClock({
               </Badge>
             )}
           </div>
-
-          {/* Clock Status */}
-          {(attendance.clockInTime || attendance.clockOutTime || attendance.isClockIn) && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-muted-foreground">{t('clockInTime')}</div>
-                <div className="font-medium">{attendance.clockInTime || '-'}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">{t('clockOutTime')}</div>
-                <div className="font-medium">{attendance.clockOutTime || '-'}</div>
+        </CardHeader>
+        <CardContent className="space-y-5 pt-4">
+          {/* Clock Status - selalu terlihat */}
+          <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/40 px-3 py-2 text-xs">
+            <div>
+              <div className="text-muted-foreground">{t('clockInTime')}</div>
+              <div className="mt-0.5 font-medium text-sm">
+                {attendance.clockInTime || '-'}
               </div>
             </div>
-          )}
+            <div>
+              <div className="text-muted-foreground">{t('clockOutTime')}</div>
+              <div className="mt-0.5 font-medium text-sm">
+                {attendance.clockOutTime || '-'}
+              </div>
+            </div>
+          </div>
 
           {/* Mark Attendance (Employee only) */}
           {isEmployee && (
-            <div className="flex flex-wrap gap-2">
-              {!attendance.isClockIn && !attendance.clockOutTime ? (
-                <Button
-                  type="button"
-                  variant="blue"
-                  size="sm"
-                  className="shadow-none h-7 px-4"
-                  onClick={handleClockIn}
-                >
-                  {t('clockIn')}
-                </Button>
-              ) : attendance.isClockIn && !attendance.clockOutTime ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shadow-none h-7 px-4 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                  onClick={handleClockOut}
-                >
-                  {t('clockOut')}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-                  onClick={() => {
-                    const next: AttendanceState = { date: todayKey || '', isClockIn: false }
-                    setAttendance(next)
-                    persistAttendance(next)
-                  }}
-                >
-                  Reset
-                </Button>
-              )}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-muted-foreground">
+                {attendance.isClockIn && !attendance.clockOutTime
+                  ? t('statusWorking')
+                  : attendance.clockOutTime
+                    ? t('statusCompleted')
+                    : t('statusReady')}
+              </div>
+              <div className="flex flex-1 flex-wrap gap-2 sm:justify-end">
+                {!attendance.isClockIn && !attendance.clockOutTime ? (
+                  <Button
+                    type="button"
+                    variant="blue"
+                    size="sm"
+                    className="h-8 px-5 shadow-none text-xs font-semibold uppercase tracking-wide sm:min-w-[120px]"
+                    onClick={handleClockIn}
+                  >
+                    {t('clockIn')}
+                  </Button>
+                ) : attendance.isClockIn && !attendance.clockOutTime ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-5 shadow-none text-xs font-semibold uppercase tracking-wide bg-red-50 text-red-700 hover:bg-red-100 border-red-100 sm:min-w-[120px]"
+                    onClick={handleClockOut}
+                  >
+                    {t('clockOut')}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-4 shadow-none text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100 sm:min-w-[100px]"
+                    onClick={() => {
+                      const next: AttendanceState = { date: todayKey || '', isClockIn: false }
+                      setAttendance(next)
+                      persistAttendance(next)
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

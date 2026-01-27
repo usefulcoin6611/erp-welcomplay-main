@@ -245,7 +245,7 @@ export default function ContractPage() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="blue" size="sm" className="shadow-none h-7">
-                      <IconPlus className="mr-2 h-4 w-4" /> Create
+                      <IconPlus className="mr-2 h-3 w-3" /> Add Contract
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[560px]">

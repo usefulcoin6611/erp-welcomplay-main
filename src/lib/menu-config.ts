@@ -547,8 +547,6 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             url: "/support",
             icon: IconHeadphones,
           },
-        ],
-        navSecondary: [
           {
             title: "Messenger",
             url: "/messenger",
@@ -560,6 +558,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             icon: IconVideo,
           },
         ],
+        navSecondary: [],
       }
 
     default:
