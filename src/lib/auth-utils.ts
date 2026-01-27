@@ -17,7 +17,7 @@ export function getRedirectPathByRole(role: UserRole): string {
     case 'client':
       return '/dashboard'
     case 'employee':
-      return '/employee-dashboard'
+      return '/hrm-dashboard'
     default:
       return '/dashboard'
   }
