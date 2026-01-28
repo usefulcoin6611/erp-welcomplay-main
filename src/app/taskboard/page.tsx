@@ -366,27 +366,36 @@ export default function TaskboardPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <div className="flex items-center justify-end">
               <div className="flex gap-2">
-                {view === "list" ? (
+                <div className="inline-flex rounded-md bg-muted p-0.5">
                   <Button
-                    variant="secondary"
+                    type="button"
                     size="sm"
-                    className="shadow-none h-7"
-                    title="Grid View"
-                    onClick={() => setView("grid")}
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="List View"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      view === "list"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
                     onClick={() => setView("list")}
+                    title="List view"
                   >
                     <IconList className="h-3 w-3" />
                   </Button>
-                )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      view === "grid"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
+                    onClick={() => setView("grid")}
+                    title="Grid view"
+                  >
+                    <IconLayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -499,7 +508,8 @@ export default function TaskboardPage() {
               </div>
             </div>
 
-            {/* Task List */}
+            {/* Task List / Grid */}
+            {view === "list" ? (
             <Card>
               <CardContent className="p-0">
                 {/* Title and Search - Top */}
@@ -668,6 +678,123 @@ export default function TaskboardPage() {
                 )}
               </CardContent>
             </Card>
+            ) : (
+              /* Grid view: satu card per task */
+              <>
+                <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
+                  <CardTitle className="text-base font-medium mb-0">Task List</CardTitle>
+                  <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by Name"
+                      value={search}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        onClick={() => handleSearchChange('')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((task) => {
+                      const dateInfo = formatDate(task.endDate)
+                      return (
+                        <Card key={task.id} className="flex flex-col h-full">
+                          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 p-3">
+                            <CardTitle className="text-sm font-medium mb-0">
+                              <Link
+                                href={`/projects/${task.projectId}/tasks/${task.id}`}
+                                className="hover:underline text-primary"
+                              >
+                                {task.name}
+                              </Link>
+                            </CardTitle>
+                            {task.isOwner !== undefined && (
+                              <Badge
+                                className={
+                                  task.isOwner
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-yellow-100 text-yellow-700"
+                                }
+                              >
+                                {task.isOwner ? "Owner" : "Member"}
+                              </Badge>
+                            )}
+                          </CardHeader>
+                          <CardContent className="flex-1 p-3 pt-0 space-y-2">
+                            <p className="text-xs text-muted-foreground m-0 line-clamp-2">{task.projectName}</p>
+                            <div className="flex flex-wrap gap-1">
+                              <Badge className={getPriorityClasses(task.priority)}>
+                                {priorityMap[task.priority]?.label || task.priority}
+                              </Badge>
+                              <span className="text-xs font-normal">{task.stage}</span>
+                            </div>
+                            <div>
+                              <span
+                                className={`text-xs ${dateInfo.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}
+                              >
+                                Due: {dateInfo.formatted}
+                              </span>
+                            </div>
+                            <div className="flex -space-x-2">
+                              {task.assignedTo.slice(0, 3).map((user, idx) => (
+                                <Avatar key={idx} className="h-6 w-6 border-2 border-white">
+                                  <AvatarFallback className="text-[10px]">{user.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              ))}
+                              {task.assignedTo.length > 3 && (
+                                <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                  <span className="text-[10px] font-medium">+{task.assignedTo.length - 3}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="h-2 w-full rounded-full bg-slate-100">
+                              <div
+                                className={`h-2 rounded-full ${getCompletionColor(task.completion)}`}
+                                style={{ width: `${task.completion}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{task.completion}%</span>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span><IconPaperclip className="h-3 w-3 inline mr-0.5" />{task.attachments}</span>
+                              <span><IconMessageCircle className="h-3 w-3 inline mr-0.5" />{task.comments}</span>
+                              <span><IconListCheck className="h-3 w-3 inline mr-0.5" />{task.checklists}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })
+                  ) : (
+                    <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
+                      No tasks found
+                    </div>
+                  )}
+                </div>
+                {totalRecords > 0 && (
+                  <div className="mt-4">
+                    <SimplePagination
+                      totalCount={totalRecords}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </MainContentWrapper>
       </SidebarInset>

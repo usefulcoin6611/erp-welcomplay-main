@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
@@ -218,11 +218,13 @@ export default function OrdersPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
-            {/* Search and Filter */}
+            {/* Orders Table */}
             <Card>
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
+              <CardContent className="p-0">
+                {/* Title and Search - Top (right aligned) */}
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">Orders</CardTitle>
+                  <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search orders..."
@@ -242,12 +244,6 @@ export default function OrdersPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Orders Table */}
-            <Card>
-              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-white">

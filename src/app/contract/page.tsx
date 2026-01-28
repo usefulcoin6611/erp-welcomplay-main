@@ -42,6 +42,7 @@ import {
   IconPlus,
   IconEye,
   IconLayoutGrid,
+  IconList,
 } from '@tabler/icons-react'
 import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
@@ -183,7 +184,7 @@ const contracts: Contract[] = [
 ]
 
 export default function ContractPage() {
-  // Search and pagination states
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -233,15 +234,37 @@ export default function ContractPage() {
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <div className="flex items-center justify-end">
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="shadow-none h-7"
-                  title="Grid View"
-                >
-                  <IconLayoutGrid className="h-3 w-3" />
-                </Button>
+              <div className="flex items-center gap-2">
+                <div className="inline-flex rounded-md bg-muted p-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      viewMode === 'list'
+                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                        : 'text-blue-600 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setViewMode('list')}
+                    title="List view"
+                  >
+                    <IconList className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      viewMode === 'grid'
+                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                        : 'text-blue-600 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setViewMode('grid')}
+                    title="Grid view"
+                  >
+                    <IconLayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="blue" size="sm" className="shadow-none h-7">
@@ -314,10 +337,10 @@ export default function ContractPage() {
               </div>
             </div>
 
-            {/* Contract List */}
+            {/* Contract List / Grid */}
+            {viewMode === 'list' ? (
             <Card>
               <CardContent className="p-0">
-                {/* Title and Search - Top */}
                 <div className="px-4 py-3 border-b flex items-center justify-between">
                   <CardTitle className="text-base font-medium">Contract List</CardTitle>
                   <div className="relative w-full max-w-sm">
@@ -433,6 +456,102 @@ export default function ContractPage() {
                 )}
               </CardContent>
             </Card>
+            ) : (
+                /* Grid view: setiap contract card sendiri (sesuai reference-erp contract/grid.blade.php) */
+                <>
+                  <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
+                    <CardTitle className="text-base font-medium mb-0">Contract List</CardTitle>
+                    <div className="relative w-full max-w-sm">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search contracts..."
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      />
+                      {search.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                          onClick={() => handleSearchChange('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {paginatedData.length > 0 ? (
+                      paginatedData.map((contract) => (
+                        <Card key={contract.id} className="flex flex-col h-full">
+                          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 p-3">
+                            <CardTitle className="text-sm font-medium mb-0">
+                              <Link href={`/contract/${contract.id}`} className="hover:underline">
+                                {contract.subject}
+                              </Link>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="flex-1 p-3 text-center pt-0">
+                            <p className="text-sm text-muted-foreground mb-0 line-clamp-2">
+                              {contract.project || '-'}
+                            </p>
+                          </CardContent>
+                          <div className="border-t py-0 px-3 pt-0 pb-3 space-y-2">
+                            <div className="flex items-center justify-center gap-2 text-xs font-medium py-2">
+                              <span className="text-muted-foreground">Client:</span>
+                              <span>{contract.client}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 text-xs">
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-muted-foreground">Type</span>
+                                <Badge variant="secondary" className="text-xs">{contract.type}</Badge>
+                              </div>
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-muted-foreground">Value</span>
+                                <span className="font-medium">Rp {contract.value.toLocaleString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 text-xs pt-2">
+                              <div>
+                                <span className="text-muted-foreground block text-[10px]">Start</span>
+                                <span className="font-medium">{contract.startDate}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground block text-[10px]">End</span>
+                                <span className="font-medium">{contract.endDate}</span>
+                              </div>
+                            </div>
+                            <div className="pt-3">
+                              <Button variant="secondary" size="sm" className="shadow-none h-7 w-full bg-yellow-500 hover:bg-yellow-600 text-white" asChild>
+                                <Link href={`/contract/${contract.id}`}>
+                                  <IconEye className="h-3 w-3 mr-1" />
+                                  View
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
+                        No contracts found
+                      </div>
+                    )}
+                  </div>
+                  {totalRecords > 0 && (
+                    <div className="mt-4">
+                      <SimplePagination
+                        totalCount={totalRecords}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+                      />
+                    </div>
+                  )}
+                </>
+            )}
           </div>
         </MainContentWrapper>
       </SidebarInset>

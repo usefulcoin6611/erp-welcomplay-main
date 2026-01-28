@@ -17,6 +17,7 @@ import {
   Trash,
   Calendar,
   LayoutGrid,
+  List,
   Download,
   Eye,
   Reply,
@@ -49,6 +50,16 @@ import {
 } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // Types
 interface Support {
@@ -264,6 +275,7 @@ const statuses = ['Open', 'On Hold', 'Close']
 export default function SupportPage() {
   const [supports, setSupports] = useState<Support[]>(mockSupports)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -276,6 +288,16 @@ export default function SupportPage() {
     description: '',
     attachment: null as File | null,
   })
+  // Reply dialog
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false)
+  const [replySupport, setReplySupport] = useState<Support | null>(null)
+  const [replyMessage, setReplyMessage] = useState('')
+  // Edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editSupport, setEditSupport] = useState<Support | null>(null)
+  // Delete confirmation
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
+  const [deleteSupportId, setDeleteSupportId] = useState<string | null>(null)
 
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
@@ -300,8 +322,35 @@ export default function SupportPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm('Are you sure you want to delete this support ticket?')) return
     setSupports(supports.filter((s) => s.id !== id))
+    setDeleteSupportId(null)
+    setDeleteAlertOpen(false)
+  }
+
+  const openDeleteConfirm = (id: string) => {
+    setDeleteSupportId(id)
+    setDeleteAlertOpen(true)
+  }
+
+  const handleReplySubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Handle reply submit – e.g. API call
+    setReplyMessage('')
+    setReplySupport(null)
+    setReplyDialogOpen(false)
+  }
+
+  const openEditDialog = (support: Support) => {
+    setEditSupport(support)
+    setEditDialogOpen(true)
+  }
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editSupport) return
+    // Handle edit submit – e.g. API call; here we only close
+    setEditSupport(null)
+    setEditDialogOpen(false)
   }
 
   const getInitials = (name: string) => {
@@ -395,9 +444,36 @@ export default function SupportPage() {
             {/* Header */}
             <div className="flex items-center justify-end">
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="shadow-none h-7">
-                  <LayoutGrid className="mr-2 h-4 w-4" /> Grid View
-                </Button>
+                <div className="inline-flex rounded-md bg-muted p-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      viewMode === 'list'
+                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                        : 'text-blue-600 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setViewMode('list')}
+                    title="List view"
+                  >
+                    <List className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      viewMode === 'grid'
+                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                        : 'text-blue-600 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setViewMode('grid')}
+                    title="Grid view"
+                  >
+                    <LayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="blue" className="shadow-none h-7">
@@ -609,10 +685,9 @@ export default function SupportPage() {
               </Card>
             </div>
 
-            {/* Support Table */}
+            {/* Title and Search - shared */}
             <Card>
               <CardContent className="p-0">
-                {/* Title and Search - Top */}
                 <div className="px-4 py-3 border-b flex items-center justify-between">
                   <CardTitle className="text-base font-medium">Support List</CardTitle>
                   <div className="relative w-full max-w-sm">
@@ -635,6 +710,9 @@ export default function SupportPage() {
                     )}
                   </div>
                 </div>
+
+            {viewMode === 'list' ? (
+                <>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -712,13 +790,19 @@ export default function SupportPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                onClick={() => {
+                                  setReplySupport(support)
+                                  setReplyMessage('')
+                                  setReplyDialogOpen(true)
+                                }}
                               >
                                 <Reply className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                onClick={() => openEditDialog(support)}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -726,7 +810,7 @@ export default function SupportPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                onClick={() => handleDelete(support.id)}
+                                onClick={() => openDeleteConfirm(support.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -758,8 +842,220 @@ export default function SupportPage() {
                     />
                   </div>
                 )}
+                </>
+            ) : (
+                /* Grid view - cards like reference-erp grid.blade.php */
+                <div className="p-4">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {paginatedData.length > 0 ? (
+                      paginatedData.map((support) => (
+                        <Card key={support.id} className="flex flex-col">
+                          <CardContent className="p-4 flex flex-col flex-1">
+                            <div className="flex flex-1 items-start gap-3 border-b pb-3 mb-3">
+                              <div className="relative shrink-0">
+                                <Avatar className="h-10 w-10 border-2 border-primary">
+                                  <AvatarImage src={support.created_by.avatar} />
+                                  <AvatarFallback>{getInitials(support.created_by.name)}</AvatarFallback>
+                                </Avatar>
+                                {support.has_unread_reply && (
+                                  <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm truncate">{support.created_by.name}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{support.subject}</p>
+                              </div>
+                              {support.attachment && (
+                                <Button variant="outline" size="sm" className="shrink-0 h-7" title="Download">
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between gap-2 border-b pb-3 mb-3 text-sm">
+                              <span className="text-muted-foreground">Code:</span>
+                              <span className="font-mono font-medium">{support.ticket_code}</span>
+                              <span className="text-muted-foreground">Priority:</span>
+                              <Badge className={getPriorityColor(support.priority)}>{support.priority}</Badge>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 mt-auto">
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                {formatDate(support.created_at)}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 w-7 p-0 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                  title="Reply"
+                                  onClick={() => {
+                                    setReplySupport(support)
+                                    setReplyMessage('')
+                                    setReplyDialogOpen(true)
+                                  }}
+                                >
+                                  <Reply className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                  title="Edit"
+                                  onClick={() => openEditDialog(support)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  title="Delete"
+                                  onClick={() => openDeleteConfirm(support.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-12 text-center text-muted-foreground">
+                        No support tickets found
+                      </div>
+                    )}
+                  </div>
+                  {totalRecords > 0 && (
+                    <div className="pt-4 mt-4 border-t">
+                      <SimplePagination
+                        totalCount={totalRecords}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(size) => {
+                          setPageSize(size)
+                          setCurrentPage(1)
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+            )}
               </CardContent>
             </Card>
+
+            {/* Reply dialog */}
+            <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Support Reply</DialogTitle>
+                  <DialogDescription>
+                    {replySupport ? `Reply to ticket ${replySupport.ticket_code}` : ''}
+                  </DialogDescription>
+                </DialogHeader>
+                {replySupport && (
+                  <form onSubmit={handleReplySubmit}>
+                    <div className="space-y-4 py-4">
+                      <div className="rounded-lg border p-3 bg-muted/30">
+                        <p className="text-sm font-medium">{replySupport.subject}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{replySupport.created_by.name} · {replySupport.ticket_code}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="reply-message">Your reply</Label>
+                        <Textarea
+                          id="reply-message"
+                          value={replyMessage}
+                          onChange={(e) => setReplyMessage(e.target.value)}
+                          placeholder="Type your reply..."
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setReplyDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="blue" className="shadow-none">Send Reply</Button>
+                    </DialogFooter>
+                  </form>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditSupport(null) }}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Support</DialogTitle>
+                  <DialogDescription>
+                    {editSupport ? `Edit ticket ${editSupport.ticket_code}` : ''}
+                  </DialogDescription>
+                </DialogHeader>
+                {editSupport && (
+                  <form onSubmit={handleEditSubmit}>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Subject</Label>
+                        <Input defaultValue={editSupport.subject} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Priority</Label>
+                          <Select defaultValue={editSupport.priority.toLowerCase()}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {priorities.map((p) => (
+                                <SelectItem key={p} value={p.toLowerCase()}>{p}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Status</Label>
+                          <Select defaultValue={editSupport.status.toLowerCase().replace(' ', '_')}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {statuses.map((s) => (
+                                <SelectItem key={s} value={s.toLowerCase().replace(' ', '_')}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea rows={3} placeholder="Description" />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                      <Button type="submit" variant="blue" className="shadow-none">Update</Button>
+                    </DialogFooter>
+                  </form>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete confirmation */}
+            <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDeleteSupportId(null) }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete support ticket?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. Do you want to continue?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => deleteSupportId && handleDelete(deleteSupportId)}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </MainContentWrapper>
       </SidebarInset>

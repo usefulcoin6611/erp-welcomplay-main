@@ -214,27 +214,36 @@ export default function ProjectsPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <div className="flex items-center justify-end">
               <div className="flex gap-2">
-                {view === "list" ? (
+                <div className="inline-flex rounded-md bg-muted p-0.5">
                   <Button
-                    variant="secondary"
+                    type="button"
                     size="sm"
-                    className="shadow-none h-7"
-                    title="Grid View"
-                    onClick={() => setView("grid")}
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="List View"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      view === "list"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
                     onClick={() => setView("list")}
+                    title="List view"
                   >
                     <IconList className="h-3 w-3" />
                   </Button>
-                )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      view === "grid"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
+                    onClick={() => setView("grid")}
+                    title="Grid view"
+                  >
+                    <IconLayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
