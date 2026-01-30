@@ -203,7 +203,7 @@ export default function BugDetailPage() {
         <SidebarInset>
           <SiteHeader />
           <MainContentWrapper>
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4">
               <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
                 Bug tidak ditemukan.
               </div>

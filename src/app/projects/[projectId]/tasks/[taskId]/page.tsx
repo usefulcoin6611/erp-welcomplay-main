@@ -273,7 +273,7 @@ export default function TaskDetailPage() {
         <SidebarInset>
           <SiteHeader />
           <MainContentWrapper>
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4">
               <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
                 Task tidak ditemukan.
               </div>
@@ -297,7 +297,7 @@ export default function TaskDetailPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-5 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-5">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 mb-0">
               <div className="min-w-0 space-y-1">

@@ -323,12 +323,20 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Card titles - semibold for hierarchy */
-  [class*="CardTitle"], [class*="card-title"] {
-    font-weight: 600;
-    letter-spacing: -0.013em;
+  /* Card titles - medium weight, tanpa border kiri (detail pages) */
+  [class*="CardTitle"], [class*="card-title"], [data-slot="card-title"] {
+    font-weight: 500;
+    letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    border-left: none;
+  }
+  [data-slot="card-header"] {
+    border-left: none;
+  }
+  /* Card content - normal weight; nilai/value pakai font-medium di inline */
+  [data-slot="card-content"] {
+    font-weight: 400;
   }
   
   /* Badge and small UI elements - medium weight */

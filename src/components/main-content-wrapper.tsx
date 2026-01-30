@@ -33,7 +33,7 @@ export function MainContentWrapper({ children }: MainContentWrapperProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col bg-gray-50">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={pathname}

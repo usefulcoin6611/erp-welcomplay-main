@@ -594,7 +594,17 @@
       "enterBankIdentifierCode": "Enter bank identifier code",
       "enterBranchLocation": "Enter branch location",
       "enterTaxPayerId": "Enter tax payer id",
-      "employeeDetail": "Employee Detail"
+      "employeeDetail": "Employee Detail",
+      "joiningLetter": "Joining Letter",
+      "experienceCertificate": "Experience Certificate",
+      "noc": "NOC",
+      "pdf": "PDF",
+      "doc": "DOC",
+      "edit": "Edit",
+      "editEmployee": "Edit Employee",
+      "updateEmployee": "Update",
+      "backToDetail": "Back to Detail",
+      "chooseFileHere": "Choose file here"
     }
   },
   "reports": {

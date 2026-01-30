@@ -594,7 +594,17 @@
       "enterBankIdentifierCode": "Masukkan kode identifikasi bank",
       "enterBranchLocation": "Masukkan lokasi cabang",
       "enterTaxPayerId": "Masukkan ID wajib pajak",
-      "employeeDetail": "Detail Karyawan"
+      "employeeDetail": "Detail Karyawan",
+      "joiningLetter": "Surat Bergabung",
+      "experienceCertificate": "Sertifikat Pengalaman",
+      "noc": "NOC",
+      "pdf": "PDF",
+      "doc": "DOC",
+      "edit": "Ubah",
+      "editEmployee": "Ubah Karyawan",
+      "updateEmployee": "Perbarui",
+      "backToDetail": "Kembali ke Detail",
+      "chooseFileHere": "Pilih file di sini"
     }
   },
   "reports": {

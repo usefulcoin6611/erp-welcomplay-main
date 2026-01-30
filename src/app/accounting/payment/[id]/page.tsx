@@ -47,8 +47,8 @@ export default async function PaymentDetailPage({ params }: PaymentDetailPagePro
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>

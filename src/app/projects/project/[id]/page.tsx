@@ -246,7 +246,7 @@ export default function ProjectDetailPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             {/* Header */}
             <div className="flex items-center justify-between gap-4">
               <div>

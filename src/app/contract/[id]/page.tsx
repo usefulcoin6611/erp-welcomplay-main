@@ -52,7 +52,7 @@ export default async function ContractDetailPage({
         <SidebarInset>
           <SiteHeader />
           <MainContentWrapper>
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Contract tidak ditemukan</p>
                 <Button asChild variant="outline" size="sm" className="h-8 px-3 shadow-none bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200">
@@ -93,7 +93,7 @@ export default async function ContractDetailPage({
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-xl font-bold tracking-tight">

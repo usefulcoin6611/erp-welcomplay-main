@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,32 +17,44 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslations } from "next-intl"
 import { Upload, FileText, CheckCircle } from "lucide-react"
 
-interface CreateEmployeeFormProps {
-  onClose: () => void
+const defaultFormData = {
+  name: "",
+  phone: "",
+  dob: "",
+  gender: "Male",
+  email: "",
+  password: "",
+  address: "",
+  employeeId: "EMP006",
+  branchId: "",
+  departmentId: "",
+  designationId: "",
+  companyDoj: "",
+  accountHolderName: "",
+  accountNumber: "",
+  bankName: "",
+  bankIdentifierCode: "",
+  branchLocation: "",
+  taxPayerId: "",
 }
 
-export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
+export type CreateEmployeeFormInitialData = Partial<typeof defaultFormData>
+
+interface CreateEmployeeFormProps {
+  onClose: () => void
+  initialData?: CreateEmployeeFormInitialData
+  isEditMode?: boolean
+}
+
+export function CreateEmployeeForm({ onClose, initialData, isEditMode }: CreateEmployeeFormProps) {
   const t = useTranslations("hrm.employee")
   const [dragActive, setDragActive] = useState<{[key: number]: boolean}>({})
+  const [documentPreviews, setDocumentPreviews] = useState<Record<number, string>>({})
+  const documentPreviewsRef = useRef(documentPreviews)
+  documentPreviewsRef.current = documentPreviews
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    dob: "",
-    gender: "Male",
-    email: "",
-    password: "",
-    address: "",
-    employeeId: "EMP006",
-    branchId: "",
-    departmentId: "",
-    designationId: "",
-    companyDoj: "",
-    accountHolderName: "",
-    accountNumber: "",
-    bankName: "",
-    bankIdentifierCode: "",
-    branchLocation: "",
-    taxPayerId: "",
+    ...defaultFormData,
+    ...(initialData ?? {}),
   })
 
   const branches = [
@@ -119,22 +131,53 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
     }
   }
 
+  const handleDocumentFileChange = (documentId: number, file: File | null) => {
+    if (file && file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file)
+      setDocumentPreviews(prev => {
+        if (prev[documentId]) URL.revokeObjectURL(prev[documentId])
+        return { ...prev, [documentId]: url }
+      })
+    } else {
+      setDocumentPreviews(prev => {
+        const next = { ...prev }
+        if (next[documentId]) URL.revokeObjectURL(next[documentId])
+        delete next[documentId]
+        return next
+      })
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      Object.values(documentPreviewsRef.current).forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [])
+
+  const cardClass = isEditMode ? "bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]" : "border-0 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
+  const headerClass = isEditMode ? "px-5 pt-5 pb-3" : "pb-1 px-3 pt-3"
+  const titleClass = isEditMode ? "text-base font-semibold text-foreground" : "text-sm"
+  const contentClass = isEditMode ? "space-y-5 px-5 pb-5 pt-0" : "space-y-2 px-3 pb-3 pt-0"
+  const gridGap = isEditMode ? "gap-x-6 gap-y-4" : "gap-2"
+  const labelClass = isEditMode ? "text-sm font-medium text-muted-foreground" : "text-xs"
+  const inputClass = isEditMode ? "h-9 text-sm" : "h-8 text-xs"
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <form onSubmit={handleSubmit} className={isEditMode ? "space-y-5" : "space-y-3"}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${isEditMode ? "gap-5" : "gap-3"}`}>
         {/* Personal Detail Card */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="text-sm">{t("personalDetail")}</CardTitle>
+        <Card className={cardClass}>
+          <CardHeader className={headerClass}>
+            <CardTitle className={titleClass}>{t("personalDetail")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-3 pb-3 pt-0">
-            <div className="grid grid-cols-2 gap-2">
+          <CardContent className={contentClass}>
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label htmlFor="name" className="text-xs">{t("name")} *</Label>
+                <Label htmlFor="name" className={labelClass}>{t("name")} *</Label>
                 <Input
                   id="name"
                   size={32}
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder={t("enterEmployeeName")}
@@ -142,12 +185,12 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs">{t("phone")} *</Label>
+                <Label htmlFor="phone" className={labelClass}>{t("phone")} *</Label>
                 <Input
                   id="phone"
                   type="tel"
                   size={32}
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   placeholder={t("enterEmployeePhone")}
@@ -156,13 +199,13 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label htmlFor="dob" className="text-xs">{t("dateOfBirth")} *</Label>
+                <Label htmlFor="dob" className={labelClass}>{t("dateOfBirth")} *</Label>
                 <Input
                   id="dob"
                   type="date"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.dob}
                   onChange={(e) => handleInputChange("dob", e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
@@ -170,7 +213,7 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("gender")} *</Label>
+                <Label className={labelClass}>{t("gender")} *</Label>
                 <RadioGroup
                   value={formData.gender}
                   onValueChange={(value) => handleInputChange("gender", value)}
@@ -178,23 +221,23 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                 >
                   <div className="flex items-center space-x-1">
                     <RadioGroupItem value="Male" id="male" className="h-3 w-3" />
-                    <Label htmlFor="male" className="text-xs">{t("male")}</Label>
+                    <Label htmlFor="male" className={labelClass}>{t("male")}</Label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <RadioGroupItem value="Female" id="female" className="h-3 w-3" />
-                    <Label htmlFor="female" className="text-xs">{t("female")}</Label>
+                    <Label htmlFor="female" className={labelClass}>{t("female")}</Label>
                   </div>
                 </RadioGroup>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label htmlFor="email" className="text-xs">{t("email")} *</Label>
+                <Label htmlFor="email" className={labelClass}>{t("email")} *</Label>
                 <Input
                   id="email"
                   type="email"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder={t("enterEmployeeEmail")}
@@ -202,24 +245,24 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="password" className="text-xs">{t("password")} *</Label>
+                <Label htmlFor="password" className={labelClass}>{t("password")}{!isEditMode && " *"}</Label>
                 <Input
                   id="password"
                   type="password"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   placeholder={t("enterEmployeePassword")}
-                  required
+                  required={!isEditMode}
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="address" className="text-xs">{t("address")} *</Label>
+              <Label htmlFor="address" className={labelClass}>{t("address")} *</Label>
               <Textarea
                 id="address"
-                className="text-xs min-h-[60px]"
+                className={`min-h-[60px] ${isEditMode ? "text-sm" : "text-xs"}`}
                 value={formData.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 placeholder={t("enterEmployeeAddress")}
@@ -231,29 +274,29 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
         </Card>
 
         {/* Company Detail Card */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="text-sm">{t("companyDetail")}</CardTitle>
+        <Card className={cardClass}>
+          <CardHeader className={headerClass}>
+            <CardTitle className={titleClass}>{t("companyDetail")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-3 pb-3 pt-0">
+          <CardContent className={contentClass}>
             <div className="space-y-1">
-              <Label htmlFor="employeeId" className="text-xs">{t("employeeId")}</Label>
+              <Label htmlFor="employeeId" className={labelClass}>{t("employeeId")}</Label>
               <Input
                 id="employeeId"
-                className="bg-muted h-8 text-xs"
+                className={`bg-muted ${inputClass}`}
                 value={formData.employeeId}
                 disabled
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label className="text-xs">{t("selectBranch")} *</Label>
+                <Label className={labelClass}>{t("selectBranch")} *</Label>
                 <Select
                   value={formData.branchId}
                   onValueChange={(value) => handleInputChange("branchId", value)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className={inputClass}>
                     <SelectValue placeholder={t("selectBranch")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -264,18 +307,18 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t("createBranchHere")} <a href="#" className="font-medium text-primary">{t("createBranch")}</a>
                 </p>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs">{t("selectDepartment")} *</Label>
+                <Label className={labelClass}>{t("selectDepartment")} *</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => handleInputChange("departmentId", value)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className={inputClass}>
                     <SelectValue placeholder={t("selectDepartment")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -286,20 +329,20 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t("createDepartmentHere")} <a href="#" className="font-medium text-primary">{t("createDepartment")}</a>
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label className="text-xs">{t("selectDesignation")} *</Label>
+                <Label className={labelClass}>{t("selectDesignation")} *</Label>
                 <Select
                   value={formData.designationId}
                   onValueChange={(value) => handleInputChange("designationId", value)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className={inputClass}>
                     <SelectValue placeholder={t("selectDesignation")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -310,17 +353,17 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t("createDesignationHere")} <a href="#" className="font-medium text-primary">{t("createDesignation")}</a>
                 </p>
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="companyDoj" className="text-xs">{t("companyDateOfJoining")} *</Label>
+                <Label htmlFor="companyDoj" className={labelClass}>{t("companyDateOfJoining")} *</Label>
                 <Input
                   id="companyDoj"
                   type="date"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.companyDoj}
                   onChange={(e) => handleInputChange("companyDoj", e.target.value)}
                   required
@@ -332,88 +375,130 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
       </div>
 
       {/* Document and Bank Account Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${isEditMode ? "gap-5" : "gap-3"}`}>
         {/* Document Card */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="flex items-center gap-2 text-sm">
+        <Card className={cardClass}>
+          <CardHeader className={headerClass}>
+            <CardTitle className={`flex items-center gap-2 ${titleClass}`}>
               <FileText className="h-4 w-4" />
               {t("document")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0">
-            <div className="space-y-2">
-              {documents.map((document) => (
-                <div key={document.id} className="space-y-1">
-                  <Label className="text-xs font-medium">
-                    {document.name}
-                    {document.isRequired && <span className="text-red-500 ml-1">*</span>}
-                  </Label>
-                  
-                  <div className="relative">
-                    <div className="flex items-center justify-center w-full">
+          <CardContent className={contentClass}>
+            {isEditMode ? (
+              <div className="space-y-4">
+                {documents.map((document) => (
+                  <div key={document.id} className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <div className="shrink-0 sm:w-1/3 sm:pt-1.5">
+                      <Label className={`font-medium ${labelClass}`}>
+                        {document.name}
+                        {document.isRequired && <span className="text-red-500 ml-1">*</span>}
+                      </Label>
+                    </div>
+                    <div className="flex-1 space-y-2 min-w-0">
                       <label
                         htmlFor={`document-${document.id}`}
-                        className={`flex flex-col items-center justify-center w-full h-16 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                          dragActive[document.id] 
-                            ? 'border-primary bg-primary/10' 
-                            : 'border-muted-foreground/25 bg-muted/5 hover:bg-muted/10'
-                        }`}
-                        onDragEnter={(e) => handleDragEnter(e, document.id)}
-                        onDragLeave={(e) => handleDragLeave(e, document.id)}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, document.id)}
+                        className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 cursor-pointer transition-colors w-fit"
                       >
-                        <div className="flex flex-col items-center justify-center py-2">
-                          <Upload className="w-4 h-4 mb-1 text-muted-foreground" />
-                          <p className="text-[10px] text-muted-foreground">
-                            <span className="font-semibold">Click to upload</span>
-                          </p>
-                          <p className="text-[9px] text-muted-foreground">
-                            PDF, DOC (MAX. 10MB)
-                          </p>
-                        </div>
-                        <Input
-                          id={`document-${document.id}`}
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          required={document.isRequired}
-                        />
+                        <Upload className="h-4 w-4" />
+                        {t("chooseFileHere")}
                       </label>
+                      <Input
+                        id={`document-${document.id}`}
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        required={document.isRequired}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          handleDocumentFileChange(document.id, file ?? null)
+                        }}
+                      />
+                      <div className="choose-file-img">
+                        {documentPreviews[document.id] && (
+                          <img
+                            src={documentPreviews[document.id]}
+                            alt={`Preview ${document.name}`}
+                            className="rounded border border-gray-200 object-contain max-h-32 w-auto"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {documents.map((document) => (
+                  <div key={document.id} className="space-y-1">
+                    <Label className={`font-medium ${labelClass}`}>
+                      {document.name}
+                      {document.isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    <div className="relative">
+                      <div className="flex items-center justify-center w-full">
+                        <label
+                          htmlFor={`document-${document.id}`}
+                          className={`flex flex-col items-center justify-center w-full h-16 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                            dragActive[document.id]
+                              ? 'border-primary bg-primary/10'
+                              : 'border-muted-foreground/25 bg-muted/5 hover:bg-muted/10'
+                          }`}
+                          onDragEnter={(e) => handleDragEnter(e, document.id)}
+                          onDragLeave={(e) => handleDragLeave(e, document.id)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, document.id)}
+                        >
+                          <div className="flex flex-col items-center justify-center py-2">
+                            <Upload className="w-4 h-4 mb-1 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-semibold">Click to upload</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              PDF, DOC (MAX. 10MB)
+                            </p>
+                          </div>
+                          <Input
+                            id={`document-${document.id}`}
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                            required={document.isRequired}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Bank Account Detail Card */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <div className="w-1 h-4 bg-green-500 rounded"></div>
+        <Card className={cardClass}>
+          <CardHeader className={headerClass}>
+            <CardTitle className={titleClass}>
               {t("bankAccountDetail")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-3 pb-3 pt-0">
-            <div className="grid grid-cols-2 gap-2">
+          <CardContent className={contentClass}>
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label htmlFor="accountHolderName" className="text-xs">{t("accountHolderName")}</Label>
+                <Label htmlFor="accountHolderName" className={labelClass}>{t("accountHolderName")}</Label>
                 <Input
                   id="accountHolderName"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.accountHolderName}
                   onChange={(e) => handleInputChange("accountHolderName", e.target.value)}
                   placeholder={t("enterAccountHolderName")}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="accountNumber" className="text-xs">{t("accountNumber")}</Label>
+                <Label htmlFor="accountNumber" className={labelClass}>{t("accountNumber")}</Label>
                 <Input
                   id="accountNumber"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.accountNumber}
                   onChange={(e) => handleInputChange("accountNumber", e.target.value)}
                   placeholder={t("enterAccountNumber")}
@@ -421,22 +506,22 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label htmlFor="bankName" className="text-xs">{t("bankName")}</Label>
+                <Label htmlFor="bankName" className={labelClass}>{t("bankName")}</Label>
                 <Input
                   id="bankName"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.bankName}
                   onChange={(e) => handleInputChange("bankName", e.target.value)}
                   placeholder={t("enterBankName")}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="bankIdentifierCode" className="text-xs">{t("bankIdentifierCode")}</Label>
+                <Label htmlFor="bankIdentifierCode" className={labelClass}>{t("bankIdentifierCode")}</Label>
                 <Input
                   id="bankIdentifierCode"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.bankIdentifierCode}
                   onChange={(e) => handleInputChange("bankIdentifierCode", e.target.value)}
                   placeholder={t("enterBankIdentifierCode")}
@@ -444,22 +529,22 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid grid-cols-2 ${gridGap}`}>
               <div className="space-y-1">
-                <Label htmlFor="branchLocation" className="text-xs">{t("branchLocation")}</Label>
+                <Label htmlFor="branchLocation" className={labelClass}>{t("branchLocation")}</Label>
                 <Input
                   id="branchLocation"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.branchLocation}
                   onChange={(e) => handleInputChange("branchLocation", e.target.value)}
                   placeholder={t("enterBranchLocation")}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="taxPayerId" className="text-xs">{t("taxPayerId")}</Label>
+                <Label htmlFor="taxPayerId" className={labelClass}>{t("taxPayerId")}</Label>
                 <Input
                   id="taxPayerId"
-                  className="h-8 text-xs"
+                  className={inputClass}
                   value={formData.taxPayerId}
                   onChange={(e) => handleInputChange("taxPayerId", e.target.value)}
                   placeholder={t("enterTaxPayerId")}
@@ -471,12 +556,12 @@ export function CreateEmployeeForm({ onClose }: CreateEmployeeFormProps) {
       </div>
 
       {/* Submit Buttons */}
-      <div className="flex justify-end space-x-2 pt-1">
-        <Button type="button" variant="outline" size="sm" className="h-8 px-3 text-xs" onClick={onClose}>
+      <div className={`flex justify-end gap-2 ${isEditMode ? "pt-4" : "pt-1"}`}>
+        <Button type="button" variant="outline" size="sm" className={`shadow-none ${isEditMode ? "h-9 px-4 text-sm" : "h-8 px-3 text-xs"}`} onClick={onClose}>
           {t("cancel")}
         </Button>
-        <Button type="submit" size="sm" className="h-8 px-3 text-xs">
-          {t("createEmployee")}
+        <Button type="submit" variant="blue" size="sm" className={`shadow-none ${isEditMode ? "h-9 px-4 text-sm" : "h-8 px-3 text-xs"}`}>
+          {isEditMode ? t("updateEmployee") : t("createEmployee")}
         </Button>
       </div>
     </form>
