@@ -259,7 +259,7 @@ export function EventCalendar({
   }
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
         <div className="flex items-center gap-2 w-full">
           <CardTitle className="flex items-center gap-2">

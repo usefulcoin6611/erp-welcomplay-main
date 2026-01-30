@@ -26,15 +26,7 @@ export function AccountStatsCards() {
       {stats.map((stat) => {
         const IconComponent = stat.icon
         return (
-          <Card key={stat.titleKey} className="relative overflow-hidden border border-gray-200 dark:border-gray-800 shadow-none hover:shadow-sm transition-shadow duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-              <div className="absolute top-2 right-2 w-10 h-10 opacity-5 dark:opacity-10">
-                <div className="w-full h-full bg-gray-400 dark:bg-gray-600 rounded-full"></div>
-              </div>
-              <div className="absolute -top-1 -right-1 w-12 h-12 opacity-5 dark:opacity-10">
-                <div className="w-full h-full bg-gray-400 dark:bg-gray-600 rounded-full"></div>
-              </div>
-            </div>
+          <Card key={stat.titleKey} className="relative overflow-hidden border-0 shadow-none bg-white dark:bg-gray-900/80">
             <CardContent className="relative p-3">
               <div className="flex items-start justify-between">
                 <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/20">
