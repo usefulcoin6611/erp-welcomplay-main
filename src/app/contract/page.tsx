@@ -46,142 +46,7 @@ import {
 } from '@tabler/icons-react'
 import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-
-interface Contract {
-  id: string
-  contractNumber: string
-  subject: string
-  client: string
-  project: string
-  type: string
-  value: number
-  startDate: string
-  endDate: string
-  status: string
-}
-
-const contracts: Contract[] = [
-  {
-    id: 'CTR-2025-001',
-    contractNumber: 'CTR-001',
-    subject: 'Implementasi ERP PT Maju Jaya',
-    client: 'PT Maju Jaya',
-    project: 'ERP Implementation Project',
-    type: 'Implementation',
-    value: 350_000_000,
-    startDate: '2025-11-01',
-    endDate: '2026-01-31',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-002',
-    contractNumber: 'CTR-002',
-    subject: 'Maintenance CRM CV Kreatif Digital',
-    client: 'CV Kreatif Digital',
-    project: '-',
-    type: 'Support',
-    value: 120_000_000,
-    startDate: '2025-11-10',
-    endDate: '2026-11-09',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-003',
-    contractNumber: 'CTR-003',
-    subject: 'Development Mobile App PT Teknologi',
-    client: 'PT Teknologi',
-    project: 'Mobile App Development',
-    type: 'Development',
-    value: 500_000_000,
-    startDate: '2025-12-01',
-    endDate: '2026-06-30',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-004',
-    contractNumber: 'CTR-004',
-    subject: 'Cloud Migration Services',
-    client: 'PT Digital Solutions',
-    project: 'Cloud Migration',
-    type: 'Migration',
-    value: 250_000_000,
-    startDate: '2025-10-15',
-    endDate: '2026-04-14',
-    status: 'pending',
-  },
-  {
-    id: 'CTR-2025-005',
-    contractNumber: 'CTR-005',
-    subject: 'Security Audit & Compliance',
-    client: 'PT Keamanan Data',
-    project: 'Security Audit',
-    type: 'Audit',
-    value: 180_000_000,
-    startDate: '2025-09-01',
-    endDate: '2025-12-31',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-006',
-    contractNumber: 'CTR-006',
-    subject: 'Database Optimization',
-    client: 'CV Optimasi Sistem',
-    project: '-',
-    type: 'Optimization',
-    value: 95_000_000,
-    startDate: '2025-11-20',
-    endDate: '2026-02-19',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-007',
-    contractNumber: 'CTR-007',
-    subject: 'E-Commerce Platform Development',
-    client: 'PT Retail Online',
-    project: 'E-Commerce Platform',
-    type: 'Development',
-    value: 750_000_000,
-    startDate: '2026-01-01',
-    endDate: '2026-12-31',
-    status: 'pending',
-  },
-  {
-    id: 'CTR-2025-008',
-    contractNumber: 'CTR-008',
-    subject: 'IT Infrastructure Setup',
-    client: 'PT Infrastruktur',
-    project: 'Infrastructure Setup',
-    type: 'Infrastructure',
-    value: 420_000_000,
-    startDate: '2025-10-01',
-    endDate: '2026-03-31',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-009',
-    contractNumber: 'CTR-009',
-    subject: 'Training & Consultation',
-    client: 'PT Pelatihan',
-    project: '-',
-    type: 'Training',
-    value: 75_000_000,
-    startDate: '2025-11-15',
-    endDate: '2026-01-14',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-010',
-    contractNumber: 'CTR-010',
-    subject: 'System Integration Services',
-    client: 'PT Integrasi Sistem',
-    project: 'System Integration',
-    type: 'Integration',
-    value: 320_000_000,
-    startDate: '2026-02-01',
-    endDate: '2026-08-31',
-    status: 'pending',
-  },
-]
+import { contracts } from '@/lib/contract-data'
 
 export default function ContractPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
@@ -242,8 +107,8 @@ export default function ContractPage() {
                     variant="ghost"
                     className={`h-7 w-7 shadow-none p-0 ${
                       viewMode === 'list'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                     onClick={() => setViewMode('list')}
                     title="List view"
@@ -256,8 +121,8 @@ export default function ContractPage() {
                     variant="ghost"
                     className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
                       viewMode === 'grid'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                     onClick={() => setViewMode('grid')}
                     title="Grid view"
@@ -417,9 +282,9 @@ export default function ContractPage() {
                           </TableCell>
                           <TableCell className="px-4 py-3">
                             <Button
-                              variant="secondary"
+                              variant="outline"
                               size="sm"
-                              className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                              className="shadow-none h-7 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
                               title="View"
                               asChild
                             >
@@ -457,7 +322,7 @@ export default function ContractPage() {
               </CardContent>
             </Card>
             ) : (
-                /* Grid view: setiap contract card sendiri (sesuai reference-erp contract/grid.blade.php) */
+                /* Grid view: card ringkas & modern */
                 <>
                   <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
                     <CardTitle className="text-base font-medium mb-0">Contract List</CardTitle>
@@ -484,46 +349,36 @@ export default function ContractPage() {
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {paginatedData.length > 0 ? (
                       paginatedData.map((contract) => (
-                        <Card key={contract.id} className="flex flex-col h-full">
-                          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 p-3">
-                            <CardTitle className="text-sm font-medium mb-0">
-                              <Link href={`/contract/${contract.id}`} className="hover:underline">
-                                {contract.subject}
-                              </Link>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="flex-1 p-3 text-center pt-0">
-                            <p className="text-sm text-muted-foreground mb-0 line-clamp-2">
-                              {contract.project || '-'}
-                            </p>
-                          </CardContent>
-                          <div className="border-t py-0 px-3 pt-0 pb-3 space-y-2">
-                            <div className="flex items-center justify-center gap-2 text-xs font-medium py-2">
-                              <span className="text-muted-foreground">Client:</span>
-                              <span>{contract.client}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 text-xs">
-                              <div className="flex flex-col items-center gap-1">
-                                <span className="text-muted-foreground">Type</span>
-                                <Badge variant="secondary" className="text-xs">{contract.type}</Badge>
+                        <Card key={contract.id} className="overflow-hidden rounded-xl border-0 p-0 bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] transition-shadow">
+                          <div className="bg-blue-50 px-4 py-3">
+                            <Link href={`/contract/${contract.id}`} className="text-base font-normal leading-snug line-clamp-2 hover:text-primary block text-foreground">
+                              {contract.subject}
+                            </Link>
+                          </div>
+                          <div className="px-4 py-3">
+                            <dl className="grid grid-cols-1 gap-2.5 text-xs">
+                              <div className="flex justify-between gap-2">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Client</dt>
+                                <dd className="truncate text-right font-normal text-foreground" title={contract.client}>{contract.client}</dd>
                               </div>
-                              <div className="flex flex-col items-center gap-1">
-                                <span className="text-muted-foreground">Value</span>
-                                <span className="font-medium">Rp {contract.value.toLocaleString()}</span>
+                              <div className="flex justify-between gap-2">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Project</dt>
+                                <dd className="truncate text-right font-normal text-foreground/90" title={contract.project}>{contract.project === '-' ? '–' : contract.project}</dd>
                               </div>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 text-xs pt-2">
-                              <div>
-                                <span className="text-muted-foreground block text-[10px]">Start</span>
-                                <span className="font-medium">{contract.startDate}</span>
+                              <div className="flex justify-between gap-2">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Value</dt>
+                                <dd className="text-right font-normal text-foreground">Rp {contract.value.toLocaleString()}</dd>
                               </div>
-                              <div>
-                                <span className="text-muted-foreground block text-[10px]">End</span>
-                                <span className="font-medium">{contract.endDate}</span>
+                              <div className="flex justify-between gap-2 pt-2 border-t border-border/50">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Period</dt>
+                                <dd className="text-right font-normal text-foreground/85">{contract.startDate} → {contract.endDate}</dd>
                               </div>
-                            </div>
-                            <div className="pt-3">
-                              <Button variant="secondary" size="sm" className="shadow-none h-7 w-full bg-yellow-500 hover:bg-yellow-600 text-white" asChild>
+                            </dl>
+                            <div className="flex items-center justify-between mt-3">
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0 shrink-0 rounded bg-muted/80 text-muted-foreground font-medium">
+                                {contract.type}
+                              </Badge>
+                              <Button variant="outline" size="sm" className="h-6 px-2.5 text-xs font-medium shadow-none bg-amber-50/80 text-amber-700 hover:bg-amber-100 border-0 rounded-md" asChild>
                                 <Link href={`/contract/${contract.id}`}>
                                   <IconEye className="h-3 w-3 mr-1" />
                                   View

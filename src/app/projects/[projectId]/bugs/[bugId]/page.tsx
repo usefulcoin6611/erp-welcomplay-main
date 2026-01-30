@@ -228,31 +228,31 @@ export default function BugDetailPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-5 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <Button asChild variant="outline" size="icon" className="h-9 w-9 shrink-0 shadow-none">
+              <div className="min-w-0 space-y-1">
+                <h1 className="text-lg font-semibold truncate">{bug.title}</h1>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <Link href={`/projects/project/${bug.projectId}`} className="hover:underline truncate">
+                    {bug.projectName}
+                  </Link>
+                  <span aria-hidden className="text-muted-foreground/60">·</span>
+                  <Badge className={bugStatusMap[bug.bugStatus] ?? "bg-slate-100 text-slate-700"}>
+                    {bug.bugStatus}
+                  </Badge>
+                  <Badge className={priorityMap[bug.priority] ?? "bg-slate-100 text-slate-700"}>
+                    {bug.priority}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button size="sm" className="shadow-none h-9 px-4 bg-blue-500 hover:bg-blue-600">
+                  Edit Bug
+                </Button>
+                <Button asChild variant="outline" size="icon" className="h-9 w-9 shadow-none">
                   <Link href="/bugs-report">
                     <IconArrowLeft className="h-4 w-4" />
                   </Link>
                 </Button>
-                <div className="min-w-0 space-y-1">
-                  <h1 className="text-lg font-semibold truncate">{bug.title}</h1>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                    <Link href={`/projects/project/${bug.projectId}`} className="hover:underline truncate">
-                      {bug.projectName}
-                    </Link>
-                    <span aria-hidden className="text-muted-foreground/60">·</span>
-                    <Badge className={bugStatusMap[bug.bugStatus] ?? "bg-slate-100 text-slate-700"}>
-                      {bug.bugStatus}
-                    </Badge>
-                    <Badge className={priorityMap[bug.priority] ?? "bg-slate-100 text-slate-700"}>
-                      {bug.priority}
-                    </Badge>
-                  </div>
-                </div>
               </div>
-              <Button size="sm" className="shrink-0 shadow-none h-9 px-4 bg-blue-500 hover:bg-blue-600">
-                Edit Bug
-              </Button>
             </div>
 
             {/* Detail – Title, Priority, Created Date, Assign to, Description (reference bugShow) */}

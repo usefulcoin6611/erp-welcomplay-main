@@ -300,29 +300,29 @@ export default function TaskDetailPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-5 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 mb-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <Button asChild variant="outline" size="icon" className="h-9 w-9 shrink-0 shadow-none">
+              <div className="min-w-0 space-y-1">
+                <h1 className="text-lg font-semibold truncate">{task.name}</h1>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <Link href={`/projects/project/${task.projectId}`} className="hover:underline truncate">
+                    {task.projectName}
+                  </Link>
+                  <span aria-hidden className="text-muted-foreground/60">·</span>
+                  <Badge className={getPriorityClasses(task.priority)}>{priorityMap[task.priority]?.label ?? task.priority}</Badge>
+                  <span>{task.stage}</span>
+                  <span aria-hidden className="text-muted-foreground/60">·</span>
+                  <span>{task.startDate} → {task.endDate}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button size="sm" className="shadow-none h-9 px-4 bg-blue-500 hover:bg-blue-600">
+                  Edit Task
+                </Button>
+                <Button asChild variant="outline" size="icon" className="h-9 w-9 shadow-none">
                   <Link href="/taskboard">
                     <IconArrowLeft className="h-4 w-4" />
                   </Link>
                 </Button>
-                <div className="min-w-0 space-y-1">
-                  <h1 className="text-lg font-semibold truncate">{task.name}</h1>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                    <Link href={`/projects/project/${task.projectId}`} className="hover:underline truncate">
-                      {task.projectName}
-                    </Link>
-                    <span aria-hidden className="text-muted-foreground/60">·</span>
-                    <Badge className={getPriorityClasses(task.priority)}>{priorityMap[task.priority]?.label ?? task.priority}</Badge>
-                    <span>{task.stage}</span>
-                    <span aria-hidden className="text-muted-foreground/60">·</span>
-                    <span>{task.startDate} → {task.endDate}</span>
-                  </div>
-                </div>
               </div>
-              <Button size="sm" className="shrink-0 shadow-none h-9 px-4 bg-blue-500 hover:bg-blue-600">
-                Edit Task
-              </Button>
             </div>
 
             {/* Task Detail */}

@@ -492,27 +492,15 @@ export default function ProjectReportDetailPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shadow-none"
-                >
-                  <Link href="/project_report">
-                    <IconArrowLeft className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold leading-tight">
-                    {project.name}
-                  </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <IconCalendar className="h-3.5 w-3.5" />
-                      {formatDate(project.startDate)} - {formatDate(project.endDate)}
-                    </span>
-                  </div>
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">
+                  {project.name}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <IconCalendar className="h-3.5 w-3.5" />
+                    {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -522,6 +510,11 @@ export default function ProjectReportDetailPage() {
                 <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                   <IconDownload className="h-4 w-4 mr-2" />
                   Export
+                </Button>
+                <Button asChild variant="outline" size="icon" className="h-8 w-8 shadow-none">
+                  <Link href="/project_report">
+                    <IconArrowLeft className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </div>

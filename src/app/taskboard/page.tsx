@@ -709,7 +709,7 @@ export default function TaskboardPage() {
                       const dateInfo = formatDate(task.endDate)
                       return (
                         <Card key={task.id} className="flex flex-col h-full">
-                          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 p-3">
+                          <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2 p-4">
                             <CardTitle className="text-sm font-medium mb-0">
                               <Link
                                 href={`/projects/${task.projectId}/tasks/${task.id}`}
@@ -730,44 +730,48 @@ export default function TaskboardPage() {
                               </Badge>
                             )}
                           </CardHeader>
-                          <CardContent className="flex-1 p-3 pt-0 space-y-2">
-                            <p className="text-xs text-muted-foreground m-0 line-clamp-2">{task.projectName}</p>
-                            <div className="flex flex-wrap gap-1">
-                              <Badge className={getPriorityClasses(task.priority)}>
-                                {priorityMap[task.priority]?.label || task.priority}
-                              </Badge>
-                              <span className="text-xs font-normal">{task.stage}</span>
-                            </div>
-                            <div>
-                              <span
-                                className={`text-xs ${dateInfo.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}
-                              >
-                                Due: {dateInfo.formatted}
-                              </span>
-                            </div>
-                            <div className="flex -space-x-2">
-                              {task.assignedTo.slice(0, 3).map((user, idx) => (
-                                <Avatar key={idx} className="h-6 w-6 border-2 border-white">
-                                  <AvatarFallback className="text-[10px]">{user.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                              ))}
-                              {task.assignedTo.length > 3 && (
-                                <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
-                                  <span className="text-[10px] font-medium">+{task.assignedTo.length - 3}</span>
+                          <CardContent className="flex-1 px-4 pb-4 pt-0">
+                            <div className="space-y-3 text-xs">
+                              <p className="text-muted-foreground m-0 line-clamp-2">{task.projectName}</p>
+                              <div className="flex flex-wrap items-center gap-2 mt-5">
+                                <Badge className={getPriorityClasses(task.priority)}>
+                                  {priorityMap[task.priority]?.label || task.priority}
+                                </Badge>
+                                <span className="text-muted-foreground font-normal">{task.stage}</span>
+                              </div>
+                              <div>
+                                <span
+                                  className={dateInfo.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}
+                                >
+                                  Due: {dateInfo.formatted}
+                                </span>
+                              </div>
+                              <div className="flex items-center -space-x-2">
+                                {task.assignedTo.slice(0, 3).map((user, idx) => (
+                                  <Avatar key={idx} className="h-6 w-6 border-2 border-white">
+                                    <AvatarFallback className="text-[10px]">{user.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                ))}
+                                {task.assignedTo.length > 3 && (
+                                  <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                    <span className="text-[10px] font-medium">+{task.assignedTo.length - 3}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="space-y-1.5">
+                                <div className="h-2 w-full rounded-full bg-slate-100">
+                                  <div
+                                    className={`h-2 rounded-full ${getCompletionColor(task.completion)}`}
+                                    style={{ width: `${task.completion}%` }}
+                                  />
                                 </div>
-                              )}
-                            </div>
-                            <div className="h-2 w-full rounded-full bg-slate-100">
-                              <div
-                                className={`h-2 rounded-full ${getCompletionColor(task.completion)}`}
-                                style={{ width: `${task.completion}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground">{task.completion}%</span>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span><IconPaperclip className="h-3 w-3 inline mr-0.5" />{task.attachments}</span>
-                              <span><IconMessageCircle className="h-3 w-3 inline mr-0.5" />{task.comments}</span>
-                              <span><IconListCheck className="h-3 w-3 inline mr-0.5" />{task.checklists}</span>
+                                <span className="text-muted-foreground block">{task.completion}%</span>
+                              </div>
+                              <div className="flex items-center gap-3 text-muted-foreground pt-1">
+                                <span><IconPaperclip className="h-3 w-3 inline mr-0.5" />{task.attachments}</span>
+                                <span><IconMessageCircle className="h-3 w-3 inline mr-0.5" />{task.comments}</span>
+                                <span><IconListCheck className="h-3 w-3 inline mr-0.5" />{task.checklists}</span>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>

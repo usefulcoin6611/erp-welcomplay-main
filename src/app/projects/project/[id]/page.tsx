@@ -249,26 +249,14 @@ export default function ProjectDetailPage() {
           <div className="@container/main flex flex-1 flex-col gap-6 p-6 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shadow-none"
-                >
-                  <Link href="/projects">
-                    <IconArrowLeft className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold leading-tight">
-                    {project.name}
-                  </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>{project.code}</span>
-                    <Separator orientation="vertical" className="h-4" />
-                    <span>{project.client}</span>
-                  </div>
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">
+                  {project.name}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span>{project.code}</span>
+                  <Separator orientation="vertical" className="h-4" />
+                  <span>{project.client}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -277,6 +265,11 @@ export default function ProjectDetailPage() {
                 </Badge>
                 <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                   Edit Project
+                </Button>
+                <Button asChild variant="outline" size="icon" className="h-8 w-8 shadow-none">
+                  <Link href="/projects">
+                    <IconArrowLeft className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </div>

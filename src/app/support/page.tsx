@@ -686,6 +686,7 @@ export default function SupportPage() {
             </div>
 
             {/* Title and Search - shared */}
+            {viewMode === 'list' ? (
             <Card>
               <CardContent className="p-0">
                 <div className="px-4 py-3 border-b flex items-center justify-between">
@@ -710,9 +711,6 @@ export default function SupportPage() {
                     )}
                   </div>
                 </div>
-
-            {viewMode === 'list' ? (
-                <>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -842,10 +840,33 @@ export default function SupportPage() {
                     />
                   </div>
                 )}
-                </>
+              </CardContent>
+            </Card>
             ) : (
-                /* Grid view - cards like reference-erp grid.blade.php */
-                <div className="p-4">
+                /* Grid view - card terpisah per ticket */
+                <>
+                  <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
+                    <CardTitle className="text-base font-medium mb-0">Support List</CardTitle>
+                    <div className="relative w-full max-w-sm">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search support tickets..."
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      />
+                      {search.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                          onClick={() => handleSearchChange('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {paginatedData.length > 0 ? (
                       paginatedData.map((support) => (
@@ -920,13 +941,13 @@ export default function SupportPage() {
                         </Card>
                       ))
                     ) : (
-                      <div className="col-span-full py-12 text-center text-muted-foreground">
+                      <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
                         No support tickets found
                       </div>
                     )}
                   </div>
                   {totalRecords > 0 && (
-                    <div className="pt-4 mt-4 border-t">
+                    <div className="mt-4">
                       <SimplePagination
                         totalCount={totalRecords}
                         currentPage={currentPage}
@@ -939,10 +960,8 @@ export default function SupportPage() {
                       />
                     </div>
                   )}
-                </div>
+                </>
             )}
-              </CardContent>
-            </Card>
 
             {/* Reply dialog */}
             <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
