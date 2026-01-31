@@ -38,10 +38,10 @@ function PayrollFilters({ filters, onFilterChange, onReset, onExport }: PayrollF
             onValueChange={(value) => value && onFilterChange({ ...filters, type: value as 'monthly' | 'daily' })}
             className="justify-start"
           >
-            <ToggleGroupItem value="monthly" className="h-9 px-3 text-sm cursor-pointer data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600">
+            <ToggleGroupItem value="monthly" className="h-9 px-3 text-sm cursor-pointer bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600 data-[state=on]:hover:!text-white">
               Monthly
             </ToggleGroupItem>
-            <ToggleGroupItem value="daily" className="h-9 px-3 text-sm cursor-pointer data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600">
+            <ToggleGroupItem value="daily" className="h-9 px-3 text-sm cursor-pointer bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600 data-[state=on]:hover:!text-white">
               Daily
             </ToggleGroupItem>
           </ToggleGroup>
