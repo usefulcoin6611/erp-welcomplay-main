@@ -82,34 +82,22 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shadow-none"
-                >
-                  <Link href="/projects/task">
-                    <IconArrowLeft className="h-4 w-4" />
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">
+                  {task.name}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span>Task #{task.id}</span>
+                  <Separator orientation="vertical" className="h-4" />
+                  <Link
+                    href={`/projects/project/${task.projectId}`}
+                    className="hover:underline"
+                  >
+                    {task.project}
                   </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold leading-tight">
-                    {task.name}
-                  </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>Task #{task.id}</span>
-                    <Separator orientation="vertical" className="h-4" />
-                    <Link
-                      href={`/projects/project/${task.projectId}`}
-                      className="hover:underline"
-                    >
-                      {task.project}
-                    </Link>
-                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -118,6 +106,11 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
                 </Badge>
                 <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
                   Edit Task
+                </Button>
+                <Button asChild variant="outline" size="icon" className="h-8 w-8 shadow-none">
+                  <Link href="/projects/task">
+                    <IconArrowLeft className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </div>

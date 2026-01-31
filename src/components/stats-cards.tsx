@@ -1,8 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { 
   Users, 
   UserCheck, 
@@ -62,39 +60,39 @@ export function StatsCards({
 }: StatsCardsProps) {
   const t = useTranslations('hrmDashboard.statsCards')
 
-  const StatCard = ({ item }: { item: StatItem }) => {
-    const getColorClasses = (color?: string) => {
-      switch (color) {
-        case 'blue':
-        case 'green':
-        case 'orange':
-        case 'red':
-        case 'purple':
-          return 'bg-blue-50 text-blue-500'
-        default:
-          return 'bg-blue-50 text-blue-500'
-      }
+  const getBgAndIconClasses = (color?: string) => {
+    switch (color) {
+      case 'blue':
+        return { bg: 'bg-blue-50', iconBg: 'bg-blue-100', icon: 'text-blue-600', text: 'text-blue-900' }
+      case 'green':
+        return { bg: 'bg-green-50', iconBg: 'bg-green-100', icon: 'text-green-600', text: 'text-green-900' }
+      case 'orange':
+        return { bg: 'bg-amber-50', iconBg: 'bg-amber-100', icon: 'text-amber-600', text: 'text-amber-900' }
+      case 'red':
+        return { bg: 'bg-red-50', iconBg: 'bg-red-100', icon: 'text-red-600', text: 'text-red-900' }
+      case 'purple':
+        return { bg: 'bg-violet-50', iconBg: 'bg-violet-100', icon: 'text-violet-600', text: 'text-violet-900' }
+      default:
+        return { bg: 'bg-slate-50', iconBg: 'bg-slate-100', icon: 'text-slate-600', text: 'text-slate-900' }
     }
+  }
 
+  const StatCard = ({ item }: { item: StatItem }) => {
+    const colors = getBgAndIconClasses(item.color)
     const cardContent = (
-      <Card className="h-full hover:bg-gray-50 transition-all duration-200 overflow-hidden">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-2">
-            {/* Top: Icon and Value side by side */}
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100">
-                {item.icon}
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 flex-1 text-center">{item.value}</h3>
+      <div className={`h-full rounded-lg ${colors.bg} p-4 transition-colors hover:opacity-95`}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center [&_svg]:text-current ${colors.iconBg} ${colors.icon}`}>
+              {item.icon}
             </div>
-            
-            {/* Bottom: Description */}
-            <p className="text-xs font-medium text-muted-foreground leading-tight break-words line-clamp-2">
-              {item.title}
-            </p>
+            <h3 className={`text-xl font-semibold flex-1 text-center ${colors.text}`}>{item.value}</h3>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-xs font-medium text-muted-foreground leading-tight break-words line-clamp-2">
+            {item.title}
+          </p>
+        </div>
+      </div>
     )
 
     if (item.link) {
@@ -112,23 +110,23 @@ export function StatsCards({
     {
       title: t('staff.totalStaff'),
       value: staffStats.totalStaff,
-          icon: <Users className="w-5 h-5 text-blue-500" />,
-          link: "/staff",
-          color: "blue"
+      icon: <Users className="w-5 h-5" />,
+      link: "/staff",
+      color: "blue"
     },
     {
-      title: t('staff.totalEmployee'), 
+      title: t('staff.totalEmployee'),
       value: staffStats.totalEmployee,
-          icon: <UserCheck className="w-5 h-5 text-blue-500" />,
-          link: "/employee",
-          color: "green"
+      icon: <UserCheck className="w-5 h-5" />,
+      link: "/employee",
+      color: "green"
     },
     {
       title: t('staff.totalClient'),
       value: staffStats.totalClient,
-          icon: <Building className="w-5 h-5 text-blue-500" />,
-          link: "/clients",
-          color: "purple"
+      icon: <Building className="w-5 h-5" />,
+      link: "/clients",
+      color: "purple"
     }
   ]
 
@@ -136,21 +134,21 @@ export function StatsCards({
     {
       title: t('job.totalJobs'),
       value: jobStats.totalJobs,
-          icon: <Briefcase className="w-5 h-5 text-blue-500" />,
-          link: "/job",
-          color: "blue"
+      icon: <Briefcase className="w-5 h-5" />,
+      link: "/job",
+      color: "blue"
     },
     {
       title: t('job.activeJobs'),
       value: jobStats.activeJobs,
-          icon: <CheckCircle className="w-5 h-5 text-blue-500" />,
-          color: "green"
+      icon: <CheckCircle className="w-5 h-5" />,
+      color: "green"
     },
     {
       title: t('job.inactiveJobs'),
       value: jobStats.inactiveJobs,
-          icon: <XCircle className="w-5 h-5 text-blue-500" />,
-          color: "red"
+      icon: <XCircle className="w-5 h-5" />,
+      color: "red"
     }
   ]
 
@@ -158,33 +156,33 @@ export function StatsCards({
     {
       title: t('training.totalTrainer'),
       value: trainingStats.totalTrainer,
-          icon: <GraduationCap className="w-5 h-5 text-blue-500" />,
-          link: "/trainer",
-          color: "blue"
+      icon: <GraduationCap className="w-5 h-5" />,
+      link: "/trainer",
+      color: "blue"
     },
     {
       title: t('training.activeTraining'),
       value: trainingStats.activeTraining,
-          icon: <BookOpen className="w-5 h-5 text-blue-500" />,
-          color: "green"
+      icon: <BookOpen className="w-5 h-5" />,
+      color: "green"
     },
     {
       title: t('training.doneTraining'),
       value: trainingStats.doneTraining,
-          icon: <Award className="w-5 h-5 text-blue-500" />,
-          color: "orange"
+      icon: <Award className="w-5 h-5" />,
+      color: "orange"
     }
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Staff Section */}
+    <div className="space-y-5">
+      {/* Staff Section - tanpa pewarnaan wrapper, hanya card di dalam */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-blue-500" />
-          <h3 className="text-base font-medium text-gray-900">Staff</h3>
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">Staff</h3>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           {staffItems.map((item, index) => (
             <StatCard key={index} item={item} />
           ))}
@@ -194,10 +192,10 @@ export function StatsCards({
       {/* Job Section */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-              <Briefcase className="w-4 h-4 text-blue-500" />
-          <h3 className="text-base font-medium text-gray-900">Job</h3>
+          <Briefcase className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">Job</h3>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           {jobItems.map((item, index) => (
             <StatCard key={index} item={item} />
           ))}
@@ -207,10 +205,10 @@ export function StatsCards({
       {/* Training Section */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-              <GraduationCap className="w-4 h-4 text-blue-500" />
-          <h3 className="text-base font-medium text-gray-900">Training</h3>
+          <GraduationCap className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium text-foreground">Training</h3>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           {trainingItems.map((item, index) => (
             <StatCard key={index} item={item} />
           ))}

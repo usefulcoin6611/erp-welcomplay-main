@@ -550,160 +550,141 @@ export default function PlansPage() {
             </div>
 
             {/* Plans Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {plans.map((plan) => (
-                <Card key={plan.id} className="relative">
-                  <CardContent className="p-5">
-                    {/* Plan Badge */}
-                    <div className="flex items-center justify-between mb-4">
-                      <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-sm px-3 py-1`}>
-                        {plan.name}
-                      </Badge>
-                      {isSuperAdmin && plan.price > 0 && (
-                        <div className="flex items-center">
-                          <Switch
-                            checked={plan.is_disable}
-                            onCheckedChange={(checked) => {
-                              setPlans(
-                                plans.map((p) => (p.id === plan.id ? { ...p, is_disable: checked } : p))
-                              )
-                            }}
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                        </div>
+                <Card key={plan.id} className="relative flex flex-col rounded-lg overflow-hidden border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.05)]">
+                  {/* Plan Badge - Top of Card */}
+                  <div className="absolute top-0 left-0 right-0 flex items-center justify-center pt-3 pb-2">
+                    <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+                      {plan.name}
+                    </Badge>
+                  </div>
+                  {/* Switch - Top Right */}
+                  {isSuperAdmin && plan.price > 0 && (
+                    <div className="absolute top-2.5 right-2.5 z-10">
+                      <Switch
+                        checked={plan.is_disable}
+                        onCheckedChange={(checked) => {
+                          setPlans(
+                            plans.map((p) => (p.id === plan.id ? { ...p, is_disable: checked } : p))
+                          )
+                        }}
+                        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                      />
+                    </div>
+                  )}
+
+                  <CardContent className="p-4 flex flex-col flex-1 pt-14">
+                    {/* Price Section - Centered */}
+                    <div className="mb-3 text-center">
+                      <div className="flex items-baseline justify-center gap-1 mb-1">
+                        <span className="text-3xl font-bold text-gray-900">
+                          {formatPrice(plan.price)}
+                        </span>
+                        {plan.price > 0 && (
+                          <span className="text-sm text-gray-500 font-medium">
+                            /{getDurationLabel(plan.duration)}
+                          </span>
+                        )}
+                      </div>
+                      {plan.trial_days > 0 && (
+                        <p className="text-xs text-gray-500 font-medium">
+                          {plan.trial_days} days free trial
+                        </p>
                       )}
                     </div>
 
-                    {/* Price */}
-                    <div className="mb-4">
-                      <h1 className="text-xl font-medium mb-0">
-                        {formatPrice(plan.price)}
-                        <small className="text-sm text-muted-foreground ml-1">
-                          /{getDurationLabel(plan.duration)}
-                        </small>
-                      </h1>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Free Trial Days : {plan.trial_days || 0}
-                      </p>
-                    </div>
+                      {/* Features - Compact Grid */}
+                      <div className="flex-1 mb-3">
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                          {/* Limits */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-gray-600">
+                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                              <span className="truncate">{formatLimit(plan.max_users)} Users</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-600">
+                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                              <span className="truncate">{formatLimit(plan.max_customers)} Customers</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-600">
+                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                              <span className="truncate">{formatLimit(plan.max_venders)} Vendors</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-gray-600">
+                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                              <span className="truncate">{formatLimit(plan.max_clients)} Clients</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-600">
+                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                              <span className="truncate">{formatStorage(plan.storage_limit)}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                    {/* Features */}
-                    <div className="grid grid-cols-2 gap-3 mb-5">
-                      <div>
-                        <ul className="space-y-1.5 text-sm">
-                          <li className="flex items-center gap-2">
-                            <CirclePlus className="h-4 w-4 text-blue-500" />
-                            {formatLimit(plan.max_users)} Users
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CirclePlus className="h-4 w-4 text-blue-500" />
-                            {formatLimit(plan.max_customers)} Customers
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CirclePlus className="h-4 w-4 text-blue-500" />
-                            {formatLimit(plan.max_venders)} Vendors
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CirclePlus className="h-4 w-4 text-blue-500" />
-                            {formatLimit(plan.max_clients)} Clients
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CirclePlus className="h-4 w-4 text-blue-500" />
-                            {formatStorage(plan.storage_limit)} Storage
-                          </li>
-                        </ul>
-                      </div>
-                      <div>
-                        <ul className="space-y-1.5 text-sm">
-                          <li className="flex items-center gap-2">
-                            {plan.account ? (
-                              <CirclePlus className="h-4 w-4 text-blue-500" />
+                      {/* Modules - Compact Grid */}
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 pt-3 border-t">
+                        {[
+                          { key: 'account', label: 'Account', enabled: plan.account },
+                          { key: 'crm', label: 'CRM', enabled: plan.crm },
+                          { key: 'hrm', label: 'HRM', enabled: plan.hrm },
+                          { key: 'project', label: 'Project', enabled: plan.project },
+                          { key: 'pos', label: 'POS', enabled: plan.pos },
+                          { key: 'chatgpt', label: 'ChatGPT', enabled: plan.chatgpt },
+                        ].map((module) => (
+                          <div key={module.key} className="flex items-center gap-1.5 text-sm">
+                            {module.enabled ? (
+                              <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
                             ) : (
-                              <CircleMinus className="h-4 w-4 text-red-500" />
+                              <X className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
                             )}
-                            {plan.account ? 'Enable' : 'Disable'} Account
-                          </li>
-                          <li className="flex items-center gap-2">
-                            {plan.crm ? (
-                              <CirclePlus className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <CircleMinus className="h-4 w-4 text-red-500" />
-                            )}
-                            {plan.crm ? 'Enable' : 'Disable'} CRM
-                          </li>
-                          <li className="flex items-center gap-2">
-                            {plan.hrm ? (
-                              <CirclePlus className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <CircleMinus className="h-4 w-4 text-red-500" />
-                            )}
-                            {plan.hrm ? 'Enable' : 'Disable'} HRM
-                          </li>
-                          <li className="flex items-center gap-2">
-                            {plan.project ? (
-                              <CirclePlus className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <CircleMinus className="h-4 w-4 text-red-500" />
-                            )}
-                            {plan.project ? 'Enable' : 'Disable'} Project
-                          </li>
-                          <li className="flex items-center gap-2">
-                            {plan.pos ? (
-                              <CirclePlus className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <CircleMinus className="h-4 w-4 text-red-500" />
-                            )}
-                            {plan.pos ? 'Enable' : 'Disable'} POS
-                          </li>
-                          <li className="flex items-center gap-2">
-                            {plan.chatgpt ? (
-                              <CirclePlus className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <CircleMinus className="h-4 w-4 text-red-500" />
-                            )}
-                            {plan.chatgpt ? 'Enable' : 'Disable'} Chat GPT
-                          </li>
-                        </ul>
+                            <span className={`truncate ${module.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
+                              {module.label}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     {/* Actions */}
                     {isSuperAdmin ? (
-                      <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                      <div className="flex items-center justify-center gap-2 pt-3 border-t mt-auto">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                          className="shadow-none h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                           onClick={() => handleEdit(plan)}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         {plan.id !== '1' && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            className="shadow-none h-8 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             onClick={() => handleDeleteClick(plan)}
                           >
-                            <Trash className="h-4 w-4" />
+                            <Trash className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-2 pt-4 border-t">
+                      <div className="space-y-2 pt-3 border-t mt-auto">
                         {plan.price > 0 && (
-                          <Button variant="blue" size="sm" className="w-full shadow-none">
+                          <Button variant="blue" size="sm" className="w-full shadow-none h-8 text-sm font-medium">
                             Buy Plan
                           </Button>
                         )}
                         {plan.trial_days > 0 && (
-                          <Button variant="outline" size="sm" className="w-full shadow-none">
+                          <Button variant="outline" size="sm" className="w-full shadow-none h-8 text-sm">
                             Start Free Trial
                           </Button>
                         )}
                         {plan.id !== '1' && (
-                          <Button variant="outline" size="sm" className="w-full shadow-none">
-                            <X className="h-4 w-4 mr-2" /> Send Request
+                          <Button variant="outline" size="sm" className="w-full shadow-none h-8 text-sm">
+                            <X className="h-3.5 w-3.5 mr-1.5" /> Send Request
                           </Button>
                         )}
                       </div>

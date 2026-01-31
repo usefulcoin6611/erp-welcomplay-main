@@ -42,148 +42,14 @@ import {
   IconPlus,
   IconEye,
   IconLayoutGrid,
+  IconList,
 } from '@tabler/icons-react'
 import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-
-interface Contract {
-  id: string
-  contractNumber: string
-  subject: string
-  client: string
-  project: string
-  type: string
-  value: number
-  startDate: string
-  endDate: string
-  status: string
-}
-
-const contracts: Contract[] = [
-  {
-    id: 'CTR-2025-001',
-    contractNumber: 'CTR-001',
-    subject: 'Implementasi ERP PT Maju Jaya',
-    client: 'PT Maju Jaya',
-    project: 'ERP Implementation Project',
-    type: 'Implementation',
-    value: 350_000_000,
-    startDate: '2025-11-01',
-    endDate: '2026-01-31',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-002',
-    contractNumber: 'CTR-002',
-    subject: 'Maintenance CRM CV Kreatif Digital',
-    client: 'CV Kreatif Digital',
-    project: '-',
-    type: 'Support',
-    value: 120_000_000,
-    startDate: '2025-11-10',
-    endDate: '2026-11-09',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-003',
-    contractNumber: 'CTR-003',
-    subject: 'Development Mobile App PT Teknologi',
-    client: 'PT Teknologi',
-    project: 'Mobile App Development',
-    type: 'Development',
-    value: 500_000_000,
-    startDate: '2025-12-01',
-    endDate: '2026-06-30',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-004',
-    contractNumber: 'CTR-004',
-    subject: 'Cloud Migration Services',
-    client: 'PT Digital Solutions',
-    project: 'Cloud Migration',
-    type: 'Migration',
-    value: 250_000_000,
-    startDate: '2025-10-15',
-    endDate: '2026-04-14',
-    status: 'pending',
-  },
-  {
-    id: 'CTR-2025-005',
-    contractNumber: 'CTR-005',
-    subject: 'Security Audit & Compliance',
-    client: 'PT Keamanan Data',
-    project: 'Security Audit',
-    type: 'Audit',
-    value: 180_000_000,
-    startDate: '2025-09-01',
-    endDate: '2025-12-31',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-006',
-    contractNumber: 'CTR-006',
-    subject: 'Database Optimization',
-    client: 'CV Optimasi Sistem',
-    project: '-',
-    type: 'Optimization',
-    value: 95_000_000,
-    startDate: '2025-11-20',
-    endDate: '2026-02-19',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-007',
-    contractNumber: 'CTR-007',
-    subject: 'E-Commerce Platform Development',
-    client: 'PT Retail Online',
-    project: 'E-Commerce Platform',
-    type: 'Development',
-    value: 750_000_000,
-    startDate: '2026-01-01',
-    endDate: '2026-12-31',
-    status: 'pending',
-  },
-  {
-    id: 'CTR-2025-008',
-    contractNumber: 'CTR-008',
-    subject: 'IT Infrastructure Setup',
-    client: 'PT Infrastruktur',
-    project: 'Infrastructure Setup',
-    type: 'Infrastructure',
-    value: 420_000_000,
-    startDate: '2025-10-01',
-    endDate: '2026-03-31',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-009',
-    contractNumber: 'CTR-009',
-    subject: 'Training & Consultation',
-    client: 'PT Pelatihan',
-    project: '-',
-    type: 'Training',
-    value: 75_000_000,
-    startDate: '2025-11-15',
-    endDate: '2026-01-14',
-    status: 'accept',
-  },
-  {
-    id: 'CTR-2025-010',
-    contractNumber: 'CTR-010',
-    subject: 'System Integration Services',
-    client: 'PT Integrasi Sistem',
-    project: 'System Integration',
-    type: 'Integration',
-    value: 320_000_000,
-    startDate: '2026-02-01',
-    endDate: '2026-08-31',
-    status: 'pending',
-  },
-]
+import { contracts } from '@/lib/contract-data'
 
 export default function ContractPage() {
-  // Search and pagination states
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -233,19 +99,41 @@ export default function ContractPage() {
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <div className="flex items-center justify-end">
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="shadow-none h-7"
-                  title="Grid View"
-                >
-                  <IconLayoutGrid className="h-3 w-3" />
-                </Button>
+              <div className="flex items-center gap-2">
+                <div className="inline-flex rounded-md bg-muted p-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      viewMode === 'list'
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                    onClick={() => setViewMode('list')}
+                    title="List view"
+                  >
+                    <IconList className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      viewMode === 'grid'
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                    onClick={() => setViewMode('grid')}
+                    title="Grid view"
+                  >
+                    <IconLayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="blue" size="sm" className="shadow-none h-7">
-                      <IconPlus className="mr-2 h-4 w-4" /> Create
+                      <IconPlus className="mr-2 h-3 w-3" /> Add Contract
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[560px]">
@@ -314,11 +202,13 @@ export default function ContractPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
+            {/* Contract List / Grid */}
+            {viewMode === 'list' ? (
+            <Card>
+              <CardContent className="p-0">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">Contract List</CardTitle>
+                  <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search contracts..."
@@ -338,34 +228,26 @@ export default function ContractPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Contract List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead>Contract Type</TableHead>
-                      <TableHead>Contract Value</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">#</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Subject</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Client</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Project</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Contract Type</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Contract Value</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Start Date</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
+                      <TableHead className="px-4 py-3 font-medium">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedData.length > 0 ? (
                       paginatedData.map((contract) => (
                         <TableRow key={contract.id}>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <Button
                               asChild
                               variant="outline"
@@ -377,32 +259,32 @@ export default function ContractPage() {
                               </Link>
                             </Button>
                           </TableCell>
-                          <TableCell className="font-medium">
+                          <TableCell className="px-4 py-3 font-normal">
                             {contract.subject}
                           </TableCell>
-                          <TableCell>{contract.client}</TableCell>
-                          <TableCell>{contract.project}</TableCell>
-                          <TableCell>{contract.type}</TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3 font-normal">{contract.client}</TableCell>
+                          <TableCell className="px-4 py-3 font-normal">{contract.project}</TableCell>
+                          <TableCell className="px-4 py-3 font-normal">{contract.type}</TableCell>
+                          <TableCell className="px-4 py-3 font-normal">
                             Rp {contract.value.toLocaleString()}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm">
+                          <TableCell className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-sm font-normal">
                               <IconCalendar className="h-3 w-3" />
                               <span>{contract.startDate}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm">
+                          <TableCell className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-sm font-normal">
                               <IconCalendar className="h-3 w-3" />
                               <span>{contract.endDate}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-4 py-3">
                             <Button
-                              variant="secondary"
+                              variant="outline"
                               size="sm"
-                              className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                              className="shadow-none h-7 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
                               title="View"
                               asChild
                             >
@@ -422,8 +304,9 @@ export default function ContractPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-4 py-3 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -438,6 +321,92 @@ export default function ContractPage() {
                 )}
               </CardContent>
             </Card>
+            ) : (
+                /* Grid view: card ringkas & modern */
+                <>
+                  <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
+                    <CardTitle className="text-base font-medium mb-0">Contract List</CardTitle>
+                    <div className="relative w-full max-w-sm">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search contracts..."
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      />
+                      {search.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                          onClick={() => handleSearchChange('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {paginatedData.length > 0 ? (
+                      paginatedData.map((contract) => (
+                        <Card key={contract.id} className="overflow-hidden rounded-xl border-0 p-0 bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] transition-shadow">
+                          <div className="bg-blue-50 px-4 py-3">
+                            <Link href={`/contract/${contract.id}`} className="text-base font-normal leading-snug line-clamp-2 hover:text-primary block text-foreground">
+                              {contract.subject}
+                            </Link>
+                          </div>
+                          <div className="px-4 py-3">
+                            <dl className="grid grid-cols-1 gap-2.5 text-xs">
+                              <div className="flex justify-between gap-2">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Client</dt>
+                                <dd className="truncate text-right font-normal text-foreground" title={contract.client}>{contract.client}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Project</dt>
+                                <dd className="truncate text-right font-normal text-foreground/90" title={contract.project}>{contract.project === '-' ? '–' : contract.project}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Value</dt>
+                                <dd className="text-right font-normal text-foreground">Rp {contract.value.toLocaleString()}</dd>
+                              </div>
+                              <div className="flex justify-between gap-2 pt-2 border-t border-border/50">
+                                <dt className="shrink-0 font-normal text-muted-foreground">Period</dt>
+                                <dd className="text-right font-normal text-foreground/85">{contract.startDate} → {contract.endDate}</dd>
+                              </div>
+                            </dl>
+                            <div className="flex items-center justify-between mt-3">
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0 shrink-0 rounded bg-muted/80 text-muted-foreground font-medium">
+                                {contract.type}
+                              </Badge>
+                              <Button variant="outline" size="sm" className="h-6 px-2.5 text-xs font-medium shadow-none bg-amber-50/80 text-amber-700 hover:bg-amber-100 border-0 rounded-md" asChild>
+                                <Link href={`/contract/${contract.id}`}>
+                                  <IconEye className="h-3 w-3 mr-1" />
+                                  View
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
+                        No contracts found
+                      </div>
+                    )}
+                  </div>
+                  {totalRecords > 0 && (
+                    <div className="mt-4">
+                      <SimplePagination
+                        totalCount={totalRecords}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+                      />
+                    </div>
+                  )}
+                </>
+            )}
           </div>
         </MainContentWrapper>
       </SidebarInset>

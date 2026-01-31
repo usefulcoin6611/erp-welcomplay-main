@@ -214,27 +214,36 @@ export default function ProjectsPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <div className="flex items-center justify-end">
               <div className="flex gap-2">
-                {view === "list" ? (
+                <div className="inline-flex rounded-md bg-muted p-0.5">
                   <Button
-                    variant="secondary"
+                    type="button"
                     size="sm"
-                    className="shadow-none h-7"
-                    title="Grid View"
-                    onClick={() => setView("grid")}
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="List View"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      view === "list"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
                     onClick={() => setView("list")}
+                    title="List view"
                   >
                     <IconList className="h-3 w-3" />
                   </Button>
-                )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      view === "grid"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
+                    onClick={() => setView("grid")}
+                    title="Grid view"
+                  >
+                    <IconLayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -296,81 +305,74 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search projects..."
-                      value={search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                    />
-                    {search.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                        onClick={() => handleSearchChange('')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Project List View */}
             {view === "list" ? (
               <Card>
-                <CardHeader>
-                  <CardTitle>Project List</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
+                  {/* Title and Search - Top */}
+                  <div className="px-4 py-3 border-b flex items-center justify-between">
+                    <CardTitle className="text-base font-medium">Project List</CardTitle>
+                    <div className="relative w-full max-w-sm">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search projects..."
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      />
+                      {search.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                          onClick={() => handleSearchChange('')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Project</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Users</TableHead>
-                          <TableHead>Completion</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead className="px-4 py-3 font-medium">Project</TableHead>
+                          <TableHead className="px-4 py-3 font-medium">Status</TableHead>
+                          <TableHead className="px-4 py-3 font-medium">Users</TableHead>
+                          <TableHead className="px-4 py-3 font-medium">Completion</TableHead>
+                          <TableHead className="px-4 py-3 font-medium">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {paginatedData.length > 0 ? (
                           paginatedData.map((project) => (
                             <TableRow key={project.id}>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 rounded border-2 border-primary bg-slate-100 flex items-center justify-center">
+                                  <div className="h-10 w-10 rounded border border-primary bg-slate-100 flex items-center justify-center">
                                     <span className="text-xs font-semibold">
                                       {project.name.charAt(0)}
                                     </span>
                                   </div>
                                   <Link
-                                    href={`/projects/${project.id}`}
-                                    className="text-sm font-semibold text-primary hover:underline"
+                                    href={`/projects/project/${project.id}`}
+                                    className="text-sm font-medium text-primary hover:underline"
                                   >
                                     {project.name}
                                   </Link>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Badge className={getStatusClasses(project.status)}>
                                   {statusMap[project.status]?.label || project.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex -space-x-2">
                                   {project.users.slice(0, 3).map((user, idx) => (
                                     <Avatar
                                       key={idx}
-                                      className="h-8 w-8 border-2 border-white"
+                                      className="h-8 w-8 border border-white"
                                     >
                                       <AvatarFallback className="text-xs">
                                         {user.charAt(0)}
@@ -378,7 +380,7 @@ export default function ProjectsPage() {
                                     </Avatar>
                                   ))}
                                   {project.users.length > 3 && (
-                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                    <div className="h-8 w-8 rounded-full border border-white bg-slate-100 flex items-center justify-center">
                                       <span className="text-xs font-medium">
                                         +{project.users.length - 3}
                                       </span>
@@ -386,9 +388,9 @@ export default function ProjectsPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="space-y-1">
-                                  <div className="text-sm font-medium">
+                                  <div className="text-sm font-normal">
                                     {project.completion}%
                                   </div>
                                   <div className="h-2 w-full rounded-full bg-slate-100">
@@ -399,7 +401,7 @@ export default function ProjectsPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Button
                                   variant="secondary"
                                   size="sm"
@@ -407,7 +409,7 @@ export default function ProjectsPage() {
                                   title="View"
                                   asChild
                                 >
-                                  <Link href={`/projects/${project.id}`}>
+                                  <Link href={`/projects/project/${project.id}`}>
                                     <IconEye className="h-3 w-3" />
                                   </Link>
                                 </Button>
@@ -425,7 +427,7 @@ export default function ProjectsPage() {
                     </Table>
                   </div>
                   {totalRecords > 0 && (
-                    <div className="mt-4">
+                    <div className="px-4 py-3 border-t">
                       <SimplePagination
                         totalCount={totalRecords}
                         currentPage={currentPage}
@@ -449,13 +451,13 @@ export default function ProjectsPage() {
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="h-10 w-10 rounded border-2 border-primary bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            <div className="h-10 w-10 rounded border border-primary bg-slate-100 flex items-center justify-center flex-shrink-0">
                               <span className="text-xs font-semibold">
                                 {project.name.charAt(0)}
                               </span>
                             </div>
                             <Link
-                              href={`/projects/${project.id}`}
+                              href={`/projects/project/${project.id}`}
                               className="text-sm font-semibold text-primary hover:underline truncate"
                             >
                               {project.name}
@@ -480,7 +482,7 @@ export default function ProjectsPage() {
                             {project.users.slice(0, 3).map((user, idx) => (
                               <Avatar
                                 key={idx}
-                                className="h-8 w-8 border-2 border-white"
+                                className="h-8 w-8 border border-white"
                               >
                                 <AvatarFallback className="text-xs">
                                   {user.charAt(0)}

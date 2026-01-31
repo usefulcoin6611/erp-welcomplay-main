@@ -179,7 +179,7 @@ export function SmoothTab({
     );
 
     return (
-        <div className="flex flex-col w-full gap-4">
+        <div className="flex flex-col w-full gap-2">
             {/* Tab Navigation */}
             <div
                 ref={containerRef}
@@ -267,8 +267,8 @@ export function SmoothTab({
                     })}
             </div>
 
-            {/* Content Area with Animation */}
-            <div className="flex-1 relative w-full overflow-visible">
+            {/* Content Area with Animation - min-w-0 agar konten lebar (e.g. tabel) bisa scroll horizontal */}
+            <div className="flex-1 relative w-full min-w-0 overflow-visible">
                 <AnimatePresence
                     initial={false}
                     mode="wait"
@@ -285,8 +285,7 @@ export function SmoothTab({
                             duration: 0.3,
                             ease: [0.32, 0.72, 0, 1] as any,
                         }}
-                        className="w-full will-change-transform"
-                        style={{ minHeight: '200px' }}
+                        className="w-full min-w-0 will-change-transform"
                     >
                         {selectedItem ? (
                             selectedItem.content

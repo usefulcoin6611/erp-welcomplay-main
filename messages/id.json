@@ -296,6 +296,10 @@
       "clockOut": "Clock Out",
       "clockInTime": "Clock In",
       "clockOutTime": "Clock Out",
+      "officeTime": "Jam kerja: {time}",
+      "statusWorking": "Anda sedang dalam jam kerja.",
+      "statusCompleted": "Absensi hari ini sudah selesai.",
+      "statusReady": "Silakan lakukan clock in untuk memulai hari.",
       "notClockInList": "Daftar Belum Clock In",
       "notClockInTitle": "Belum Clock In",
       "notClockedBadge": "Belum Absen",
@@ -590,7 +594,17 @@
       "enterBankIdentifierCode": "Masukkan kode identifikasi bank",
       "enterBranchLocation": "Masukkan lokasi cabang",
       "enterTaxPayerId": "Masukkan ID wajib pajak",
-      "employeeDetail": "Detail Karyawan"
+      "employeeDetail": "Detail Karyawan",
+      "joiningLetter": "Surat Bergabung",
+      "experienceCertificate": "Sertifikat Pengalaman",
+      "noc": "NOC",
+      "pdf": "PDF",
+      "doc": "DOC",
+      "edit": "Ubah",
+      "editEmployee": "Ubah Karyawan",
+      "updateEmployee": "Perbarui",
+      "backToDetail": "Kembali ke Detail",
+      "chooseFileHere": "Pilih file di sini"
     }
   },
   "reports": {

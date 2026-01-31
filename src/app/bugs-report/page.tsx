@@ -15,6 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Table,
   TableBody,
@@ -23,17 +25,45 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   IconLayoutGrid,
   IconList,
   IconArrowLeft,
   IconPaperclip,
   IconMessageCircle,
+  IconEye,
+  IconPlus,
 } from "@tabler/icons-react"
 import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import { useAuth } from "@/contexts/auth-context"
+
+const projectOptions = [
+  { id: 1, name: "Implementasi ERP PT Maju Jaya" },
+  { id: 2, name: "CRM Upgrade CV Kreatif Digital" },
+  { id: 3, name: "Website Redesign PT Teknologi" },
+  { id: 4, name: "Mobile App Development" },
+  { id: 5, name: "Cloud Migration Project" },
+]
+
+const assignUserOptions = ["Budi", "Sari", "Ahmad", "Dewi", "Fauzi"]
 
 interface Bug {
   id: number
@@ -207,6 +237,9 @@ function formatDate(dateString: string) {
   }
 }
 
+const BUG_STATUS_OPTIONS = ["New", "Confirmed", "In Progress", "Resolved", "Closed"]
+const PRIORITY_OPTIONS = ["critical", "high", "medium", "low"]
+
 export default function BugsReportPage() {
   const { user } = useAuth()
   const isCompany = user?.type === 'company'
@@ -215,6 +248,17 @@ export default function BugsReportPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    projectId: "",
+    title: "",
+    priority: "",
+    startDate: "",
+    dueDate: "",
+    bugStatus: "",
+    assignTo: "",
+    description: "",
+  })
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -247,6 +291,28 @@ export default function BugsReportPage() {
     setCurrentPage(1)
   }
 
+  const handleCreateDialogOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open)
+    if (!open) {
+      setCreateForm({
+        projectId: "",
+        title: "",
+        priority: "",
+        startDate: "",
+        dueDate: "",
+        bugStatus: "",
+        assignTo: "",
+        description: "",
+      })
+    }
+  }
+
+  const handleCreateBugSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // TODO: API create bug
+    handleCreateDialogOpenChange(false)
+  }
+
   return (
     <SidebarProvider
       style={
@@ -263,27 +329,175 @@ export default function BugsReportPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <div className="flex items-center justify-end">
               <div className="flex gap-2">
-                {view === "list" ? (
+                <Dialog open={createDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="blue" className="shadow-none h-7">
+                      <IconPlus className="mr-2 h-3 w-3" /> Create Bug Report
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Create Bug Report</DialogTitle>
+                      <DialogDescription>
+                        Masukkan informasi bug report sesuai reference ERP. Field bertanda * wajib diisi.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateBugSubmit}>
+                      <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="create-project">Project <span className="text-red-500">*</span></Label>
+                          <Select
+                            value={createForm.projectId}
+                            onValueChange={(v) => setCreateForm({ ...createForm, projectId: v })}
+                            required
+                          >
+                            <SelectTrigger id="create-project">
+                              <SelectValue placeholder="Pilih project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {projectOptions.map((p) => (
+                                <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="create-title">Title <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="create-title"
+                            value={createForm.title}
+                            onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                            placeholder="Enter title"
+                            required
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="create-priority">Priority <span className="text-red-500">*</span></Label>
+                            <Select
+                              value={createForm.priority}
+                              onValueChange={(v) => setCreateForm({ ...createForm, priority: v })}
+                              required
+                            >
+                              <SelectTrigger id="create-priority">
+                                <SelectValue placeholder="Pilih priority" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PRIORITY_OPTIONS.map((p) => (
+                                  <SelectItem key={p} value={p}>{priorityMap[p]?.label ?? p}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="create-status">Bug Status <span className="text-red-500">*</span></Label>
+                            <Select
+                              value={createForm.bugStatus}
+                              onValueChange={(v) => setCreateForm({ ...createForm, bugStatus: v })}
+                              required
+                            >
+                              <SelectTrigger id="create-status">
+                                <SelectValue placeholder="Pilih status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {BUG_STATUS_OPTIONS.map((s) => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="create-start">Start Date <span className="text-red-500">*</span></Label>
+                            <Input
+                              id="create-start"
+                              type="date"
+                              value={createForm.startDate}
+                              onChange={(e) => setCreateForm({ ...createForm, startDate: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="create-due">Due Date <span className="text-red-500">*</span></Label>
+                            <Input
+                              id="create-due"
+                              type="date"
+                              value={createForm.dueDate}
+                              onChange={(e) => setCreateForm({ ...createForm, dueDate: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="create-assign">Assigned To <span className="text-red-500">*</span></Label>
+                          <Select
+                            value={createForm.assignTo}
+                            onValueChange={(v) => setCreateForm({ ...createForm, assignTo: v })}
+                            required
+                          >
+                            <SelectTrigger id="create-assign">
+                              <SelectValue placeholder="Pilih user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {assignUserOptions.map((u) => (
+                                <SelectItem key={u} value={u}>{u}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="create-desc">Description</Label>
+                          <Textarea
+                            id="create-desc"
+                            value={createForm.description}
+                            onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                            placeholder="Enter description"
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => handleCreateDialogOpenChange(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" size="sm" variant="blue" className="shadow-none h-7">
+                          Create
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <div className="inline-flex rounded-md bg-muted p-0.5">
                   <Button
-                    variant="blue"
+                    type="button"
                     size="sm"
-                    className="shadow-none h-7"
-                    title="Grid View"
-                    onClick={() => setView("grid")}
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="blue"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="List View"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 ${
+                      view === "list"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
                     onClick={() => setView("list")}
+                    title="List view"
                   >
                     <IconList className="h-3 w-3" />
                   </Button>
-                )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                      view === "grid"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "text-blue-600 hover:bg-blue-50"
+                    }`}
+                    onClick={() => setView("grid")}
+                    title="Grid view"
+                  >
+                    <IconLayoutGrid className="h-3 w-3" />
+                  </Button>
+                </div>
                 {isCompany && (
                   <Button
                     variant="secondary"
@@ -300,11 +514,14 @@ export default function BugsReportPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
+            {/* Bug List / Grid */}
+            {view === "list" ? (
+            <Card>
+              <CardContent className="p-0">
+                {/* Title and Search - Top */}
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <CardTitle className="text-base font-medium">Bug Report List</CardTitle>
+                  <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search bugs..."
@@ -324,26 +541,17 @@ export default function BugsReportPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Bug List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Bug Report List</CardTitle>
-              </CardHeader>
-              <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Bug Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Created By</TableHead>
-                        <TableHead>Assigned To</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Name</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Bug Status</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Priority</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Created By</TableHead>
+                        <TableHead className="px-4 py-3 font-medium">Assigned To</TableHead>
+                        <TableHead className="px-4 py-3 font-medium"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -352,16 +560,16 @@ export default function BugsReportPage() {
                           const dateInfo = formatDate(bug.dueDate)
                           return (
                             <TableRow key={bug.id}>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="space-y-1">
                                   <Link
                                     href={`/projects/${bug.projectId}/bugs/${bug.id}`}
-                                    className="text-sm font-semibold text-primary hover:underline block"
+                                    className="text-sm font-medium text-primary hover:underline block"
                                   >
                                     {bug.title}
                                   </Link>
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs text-muted-foreground m-0">
+                                    <p className="text-xs text-muted-foreground m-0 font-normal">
                                       {bug.projectName}
                                     </p>
                                     {bug.isOwner !== undefined && (
@@ -378,31 +586,31 @@ export default function BugsReportPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Badge className={getBugStatusClasses(bug.bugStatus)}>
                                   {bug.bugStatus}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <Badge className={getPriorityClasses(bug.priority)}>
                                   {priorityMap[bug.priority]?.label || bug.priority}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <span
-                                  className={`text-sm ${
-                                    dateInfo.isOverdue ? "text-red-600 font-medium" : ""
+                                  className={`text-sm font-normal ${
+                                    dateInfo.isOverdue ? "text-red-600" : ""
                                   }`}
                                 >
                                   {dateInfo.formatted}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center">
-                                  <span className="text-sm">{bug.createdBy}</span>
+                                  <span className="text-sm font-normal">{bug.createdBy}</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex -space-x-2">
                                   {bug.assignedTo.slice(0, 3).map((user, idx) => (
                                     <Avatar
@@ -426,7 +634,7 @@ export default function BugsReportPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center gap-3 justify-end">
                                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <IconPaperclip className="h-4 w-4" />
@@ -452,7 +660,7 @@ export default function BugsReportPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-4 py-3 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -467,6 +675,131 @@ export default function BugsReportPage() {
                 )}
               </CardContent>
             </Card>
+            ) : (
+              /* Grid view: satu card per bug */
+              <>
+                <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
+                  <CardTitle className="text-base font-medium mb-0">Bug Report List</CardTitle>
+                  <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search bugs..."
+                      value={search}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        onClick={() => handleSearchChange('')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((bug) => {
+                      const dateInfo = formatDate(bug.dueDate)
+                      return (
+                        <Card key={bug.id} className="flex flex-col h-full">
+                          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 p-3">
+                            <CardTitle className="text-sm font-medium mb-0">
+                              <Link
+                                href={`/projects/${bug.projectId}/bugs/${bug.id}`}
+                                className="hover:underline text-primary"
+                              >
+                                {bug.title}
+                              </Link>
+                            </CardTitle>
+                            {bug.isOwner !== undefined && (
+                              <Badge
+                                className={
+                                  bug.isOwner
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-yellow-100 text-yellow-700"
+                                }
+                              >
+                                {bug.isOwner ? "Owner" : "Member"}
+                              </Badge>
+                            )}
+                          </CardHeader>
+                          <CardContent className="flex-1 p-3 pt-0 space-y-2">
+                            <p className="text-xs text-muted-foreground m-0 line-clamp-2">{bug.projectName}</p>
+                            <div className="flex flex-wrap gap-1">
+                              <Badge className={getBugStatusClasses(bug.bugStatus)}>
+                                {bug.bugStatus}
+                              </Badge>
+                              <Badge className={getPriorityClasses(bug.priority)}>
+                                {priorityMap[bug.priority]?.label || bug.priority}
+                              </Badge>
+                            </div>
+                            <div>
+                              <span
+                                className={`text-xs ${dateInfo.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}
+                              >
+                                Due: {dateInfo.formatted}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground m-0">Created by: {bug.createdBy}</p>
+                            <div className="flex -space-x-2">
+                              {bug.assignedTo.slice(0, 3).map((user, idx) => (
+                                <Avatar key={idx} className="h-6 w-6 border-2 border-white">
+                                  <AvatarFallback className="text-[10px]">{user.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              ))}
+                              {bug.assignedTo.length > 3 && (
+                                <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                  <span className="text-[10px] font-medium">+{bug.assignedTo.length - 3}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span><IconPaperclip className="h-3 w-3 inline mr-0.5" />{bug.attachments}</span>
+                              <span><IconMessageCircle className="h-3 w-3 inline mr-0.5" />{bug.comments}</span>
+                            </div>
+                          </CardContent>
+                          <div className="border-t p-3 pt-0">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="shadow-none h-7 w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                              asChild
+                            >
+                              <Link href={`/projects/${bug.projectId}/bugs/${bug.id}`}>
+                                <IconEye className="h-3 w-3 mr-1" />
+                                View
+                              </Link>
+                            </Button>
+                          </div>
+                        </Card>
+                      )
+                    })
+                  ) : (
+                    <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
+                      No bugs found
+                    </div>
+                  )}
+                </div>
+                {totalRecords > 0 && (
+                  <div className="mt-4">
+                    <SimplePagination
+                      totalCount={totalRecords}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </MainContentWrapper>
       </SidebarInset>

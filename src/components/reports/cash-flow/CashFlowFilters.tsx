@@ -39,18 +39,26 @@ export function CashFlowFilters({
             <Label className="text-xs font-medium text-muted-foreground">View</Label>
             <div className="flex gap-2">
               <Button
-                variant={viewType === 'monthly' ? 'default' : 'outline'}
+                variant="outline"
                 size="sm"
                 onClick={() => setViewType('monthly')}
-                className="h-9 px-4 shadow-none"
+                className={`h-9 px-4 shadow-none ${
+                  viewType === 'monthly'
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white hover:text-white border-blue-500 hover:border-blue-600'
+                    : 'hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300'
+                }`}
               >
                 Monthly
               </Button>
               <Button
-                variant={viewType === 'quarterly' ? 'default' : 'outline'}
+                variant="outline"
                 size="sm"
                 onClick={() => setViewType('quarterly')}
-                className="h-9 px-4 shadow-none"
+                className={`h-9 px-4 shadow-none ${
+                  viewType === 'quarterly'
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white hover:text-white border-blue-500 hover:border-blue-600'
+                    : 'hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300'
+                }`}
               >
                 Quarterly
               </Button>

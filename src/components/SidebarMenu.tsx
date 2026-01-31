@@ -36,6 +36,22 @@ const isActiveUrl = (pathname: string, url: string) => {
   return pathname === base || pathname.startsWith(base + "/")
 }
 
+// Warna active: level 0 paling pekat → level terdalam paling pastel
+const getActiveStyleByLevel = (level: number) => {
+  switch (level) {
+    case 0: return 'bg-blue-200 text-blue-900'
+    case 1: return 'bg-blue-200 text-blue-800'
+    case 2: return 'bg-blue-100 text-blue-700'
+    default: return 'bg-blue-50 text-blue-600'
+  }
+}
+
+// Hover: bg hanya level 0, level 1+ hanya warna teks
+const getHoverStyleByLevel = (level: number) => {
+  if (level === 0) return 'hover:bg-blue-300 hover:text-blue-900'
+  return 'hover:text-blue-700'
+}
+
 const MenuItemComponent = ({ 
   item, 
   level = 0, 
@@ -91,10 +107,10 @@ const MenuItemComponent = ({
               className={`
                 flex items-center justify-between w-full py-2 px-3 
                 text-sm font-medium rounded-md cursor-pointer
-                hover:bg-blue-100 hover:text-blue-700
                 transition-all duration-300 ease-out
+                ${getHoverStyleByLevel(level)}
                 ${paddingLeft}
-                ${childIsActive ? 'bg-blue-50 text-blue-700' : 'text-sidebar-foreground'}
+                ${childIsActive ? (level === 0 ? getActiveStyleByLevel(0) : 'text-blue-700') : 'text-sidebar-foreground'}
               `}
               whileTap={{ scale: 0.98 }}
             >
@@ -140,16 +156,17 @@ const MenuItemComponent = ({
     )
   }
 
-  // Leaf item (no children)
+  // Leaf: bg active hanya level 0; level 1+ hanya text active
+  const activeLeafClass = isActive ? (level === 0 ? getActiveStyleByLevel(0) : 'text-blue-700') : 'text-sidebar-foreground'
   return (
-    <Link href={item.url}>
+    <Link href={item.url} className="block">
       <motion.div
         className={`
           flex items-center gap-2 w-full py-2 px-3 
           text-sm font-medium rounded-md transition-all duration-300 ease-out
-          hover:bg-blue-100 hover:text-blue-700
+          ${getHoverStyleByLevel(level)}
           ${paddingLeft}
-          ${isActive ? 'bg-blue-50 text-blue-700' : 'text-sidebar-foreground'}
+          ${activeLeafClass}
         `}
         initial={false}
       >

@@ -70,27 +70,14 @@ export default async function FormDetailPage({ params }: FormDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3 shadow-none"
-                >
-                  <Link href="/form_builder">
-                    <IconArrowLeft className="mr-1 h-4 w-4" />
-                    Back
-                  </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold">{form.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {form.code} · {form.id}
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold">{form.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {form.code} · {form.id}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -105,6 +92,17 @@ export default async function FormDetailPage({ params }: FormDetailPageProps) {
                   className="h-8 px-3 bg-blue-500 hover:bg-blue-600 shadow-none"
                 >
                   Preview
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none"
+                >
+                  <Link href="/form_builder">
+                    <IconArrowLeft className="mr-1 h-4 w-4" />
+                    Back
+                  </Link>
                 </Button>
               </div>
             </div>

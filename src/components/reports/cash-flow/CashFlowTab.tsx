@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { FileText, Calendar, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
 import { CashFlowFilters } from './CashFlowFilters'
 import { CashFlowTable } from './CashFlowTable'
 import { useCashFlowData } from './hooks/useCashFlowData'
@@ -37,7 +37,7 @@ function CashFlowTabComponent() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 min-w-0" style={{ width: '100%', maxWidth: '100%', overflow: 'visible' }}>
       {/* Filter Section */}
       <CashFlowFilters
         selectedYear={selectedYear}
@@ -48,37 +48,8 @@ function CashFlowTabComponent() {
         onReset={handleReset}
       />
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Report Info Card */}
-        <Card className="shadow-none">
-          <CardContent className="px-3 py-2 flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground">Report</p>
-              <p className="text-sm font-semibold">{viewType === 'monthly' ? 'Monthly' : 'Quarterly'} Cash Flow</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Duration Card */}
-        <Card className="shadow-none">
-          <CardContent className="px-3 py-2 flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
-              <Calendar className="w-5 h-5 text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground">Duration</p>
-              <p className="text-sm font-semibold">Jan {selectedYear} - Dec {selectedYear}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Income */}
         <Card className="shadow-none">
           <CardContent className="px-3 py-2 flex items-center gap-3">
@@ -132,10 +103,15 @@ function CashFlowTabComponent() {
         </Card>
       </div>
 
-      {/* Main Content */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-6">
+      {/* Table section: wrapper scroll horizontal — geser untuk lihat Dec */}
+      <div
+        role="region"
+        aria-label="Cash flow table - scroll horizontally to see all months"
+        className="rounded-xl border bg-white dark:bg-gray-900 overflow-x-auto"
+        style={{ width: '100%', maxWidth: '100%', minWidth: 0, WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}
+      >
+        <div style={{ minWidth: '1320px', width: 'max-content' }}>
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Income Section */}
             <CashFlowTable
               title="Income"
@@ -173,7 +149,7 @@ function CashFlowTabComponent() {
 
             {/* Net Profit Section */}
             <div className="rounded-md border overflow-hidden mt-8">
-              <table className="w-full">
+              <table className="w-full" style={{ minWidth: '1320px' }}>
                 <thead className="bg-green-50 dark:bg-green-950">
                   <tr>
                     <td colSpan={13} className="px-3 py-2 text-sm font-semibold">
@@ -194,8 +170,8 @@ function CashFlowTabComponent() {
               </table>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
