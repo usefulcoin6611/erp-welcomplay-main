@@ -10,7 +10,11 @@ import {
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -238,189 +242,192 @@ export default function FinancialGoalPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header with Create Button */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Manage Goals</h1>
-              </div>
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Goal
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Goal</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">
-                          Name <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="name"
-                          placeholder="Enter Name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="amount">
-                          Amount <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="amount"
-                          type="number"
-                          step="0.01"
-                          placeholder="Enter Amount"
-                          value={formData.amount}
-                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="type">
-                        Type <span className="text-red-500">*</span>
-                      </Label>
-                      <Select
-                        value={formData.type}
-                        onValueChange={(value) => setFormData({ ...formData, type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {goalTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="from">
-                          From <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="from"
-                          type="date"
-                          value={formData.from}
-                          onChange={(e) => setFormData({ ...formData, from: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="to">
-                          To <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="to"
-                          type="date"
-                          value={formData.to}
-                          onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="is_display"
-                        checked={formData.is_display}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, is_display: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="is_display" className="cursor-pointer">
-                        Display On Dashboard
-                      </Label>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCreateDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
-                      Create
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Search */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search goals..."
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value)
-                      setCurrentPage(1)
-                    }}
-                    className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
-                  />
-                  {search && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSearch('')
-                        setCurrentPage(1)
-                      }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">Financial Goal</CardTitle>
+                  <CardDescription>Manage your financial goals and dashboard visibility.</CardDescription>
                 </div>
-              </CardContent>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Goal
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Goal</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">
+                              Name <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="name"
+                              placeholder="Enter Name"
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="amount">
+                              Amount <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="amount"
+                              type="number"
+                              step="0.01"
+                              placeholder="Enter Amount"
+                              value={formData.amount}
+                              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="type">
+                            Type <span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            value={formData.type}
+                            onValueChange={(value) => setFormData({ ...formData, type: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {goalTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="from">
+                              From <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="from"
+                              type="date"
+                              value={formData.from}
+                              onChange={(e) => setFormData({ ...formData, from: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="to">
+                              To <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="to"
+                              type="date"
+                              value={formData.to}
+                              onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="is_display"
+                            checked={formData.is_display}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, is_display: checked as boolean })
+                            }
+                          />
+                          <Label htmlFor="is_display" className="cursor-pointer">
+                            Display On Dashboard
+                          </Label>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setCreateDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
+                          Create
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
             </Card>
 
             {/* Goals Table */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="p-0">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+                <CardTitle>Goals</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                    <Input
+                      placeholder="Search goals..."
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearch('')
+                          setCurrentPage(1)
+                        }}
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
                 <div className="overflow-x-auto">
                   <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3">Name</TableHead>
-                        <TableHead className="px-4 py-3">Type</TableHead>
-                        <TableHead className="px-4 py-3">From</TableHead>
-                        <TableHead className="px-4 py-3">To</TableHead>
-                        <TableHead className="px-4 py-3">Amount</TableHead>
-                        <TableHead className="px-4 py-3">Is Dashboard Display</TableHead>
-                        <TableHead className="px-4 py-3">Action</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>From</TableHead>
+                        <TableHead>To</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Is Dashboard Display</TableHead>
+                        <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((goal) => (
                           <TableRow key={goal.id}>
-                            <TableCell className="px-4 py-3 font-style">{goal.name}</TableCell>
-                            <TableCell className="px-4 py-3 font-style">{goal.type}</TableCell>
-                            <TableCell className="px-4 py-3 font-style">{goal.from}</TableCell>
-                            <TableCell className="px-4 py-3 font-style">{goal.to}</TableCell>
-                            <TableCell className="px-4 py-3 font-style">
+                            <TableCell className="font-style">{goal.name}</TableCell>
+                            <TableCell className="font-style">{goal.type}</TableCell>
+                            <TableCell className="font-style">{goal.from}</TableCell>
+                            <TableCell className="font-style">{goal.to}</TableCell>
+                            <TableCell className="font-style">
                               {formatPrice(goal.amount)}
                             </TableCell>
-                            <TableCell className="px-4 py-3 font-style">
+                            <TableCell className="font-style">
                               <Badge
                                 className={
                                   goal.is_display === 1
@@ -431,7 +438,7 @@ export default function FinancialGoalPage() {
                                 {goal.is_display === 1 ? 'Yes' : 'No'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="px-4 py-3">
+                            <TableCell>
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
@@ -465,7 +472,7 @@ export default function FinancialGoalPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4 px-4 pb-4">
+                <div className="mt-4 pb-4">
                   <SimplePagination
                     totalCount={totalRecords}
                     currentPage={currentPage}
@@ -582,7 +589,7 @@ export default function FinancialGoalPage() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

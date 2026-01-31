@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 
 // NOTE: Import tabs directly (instead of via barrel `@/components/accounting-setup`) to avoid Turbopack export-eval issues.
 const TaxesTab = lazy(() => import('@/components/accounting-setup/taxes-tab').then((m) => ({ default: m.TaxesTab })))
@@ -108,8 +109,8 @@ export default function AccountingSetupTabsPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             <SmoothTab
               items={setupTabs}
               defaultTabId={activeTab}
@@ -117,7 +118,7 @@ export default function AccountingSetupTabsPage() {
               activeColor="bg-white dark:bg-gray-700 shadow-xs"
             />
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

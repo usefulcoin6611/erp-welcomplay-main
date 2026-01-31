@@ -5,11 +5,13 @@ import Link from "next/link"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { MainContentWrapper } from "@/components/main-content-wrapper"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -313,31 +315,31 @@ export default function EmployeesAssetSetupPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Assets</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage employee assets and equipment
-                </p>
-              </div>
-              <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                <DialogTrigger asChild>
-                  <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create Asset">
-                    <IconPlus className="mr-2 h-4 w-4" />
-                    Create Asset
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingId ? 'Edit Assets' : 'Create New Assets'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingId ? 'Update asset information' : 'Add a new asset to the system'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit}>
+          <MainContentWrapper>
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="px-6">
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl font-semibold">Assets</CardTitle>
+                    <CardDescription>Manage employee assets and equipment</CardDescription>
+                  </div>
+                  <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create Asset">
+                        <IconPlus className="mr-2 h-4 w-4" />
+                        Create Asset
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingId ? 'Edit Assets' : 'Create New Assets'}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {editingId ? 'Update asset information' : 'Add a new asset to the system'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleSubmit}>
                     <div className="grid gap-4 py-4">
                       <div className="space-y-2">
                         <Label htmlFor="employee_id">
@@ -489,39 +491,36 @@ export default function EmployeesAssetSetupPage() {
                   </form>
                 </DialogContent>
               </Dialog>
-            </div>
+                </CardHeader>
+              </Card>
 
-            {/* Search */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* Assets Table */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+                <CardTitle>Assets List</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                     <Input
                       placeholder="Search assets..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                     />
                     {search.length > 0 && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                         onClick={() => handleSearchChange('')}
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Assets Table */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader>
-                <CardTitle>Assets List</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -639,7 +638,8 @@ export default function EmployeesAssetSetupPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+            </div>
+          </MainContentWrapper>
         </div>
       </SidebarInset>
     </SidebarProvider>

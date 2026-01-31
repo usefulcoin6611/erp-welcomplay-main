@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Download, Search, RefreshCw } from 'lucide-react'
+import { Download, Search, RefreshCw, X } from 'lucide-react'
 
 // Mock data based on reference structure
 const chart_accounts = [
@@ -77,6 +77,7 @@ export function LedgerTab() {
   const [startDate, setStartDate] = useState('2025-01-01')
   const [endDate, setEndDate] = useState('2025-12-31')
   const [selectedAccount, setSelectedAccount] = useState('1')
+  const [search, setSearch] = useState('')
 
   let balance = 0
   let totalDebit = 0
@@ -97,36 +98,37 @@ export function LedgerTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Ledger</h2>
-          <p className="text-sm text-muted-foreground">
-            View ledger summary by account and date range.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-            onClick={() => {
-              const element = document.getElementById('printableArea')
-              if (element) {
-                // In real app, would use html2pdf library
-                console.log('Download ledger as PDF')
-              }
-            }}
-            title="Download"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download Ledger
-          </Button>
-        </div>
-      </div>
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Ledger</CardTitle>
+            <CardDescription>View ledger summary by account and date range.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+              onClick={() => {
+                const element = document.getElementById('printableArea')
+                if (element) {
+                  // In real app, would use html2pdf library
+                  console.log('Download ledger as PDF')
+                }
+              }}
+              title="Download"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Ledger
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -191,25 +193,66 @@ export function LedgerTab() {
 
       {/* Ledger Table */}
       <div id="printableArea">
-        <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-          <CardContent className="p-0">
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+            <CardTitle>Ledger Details</CardTitle>
+            <div className="flex w-full max-w-md items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                <Input
+                  placeholder="Search ledger..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                />
+                {search.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                    onClick={() => setSearch('')}
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
             <div className="table-responsive overflow-x-auto">
               <Table className="w-full min-w-full table-auto">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-4 py-3">Account Name</TableHead>
-                    <TableHead className="px-4 py-3">Name</TableHead>
-                    <TableHead className="px-4 py-3">Transaction Type</TableHead>
-                    <TableHead className="px-4 py-3">Transaction Date</TableHead>
-                    <TableHead className="px-4 py-3">Debit</TableHead>
-                    <TableHead className="px-4 py-3">Credit</TableHead>
-                    <TableHead className="px-4 py-3">Balance</TableHead>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Transaction Type</TableHead>
+                    <TableHead>Transaction Date</TableHead>
+                    <TableHead>Debit</TableHead>
+                    <TableHead>Credit</TableHead>
+                    <TableHead>Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {accountArrays.map((accounts, idx) => {
                     let runningBalance = 0
-                    return accounts.map((account, accIdx) => {
+                    const filteredAccounts = !search.trim()
+                      ? accounts
+                      : accounts.filter((a) => {
+                          const q = search.trim().toLowerCase()
+                          const hay = [
+                            a.account_name,
+                            a.user_name ?? '',
+                            a.reference,
+                            a.date,
+                          ]
+                            .join(' ')
+                            .toLowerCase()
+                          return hay.includes(q)
+                        })
+
+                    return filteredAccounts.map((account, accIdx) => {
                       const total = account.debit + account.credit
                       if (account.debit != 0) {
                         runningBalance -= total
@@ -218,13 +261,13 @@ export function LedgerTab() {
                       }
                       return (
                         <TableRow key={`${idx}-${accIdx}`}>
-                          <TableCell className="px-4 py-3">{account.account_name}</TableCell>
-                          <TableCell className="px-4 py-3">{account.user_name || '-'}</TableCell>
-                          <TableCell className="px-4 py-3">{account.reference}</TableCell>
-                          <TableCell className="px-4 py-3">{account.date}</TableCell>
-                          <TableCell className="px-4 py-3">{formatPrice(account.debit)}</TableCell>
-                          <TableCell className="px-4 py-3">{formatPrice(account.credit)}</TableCell>
-                          <TableCell className="px-4 py-3">{formatPrice(runningBalance)}</TableCell>
+                          <TableCell>{account.account_name}</TableCell>
+                          <TableCell>{account.user_name || '-'}</TableCell>
+                          <TableCell>{account.reference}</TableCell>
+                          <TableCell>{account.date}</TableCell>
+                          <TableCell>{formatPrice(account.debit)}</TableCell>
+                          <TableCell>{formatPrice(account.credit)}</TableCell>
+                          <TableCell>{formatPrice(runningBalance)}</TableCell>
                         </TableRow>
                       )
                     })

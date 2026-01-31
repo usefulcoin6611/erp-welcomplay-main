@@ -3,8 +3,9 @@
 import { useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -93,26 +94,32 @@ export default function ProductStockPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Product Stock</h1>
-              </div>
-            </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            {/* Title Tab */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">Product Stock</CardTitle>
+                  <CardDescription>View and update product quantity in stock.</CardDescription>
+                </div>
+              </CardHeader>
+            </Card>
 
             {/* Main Content */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="p-0">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+                <CardTitle>All Products</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="overflow-x-auto">
                   <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3">Name</TableHead>
-                        <TableHead className="px-4 py-3">Sku</TableHead>
-                        <TableHead className="px-4 py-3 text-right">Current Quantity</TableHead>
-                        <TableHead className="px-4 py-3">Action</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Sku</TableHead>
+                        <TableHead className="text-right">Current Quantity</TableHead>
+                        <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -125,9 +132,9 @@ export default function ProductStockPage() {
                       ) : (
                         paginatedData.map((product) => (
                           <TableRow key={product.id} className="font-style">
-                            <TableCell className="px-4 py-3 font-medium">{product.name}</TableCell>
-                            <TableCell className="px-4 py-3 text-muted-foreground">{product.sku}</TableCell>
-                            <TableCell className="px-4 py-3 text-right">
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{product.sku}</TableCell>
+                            <TableCell className="text-right">
                               {(() => {
                                 const q = product.quantity
                                 const cls =
@@ -143,7 +150,7 @@ export default function ProductStockPage() {
                                 )
                               })()}
                             </TableCell>
-                            <TableCell className="px-4 py-3">
+                            <TableCell>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -162,7 +169,7 @@ export default function ProductStockPage() {
                 </div>
 
                 {totalRecords > 0 && (
-                  <div className="mt-4 px-4 pb-4">
+                  <div className="mt-4 pb-4">
                     <SimplePagination
                       currentPage={currentPage}
                       totalCount={totalRecords}
@@ -228,7 +235,7 @@ export default function ProductStockPage() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

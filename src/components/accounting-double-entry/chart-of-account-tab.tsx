@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +46,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  X,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -225,6 +226,7 @@ export function ChartOfAccountTab() {
   const [accountToDelete, setAccountToDelete] = useState<{ id: number; groupType: string } | null>(null)
   const [startDate, setStartDate] = useState('2025-01-01')
   const [endDate, setEndDate] = useState('2025-12-31')
+  const [search, setSearch] = useState('')
 
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -240,6 +242,27 @@ export function ChartOfAccountTab() {
     () => groups.flatMap((g) => g.accounts),
     [groups],
   )
+
+  const filteredGroups = useMemo(() => {
+    if (!search.trim()) return groups
+    const q = search.trim().toLowerCase()
+    return groups
+      .map((g) => ({
+        ...g,
+        accounts: g.accounts.filter((a) => {
+          const hay = [
+            a.code,
+            a.name,
+            a.subType,
+            a.parentAccountName ?? '',
+          ]
+            .join(' ')
+            .toLowerCase()
+          return hay.includes(q)
+        }),
+      }))
+      .filter((g) => g.accounts.length > 0)
+  }, [groups, search])
 
   const parentAccountsForSelectedType = useMemo(() => {
     if (!createForm.subType) return []
@@ -304,15 +327,14 @@ export function ChartOfAccountTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Chart of Accounts</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage accounts and organize your financial structure.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Chart of Accounts</CardTitle>
+            <CardDescription>Manage accounts and organize your financial structure.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button
@@ -500,12 +522,13 @@ export function ChartOfAccountTab() {
             </form>
           </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -544,79 +567,113 @@ export function ChartOfAccountTab() {
         </CardContent>
       </Card>
 
-      {groups.map((group) => (
-        <Card key={group.type} className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-          <CardContent className="p-0">
-            <div className="px-4 py-3 border-b">
-              <div className="text-sm font-semibold">{group.type}</div>
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Accounts</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+              <Input
+                placeholder="Search accounts..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+              />
+              {search.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            <div className="overflow-x-auto w-full">
-              <Table className="w-full min-w-full table-auto">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="px-4 py-3">Code</TableHead>
-                    <TableHead className="px-4 py-3">Name</TableHead>
-                    <TableHead className="px-4 py-3">Type</TableHead>
-                    <TableHead className="px-4 py-3">Parent Account Name</TableHead>
-                    <TableHead className="px-4 py-3">Balance</TableHead>
-                    <TableHead className="px-4 py-3">Status</TableHead>
-                    <TableHead className="px-4 py-3">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {group.accounts.map((account) => (
-                    <TableRow key={account.id}>
-                      <TableCell className="px-4 py-3">{account.code}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <Link
-                          className="text-sm font-medium text-primary hover:underline"
-                          href={`/accounting/double-entry?tab=ledger&account=${account.id}`}
-                        >
-                          {account.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="px-4 py-3">{account.subType}</TableCell>
-                      <TableCell className="px-4 py-3 text-muted-foreground">{account.parentAccountName || '-'}</TableCell>
-                      <TableCell className="px-4 py-3 font-medium">{formatPrice(account.balance)}</TableCell>
-                      <TableCell className="px-4 py-3">{getEnabledBadge(account.isEnabled)}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="flex items-center gap-2 justify-start">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
-                            title="Transaction Summary"
-                          >
-                            <Activity className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
-                            title="Edit"
-                            onClick={() => handleEdit(account)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                            title="Delete"
-                            onClick={() => handleDeleteClick(account, group.type)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredGroups.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">No accounts found</div>
+          ) : (
+            <div className="space-y-6">
+              {filteredGroups.map((group, idx) => (
+                <div key={group.type} className={idx === 0 ? '' : 'pt-6 border-t'}>
+                  <div className="px-2 pb-2 text-sm font-semibold text-muted-foreground">
+                    {group.type}
+                  </div>
+                  <div className="overflow-x-auto w-full">
+                    <Table className="w-full min-w-full table-auto">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Parent Account Name</TableHead>
+                          <TableHead>Balance</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {group.accounts.map((account) => (
+                          <TableRow key={account.id}>
+                            <TableCell>{account.code}</TableCell>
+                            <TableCell>
+                              <Link
+                                className="text-sm font-medium text-primary hover:underline"
+                                href={`/accounting/double-entry?tab=ledger&account=${account.id}`}
+                              >
+                                {account.name}
+                              </Link>
+                            </TableCell>
+                            <TableCell>{account.subType}</TableCell>
+                            <TableCell className="text-muted-foreground">{account.parentAccountName || '-'}</TableCell>
+                            <TableCell className="font-medium">{formatPrice(account.balance)}</TableCell>
+                            <TableCell>{getEnabledBadge(account.isEnabled)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 justify-start">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                  title="Transaction Summary"
+                                >
+                                  <Activity className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                                  title="Edit"
+                                  onClick={() => handleEdit(account)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  title="Delete"
+                                  onClick={() => handleDeleteClick(account, group.type)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      ))}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

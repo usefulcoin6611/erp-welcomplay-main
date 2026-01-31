@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import * as React from 'react'
 import Link from "next/link"
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -406,15 +406,14 @@ export function InvoiceTab() {
 
   return (
     <div className="space-y-4 w-full">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Invoice</h2>
-          <p className="text-sm text-muted-foreground">
-            Create and manage invoices for customers.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Invoice</CardTitle>
+            <CardDescription>Create and manage invoices for customers.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -760,12 +759,13 @@ export function InvoiceTab() {
             </form>
           </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardContent className="py-4">
           <form 
             className="flex flex-col gap-4 md:flex-row md:items-end"
             onSubmit={(e) => {
@@ -825,44 +825,45 @@ export function InvoiceTab() {
       </Card>
 
       {/* Invoice list table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="pl-8 pr-6">
+          <CardTitle>Invoice List</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Invoice</TableHead>
-                  <TableHead className="px-4 py-3">Issue Date</TableHead>
-                  <TableHead className="px-4 py-3">Due Date</TableHead>
-                  <TableHead className="px-4 py-3">Due Amount</TableHead>
-                  <TableHead className="px-4 py-3">Status</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Invoice</TableHead>
+                  <TableHead>Issue Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Due Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedInvoices.length > 0 ? (
                   paginatedInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/invoice/${invoice.id}`}>{invoice.id}</Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="px-4 py-3">{formatDate(invoice.issueDate)}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <span className={isOverdue(invoice.dueDate) ? "text-red-500" : ""}>
-                          {formatDate(invoice.dueDate)}
-                        </span>
+                      <TableCell>{formatDate(invoice.issueDate)}</TableCell>
+                      <TableCell>
+                        <span>{formatDate(invoice.dueDate)}</span>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         Rp {invoice.dueAmount.toLocaleString('id-ID')}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Badge className={statusMap[invoice.status].color}>
                           {statusMap[invoice.status].label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" title="View" asChild>
                             <Link href={`/accounting/invoice/${invoice.id}`}>
@@ -904,7 +905,7 @@ export function InvoiceTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

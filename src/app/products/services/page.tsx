@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, Pencil, Trash2, Plus, Search, RefreshCw, FileUp, FileDown } from 'lucide-react'
@@ -211,14 +212,16 @@ export default function ProductServicesPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Product & Services</h1>
-              </div>
-              <div className="flex items-center gap-2">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            {/* Title Tab */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">Product & Services</CardTitle>
+                  <CardDescription>Manage products and services, pricing, tax, and stock quantity.</CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -446,12 +449,13 @@ export default function ProductServicesPage() {
                     </form>
                   </DialogContent>
                 </Dialog>
-              </div>
-            </div>
+                </div>
+              </CardHeader>
+            </Card>
 
             {/* Filter Section */}
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="px-4 py-3">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardContent className="py-4">
                 <div className="flex flex-col md:flex-row md:items-end gap-3">
                   <div className="flex-1 min-w-0 space-y-2">
                     <Label htmlFor="category">Category</Label>
@@ -492,22 +496,25 @@ export default function ProductServicesPage() {
               </CardContent>
             </Card>
 
-            <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="p-0">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+                <CardTitle>All Product & Services</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="overflow-x-auto">
                   <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3">Name</TableHead>
-                        <TableHead className="px-4 py-3">Sku</TableHead>
-                        <TableHead className="px-4 py-3">Sale Price</TableHead>
-                        <TableHead className="px-4 py-3">Purchase Price</TableHead>
-                        <TableHead className="px-4 py-3">Tax</TableHead>
-                        <TableHead className="px-4 py-3">Category</TableHead>
-                        <TableHead className="px-4 py-3">Unit</TableHead>
-                        <TableHead className="px-4 py-3 text-right">Quantity</TableHead>
-                        <TableHead className="px-4 py-3">Type</TableHead>
-                        <TableHead className="px-4 py-3">Action</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Sku</TableHead>
+                        <TableHead>Sale Price</TableHead>
+                        <TableHead>Purchase Price</TableHead>
+                        <TableHead>Tax</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Unit</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -520,18 +527,18 @@ export default function ProductServicesPage() {
                       ) : (
                         paginatedData.map((item) => (
                           <TableRow key={item.id} className="font-style">
-                            <TableCell className="px-4 py-3 font-medium">{item.name}</TableCell>
-                            <TableCell className="px-4 py-3 text-muted-foreground">{item.sku}</TableCell>
-                            <TableCell className="px-4 py-3">{formatRupiah(item.sale_price)}</TableCell>
-                            <TableCell className="px-4 py-3">{formatRupiah(item.purchase_price)}</TableCell>
-                            <TableCell className="px-4 py-3">{item.tax || '-'}</TableCell>
-                            <TableCell className="px-4 py-3">{item.category}</TableCell>
-                            <TableCell className="px-4 py-3">{item.unit}</TableCell>
-                            <TableCell className="px-4 py-3 text-right">
+                            <TableCell className="font-medium">{item.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{item.sku}</TableCell>
+                            <TableCell>{formatRupiah(item.sale_price)}</TableCell>
+                            <TableCell>{formatRupiah(item.purchase_price)}</TableCell>
+                            <TableCell>{item.tax || '-'}</TableCell>
+                            <TableCell>{item.category}</TableCell>
+                            <TableCell>{item.unit}</TableCell>
+                            <TableCell className="text-right">
                               {item.type === 'product' ? item.quantity ?? 0 : '-'}
                             </TableCell>
-                            <TableCell className="px-4 py-3 capitalize">{item.type}</TableCell>
-                            <TableCell className="px-4 py-3">
+                            <TableCell className="capitalize">{item.type}</TableCell>
+                            <TableCell>
                               <div className="flex items-center gap-2">
                                 <Button
                                   asChild
@@ -573,7 +580,7 @@ export default function ProductServicesPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4 px-4 pb-4">
+                  <div className="mt-4 pb-4">
                     <SimplePagination
                       currentPage={currentPage}
                       totalCount={totalRecords}
@@ -589,7 +596,7 @@ export default function ProductServicesPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

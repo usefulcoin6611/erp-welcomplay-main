@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -50,6 +50,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  X,
 } from 'lucide-react'
 
 // Mock payments
@@ -118,6 +119,7 @@ export function PaymentTab() {
   type PaymentRow = (typeof payments)[number]
 
   const [rows, setRows] = useState<PaymentRow[]>(payments)
+  const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentRow | null>(null)
@@ -250,6 +252,21 @@ export function PaymentTab() {
   // Filter data based on filters
   const filteredData = useMemo(() => {
     return rows.filter((payment) => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase()
+        const hay = [
+          payment.id,
+          payment.date,
+          payment.account,
+          payment.vendor,
+          payment.category,
+          payment.reference ?? '',
+          payment.description ?? '',
+        ]
+          .join(' ')
+          .toLowerCase()
+        if (!hay.includes(q)) return false
+      }
       if (filters.account) {
         const accountName = accounts.find(a => a.id === filters.account)?.name
         if (accountName && payment.account !== accountName) return false
@@ -268,7 +285,7 @@ export function PaymentTab() {
       }
       return true
     })
-  }, [filters, rows])
+  }, [filters, rows, search])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -281,19 +298,18 @@ export function PaymentTab() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filters.date, filters.account, filters.vendor, filters.category])
+  }, [filters.date, filters.account, filters.vendor, filters.category, search])
 
   return (
     <div className="space-y-4">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Payment</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage payments to vendors and suppliers.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Payment</CardTitle>
+            <CardDescription>Manage payments to vendors and suppliers.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button
@@ -430,12 +446,13 @@ export function PaymentTab() {
             </form>
           </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form onSubmit={(e) => { e.preventDefault(); handleApply(); }} className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium" htmlFor="date">Date</label>
@@ -518,39 +535,65 @@ export function PaymentTab() {
       </Card>
 
       {/* Payments Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Payment List</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+              <Input
+                placeholder="Search payments..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+              />
+              {search.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Date</TableHead>
-                  <TableHead className="px-4 py-3">Amount</TableHead>
-                  <TableHead className="px-4 py-3">Account</TableHead>
-                  <TableHead className="px-4 py-3">Vendor</TableHead>
-                  <TableHead className="px-4 py-3">Category</TableHead>
-                  <TableHead className="px-4 py-3">Reference</TableHead>
-                  <TableHead className="px-4 py-3">Description</TableHead>
-                  <TableHead className="px-4 py-3">Payment Receipt</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Vendor</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Payment Receipt</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {formatDate(payment.date)}
                       </TableCell>
-                      <TableCell className="px-4 py-3 font-medium">
+                      <TableCell className="font-medium">
                         {formatPrice(payment.amount)}
                       </TableCell>
-                      <TableCell className="px-4 py-3">{payment.account}</TableCell>
-                      <TableCell className="px-4 py-3">{payment.vendor}</TableCell>
-                      <TableCell className="px-4 py-3">{payment.category}</TableCell>
-                      <TableCell className="px-4 py-3">{payment.reference || '-'}</TableCell>
-                      <TableCell className="px-4 py-3">{payment.description || '-'}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>{payment.account}</TableCell>
+                      <TableCell>{payment.vendor}</TableCell>
+                      <TableCell>{payment.category}</TableCell>
+                      <TableCell>{payment.reference || '-'}</TableCell>
+                      <TableCell>{payment.description || '-'}</TableCell>
+                      <TableCell>
                         {payment.paymentReceipt ? (
                           <div className="flex items-center gap-2">
                             <Button
@@ -576,7 +619,7 @@ export function PaymentTab() {
                           '-'
                         )}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             size="sm"
@@ -611,7 +654,7 @@ export function PaymentTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-          <div className="mt-4 px-4 pb-4">
+          <div className="mt-4 pb-4">
             <SimplePagination
               totalCount={totalRecords}
               currentPage={currentPage}

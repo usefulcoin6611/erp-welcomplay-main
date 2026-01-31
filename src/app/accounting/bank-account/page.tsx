@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -93,8 +94,8 @@ export default function BankingPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Smooth Tab Navigation with Animated Content */}
             <SmoothTab
               items={bankingTabs}
@@ -105,7 +106,7 @@ export default function BankingPage() {
               onTabPreload={handleTabPreload}
             />
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

@@ -5,7 +5,7 @@ import { Pencil, Plus, RefreshCw, Trash2, Search, X } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -276,43 +276,40 @@ export function AccountTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Bank Account</h2>
-          <p className="text-sm text-muted-foreground">
-            Daftar akun bank beserta saldo dan informasi gateway pembayaran.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-end sm:ml-auto sm:self-auto">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 shadow-none"
-          >
-            Export CSV
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-            <DialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="blue"
-                className="shadow-none h-7"
-                onClick={() => {
-                  setEditingId(null)
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Buat Akun Bank
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingId ? 'Edit Akun Bank' : 'Buat Akun Bank'}</DialogTitle>
-                <DialogDescription>
-                  {editingId ? 'Perbarui informasi akun bank.' : 'Tambahkan akun bank baru ke sistem.'}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit}>
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Bank Account</CardTitle>
+            <CardDescription>
+              Daftar akun bank beserta saldo dan informasi gateway pembayaran.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="h-7 shadow-none">
+              Export CSV
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="blue"
+                  className="shadow-none h-7"
+                  onClick={() => {
+                    setEditingId(null)
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Buat Akun Bank
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editingId ? 'Edit Akun Bank' : 'Buat Akun Bank'}</DialogTitle>
+                  <DialogDescription>
+                    {editingId ? 'Perbarui informasi akun bank.' : 'Tambahkan akun bank baru ke sistem.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
                 <div className="space-y-4 py-4">
                   {/* Row 1: Chart of Account | Payment Gateway */}
                   <div className="grid grid-cols-2 gap-4">
@@ -467,68 +464,65 @@ export function AccountTab() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
-      {/* Search */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Semua Akun</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
               <Input
                 placeholder="Search accounts..."
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
               {search.length > 0 && (
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                   onClick={() => handleSearchChange('')}
+                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader>
-          <CardTitle>Semua Akun</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4 py-3">Chart of Account</TableHead>
-                <TableHead className="px-4 py-3">Nama</TableHead>
-                <TableHead className="px-4 py-3">Bank</TableHead>
-                <TableHead className="px-4 py-3">No. Rekening</TableHead>
-                <TableHead className="px-4 py-3 text-right">Saldo Saat Ini</TableHead>
-                <TableHead className="px-4 py-3">Kontak</TableHead>
-                <TableHead className="px-4 py-3">Payment Gateway</TableHead>
-                <TableHead className="px-4 py-3 text-right">Aksi</TableHead>
+                <TableHead>Chart of Account</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Bank</TableHead>
+                <TableHead>No. Rekening</TableHead>
+                <TableHead className="text-right">Saldo Saat Ini</TableHead>
+                <TableHead>Kontak</TableHead>
+                <TableHead>Payment Gateway</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedData.length > 0 ? (
                 paginatedData.map((a) => (
                   <TableRow key={a.id}>
-                    <TableCell className="px-4 py-3">{a.chartOfAccount}</TableCell>
-                    <TableCell className="px-4 py-3">{a.name}</TableCell>
-                    <TableCell className="px-4 py-3">{a.bank}</TableCell>
-                    <TableCell className="px-4 py-3 font-mono text-sm">{a.accountNumber}</TableCell>
-                    <TableCell className="px-4 py-3 text-right font-semibold">{a.currentBalance}</TableCell>
-                    <TableCell className="px-4 py-3">{a.contactNumber}</TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>{a.chartOfAccount}</TableCell>
+                    <TableCell>{a.name}</TableCell>
+                    <TableCell>{a.bank}</TableCell>
+                    <TableCell className="font-mono text-sm">{a.accountNumber}</TableCell>
+                    <TableCell className="text-right">{a.currentBalance}</TableCell>
+                    <TableCell>{a.contactNumber}</TableCell>
+                    <TableCell>
                       <Badge variant="outline">{a.paymentGateway}</Badge>
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
@@ -562,7 +556,7 @@ export function AccountTab() {
             </TableBody>
           </Table>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}
@@ -740,33 +734,30 @@ export function TransferTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header dengan Create Button */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Bank Balance Transfer</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage transfers between your bank accounts
-          </p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="blue"
-              className="shadow-none h-7"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Bank Transfer
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Bank Transfer</DialogTitle>
-              <DialogDescription>
-                Transfer balance between your bank accounts.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
+      {/* Header */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Bank Balance Transfer</CardTitle>
+            <CardDescription>
+              Manage transfers between your bank accounts
+            </CardDescription>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="blue" className="shadow-none h-7">
+                <Plus className="mr-2 h-4 w-4" />
+                Create Bank Transfer
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Bank Transfer</DialogTitle>
+                <DialogDescription>
+                  Transfer balance between your bank accounts.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
               <div className="space-y-4 py-4">
                 {/* Row 1: From Account | To Account */}
                 <div className="grid grid-cols-2 gap-4">
@@ -897,14 +888,12 @@ export function TransferTab() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        </CardHeader>
+      </Card>
 
       {/* Filter Form */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader>
-          <CardTitle>Filter</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <div className="grid gap-4 md:grid-cols-5">
             <div className="space-y-2">
               <Label htmlFor="transfer-date">Date</Label>
@@ -985,38 +974,38 @@ export function TransferTab() {
       </Card>
 
       {/* Transfer Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader>
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="pl-8 pr-6">
           <CardTitle>Bank Transfers</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4 py-3">Date</TableHead>
-                <TableHead className="px-4 py-3">From Account</TableHead>
-                <TableHead className="px-4 py-3">To Account</TableHead>
-                <TableHead className="px-4 py-3 text-right">Amount</TableHead>
-                <TableHead className="px-4 py-3">Reference</TableHead>
-                <TableHead className="px-4 py-3">Description</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>From Account</TableHead>
+                <TableHead>To Account</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Description</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedTransfers.length > 0 ? (
                 paginatedTransfers.map((transfer) => (
                   <TableRow key={transfer.id}>
-                    <TableCell className="px-4 py-3">{formatDate(transfer.date)}</TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>{formatDate(transfer.date)}</TableCell>
+                    <TableCell>
                       {transfer.fromAccount.bankName} {transfer.fromAccount.holderName}
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       {transfer.toAccount.bankName} {transfer.toAccount.holderName}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-right font-semibold">
+                    <TableCell className="text-right">
                       {formatCurrency(transfer.amount)}
                     </TableCell>
-                    <TableCell className="px-4 py-3 font-mono text-sm">{transfer.reference}</TableCell>
-                    <TableCell className="px-4 py-3">{transfer.description}</TableCell>
+                    <TableCell className="font-mono text-sm">{transfer.reference}</TableCell>
+                    <TableCell>{transfer.description}</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -1029,7 +1018,7 @@ export function TransferTab() {
             </TableBody>
           </Table>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

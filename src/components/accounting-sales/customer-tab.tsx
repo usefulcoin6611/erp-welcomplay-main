@@ -306,15 +306,14 @@ export function CustomerTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header with Action Buttons */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Customer</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage customers, contacts, and balances.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Customer</CardTitle>
+            <CardDescription>Manage customers, contacts, and balances.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -606,78 +605,72 @@ export function CustomerTab() {
             </form>
           </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
-      {/* Search */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Customers Table */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Customer List</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
               <Input
                 placeholder="Search customers..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
               {search.length > 0 && (
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                   onClick={() => setSearch('')}
+                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Customers Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader>
-          <CardTitle>Customer List</CardTitle>
-          <CardDescription>
-            Manage and view all your customers
-          </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4 py-3">#</TableHead>
-                <TableHead className="px-4 py-3">Name</TableHead>
-                <TableHead className="px-4 py-3">Contact</TableHead>
-                <TableHead className="px-4 py-3">Email</TableHead>
-                <TableHead className="px-4 py-3">Balance</TableHead>
-                <TableHead className="px-4 py-3">Action</TableHead>
+                <TableHead>#</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Balance</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedCustomers.length > 0 ? (
                 paginatedCustomers.map((customer) => (
                   <TableRow key={customer.id}>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       <Button variant="outline" size="sm" className="shadow-none">
                         {customer.customerCode}
                       </Button>
                     </TableCell>
-                    <TableCell className="px-4 py-3 font-medium">
+                    <TableCell className="font-medium">
                       {customer.name}
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       {customer.contact}
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       {customer.email}
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       Rp {customer.balance.toLocaleString('id-ID')}
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100">
                           <Eye className="h-3 w-3" />
@@ -714,7 +707,7 @@ export function CustomerTab() {
             </TableBody>
           </Table>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -78,14 +78,14 @@ export function UnitTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Unit</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage units for products and services.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Unit</CardTitle>
+            <CardDescription>Manage units for products and services.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create">
@@ -120,14 +120,16 @@ export function UnitTab() {
             </DialogFooter>
           </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Units</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
               <Input
                 placeholder="Search units..."
                 value={search}
@@ -135,43 +137,41 @@ export function UnitTab() {
                   setSearch(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
               {search.length > 0 && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                   onClick={() => {
                     setSearch('')
                     setCurrentPage(1)
                   }}
+                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="p-0">
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Unit Name</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Unit Name</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((unit) => (
                     <TableRow key={unit.id} className="font-style">
-                      <TableCell className="px-4 py-3">{unit.name}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>{unit.name}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -206,7 +206,7 @@ export function UnitTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

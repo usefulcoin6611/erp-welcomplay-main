@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +40,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  X,
 } from 'lucide-react'
 
 // Mock bills
@@ -99,17 +100,32 @@ export function BillTab() {
   const [billToDelete, setBillToDelete] = useState<(typeof bills)[number] | null>(null)
   const [billDate, setBillDate] = useState('')
   const [status, setStatus] = useState('all')
+  const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
   // Filter data based on filters
   const filteredData = useMemo(() => {
     return rows.filter((bill) => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase()
+        const hay = [
+          bill.id,
+          bill.vendor,
+          bill.category,
+          bill.billDate,
+          bill.dueDate,
+          bill.status,
+        ]
+          .join(' ')
+          .toLowerCase()
+        if (!hay.includes(q)) return false
+      }
       if (billDate && bill.billDate !== billDate) return false
       if (status !== 'all' && bill.status.toLowerCase() !== status.toLowerCase()) return false
       return true
     })
-  }, [billDate, status, rows])
+  }, [billDate, status, rows, search])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -140,19 +156,18 @@ export function BillTab() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [billDate, status])
+  }, [billDate, status, search])
 
   return (
     <div className="space-y-4">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Bill</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage supplier bills and due dates.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Bill</CardTitle>
+            <CardDescription>Manage supplier bills and due dates.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -171,12 +186,13 @@ export function BillTab() {
               Create Bill
             </Link>
           </Button>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium">Bill Date</label>
@@ -211,25 +227,51 @@ export function BillTab() {
       </Card>
 
       {/* Bills Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Bill List</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+              <Input
+                placeholder="Search bills..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+              />
+              {search.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Bill</TableHead>
-                  <TableHead className="px-4 py-3">Category</TableHead>
-                  <TableHead className="px-4 py-3">Bill Date</TableHead>
-                  <TableHead className="px-4 py-3">Due Date</TableHead>
-                  <TableHead className="px-4 py-3">Status</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Bill</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Bill Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((bill) => (
                     <TableRow key={bill.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Button
                           asChild
                           variant="outline"
@@ -241,15 +283,15 @@ export function BillTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="px-4 py-3">{bill.category}</TableCell>
-                      <TableCell className="px-4 py-3">{bill.billDate}</TableCell>
-                      <TableCell className="px-4 py-3">{bill.dueDate}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>{bill.category}</TableCell>
+                      <TableCell>{bill.billDate}</TableCell>
+                      <TableCell>{bill.dueDate}</TableCell>
+                      <TableCell>
                         <Badge className={getBillStatusClasses(bill.status)}>
                           {bill.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -297,7 +339,7 @@ export function BillTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

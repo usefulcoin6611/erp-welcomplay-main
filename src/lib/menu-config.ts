@@ -275,12 +275,9 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             items: [
               {
                 title: t("banking"),
-                url: "#",
-                items: [
-                  { title: "Account", url: "/accounting/bank-account" },
-                  { title: "Transfer", url: "/accounting/bank-transfer" },
-                ],
+                url: "/accounting/bank-account",
               },
+              { title: "Transfer", url: "/accounting/bank-transfer" },
               {
                 title: "Sales",
                 url: "/accounting/sales",

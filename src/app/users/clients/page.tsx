@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -141,8 +142,8 @@ export default function ClientsPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
@@ -336,11 +337,12 @@ export default function ClientsPage() {
               </Card>
             </div>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
 }
+
 
 
 

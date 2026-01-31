@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,6 +50,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  X,
 } from 'lucide-react'
 
 // Mock expenses
@@ -106,6 +107,7 @@ const categories = [
 
 export function ExpenseTab() {
   const [rows, setRows] = useState<typeof expenses>(expenses)
+  const [search, setSearch] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState<(typeof expenses)[number] | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -126,6 +128,20 @@ export function ExpenseTab() {
   // Filter data based on filters
   const filteredData = useMemo(() => {
     return rows.filter((exp) => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase()
+        const hay = [
+          exp.id,
+          exp.category,
+          exp.date,
+          exp.status,
+          exp.reference ?? '',
+          exp.description ?? '',
+        ]
+          .join(' ')
+          .toLowerCase()
+        if (!hay.includes(q)) return false
+      }
       if (paymentDate && exp.date !== paymentDate) return false
       if (category !== 'all') {
         const cat = categories.find(c => c.id === category)
@@ -133,7 +149,7 @@ export function ExpenseTab() {
       }
       return true
     })
-  }, [paymentDate, category, rows])
+  }, [paymentDate, category, rows, search])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -234,20 +250,19 @@ export function ExpenseTab() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [paymentDate, category])
+  }, [paymentDate, category, search])
 
   return (
     <div className="space-y-4">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Expense</h2>
-          <p className="text-sm text-muted-foreground">
-            Track and manage expenses.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
-        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Expense</CardTitle>
+            <CardDescription>Track and manage expenses.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button
               variant="blue"
@@ -379,12 +394,13 @@ export function ExpenseTab() {
             </form>
           </DialogContent>
         </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="w-full md:w-56">
               <label className="mb-1 block text-sm font-medium">Payment Date</label>
@@ -419,24 +435,50 @@ export function ExpenseTab() {
       </Card>
 
       {/* Expenses Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Expense List</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+              <Input
+                placeholder="Search expenses..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+              />
+              {search.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Expense</TableHead>
-                  <TableHead className="px-4 py-3">Category</TableHead>
-                  <TableHead className="px-4 py-3">Date</TableHead>
-                  <TableHead className="px-4 py-3">Status</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Expense</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((exp) => (
                     <TableRow key={exp.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Button
                           asChild
                           variant="outline"
@@ -448,14 +490,14 @@ export function ExpenseTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="px-4 py-3">{exp.category}</TableCell>
-                      <TableCell className="px-4 py-3">{exp.date}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>{exp.category}</TableCell>
+                      <TableCell>{exp.date}</TableCell>
+                      <TableCell>
                         <Badge className={getExpenseStatusClasses(exp.status)}>
                           {exp.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -501,7 +543,7 @@ export function ExpenseTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

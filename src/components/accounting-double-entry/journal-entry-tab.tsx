@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,6 +40,7 @@ import {
   Plus,
   Search,
   RefreshCw,
+  X,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -249,40 +250,31 @@ export function JournalEntryTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Journal Entry</h2>
-          <p className="text-sm text-muted-foreground">
-            Create and manage journal entries.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
-          <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create" onClick={handleCreateClick}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Journal Entry
-          </Button>
-        </div>
-      </div>
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Journal Entry</CardTitle>
+            <CardDescription>Create and manage journal entries.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create" onClick={handleCreateClick}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Journal Entry
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
             }}
             className="flex flex-col gap-4 md:flex-row md:items-end"
           >
-            <div className="flex-1 min-w-0">
-              <label className="text-sm font-medium">Search</label>
-              <Input
-                placeholder="Search journal number or description..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9"
-              />
-            </div>
             <div className="w-full md:w-44">
               <label className="text-sm font-medium">Date</label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9" />
@@ -310,24 +302,50 @@ export function JournalEntryTab() {
       </Card>
 
       {/* Journal Entries Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardTitle>Journal Entries</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+              <Input
+                placeholder="Search journal number or description..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+              />
+              {search.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Journal ID</TableHead>
-                  <TableHead className="px-4 py-3">Date</TableHead>
-                  <TableHead className="px-4 py-3">Amount</TableHead>
-                  <TableHead className="px-4 py-3">Description</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Journal ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Button
                           asChild
                           variant="outline"
@@ -339,14 +357,14 @@ export function JournalEntryTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="px-4 py-3">{entry.date}</TableCell>
-                      <TableCell className="px-4 py-3 font-medium">
+                      <TableCell>{entry.date}</TableCell>
+                      <TableCell className="font-medium">
                         {formatPrice(entry.amount)}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <span className="text-sm">{entry.description || '-'}</span>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -381,7 +399,7 @@ export function JournalEntryTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

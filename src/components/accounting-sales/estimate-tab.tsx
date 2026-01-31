@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import * as React from 'react'
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -464,15 +464,14 @@ export function EstimateTab() {
 
   return (
     <div className="space-y-4 w-full">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Estimate</h2>
-          <p className="text-sm text-muted-foreground">
-            Create and manage estimates for customers.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Estimate</CardTitle>
+            <CardDescription>Create and manage estimates for customers.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -784,12 +783,13 @@ export function EstimateTab() {
             </form>
           </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardContent className="py-4">
           <form 
             className="flex flex-col gap-4 md:flex-row md:items-end"
             onSubmit={(e) => {
@@ -847,41 +847,44 @@ export function EstimateTab() {
       </Card>
 
       {/* Proposal list table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="pl-8 pr-6">
+          <CardTitle>Estimate List</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Proposal</TableHead>
-                  <TableHead className="px-4 py-3">Category</TableHead>
-                  <TableHead className="px-4 py-3">Issue Date</TableHead>
-                  <TableHead className="px-4 py-3">Status</TableHead>
-                  <TableHead className="px-4 py-3">Action</TableHead>
+                  <TableHead>Proposal</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Issue Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedProposals.length > 0 ? (
                   paginatedProposals.map((proposal) => (
                     <TableRow key={proposal.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/proposal/${proposal.id}`}>{proposal.id}</Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="px-4 py-3">{proposal.category}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>{proposal.category}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3" />
                           <span>{proposal.issueDate}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <Badge className={getProposalStatusClasses(proposal.status)}>
                           {statusMap[proposal.status].label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button variant="outline" size="sm" className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100" title="Convert Invoice">
                             <ArrowLeftRight className="h-3 w-3" />
@@ -927,7 +930,7 @@ export function EstimateTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 px-4 pb-4">
+            <div className="mt-4 pb-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

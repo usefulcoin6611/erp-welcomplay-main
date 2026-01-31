@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -278,15 +278,14 @@ export function RevenueTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header with Create Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Revenue</h2>
-          <p className="text-sm text-muted-foreground">
-            Track incoming revenue and receipts.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Revenue</CardTitle>
+            <CardDescription>Track incoming revenue and receipts.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button
@@ -458,12 +457,13 @@ export function RevenueTab() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="px-4 py-3">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="py-4">
           <form
             className="flex flex-col gap-4 md:flex-row md:items-end"
             onSubmit={(e) => {
@@ -552,49 +552,52 @@ export function RevenueTab() {
       </Card>
 
       {/* Revenue Table */}
-      <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="p-0">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="pl-8 pr-6">
+          <CardTitle>Revenue List</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3">Date</TableHead>
-                  <TableHead className="px-4 py-3">Amount</TableHead>
-                  <TableHead className="px-4 py-3">Account</TableHead>
-                  <TableHead className="px-4 py-3">Customer</TableHead>
-                  <TableHead className="px-4 py-3">Category</TableHead>
-                  <TableHead className="px-4 py-3">Reference</TableHead>
-                  <TableHead className="px-4 py-3">Description</TableHead>
-                  <TableHead className="px-4 py-3">Payment Receipt</TableHead>
-                  <TableHead className="px-4 py-3">Actions</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Payment Receipt</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.length > 0 ? (
                   filteredData.map((revenue) => (
                     <TableRow key={revenue.id}>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {formatDate(revenue.date)}
                       </TableCell>
-                      <TableCell className="px-4 py-3 font-medium">
+                      <TableCell className="font-medium">
                         {formatPrice(revenue.amount)}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {revenue.account}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {revenue.customer || '-'}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {revenue.category || '-'}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {revenue.reference || '-'}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {revenue.description || '-'}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         {revenue.paymentReceipt ? (
                           <div className="flex items-center gap-2">
                             <Button
@@ -626,7 +629,7 @@ export function RevenueTab() {
                           '-'
                         )}
                       </TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell>
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"

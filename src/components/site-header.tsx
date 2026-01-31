@@ -1,7 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -17,6 +16,7 @@ const pageTitles: Record<string, string> = {
   '/orders': 'Orders',
   '/email_template': 'Email Templates',
   '/accounting/proposal': 'Penawaran',
+  '/accounting/setup/custom-field': 'Accounting Setup',
   '/contract': 'Kontrak',
   '/projects': 'Proyek',
   '/project_report': 'Project Report',
@@ -25,16 +25,40 @@ const pageTitles: Record<string, string> = {
   '/calendar': 'Task Calendar',
   '/support': 'Sistem Dukungan',
   '/deals': 'Deals',
+  '/hrm/assets': 'Assets',
+}
+
+function humanizeSlug(value: string) {
+  return value
+    .trim()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function getPageTitleFromPath(pathname: string, fallbackTitle: string) {
+  const parts = pathname.split('/').filter(Boolean)
+  // Find the longest matching prefix from pageTitles
+  for (let i = parts.length; i > 0; i--) {
+    const candidate = `/${parts.slice(0, i).join('/')}`
+    if (pageTitles[candidate]) return pageTitles[candidate]
+  }
+
+  // If not found, fallback to humanized last segment (better than showing Dashboard everywhere)
+  if (parts.length > 0) return humanizeSlug(parts[parts.length - 1])
+  return fallbackTitle
 }
 
 export function SiteHeader() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const t = useTranslations('dashboard')
   
-  // Get page title from mapping or fallback to translation
-  // Handle sub-routes like /email_template/[id]
-  const basePath = pathname.split('/').slice(0, 2).join('/') || pathname
-  const pageTitle = pageTitles[basePath] || pageTitles[pathname] || t('title')
+  const baseTitle = getPageTitleFromPath(pathname, t('title'))
+
+  const tab = searchParams.get('tab')
+  const tabTitle = tab ? humanizeSlug(tab) : ''
+  const pageTitle = tabTitle ? `${baseTitle} / ${tabTitle}` : baseTitle
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
