@@ -40,6 +40,8 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  sidebarSearchQuery: string
+  setSidebarSearchQuery: (query: string) => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -51,6 +53,14 @@ function useSidebar() {
   }
 
   return context
+}
+
+function getSidebarStateFromCookie(): boolean {
+  if (typeof document === 'undefined') return true
+  const match = document.cookie.match(new RegExp(`(^| )${SIDEBAR_COOKIE_NAME}=([^;]+)`))
+  if (match?.[2] === 'true') return true
+  if (match?.[2] === 'false') return false
+  return true
 }
 
 function SidebarProvider({
@@ -69,29 +79,38 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  // Initial state: when uncontrolled, read from cookie so desktop sidebar state persists across page loads
+  const [_open, _setOpen] = React.useState(() =>
+    openProp === undefined ? getSidebarStateFromCookie() : defaultOpen
+  )
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
-      const openState = typeof value === 'function' ? value(open) : value
       if (setOpenProp) {
+        const openState = typeof value === 'function' ? value(open) : value
         setOpenProp(openState)
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       } else {
-        _setOpen(openState)
+        _setOpen((prev) => {
+          const openState = typeof value === 'function' ? value(prev) : value
+          document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+          return openState
+        })
       }
-
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
     [setOpenProp, open],
   )
 
-  // Helper to toggle the sidebar.
+  // Helper to toggle the sidebar. Use functional updates so toggle always reflects current state.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
-  }, [isMobile, setOpen, setOpenMobile])
+    if (isMobile) {
+      setOpenMobile((prev) => !prev)
+    } else {
+      setOpen((prev) => !prev)
+    }
+  }, [isMobile, setOpen])
+
+  const [sidebarSearchQuery, setSidebarSearchQuery] = React.useState('')
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -122,8 +141,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      sidebarSearchQuery,
+      setSidebarSearchQuery,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarSearchQuery],
   )
 
   return (
@@ -187,7 +208,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-blue-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-blue-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-sidebar-foreground w-(--sidebar-width) p-0"
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,

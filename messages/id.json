@@ -110,6 +110,8 @@
   },
   "header": {
     "search": "Cari...",
+    "searchMenuPlaceholder": "Cari menu...",
+    "searchMenuResults": "Hasil",
     "notifications": "Notifikasi",
     "profile": "Profil",
     "logout": "Keluar"

@@ -299,7 +299,7 @@ export function JobsContent() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="startDate">Start Date</Label>
                   <Input
                     id="startDate"
@@ -311,7 +311,7 @@ export function JobsContent() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="endDate">End Date</Label>
                   <Input
                     id="endDate"

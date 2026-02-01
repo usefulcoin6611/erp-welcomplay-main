@@ -110,7 +110,7 @@ const MenuItemComponent = ({
                 transition-all duration-300 ease-out
                 ${getHoverStyleByLevel(level)}
                 ${paddingLeft}
-                ${childIsActive ? (level === 0 ? getActiveStyleByLevel(0) : 'text-blue-700') : 'text-sidebar-foreground'}
+                ${childIsActive ? 'text-blue-700' : 'text-sidebar-foreground'}
               `}
               whileTap={{ scale: 0.98 }}
             >
@@ -156,8 +156,8 @@ const MenuItemComponent = ({
     )
   }
 
-  // Leaf: bg active hanya level 0; level 1+ hanya text active
-  const activeLeafClass = isActive ? (level === 0 ? getActiveStyleByLevel(0) : 'text-blue-700') : 'text-sidebar-foreground'
+  // Leaf: gaya aktif penuh (dengan bg) hanya untuk item daun yang URL-nya cocok pathname
+  const activeLeafClass = isActive ? getActiveStyleByLevel(level) : 'text-sidebar-foreground'
   return (
     <Link href={item.url} className="block">
       <motion.div

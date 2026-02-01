@@ -82,7 +82,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col bg-gray-50">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between gap-4">
               <div>

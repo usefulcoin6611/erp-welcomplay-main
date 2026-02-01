@@ -10,418 +10,333 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Download, Loader2, Search, RotateCcw, FileText, Warehouse as WarehouseIcon } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { REPORT_CARD_CLASS, REPORT_TAB_TRIGGER_CLASS } from "../shared-styles"
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
+
+const WAREHOUSES = [
+  { value: "all", label: "All Warehouse" },
+  { value: "jakarta", label: "Jakarta" },
+  { value: "bandung", label: "Bandung" },
+  { value: "surabaya", label: "Surabaya" },
+]
+
+const CUSTOMERS = [
+  { value: "all", label: "All Customer" },
+  { value: "customer1", label: "PT. Global Tech" },
+  { value: "customer2", label: "CV. Prima Sejahtera" },
+  { value: "customer3", label: "UD. Mitra Usaha" },
+]
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+const baseChartOptions = {
+  chart: {
+    type: "area" as const,
+    toolbar: { show: false },
+    dropShadow: { enabled: true, color: "#000", top: 18, left: 7, blur: 10, opacity: 0.2 },
+  },
+  dataLabels: { enabled: false },
+  stroke: { width: 2, curve: "smooth" as const },
+  colors: ["#6fd944"],
+  grid: { strokeDashArray: 4 },
+  legend: { show: false },
+  tooltip: { y: { formatter: (v: number) => `Rp ${v.toLocaleString("id-ID")}` } },
+}
+
+type ReportTabContentProps = {
+  isMonthly: boolean
+  startDate: string
+  endDate: string
+  startMonth: string
+  endMonth: string
+  warehouse: string
+  customer: string
+  setStartDate: (v: string) => void
+  setEndDate: (v: string) => void
+  setStartMonth: (v: string) => void
+  setEndMonth: (v: string) => void
+  setWarehouse: (v: string) => void
+  setCustomer: (v: string) => void
+  onApply: () => void
+  onReset: () => void
+  reportTitle: string
+  chartTitle: string
+  chartDescription: string
+  chartOptions: object
+  chartSeries: { name: string; data: number[] }[]
+  mounted: boolean
+}
+
+function ReportTabContent({
+  isMonthly,
+  startDate,
+  endDate,
+  startMonth,
+  endMonth,
+  warehouse,
+  customer,
+  setStartDate,
+  setEndDate,
+  setStartMonth,
+  setEndMonth,
+  setWarehouse,
+  setCustomer,
+  onApply,
+  onReset,
+  reportTitle,
+  chartTitle,
+  chartDescription,
+  chartOptions,
+  chartSeries,
+  mounted,
+}: ReportTabContentProps) {
+  return (
+    <div className="space-y-6 mt-6">
+      <Card className={REPORT_CARD_CLASS}>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            {isMonthly ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="startMonth">Start Month</Label>
+                  <Input id="startMonth" type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="h-10" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endMonth">End Month</Label>
+                  <Input id="endMonth" type="month" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="h-10" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-10" />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-10" />
+                </div>
+              </>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="warehouse">Warehouse</Label>
+              <Select value={warehouse} onValueChange={setWarehouse}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WAREHOUSES.map((wh) => (
+                    <SelectItem key={wh.value} value={wh.value}>{wh.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer">Customer</Label>
+              <Select value={customer} onValueChange={setCustomer}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CUSTOMERS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={onApply} className="flex-1 h-10">
+                <Search className="h-4 w-4 mr-2" />
+                Apply
+              </Button>
+              <Button onClick={onReset} variant="destructive" className="h-10">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className={REPORT_CARD_CLASS}>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
+                <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Report</p>
+                <h3 className="text-lg font-semibold mt-1">{reportTitle}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {warehouse !== "all" && (
+          <Card className={REPORT_CARD_CLASS}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/50">
+                  <WarehouseIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-muted-foreground">Warehouse</p>
+                  <h3 className="text-lg font-semibold mt-1">{WAREHOUSES.find((w) => w.value === warehouse)?.label}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <Card className={REPORT_CARD_CLASS}>
+        <CardHeader className="pb-3">
+          <h3 className="text-lg font-semibold tracking-tight">{chartTitle}</h3>
+          <p className="text-sm text-muted-foreground">{chartDescription}</p>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {mounted ? (
+            <Chart options={chartOptions} series={chartSeries} type="area" height={320} />
+          ) : (
+            <Skeleton className="h-[320px] w-full" />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 export function POSTab() {
   const [mounted, setMounted] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [activeSubTab, setActiveSubTab] = useState("daily")
-  
-  // Filters
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [startMonth, setStartMonth] = useState("")
+  const [endMonth, setEndMonth] = useState("")
   const [warehouse, setWarehouse] = useState("all")
   const [customer, setCustomer] = useState("all")
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => setMounted(true), [])
 
   const handleDownload = () => {
     setIsDownloading(true)
-    setTimeout(() => {
-      setIsDownloading(false)
-    }, 2000)
+    setTimeout(() => setIsDownloading(false), 2000)
   }
 
   const handleApply = () => {
-    // Apply filters
-    console.log({ startDate, endDate, warehouse, customer })
+    console.log({ startDate, endDate, startMonth, endMonth, warehouse, customer })
   }
 
   const handleReset = () => {
     setStartDate("")
     setEndDate("")
+    setStartMonth("")
+    setEndMonth("")
     setWarehouse("all")
     setCustomer("all")
   }
 
-  // Mock data for daily
-  const generateDailyData = () => {
-    const days = []
-    for (let i = 0; i < 30; i++) {
-      days.push(Math.floor(Math.random() * 400) + 150)
-    }
-    return days
-  }
+  const dailyData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 400) + 150)
+  const monthlyData = MONTHS.map(() => Math.floor(Math.random() * 6000) + 3000)
 
   const dailyChartOptions = {
-    chart: {
-      type: 'area' as const,
-      toolbar: { show: false },
-      dropShadow: {
-        enabled: true,
-        color: '#000',
-        top: 18,
-        left: 7,
-        blur: 10,
-        opacity: 0.2
-      }
-    },
-    dataLabels: { enabled: false },
-    stroke: {
-      width: 2,
-      curve: 'smooth' as const
-    },
-    colors: ['#6fd944'],
-    xaxis: {
-      categories: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
-      title: { text: 'Days' }
-    },
-    yaxis: {
-      title: { text: 'Amount' }
-    },
-    grid: { strokeDashArray: 4 },
-    legend: { show: false },
-    tooltip: {
-      y: {
-        formatter: (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-      }
-    }
+    ...baseChartOptions,
+    xaxis: { categories: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`), title: { text: "Days" } },
+    yaxis: { title: { text: "Amount" } },
   }
-
-  const dailyChartSeries = [
-    {
-      name: 'POS',
-      data: generateDailyData()
-    }
-  ]
-
-  // Mock data for monthly
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const monthlyData = months.map(() => Math.floor(Math.random() * 6000) + 3000)
-
   const monthlyChartOptions = {
-    ...dailyChartOptions,
-    xaxis: {
-      categories: months,
-      title: { text: 'Months' }
-    }
+    ...baseChartOptions,
+    xaxis: { categories: MONTHS, title: { text: "Months" } },
+    yaxis: { title: { text: "Amount" } },
   }
-
-  const monthlyChartSeries = [
-    {
-      name: 'POS',
-      data: monthlyData
-    }
-  ]
-
-  const warehouses = [
-    { value: 'all', label: 'All Warehouse' },
-    { value: 'jakarta', label: 'Jakarta' },
-    { value: 'bandung', label: 'Bandung' },
-    { value: 'surabaya', label: 'Surabaya' }
-  ]
-
-  const customers = [
-    { value: 'all', label: 'All Customer' },
-    { value: 'customer1', label: 'PT. Global Tech' },
-    { value: 'customer2', label: 'CV. Prima Sejahtera' },
-    { value: 'customer3', label: 'UD. Mitra Usaha' }
-  ]
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">POS Report</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Daily and monthly sales analysis with customer tracking
-          </p>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Download report as PDF</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+    <div className="w-full min-w-0 space-y-6">
+      <Card className={REPORT_CARD_CLASS}>
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">POS Report</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Daily and monthly sales analysis with customer tracking</p>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDownloading ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Downloading...</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" /> Download PDF</>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download report as PDF</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </CardContent>
+      </Card>
 
-      {/* Daily/Monthly Tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="daily">Daily</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
+        <TabsList className="grid w-full max-w-md grid-cols-2 h-9 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
+          <TabsTrigger value="daily" className={REPORT_TAB_TRIGGER_CLASS}>Daily</TabsTrigger>
+          <TabsTrigger value="monthly" className={REPORT_TAB_TRIGGER_CLASS}>Monthly</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="daily" className="space-y-6 mt-6">
-          {/* Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warehouse">Warehouse</Label>
-                  <Select value={warehouse} onValueChange={setWarehouse}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {warehouses.map((wh) => (
-                        <SelectItem key={wh.value} value={wh.value}>
-                          {wh.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customer">Customer</Label>
-                  <Select value={customer} onValueChange={setCustomer}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleApply} className="flex-1 h-10">
-                    <Search className="h-4 w-4 mr-2" />
-                    Apply
-                  </Button>
-                  <Button onClick={handleReset} variant="destructive" className="h-10">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
-                    <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">Report</p>
-                    <h3 className="text-lg font-semibold mt-1">Daily POS Report</h3>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {warehouse !== 'all' && (
-              <Card className="">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/50">
-                      <WarehouseIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Warehouse</p>
-                      <h3 className="text-lg font-semibold mt-1">
-                        {warehouses.find(w => w.value === warehouse)?.label}
-                      </h3>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Chart */}
-          <Card className="">
-            <CardHeader className="pb-3">
-              <h3 className="text-lg font-semibold tracking-tight">Daily POS</h3>
-              <p className="text-sm text-muted-foreground">Sales trends over the last 30 days</p>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {mounted ? (
-                <Chart
-                  options={dailyChartOptions}
-                  series={dailyChartSeries}
-                  type="area"
-                  height={320}
-                />
-              ) : (
-                <Skeleton className="h-[320px] w-full" />
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="daily">
+          <ReportTabContent
+            isMonthly={false}
+            startDate={startDate}
+            endDate={endDate}
+            startMonth={startMonth}
+            endMonth={endMonth}
+            warehouse={warehouse}
+            customer={customer}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            setStartMonth={setStartMonth}
+            setEndMonth={setEndMonth}
+            setWarehouse={setWarehouse}
+            setCustomer={setCustomer}
+            onApply={handleApply}
+            onReset={handleReset}
+            reportTitle="Daily POS Report"
+            chartTitle="Daily POS"
+            chartDescription="Sales trends over the last 30 days"
+            chartOptions={dailyChartOptions}
+            chartSeries={[{ name: "POS", data: dailyData }]}
+            mounted={mounted}
+          />
         </TabsContent>
 
-        <TabsContent value="monthly" className="space-y-6 mt-6">
-          {/* Filters for Monthly */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="startMonth">Start Month</Label>
-                  <Input
-                    id="startMonth"
-                    type="month"
-                    className="h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endMonth">End Month</Label>
-                  <Input
-                    id="endMonth"
-                    type="month"
-                    className="h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warehouse">Warehouse</Label>
-                  <Select value={warehouse} onValueChange={setWarehouse}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {warehouses.map((wh) => (
-                        <SelectItem key={wh.value} value={wh.value}>
-                          {wh.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customer">Customer</Label>
-                  <Select value={customer} onValueChange={setCustomer}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleApply} className="flex-1 h-10">
-                    <Search className="h-4 w-4 mr-2" />
-                    Apply
-                  </Button>
-                  <Button onClick={handleReset} variant="destructive" className="h-10">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
-                    <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">Report</p>
-                    <h3 className="text-lg font-semibold mt-1">Monthly POS Report</h3>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {warehouse !== 'all' && (
-              <Card className="">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/50">
-                      <WarehouseIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Warehouse</p>
-                      <h3 className="text-lg font-semibold mt-1">
-                        {warehouses.find(w => w.value === warehouse)?.label}
-                      </h3>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Chart */}
-          <Card className="">
-            <CardHeader className="pb-3">
-              <h3 className="text-lg font-semibold tracking-tight">Monthly POS</h3>
-              <p className="text-sm text-muted-foreground">Sales trends across 12 months</p>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {mounted ? (
-                <Chart
-                  options={monthlyChartOptions}
-                  series={monthlyChartSeries}
-                  type="area"
-                  height={320}
-                />
-              ) : (
-                <Skeleton className="h-[320px] w-full" />
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="monthly">
+          <ReportTabContent
+            isMonthly={true}
+            startDate={startDate}
+            endDate={endDate}
+            startMonth={startMonth}
+            endMonth={endMonth}
+            warehouse={warehouse}
+            customer={customer}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            setStartMonth={setStartMonth}
+            setEndMonth={setEndMonth}
+            setWarehouse={setWarehouse}
+            setCustomer={setCustomer}
+            onApply={handleApply}
+            onReset={handleReset}
+            reportTitle="Monthly POS Report"
+            chartTitle="Monthly POS"
+            chartDescription="Sales trends across 12 months"
+            chartOptions={monthlyChartOptions}
+            chartSeries={[{ name: "POS", data: monthlyData }]}
+            mounted={mounted}
+          />
         </TabsContent>
       </Tabs>
     </div>

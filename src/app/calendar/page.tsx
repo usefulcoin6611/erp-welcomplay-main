@@ -129,7 +129,7 @@ export default function TaskCalendarPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-end">
               <div className="flex gap-2">
                 <Select value={calendarType} onValueChange={setCalendarType}>

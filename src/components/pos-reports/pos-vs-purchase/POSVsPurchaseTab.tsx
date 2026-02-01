@@ -109,43 +109,45 @@ export function POSVsPurchaseTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">POS VS Purchase Report</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Profitability analysis comparing sales revenue against purchase costs
-          </p>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Download report as PDF</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">POS VS Purchase Report</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Profitability analysis comparing sales revenue against purchase costs
+            </p>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download report as PDF</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
-      <Card>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div className="md:col-span-3"></div>
@@ -179,7 +181,7 @@ export function POSVsPurchaseTab() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/50">
@@ -193,7 +195,7 @@ export function POSVsPurchaseTab() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/50">
@@ -209,7 +211,7 @@ export function POSVsPurchaseTab() {
       </div>
 
       {/* Chart */}
-      <Card>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
         <CardHeader className="pb-3">
           <h3 className="text-lg font-semibold tracking-tight">Monthly Profit Analysis</h3>
           <p className="text-sm text-muted-foreground">Profit = POS - Purchase</p>
@@ -229,7 +231,7 @@ export function POSVsPurchaseTab() {
       </Card>
 
       {/* Data Table */}
-      <Card>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
         <CardHeader className="pb-3">
           <h3 className="text-lg font-semibold tracking-tight">Detailed Breakdown</h3>
           <p className="text-sm text-muted-foreground">Monthly comparison of POS, Purchase, and Profit</p>

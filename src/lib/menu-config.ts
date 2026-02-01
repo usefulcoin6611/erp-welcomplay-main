@@ -277,7 +277,6 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
                 title: t("banking"),
                 url: "/accounting/bank-account",
               },
-              { title: "Transfer", url: "/accounting/bank-transfer" },
               {
                 title: "Sales",
                 url: "/accounting/sales",
@@ -292,6 +291,8 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               },
               { title: "Budget Planner", url: "/accounting/budget" },
               { title: "Financial Goal", url: "/accounting/goal" },
+              { title: "Accounting Setup", url: "/accounting/setup" },
+              { title: "Print Settings", url: "/accounting/print-settings" },
             ],
           },
           {
@@ -307,12 +308,12 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
                 title: t("crmSystemSetup"),
                 url: "#",
                 items: [
-                  { title: "Pipelines", url: "/pipelines" },
-                  { title: "Lead Stages", url: "/pipelines/lead-stages" },
-                  { title: "Deal Stages", url: "/pipelines/deal-stages" },
-                  { title: "Sources", url: "/pipelines/sources" },
-                  { title: "Labels", url: "/pipelines/labels" },
-                  { title: "Contract Type", url: "/pipelines/contract-type" },
+                  { title: "Pipelines", url: "/pipelines?tab=pipelines" },
+                  { title: "Lead Stages", url: "/pipelines?tab=lead-stages" },
+                  { title: "Deal Stages", url: "/pipelines?tab=deal-stages" },
+                  { title: "Sources", url: "/pipelines?tab=sources" },
+                  { title: "Labels", url: "/pipelines?tab=labels" },
+                  { title: "Contract Type", url: "/pipelines?tab=contract-type" },
                 ],
               },
             ],
@@ -336,43 +337,14 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             url: "#",
             icon: IconCash,
             items: [
-              {
-                title: "Product & Services",
-                url: "#",
-                items: [
-                  { title: "Product & Services", url: "/pos/products/list" },
-                  { title: "Product Category", url: "/pos/products/category" },
-                  { title: "Product Coupon", url: "/pos/products/coupon" },
-                  { title: "Brand", url: "/pos/products/brand" },
-                  { title: "Unit", url: "/pos/products/unit" },
-                  { title: "Variant", url: "/pos/products/variant" },
-                ],
-              },
-              {
-                title: "Purchase",
-                url: "#",
-                items: [
-                  { title: "Purchase", url: "/pos/purchase/list" },
-                  { title: "Purchase Return", url: "/pos/purchase/return" },
-                ],
-              },
-              {
-                title: "Warehouse",
-                url: "#",
-                items: [
-                  { title: "Warehouse", url: "/pos/warehouse/list" },
-                  { title: "Warehouse Transfer", url: "/pos/warehouse/transfer" },
-                ],
-              },
-              {
-                title: "POS",
-                url: "#",
-                items: [
-                  { title: "POS", url: "/pos/sales/pos" },
-                  { title: "POS Return", url: "/pos/sales/return" },
-                ],
-              },
-              { title: "Reports", url: "/pos/reports" },
+              { title: "Warehouse", url: "/pos/warehouse" },
+              { title: "Purchase", url: "/pos/purchase" },
+              { title: "Quotation", url: "/pos/quotation" },
+              { title: "Add POS", url: "/pos/sales" },
+              { title: "POS", url: "/pos/summary" },
+              { title: "Transfer", url: "/pos/transfer" },
+              { title: "Print Barcode", url: "/pos/print-barcode" },
+              { title: "Print Settings", url: "/pos/print-settings" },
             ],
           },
           {

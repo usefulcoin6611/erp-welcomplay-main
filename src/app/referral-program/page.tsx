@@ -578,7 +578,7 @@ export default function ReferralProgramPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* Tabs */}
             <Card className="rounded-lg">
               <CardContent className="p-0">

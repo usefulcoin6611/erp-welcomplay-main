@@ -537,11 +537,11 @@ export function ChartOfAccountTab() {
             }}
             className="flex flex-col gap-4 md:flex-row md:items-end"
           >
-            <div className="w-full md:w-44">
+            <div className="w-full md:w-44 space-y-3">
               <Label htmlFor="startDate">Start Date</Label>
               <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9" />
             </div>
-            <div className="w-full md:w-44">
+            <div className="w-full md:w-44 space-y-3">
               <Label htmlFor="endDate">End Date</Label>
               <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9" />
             </div>

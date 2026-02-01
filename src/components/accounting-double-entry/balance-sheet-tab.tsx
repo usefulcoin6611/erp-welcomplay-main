@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/auth-context'
@@ -108,14 +108,13 @@ export function BalanceSheetTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Balance Sheet</h2>
-          <p className="text-sm text-muted-foreground">
-            View balance sheet report for a period.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0 px-6 py-4">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Balance Sheet</CardTitle>
+            <CardDescription>View balance sheet report for a period.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -154,8 +153,9 @@ export function BalanceSheetTab() {
         <Button variant="secondary" size="sm" className="shadow-none h-7" title="Horizontal View">
           <Columns2 className="h-3 w-3" />
         </Button>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
       {showFilter && (
@@ -168,8 +168,8 @@ export function BalanceSheetTab() {
               }}
               className="flex flex-col gap-4 md:flex-row md:items-end"
             >
-              <div className="w-full md:w-44">
-                <label className="mb-1 block text-sm font-medium">Start Date</label>
+              <div className="w-full md:w-44 space-y-3">
+                <label className="block text-sm font-medium">Start Date</label>
                 <Input
                   type="date"
                   value={startDate}
@@ -177,8 +177,8 @@ export function BalanceSheetTab() {
                   className="startDate"
                 />
               </div>
-              <div className="w-full md:w-44">
-                <label className="mb-1 block text-sm font-medium">End Date</label>
+              <div className="w-full md:w-44 space-y-3">
+                <label className="block text-sm font-medium">End Date</label>
                 <Input
                   type="date"
                   value={endDate}
@@ -214,17 +214,17 @@ export function BalanceSheetTab() {
         <div className="flex justify-center">
           <div className="w-full max-w-5xl">
             <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <div className="p-4 border-b">
-                <h5 className="text-lg font-semibold">
+              <div className="border-b border-border px-6 py-4">
+                <h5 className="text-lg font-semibold text-foreground">
                   Balance Sheet of {userName} as of {startDateRange} to {endDateRange}
                 </h5>
               </div>
-              <CardContent className="p-0 overflow-auto">
-                <div className="account-table-inner">
-                  <div className="account-title flex items-center justify-between border-t border-b py-2 px-4">
-                    <h6 className="mb-0 font-semibold">Account</h6>
-                    <h6 className="mb-0 text-center font-semibold">Account Code</h6>
-                    <h6 className="mb-0 text-end font-semibold">Total</h6>
+              <CardContent className="overflow-auto p-0">
+                <div className="px-6 py-5">
+                  <div className="flex items-center justify-between gap-4 border-b border-border py-3 text-sm font-semibold">
+                    <span className="min-w-0 flex-1">Account</span>
+                    <span className="w-28 shrink-0 text-center">Account Code</span>
+                    <span className="w-32 shrink-0 text-end">Total</span>
                   </div>
 
                   {Object.entries(totalAccounts).map(([type, accounts]) => {
@@ -233,14 +233,14 @@ export function BalanceSheetTab() {
                     const isLiabilitiesOrEquity = type === 'Liabilities' || type === 'Equity'
 
                     return (
-                      <div key={type} className="account-main-inner py-2">
+                      <div key={type} className="py-3">
                         {isLiabilitiesOrEquity && (
-                          <p className="fw-bold mb-3 px-4 font-bold">Liabilities & Equity</p>
+                          <p className="mb-2 mt-1 text-sm font-bold text-foreground">Liabilities & Equity</p>
                         )}
-                        <p className="fw-bold ps-2 mb-2 px-4 font-bold">{type}</p>
+                        <p className="mb-2 mt-1 text-sm font-bold text-foreground">{type}</p>
 
                         {accounts.map((accountGroup, idx) => (
-                          <div key={idx} className="border-bottom py-2">
+                          <div key={idx} className="border-b border-border/60">
                             {accountGroup.account.map((records) =>
                               records.map((record) => {
                                 const netAmount = isAssets ? -record.netAmount : record.netAmount
@@ -249,20 +249,20 @@ export function BalanceSheetTab() {
                                 return (
                                   <div
                                     key={record.account_id}
-                                    className="account-inner flex items-center justify-between ps-md-5 ps-3 px-4"
+                                    className="flex items-center justify-between gap-4 py-2.5 text-sm"
                                   >
-                                    <p className="mb-2 ms-3">
+                                    <span className="min-w-0 flex-1 pl-4">
                                       <a
                                         href={`/accounting/double-entry/ledger?account=${record.account_id}`}
                                         className="text-primary hover:underline"
                                       >
                                         {record.account_name}
                                       </a>
-                                    </p>
-                                    <p className="mb-2 text-center">{record.account_code}</p>
-                                    <p className="text-primary mb-2 float-end text-end">
+                                    </span>
+                                    <span className="w-28 shrink-0 text-center">{record.account_code}</span>
+                                    <span className="w-32 shrink-0 text-end tabular-nums text-foreground">
                                       {formatPrice(netAmount)}
-                                    </p>
+                                    </span>
                                   </div>
                                 )
                               })
@@ -270,17 +270,19 @@ export function BalanceSheetTab() {
                           </div>
                         ))}
 
-                        <div className="account-title flex items-center justify-between border-bottom py-2 px-2 pe-0">
-                          <h6 className="fw-bold mb-0 font-bold">Total for {type}</h6>
-                          <h6 className="fw-bold mb-0 text-end font-bold">{formatPrice(total)}</h6>
+                        <div className="flex items-center justify-between gap-4 border-b border-border py-3 font-bold text-sm">
+                          <span className="min-w-0 flex-1">Total for {type}</span>
+                          <span className="w-28 shrink-0 text-center" />
+                          <span className="w-32 shrink-0 text-end tabular-nums">{formatPrice(total)}</span>
                         </div>
                       </div>
                     )
                   })}
 
-                  <div className="account-title flex items-center justify-between border-bottom py-2 px-0">
-                    <h6 className="fw-bold mb-0 font-bold">Total for Liabilities & Equity</h6>
-                    <h6 className="fw-bold mb-0 text-end font-bold">
+                  <div className="flex items-center justify-between gap-4 border-b border-border py-3 font-bold text-sm">
+                    <span className="min-w-0 flex-1">Total for Liabilities & Equity</span>
+                    <span className="w-28 shrink-0 text-center" />
+                    <span className="w-32 shrink-0 text-end tabular-nums">
                       {formatPrice(
                         Object.entries(totalAccounts).reduce((sum, [type, accounts]) => {
                           if (type === 'Assets') return sum
@@ -300,7 +302,7 @@ export function BalanceSheetTab() {
                           return sum + typeTotal
                         }, 0)
                       )}
-                    </h6>
+                    </span>
                   </div>
                 </div>
               </CardContent>

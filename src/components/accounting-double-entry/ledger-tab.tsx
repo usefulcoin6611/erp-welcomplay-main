@@ -135,8 +135,8 @@ export function LedgerTab() {
             }}
             className="flex flex-col gap-4 md:flex-row md:items-end"
           >
-            <div className="w-full md:w-44">
-              <label className="text-sm font-medium">Start Date</label>
+            <div className="w-full md:w-44 space-y-3">
+              <label className="block text-sm font-medium">Start Date</label>
               <Input
                 type="date"
                 value={startDate}
@@ -144,8 +144,8 @@ export function LedgerTab() {
                 className="h-9"
               />
             </div>
-            <div className="w-full md:w-44">
-              <label className="text-sm font-medium">End Date</label>
+            <div className="w-full md:w-44 space-y-3">
+              <label className="block text-sm font-medium">End Date</label>
               <Input
                 type="date"
                 value={endDate}

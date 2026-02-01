@@ -247,7 +247,7 @@ export default function ProjectReportPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
 
             {/* Filters - Only for Company */}
             {isCompany && (
@@ -285,7 +285,7 @@ export default function ProjectReportPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Label htmlFor="start_date">Start Date</Label>
                       <Input
                         id="start_date"
@@ -295,7 +295,7 @@ export default function ProjectReportPage() {
                         className="h-9"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Label htmlFor="end_date">End Date</Label>
                       <Input
                         id="end_date"

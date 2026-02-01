@@ -53,7 +53,7 @@ export function DealPipelineReport() {
     fill: {
       opacity: 1
     },
-    colors: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'],
+    colors: ['#7BB8A8', '#B89B8B', '#B8A87B', '#A89BB8'],
     legend: {
       position: 'top',
       horizontalAlign: 'left',
@@ -81,12 +81,12 @@ export function DealPipelineReport() {
   ]
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <h3 className="text-lg font-semibold tracking-tight">Pipeline Report</h3>
-        <p className="text-sm text-muted-foreground">Deal status distribution across pipeline stages</p>
+    <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+      <CardHeader className="px-5 pt-5 pb-3">
+        <h3 className="text-base font-semibold text-foreground">Pipeline Report</h3>
+        <p className="text-sm text-muted-foreground mt-0.5">Deal status distribution across pipeline stages</p>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="px-5 pb-5 pt-0">
         {mounted && (
           <Chart
             options={pipelineChartOptions}

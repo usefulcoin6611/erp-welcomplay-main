@@ -111,7 +111,7 @@ export default function EmployeeEditPage({ params }: EmployeeEditPageProps) {
             </div>
           </div>
         </header>
-        <div className="flex flex-1 flex-col bg-gray-50">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-5 p-5">
             <CreateEmployeeForm
               onClose={() => router.push(`/hrm/employees/${employeeId}`)}

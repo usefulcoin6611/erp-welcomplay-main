@@ -170,3 +170,56 @@ export function getContractStatusBadgeClass(status: string): string {
       return 'bg-slate-100 text-slate-700'
   }
 }
+
+export type ContractAttachment = {
+  id: string
+  name: string
+  size?: string
+}
+
+export type ContractComment = {
+  id: string
+  comment: string
+  user: string
+  created_at: string
+}
+
+export type ContractNote = {
+  id: string
+  notes: string
+  user: string
+  created_at: string
+}
+
+const mockAttachmentsByContract: Record<string, ContractAttachment[]> = {
+  'CTR-2025-001': [
+    { id: 'a1', name: 'SOW-ERP-Maju-Jaya.pdf', size: '1.2 MB' },
+    { id: 'a2', name: 'Lampiran-Schedule.xlsx', size: '0.3 MB' },
+  ],
+}
+
+const mockCommentsByContract: Record<string, ContractComment[]> = {
+  'CTR-2025-001': [
+    { id: 'c1', comment: 'Mohon konfirmasi timeline fase 2.', user: 'Admin', created_at: '2 hari yang lalu' },
+  ],
+}
+
+const mockNotesByContract: Record<string, ContractNote[]> = {
+  'CTR-2025-001': [
+    { id: 'n1', notes: 'Kick-off meeting dijadwalkan minggu depan.', user: 'Admin', created_at: '1 minggu yang lalu' },
+  ],
+}
+
+export function getContractAttachments(contractId: string): ContractAttachment[] {
+  return mockAttachmentsByContract[contractId] ?? []
+}
+
+export function getContractComments(contractId: string): ContractComment[] {
+  return mockCommentsByContract[contractId] ?? []
+}
+
+export function getContractNotes(contractId: string): ContractNote[] {
+  return mockNotesByContract[contractId] ?? []
+}
+
+export const CONTRACT_STATUS_OPTIONS = ['accept', 'pending'] as const

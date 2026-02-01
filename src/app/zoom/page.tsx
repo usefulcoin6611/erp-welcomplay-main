@@ -208,36 +208,37 @@ export default function ZoomMeetingPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Manage Zoom Meeting</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create and manage Zoom meetings
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm" 
-                  className="shadow-none"
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+              <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
+                <div>
+                  <h1 className="text-2xl font-semibold text-foreground">Manage Zoom Meeting</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Create and manage Zoom meetings
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`shadow-none ${viewMode === 'list' ? 'bg-blue-500 text-white hover:bg-blue-600 hover:text-white border-blue-500' : 'bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 border-0'}`}
                   onClick={() => setViewMode('list')}
                 >
                   <List className="mr-2 h-4 w-4" /> List View
                 </Button>
-                <Button 
-                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                  size="sm" 
-                  className="shadow-none"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`shadow-none ${viewMode === 'calendar' ? 'bg-blue-500 text-white hover:bg-blue-600 hover:text-white border-blue-500' : 'bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 border-0'}`}
                   onClick={() => setViewMode('calendar')}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" /> Calendar View
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none">
+                    <Button size="sm" variant="blue" className="shadow-none bg-blue-500 hover:bg-blue-600 text-white">
                       <Plus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
@@ -391,18 +392,19 @@ export default function ZoomMeetingPage() {
                         >
                           Cancel
                         </Button>
-                        <Button type="submit" variant="blue" className="shadow-none">Create</Button>
+                        <Button type="submit" variant="blue" className="shadow-none bg-blue-500 hover:bg-blue-600 text-white">Create</Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
                 </Dialog>
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* List View */}
             {viewMode === 'list' && (
-              <Card className="shadow-none">
-                <CardContent className="p-0">
+              <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+                <CardContent className="px-5 pt-5 pb-5">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -483,9 +485,9 @@ export default function ZoomMeetingPage() {
                             <TableCell>{getStatusBadge(meeting)}</TableCell>
                             <TableCell className="text-end">
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none"
+                                className="shadow-none h-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200/60"
                                 onClick={() => handleDelete(meeting.id)}
                               >
                                 <Trash className="h-4 w-4" />
@@ -505,7 +507,7 @@ export default function ZoomMeetingPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Calendar */}
                 <div className="lg:col-span-2">
-                  <Card>
+                  <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
                     <CardContent className="p-4">
                       <div className="text-center mb-4">
                         <h3 className="text-lg font-semibold">Calendar</h3>
@@ -528,7 +530,7 @@ export default function ZoomMeetingPage() {
 
                 {/* Meetings List */}
                 <div className="lg:col-span-1">
-                  <Card>
+                  <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
                     <CardContent className="p-4">
                       <h3 className="text-lg font-semibold mb-4">Meetings</h3>
                       <div className="space-y-3 max-h-[500px] overflow-y-auto">

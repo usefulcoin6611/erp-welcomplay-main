@@ -26,10 +26,37 @@ export function LeadGeneralReport() {
     // Here you would typically fetch new data based on selected month
   }
 
-  // This Week Leads Conversions Chart
+  // This Week Leads Conversions – Pie chart (reference-erp)
   const weeklyChartOptions: any = {
     chart: {
-      type: 'line',
+      type: 'pie',
+      width: 350,
+      height: 280,
+      toolbar: { show: false }
+    },
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    colors: ['#DBEAFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'],
+    legend: {
+      position: 'bottom'
+    },
+    dataLabels: {
+      enabled: true
+    },
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: { width: 200 },
+        legend: { position: 'bottom' }
+      }
+    }]
+  }
+
+  const weeklyChartSeries = [12, 19, 15, 25, 22, 18, 24]
+
+  // Sources Conversion – Bar chart (reference-erp)
+  const sourcesChartOptions: any = {
+    chart: {
+      type: 'bar',
       height: 280,
       toolbar: { show: false },
       dropShadow: {
@@ -41,41 +68,25 @@ export function LeadGeneralReport() {
         opacity: 0.2
       }
     },
-    stroke: {
-      width: 3,
-      curve: 'smooth'
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        horizontal: false,
+        columnWidth: '60%'
+      }
     },
-    xaxis: {
-      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    },
-    colors: ['#3b82f6'],
     dataLabels: { enabled: false },
+    stroke: { width: 2, curve: 'smooth' },
+    xaxis: {
+      categories: ['Website', 'Referral', 'Social Media', 'Email', 'Event', 'Direct'],
+      title: { text: 'Source' }
+    },
+    colors: ['#3B82F6'],
     grid: { strokeDashArray: 4 },
     legend: { show: false }
   }
 
-  const weeklyChartSeries = [{
-    name: 'Leads',
-    data: [12, 19, 15, 25, 22, 18, 24]
-  }]
-
-  // Sources Conversion Chart
-  const sourcesChartOptions: any = {
-    chart: {
-      type: 'donut',
-      height: 280
-    },
-    labels: ['Website', 'Referral', 'Social Media', 'Email', 'Event', 'Direct'],
-    colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280'],
-    legend: {
-      position: 'bottom'
-    },
-    dataLabels: {
-      enabled: true
-    }
-  }
-
-  const sourcesChartSeries = [35, 25, 20, 10, 6, 4]
+  const sourcesChartSeries = [{ name: 'Source', data: [35, 25, 20, 10, 6, 4] }]
 
   // Monthly Chart
   const monthlyChartOptions: any = {
@@ -100,7 +111,7 @@ export function LeadGeneralReport() {
     xaxis: {
       categories: ['Week 1', 'Week 2', 'Week 3', 'Week 4']
     },
-    colors: ['#6fd944'],
+    colors: ['#3B82F6'],
     fill: { opacity: 1 },
     grid: { strokeDashArray: 4 }
   }
@@ -126,19 +137,19 @@ export function LeadGeneralReport() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* This Week Leads Conversions */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">This Week Leads Conversions</h3>
-          <p className="text-sm text-muted-foreground">Lead acquisition trends for the current week</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">This Week Leads Conversions</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Lead acquisition trends for the current week</p>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted && (
             <Chart
               options={weeklyChartOptions}
               series={weeklyChartSeries}
-              type="line"
+              type="pie"
               height={320}
             />
           )}
@@ -146,17 +157,17 @@ export function LeadGeneralReport() {
       </Card>
 
       {/* Sources Conversion */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">Sources Conversion</h3>
-          <p className="text-sm text-muted-foreground">Lead distribution by acquisition source</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">Sources Conversion</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Lead distribution by acquisition source</p>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted && (
             <Chart
               options={sourcesChartOptions}
               series={sourcesChartSeries}
-              type="donut"
+              type="bar"
               height={320}
             />
           )}
@@ -164,14 +175,14 @@ export function LeadGeneralReport() {
       </Card>
 
       {/* Monthly */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold tracking-tight">Monthly Performance</h3>
-              <p className="text-sm text-muted-foreground">Weekly breakdown of lead generation</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3 w-full">
+          <div className="flex flex-row items-center justify-between gap-4 w-full">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-foreground">Monthly Performance</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Weekly breakdown of lead generation</p>
             </div>
-            <div className="w-full sm:w-48">
+            <div className="shrink-0 w-48">
               <Select value={selectedMonth} onValueChange={handleMonthChange}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Select Month" />
@@ -187,7 +198,7 @@ export function LeadGeneralReport() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted && (
             <Chart
               options={monthlyChartOptions}

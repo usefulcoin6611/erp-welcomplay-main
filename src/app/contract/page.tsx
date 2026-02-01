@@ -43,16 +43,35 @@ import {
   IconEye,
   IconLayoutGrid,
   IconList,
+  IconCopy,
+  IconPencil,
+  IconTrash,
+  IconFileImport,
+  IconDownload,
 } from '@tabler/icons-react'
 import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { contracts } from '@/lib/contract-data'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { contracts, type Contract } from '@/lib/contract-data'
 
 export default function ContractPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editContract, setEditContract] = useState<Contract | null>(null)
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
+  const [deleteContractId, setDeleteContractId] = useState<string | null>(null)
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -84,6 +103,22 @@ export default function ContractPage() {
     setCurrentPage(1)
   }
 
+  const openEditDialog = (contract: Contract) => {
+    setEditContract(contract)
+    setEditDialogOpen(true)
+  }
+
+  const openDeleteConfirm = (id: string) => {
+    setDeleteContractId(id)
+    setDeleteAlertOpen(true)
+  }
+
+  const handleDelete = () => {
+    // Mock: in real app would call API
+    setDeleteContractId(null)
+    setDeleteAlertOpen(false)
+  }
+
   return (
     <SidebarProvider
       style={
@@ -97,7 +132,7 @@ export default function ContractPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <div className="inline-flex rounded-md bg-muted p-0.5">
@@ -130,6 +165,23 @@ export default function ContractPage() {
                     <IconLayoutGrid className="h-3 w-3" />
                   </Button>
                 </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="shadow-none h-7"
+                    title="Import"
+                  >
+                    <IconFileImport className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="shadow-none h-7"
+                    title="Export"
+                  >
+                    <IconDownload className="h-3 w-3" />
+                  </Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="blue" size="sm" className="shadow-none h-7">
@@ -169,11 +221,11 @@ export default function ContractPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
+                        <div className="space-y-3">
                           <Label htmlFor="startDate">Start Date</Label>
                           <Input id="startDate" type="date" />
                         </div>
-                        <div className="grid gap-2">
+                        <div className="space-y-3">
                           <Label htmlFor="endDate">End Date</Label>
                           <Input id="endDate" type="date" />
                         </div>
@@ -199,12 +251,13 @@ export default function ContractPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </div>
               </div>
             </div>
 
             {/* Contract List / Grid */}
             {viewMode === 'list' ? (
-            <Card>
+            <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardContent className="p-0">
                 <div className="px-4 py-3 border-b flex items-center justify-between">
                   <CardTitle className="text-base font-medium">Contract List</CardTitle>
@@ -281,17 +334,47 @@ export default function ContractPage() {
                             </div>
                           </TableCell>
                           <TableCell className="px-4 py-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                              title="View"
-                              asChild
-                            >
-                              <Link href={`/contract/${contract.id}`}>
-                                <IconEye className="h-3 w-3" />
-                              </Link>
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              {contract.status === 'accept' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 w-7 p-0 bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
+                                  title="Duplicate"
+                                >
+                                  <IconCopy className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                                title="View"
+                                asChild
+                              >
+                                <Link href={`/contract/${contract.id}`}>
+                                  <IconEye className="h-3 w-3" />
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                title="Edit"
+                                onClick={() => openEditDialog(contract)}
+                              >
+                                <IconPencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                title="Delete"
+                                onClick={() => openDeleteConfirm(contract.id)}
+                              >
+                                <IconTrash className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -374,16 +457,28 @@ export default function ContractPage() {
                                 <dd className="text-right font-normal text-foreground/85">{contract.startDate} → {contract.endDate}</dd>
                               </div>
                             </dl>
-                            <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center justify-between mt-3 gap-1 flex-wrap">
                               <Badge variant="secondary" className="text-xs px-1.5 py-0 shrink-0 rounded bg-muted/80 text-muted-foreground font-medium">
                                 {contract.type}
                               </Badge>
-                              <Button variant="outline" size="sm" className="h-6 px-2.5 text-xs font-medium shadow-none bg-amber-50/80 text-amber-700 hover:bg-amber-100 border-0 rounded-md" asChild>
-                                <Link href={`/contract/${contract.id}`}>
-                                  <IconEye className="h-3 w-3 mr-1" />
-                                  View
-                                </Link>
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                {contract.status === 'accept' && (
+                                  <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-blue-500 text-white hover:bg-blue-600 border-blue-500" title="Duplicate">
+                                    <IconCopy className="h-3 w-3" />
+                                  </Button>
+                                )}
+                                <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100" asChild title="View">
+                                  <Link href={`/contract/${contract.id}`}>
+                                    <IconEye className="h-3 w-3" />
+                                  </Link>
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Edit" onClick={() => openEditDialog(contract)}>
+                                  <IconPencil className="h-3 w-3" />
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Delete" onClick={() => openDeleteConfirm(contract.id)}>
+                                  <IconTrash className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </Card>
@@ -407,6 +502,72 @@ export default function ContractPage() {
                   )}
                 </>
             )}
+
+            {/* Edit Contract dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditContract(null) }}>
+              <DialogContent className="sm:max-w-[560px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Contract</DialogTitle>
+                  <DialogDescription>
+                    {editContract ? `Edit kontrak ${editContract.contractNumber}` : ''}
+                  </DialogDescription>
+                </DialogHeader>
+                {editContract && (
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-subject">Subject</Label>
+                      <Input id="edit-subject" defaultValue={editContract.subject} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="edit-client">Client</Label>
+                        <Input id="edit-client" defaultValue={editContract.client} />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="edit-value">Value</Label>
+                        <Input id="edit-value" type="number" defaultValue={editContract.value} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <Label htmlFor="edit-startDate">Start Date</Label>
+                        <Input id="edit-startDate" type="date" defaultValue={editContract.startDate} />
+                      </div>
+                      <div className="space-y-3">
+                        <Label htmlFor="edit-endDate">End Date</Label>
+                        <Input id="edit-endDate" type="date" defaultValue={editContract.endDate} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => setEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="button" variant="blue" size="sm" className="shadow-none h-7">
+                    Save
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete confirmation */}
+            <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDeleteContractId(null) }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hapus kontrak?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini tidak dapat dibatalkan. Kontrak akan dihapus secara permanen.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="shadow-none">Batal</AlertDialogCancel>
+                  <AlertDialogAction className="bg-red-600 hover:bg-red-700 shadow-none" onClick={() => deleteContractId && handleDelete()}>
+                    Hapus
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </MainContentWrapper>
       </SidebarInset>

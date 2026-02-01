@@ -4,6 +4,7 @@ import React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   SidebarInset,
   SidebarProvider,
@@ -88,7 +89,7 @@ function CRMSystemSetupContent() {
     <SmoothTab
       items={tabs}
       defaultTabId={activeTab}
-      activeColor="bg-blue-50 dark:bg-blue-900"
+      activeColor="bg-white dark:bg-gray-700 shadow-xs"
       onChange={handleTabChange}
     />
   )
@@ -107,8 +108,8 @@ export default function CRMSystemSetupPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold">CRM System Setup</h1>
@@ -119,7 +120,7 @@ export default function CRMSystemSetupPage() {
               <CRMSystemSetupContent />
             </Suspense>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

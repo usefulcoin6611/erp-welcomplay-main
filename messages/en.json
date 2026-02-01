@@ -110,6 +110,8 @@
   },
   "header": {
     "search": "Search...",
+    "searchMenuPlaceholder": "Search menu...",
+    "searchMenuResults": "Results",
     "notifications": "Notifications",
     "profile": "Profile",
     "logout": "Logout"

@@ -31,7 +31,7 @@ export default function AccountDashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col bg-gray-50">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-3 p-3">
             {/* Top Section - Statistics Cards and Income Vs Expense Side by Side */}
             <div className="grid gap-3 xl:grid-cols-3">

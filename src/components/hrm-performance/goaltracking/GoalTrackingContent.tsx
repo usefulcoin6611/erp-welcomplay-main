@@ -332,7 +332,7 @@ export function GoalTrackingContent() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="startDate">Start Date</Label>
                   <Input
                     id="startDate"
@@ -344,7 +344,7 @@ export function GoalTrackingContent() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="endDate">End Date</Label>
                   <Input
                     id="endDate"

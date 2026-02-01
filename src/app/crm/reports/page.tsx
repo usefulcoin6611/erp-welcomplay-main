@@ -93,8 +93,8 @@ export default function CRMReportsPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-1 flex-col bg-gray-100">
+          <div className="@container/main flex flex-1 flex-col gap-5 p-5">
             {/* Smooth Tab Navigation with Animated Content */}
             <SmoothTab
               items={reportTabs}

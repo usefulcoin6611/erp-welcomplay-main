@@ -179,7 +179,7 @@ export default function DealsPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between gap-3">
               {/* Left side: Pipeline selector */}
               <div className="flex items-center gap-3">
@@ -312,7 +312,7 @@ export default function DealsPage() {
 
             {/* Summary Cards - 4 cards like reference */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -325,7 +325,7 @@ export default function DealsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -338,7 +338,7 @@ export default function DealsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -351,7 +351,7 @@ export default function DealsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -438,9 +438,9 @@ export default function DealsPage() {
                               </div>
                               <div className="flex items-center justify-end gap-1 pt-1">
                                 <Button
-                                  variant="secondary"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                   title="View"
                                   asChild
                                 >
@@ -484,17 +484,17 @@ export default function DealsPage() {
                 })}
               </div>
             ) : (
-              <Card>
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3">Name</TableHead>
-                        <TableHead className="px-4 py-3">Price</TableHead>
-                        <TableHead className="px-4 py-3">Stage</TableHead>
-                        <TableHead className="px-4 py-3">Tasks</TableHead>
-                        <TableHead className="px-4 py-3">Users</TableHead>
-                        <TableHead className="px-4 py-3">Actions</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Name</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Price</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Stage</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Tasks</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Users</TableHead>
+                        <TableHead className="px-4 py-3 font-normal">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -533,9 +533,9 @@ export default function DealsPage() {
                           <TableCell className="px-4 py-3">
                             <div className="flex items-center gap-2 justify-start">
                               <Button
-                                variant="secondary"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                 title="View"
                                 asChild
                               >
@@ -544,17 +544,17 @@ export default function DealsPage() {
                                 </Link>
                               </Button>
                               <Button
-                                variant="secondary"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                 title="Edit"
                               >
                                 <IconPencil className="h-3 w-3" />
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none h-7"
+                                className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                 title="Delete"
                               >
                                 <IconTrash className="h-3 w-3" />

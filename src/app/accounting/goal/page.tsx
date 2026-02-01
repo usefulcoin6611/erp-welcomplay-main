@@ -243,7 +243,7 @@ export default function FinancialGoalPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* Title Page */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardHeader className="px-6">

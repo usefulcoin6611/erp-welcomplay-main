@@ -68,7 +68,7 @@ export default function DealStagesTab() {
         </div>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
+            <Button size="sm" variant="blue" className="shadow-none h-7">
               <IconPlus className="mr-2 h-4 w-4" />
               Create Deal Stage
             </Button>
@@ -145,7 +145,7 @@ export default function DealStagesTab() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
           <CardHeader>
             <CardTitle>Deal Stages</CardTitle>
             <CardDescription>
@@ -167,14 +167,14 @@ export default function DealStagesTab() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 w-8 p-0 shadow-none"
+                      className="h-8 w-8 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                     >
                       <IconPencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 shadow-none"
+                      className="h-8 w-8 p-0 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                     >
                       <IconTrash className="h-4 w-4" />
                     </Button>

@@ -551,7 +551,7 @@ export default function LandingPagePage() {
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
               <Card className=" rounded-lg">
                 <CardContent className="p-6">
                   <p className="text-center text-muted-foreground">Permission denied.</p>
@@ -577,7 +577,7 @@ export default function LandingPagePage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Sidebar Navigation */}

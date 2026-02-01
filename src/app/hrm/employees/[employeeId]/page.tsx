@@ -179,7 +179,7 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
       <AppSidebar variant="inset" />
       <SidebarInset>
         <EmployeeDetailHeader employeeName={employee.name} employeeId={employeeId} />
-        <div className="flex flex-1 flex-col bg-gray-50">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-5 p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Personal Detail */}

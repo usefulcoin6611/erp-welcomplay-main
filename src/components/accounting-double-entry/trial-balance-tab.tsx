@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/auth-context'
@@ -88,14 +88,13 @@ export function TrialBalanceTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Trial Balance</h2>
-          <p className="text-sm text-muted-foreground">
-            Review balances for all accounts in a period.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0 px-6 py-4">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Trial Balance</CardTitle>
+            <CardDescription>Review balances for all accounts in a period.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -131,8 +130,9 @@ export function TrialBalanceTab() {
         >
           <Filter className="h-3 w-3" />
         </Button>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
       {showFilter && (
@@ -145,8 +145,8 @@ export function TrialBalanceTab() {
               }}
               className="flex flex-col gap-4 md:flex-row md:items-end"
             >
-              <div className="w-full md:w-44">
-                <label className="mb-1 block text-sm font-medium">Start Date</label>
+              <div className="w-full md:w-44 space-y-3">
+                <label className="block text-sm font-medium">Start Date</label>
                 <Input
                   type="date"
                   value={startDate}
@@ -154,8 +154,8 @@ export function TrialBalanceTab() {
                   className="startDate"
                 />
               </div>
-              <div className="w-full md:w-44">
-                <label className="mb-1 block text-sm font-medium">End Date</label>
+              <div className="w-full md:w-44 space-y-3">
+                <label className="block text-sm font-medium">End Date</label>
                 <Input
                   type="date"
                   value={endDate}
@@ -191,49 +191,49 @@ export function TrialBalanceTab() {
         <div className="flex justify-center">
           <div className="w-full max-w-5xl">
             <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <div className="p-4 border-b">
-                <h5 className="text-lg font-semibold">
+              <div className="border-b border-border px-6 py-4">
+                <h5 className="text-lg font-semibold text-foreground">
                   Trial Balance of {userName} as of {startDateRange} to {endDateRange}
                 </h5>
               </div>
-              <CardContent className="p-0 overflow-auto">
-                <div className="account-table-inner">
-                  <div className="account-title flex items-center justify-between border-t border-b py-2 px-4">
-                    <h6 className="mb-0 font-semibold">Account</h6>
-                    <h6 className="mb-0 text-center font-semibold">Account Code</h6>
-                    <h6 className="mb-0 text-end font-semibold">Debit</h6>
-                    <h6 className="mb-0 text-end font-semibold">Credit</h6>
+              <CardContent className="overflow-auto p-0">
+                <div className="px-6 py-5">
+                  <div className="flex items-center justify-between gap-4 border-b border-border py-3 text-sm font-semibold">
+                    <span className="min-w-0 flex-1">Account</span>
+                    <span className="w-28 shrink-0 text-center">Account Code</span>
+                    <span className="w-28 shrink-0 text-end">Debit</span>
+                    <span className="w-28 shrink-0 text-end">Credit</span>
                   </div>
 
                   {Object.entries(totalAccounts).map(([type, accounts]) => (
-                    <div key={type} className="account-main-inner border-bottom py-2">
-                      <p className="fw-bold ps-2 mb-2 px-4 font-bold">{type}</p>
+                    <div key={type} className="border-b border-border/60 py-3">
+                      <p className="mb-2 mt-1 text-sm font-bold text-foreground">{type}</p>
                       {accounts.map((record) => (
                         <div
                           key={record.account_id}
-                          className="account-inner flex items-center justify-between ps-3 px-4"
+                          className="flex items-center justify-between gap-4 py-2.5 text-sm"
                         >
-                          <p className="mb-2 ms-md-3">
+                          <span className="min-w-0 flex-1 pl-4">
                             <a
                               href={`/accounting/double-entry/ledger?account=${record.account_id}`}
                               className="text-primary hover:underline"
                             >
                               {record.account_name}
                             </a>
-                          </p>
-                          <p className="mb-2 text-center">{record.account_code}</p>
-                          <p className="mb-2 text-end">{formatPrice(record.totalDebit)}</p>
-                          <p className="mb-2 text-end">{formatPrice(record.totalCredit)}</p>
+                          </span>
+                          <span className="w-28 shrink-0 text-center">{record.account_code}</span>
+                          <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(record.totalDebit)}</span>
+                          <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(record.totalCredit)}</span>
                         </div>
                       ))}
                     </div>
                   ))}
 
-                  <div className="account-title flex items-center justify-between border-top border-bottom py-2 px-2 pe-0">
-                    <h6 className="fw-bold mb-0 font-bold">Total</h6>
-                    <h6 className="fw-bold mb-0 font-bold"></h6>
-                    <h6 className="fw-bold mb-0 text-end ms-4 font-bold">{formatPrice(totalDebit)}</h6>
-                    <h6 className="fw-bold mb-0 text-end font-bold">{formatPrice(totalCredit)}</h6>
+                  <div className="flex items-center justify-between gap-4 border-t border-b border-border py-3 font-bold text-sm">
+                    <span className="min-w-0 flex-1">Total</span>
+                    <span className="w-28 shrink-0 text-center" />
+                    <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(totalDebit)}</span>
+                    <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(totalCredit)}</span>
                   </div>
                 </div>
               </CardContent>

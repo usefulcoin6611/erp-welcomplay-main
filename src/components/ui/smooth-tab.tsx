@@ -256,7 +256,7 @@ export function SmoothTab({
                                     "disabled:pointer-events-none disabled:opacity-50",
                                     isSelected
                                         ? "text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-xs pl-5 pr-3"
-                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 px-3"
+                                        : "text-gray-700 dark:text-gray-300 bg-gray-200/90 dark:bg-gray-700/80 hover:bg-gray-300/90 dark:hover:bg-gray-600/80 hover:text-gray-900 dark:hover:text-gray-100 px-3"
                                 )}
                                 style={{ pointerEvents: 'auto', position: 'relative', touchAction: 'manipulation' }}
                                 whileHover={!isSelected ? { scale: 1.02 } : undefined}

@@ -20,7 +20,7 @@ export default function PosDashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
             <POSStatsCards />
             <POSVsPurchaseChart />

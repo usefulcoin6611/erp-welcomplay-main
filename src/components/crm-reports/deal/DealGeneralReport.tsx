@@ -26,10 +26,37 @@ export function DealGeneralReport() {
     // Here you would typically fetch new data based on selected month
   }
 
-  // This Week Deals Conversions Chart
+  // This Week Deals Conversions – Pie chart (reference-erp)
   const weeklyChartOptions: any = {
     chart: {
-      type: 'line',
+      type: 'pie',
+      width: 350,
+      height: 280,
+      toolbar: { show: false }
+    },
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    colors: ['#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#10B981', '#059669', '#047857'],
+    legend: {
+      position: 'bottom'
+    },
+    dataLabels: {
+      enabled: true
+    },
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: { width: 200 },
+        legend: { position: 'bottom' }
+      }
+    }]
+  }
+
+  const weeklyChartSeries = [8, 15, 12, 18, 16, 14, 20]
+
+  // Sources Conversion – Bar chart (reference-erp)
+  const sourcesChartOptions: any = {
+    chart: {
+      type: 'bar',
       height: 280,
       toolbar: { show: false },
       dropShadow: {
@@ -41,41 +68,25 @@ export function DealGeneralReport() {
         opacity: 0.2
       }
     },
-    stroke: {
-      width: 3,
-      curve: 'smooth'
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        horizontal: false,
+        columnWidth: '60%'
+      }
     },
-    xaxis: {
-      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    },
-    colors: ['#c53da9'],
     dataLabels: { enabled: false },
+    stroke: { width: 2, curve: 'smooth' },
+    xaxis: {
+      categories: ['Referral', 'Website', 'Direct', 'Partner', 'Event', 'Other'],
+      title: { text: 'Source' }
+    },
+    colors: ['#10B981'],
     grid: { strokeDashArray: 4 },
     legend: { show: false }
   }
 
-  const weeklyChartSeries = [{
-    name: 'Deals',
-    data: [8, 15, 12, 18, 16, 14, 20]
-  }]
-
-  // Sources Conversion Chart
-  const sourcesChartOptions: any = {
-    chart: {
-      type: 'donut',
-      height: 280
-    },
-    labels: ['Referral', 'Website', 'Direct', 'Partner', 'Event', 'Other'],
-    colors: ['#c53da9', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6b7280'],
-    legend: {
-      position: 'bottom'
-    },
-    dataLabels: {
-      enabled: true
-    }
-  }
-
-  const sourcesChartSeries = [40, 28, 15, 10, 5, 2]
+  const sourcesChartSeries = [{ name: 'Source', data: [40, 28, 15, 10, 5, 2] }]
 
   // Monthly Chart
   const monthlyChartOptions: any = {
@@ -103,7 +114,7 @@ export function DealGeneralReport() {
         text: 'Deal Per Month'
       }
     },
-    colors: ['#c53da9'],
+    colors: ['#10B981'],
     fill: { opacity: 1 },
     grid: { strokeDashArray: 4 }
   }
@@ -129,19 +140,19 @@ export function DealGeneralReport() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* This Week Deals Conversions */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">This Week Deals Conversions</h3>
-          <p className="text-sm text-muted-foreground">Deal closing trends for the current week</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">This Week Deals Conversions</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Deal closing trends for the current week</p>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted && (
             <Chart
               options={weeklyChartOptions}
               series={weeklyChartSeries}
-              type="line"
+              type="pie"
               height={320}
             />
           )}
@@ -149,17 +160,17 @@ export function DealGeneralReport() {
       </Card>
 
       {/* Sources Conversion */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">Sources Conversion</h3>
-          <p className="text-sm text-muted-foreground">Deal distribution by acquisition channel</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">Sources Conversion</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Deal distribution by acquisition channel</p>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted && (
             <Chart
               options={sourcesChartOptions}
               series={sourcesChartSeries}
-              type="donut"
+              type="bar"
               height={320}
             />
           )}
@@ -167,14 +178,14 @@ export function DealGeneralReport() {
       </Card>
 
       {/* Monthly */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold tracking-tight">Monthly Performance</h3>
-              <p className="text-sm text-muted-foreground">Weekly breakdown of deal closures</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3 w-full">
+          <div className="flex flex-row items-center justify-between gap-4 w-full">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-foreground">Monthly Performance</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Weekly breakdown of deal closures</p>
             </div>
-            <div className="w-full sm:w-48">
+            <div className="shrink-0 w-48">
               <Select value={selectedMonth} onValueChange={handleMonthChange}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Select Month" />
@@ -190,7 +201,7 @@ export function DealGeneralReport() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted && (
             <Chart
               options={monthlyChartOptions}

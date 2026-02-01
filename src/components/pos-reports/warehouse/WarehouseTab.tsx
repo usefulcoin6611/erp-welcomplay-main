@@ -92,23 +92,24 @@ export function WarehouseTab() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header with Download */}
-      <div className="flex items-center justify-between pb-4 border-b">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Warehouse Report</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Overview of product distribution across warehouse locations
-          </p>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Warehouse Report</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Overview of product distribution across warehouse locations
+            </p>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                 {isDownloading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -122,15 +123,16 @@ export function WarehouseTab() {
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Download report as PDF</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+              <TooltipContent>Download report as PDF</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-pink-50 to-white dark:from-pink-950/30 dark:to-background">
-          <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+          <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-pink-100 dark:bg-pink-900/50">
                 <Warehouse className="h-6 w-6 text-pink-600 dark:text-pink-400" />
@@ -145,8 +147,8 @@ export function WarehouseTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-background">
-          <CardContent className="pt-6">
+        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+          <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/50">
                 <Warehouse className="h-6 w-6 text-orange-600 dark:text-orange-400" />
@@ -161,8 +163,8 @@ export function WarehouseTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/30 dark:to-background">
-          <CardContent className="pt-6">
+        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+          <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
                 <Package className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -179,12 +181,12 @@ export function WarehouseTab() {
       </div>
 
       {/* Chart */}
-      <Card>
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">Warehouse Report</h3>
-          <p className="text-sm text-muted-foreground">Product distribution by warehouse location</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">Warehouse Report</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Product distribution by warehouse location</p>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="px-5 pb-5 pt-0">
           {mounted ? (
             <Chart
               options={chartOptions}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/auth-context'
@@ -156,14 +156,13 @@ export function ProfitLossTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Profit &amp; Loss</h2>
-          <p className="text-sm text-muted-foreground">
-            View profit and loss report for a period.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:ml-auto sm:self-auto">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0 px-6 py-4">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Profit &amp; Loss</CardTitle>
+            <CardDescription>View profit and loss report for a period.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -202,8 +201,9 @@ export function ProfitLossTab() {
         <Button variant="secondary" size="sm" className="shadow-none h-7" title="Horizontal View">
           <Columns2 className="h-3 w-3" />
         </Button>
-        </div>
-      </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Filters */}
       {showFilter && (
@@ -216,8 +216,8 @@ export function ProfitLossTab() {
               }}
               className="flex flex-col gap-4 md:flex-row md:items-end"
             >
-              <div className="w-full md:w-44">
-                <label className="mb-1 block text-sm font-medium">Start Date</label>
+              <div className="w-full md:w-44 space-y-3">
+                <label className="block text-sm font-medium">Start Date</label>
                 <Input
                   type="date"
                   value={startDate}
@@ -225,8 +225,8 @@ export function ProfitLossTab() {
                   className="startDate"
                 />
               </div>
-              <div className="w-full md:w-44">
-                <label className="mb-1 block text-sm font-medium">End Date</label>
+              <div className="w-full md:w-44 space-y-3">
+                <label className="block text-sm font-medium">End Date</label>
                 <Input
                   type="date"
                   value={endDate}
@@ -262,50 +262,51 @@ export function ProfitLossTab() {
         <div className="flex justify-center">
           <div className="w-full max-w-5xl">
             <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <div className="p-4 border-b">
-                <h5 className="text-lg font-semibold">
+              <div className="border-b border-border px-6 py-4">
+                <h5 className="text-lg font-semibold text-foreground">
                   Profit & Loss of {userName} as of {startDateRange} to {endDateRange}
                 </h5>
               </div>
-              <CardContent className="p-0 overflow-auto">
-                <div className="account-table-inner">
-                  <div className="account-title flex items-center justify-between border-t border-b py-2 px-4">
-                    <h6 className="mb-0 font-semibold">Account</h6>
-                    <h6 className="mb-0 text-center font-semibold">Account Code</h6>
-                    <h6 className="mb-0 text-end font-semibold">Total</h6>
+              <CardContent className="overflow-auto p-0">
+                <div className="px-6 py-5">
+                  <div className="flex items-center justify-between gap-4 border-b border-border py-3 text-sm font-semibold">
+                    <span className="min-w-0 flex-1">Account</span>
+                    <span className="w-28 shrink-0 text-center">Account Code</span>
+                    <span className="w-32 shrink-0 text-end">Total</span>
                   </div>
 
                   {totalAccounts.map((accounts) => {
                     if (accounts.Type === 'Income') {
                       return (
-                        <div key={accounts.Type} className="account-main-inner border-bottom py-2">
-                          <p className="fw-bold mb-2 px-4 font-bold">{accounts.Type}</p>
+                        <div key={accounts.Type} className="border-b border-border/60 py-3">
+                          <p className="mb-2 mt-1 text-sm font-bold text-foreground">{accounts.Type}</p>
                           {accounts.account.map((records) =>
                             records
                               .filter((record) => record.account_name !== 'Total Income')
                               .map((record) => (
                                 <div
                                   key={record.account_id}
-                                  className="account-inner flex items-center justify-between ps-3 px-4"
+                                  className="flex items-center justify-between gap-4 py-2.5 text-sm"
                                 >
-                                  <p className="mb-2 ms-md-2">
+                                  <span className="min-w-0 flex-1 pl-4">
                                     <a
                                       href={`/accounting/double-entry/ledger?account=${record.account_id}`}
                                       className="text-primary hover:underline"
                                     >
                                       {record.account_name}
                                     </a>
-                                  </p>
-                                  <p className="mb-2 text-center">{record.account_code}</p>
-                                  <p className="text-primary mb-2 float-end text-end">
+                                  </span>
+                                  <span className="w-28 shrink-0 text-center">{record.account_code}</span>
+                                  <span className="w-32 shrink-0 text-end tabular-nums text-foreground">
                                     {formatPrice(record.netAmount)}
-                                  </p>
+                                  </span>
                                 </div>
                               ))
                           )}
-                          <div className="account-inner flex items-center justify-between px-4">
-                            <p className="fw-bold mb-2 font-bold">Total Income</p>
-                            <p className="fw-bold mb-2 text-end font-bold">{formatPrice(totalIncome)}</p>
+                          <div className="flex items-center justify-between gap-4 py-3 font-bold text-sm">
+                            <span className="min-w-0 flex-1">Total Income</span>
+                            <span className="w-28 shrink-0 text-center" />
+                            <span className="w-32 shrink-0 text-end tabular-nums">{formatPrice(totalIncome)}</span>
                           </div>
                         </div>
                       )
@@ -313,8 +314,8 @@ export function ProfitLossTab() {
 
                     if (accounts.Type === 'Costs of Goods Sold') {
                       return (
-                        <div key={accounts.Type} className="account-main-inner border-bottom py-2">
-                          <p className="fw-bold mb-2 px-4 font-bold">{accounts.Type}</p>
+                        <div key={accounts.Type} className="border-b border-border/60 py-3">
+                          <p className="mb-2 mt-1 text-sm font-bold text-foreground">{accounts.Type}</p>
                           {accounts.account.map((records) =>
                             records
                               .filter((record) => record.account_name !== 'Total Costs of Goods Sold')
@@ -324,29 +325,30 @@ export function ProfitLossTab() {
                                 return (
                                   <div
                                     key={record.account_id}
-                                    className="account-inner flex items-center justify-between ps-3 px-4"
+                                    className="flex items-center justify-between gap-4 py-2.5 text-sm"
                                   >
-                                    <p className="mb-2 ms-md-2">
+                                    <span className="min-w-0 flex-1 pl-4">
                                       <a
                                         href={`/accounting/double-entry/ledger?account=${record.account_id}`}
                                         className="text-primary hover:underline"
                                       >
                                         {record.account_name}
                                       </a>
-                                    </p>
-                                    <p className="mb-2 text-center">{record.account_code}</p>
-                                    <p className="text-primary mb-2 float-end text-end">
+                                    </span>
+                                    <span className="w-28 shrink-0 text-center">{record.account_code}</span>
+                                    <span className="w-32 shrink-0 text-end tabular-nums text-foreground">
                                       {formatPrice(netAmount)}
-                                    </p>
+                                    </span>
                                   </div>
                                 )
                               })
                           )}
-                          <div className="account-inner flex items-center justify-between px-4">
-                            <p className="fw-bold mb-2 font-bold">Total Costs of Goods Sold</p>
-                            <p className="fw-bold mb-2 text-end font-bold">
+                          <div className="flex items-center justify-between gap-4 py-3 font-bold text-sm">
+                            <span className="min-w-0 flex-1">Total Costs of Goods Sold</span>
+                            <span className="w-28 shrink-0 text-center" />
+                            <span className="w-32 shrink-0 text-end tabular-nums">
                               {formatPrice(totalCosts > 0 ? totalCosts : -totalCosts)}
-                            </p>
+                            </span>
                           </div>
                         </div>
                       )
@@ -363,8 +365,8 @@ export function ProfitLossTab() {
                       })
 
                       return (
-                        <div key={accounts.Type} className="account-main-inner border-bottom py-2">
-                          <p className="fw-bold mb-2 px-4 font-bold">{accounts.Type}</p>
+                        <div key={accounts.Type} className="border-b border-border/60 py-3">
+                          <p className="mb-2 mt-1 text-sm font-bold text-foreground">{accounts.Type}</p>
                           {accounts.account.map((records) =>
                             records
                               .filter((record) => record.account_name !== 'Total Expenses')
@@ -374,29 +376,30 @@ export function ProfitLossTab() {
                                 return (
                                   <div
                                     key={record.account_id}
-                                    className="account-inner flex items-center justify-between ps-3 px-4"
+                                    className="flex items-center justify-between gap-4 py-2.5 text-sm"
                                   >
-                                    <p className="mb-2 ms-md-2">
+                                    <span className="min-w-0 flex-1 pl-4">
                                       <a
                                         href={`/accounting/double-entry/ledger?account=${record.account_id}`}
                                         className="text-primary hover:underline"
                                       >
                                         {record.account_name}
                                       </a>
-                                    </p>
-                                    <p className="mb-2 text-center">{record.account_code}</p>
-                                    <p className="text-primary mb-2 float-end text-end">
+                                    </span>
+                                    <span className="w-28 shrink-0 text-center">{record.account_code}</span>
+                                    <span className="w-32 shrink-0 text-end tabular-nums text-foreground">
                                       {formatPrice(netAmount)}
-                                    </p>
+                                    </span>
                                   </div>
                                 )
                               })
                           )}
-                          <div className="account-inner flex items-center justify-between px-4">
-                            <p className="fw-bold mb-2 font-bold">Total Expenses</p>
-                            <p className="fw-bold mb-2 text-end font-bold">
+                          <div className="flex items-center justify-between gap-4 py-3 font-bold text-sm">
+                            <span className="min-w-0 flex-1">Total Expenses</span>
+                            <span className="w-28 shrink-0 text-center" />
+                            <span className="w-32 shrink-0 text-end tabular-nums">
                               {formatPrice(totalExpenses > 0 ? totalExpenses : -totalExpenses)}
-                            </p>
+                            </span>
                           </div>
                         </div>
                       )
@@ -405,16 +408,16 @@ export function ProfitLossTab() {
                     return null
                   })}
 
-                  <div className="account-inner flex items-center justify-between border-bottom px-4">
-                    <p></p>
-                    <p className="fw-bold mb-2 text-center font-bold">Gross Profit</p>
-                    <p className="text-primary mb-2 float-end text-end">{formatPrice(grossProfit)}</p>
+                  <div className="flex items-center justify-between gap-4 border-b border-border py-3 font-bold text-sm">
+                    <span className="min-w-0 flex-1" />
+                    <span className="w-28 shrink-0 text-center">Gross Profit</span>
+                    <span className="w-32 shrink-0 text-end tabular-nums">{formatPrice(grossProfit)}</span>
                   </div>
 
-                  <div className="account-inner flex items-center justify-between border-bottom px-4">
-                    <p></p>
-                    <p className="fw-bold mb-2 text-center font-bold">Net Profit/Loss</p>
-                    <p className="text-primary mb-2 float-end text-end">{formatPrice(netProfit)}</p>
+                  <div className="flex items-center justify-between gap-4 border-b border-border py-3 font-bold text-sm">
+                    <span className="min-w-0 flex-1" />
+                    <span className="w-28 shrink-0 text-center">Net Profit/Loss</span>
+                    <span className="w-32 shrink-0 text-end tabular-nums">{formatPrice(netProfit)}</span>
                   </div>
                 </div>
               </CardContent>

@@ -46,7 +46,7 @@ export default function HrmDashboardPage() {
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-50">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* 2 kolom: Kiri = Event Calendar + Announcement List; Kanan = Overview + Meeting Schedule. items-start agar kolom tidak stretch = tidak ada space kosong. */}
             <div className="grid gap-4 lg:grid-cols-2 items-start">
               <div className="space-y-4 min-w-0">
