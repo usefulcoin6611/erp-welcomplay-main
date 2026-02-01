@@ -63,97 +63,86 @@ const labelColors = [
   { value: '#ec4899', label: 'Pink' },
 ] as const
 
+/** Tombol Create Label untuk action slot SmoothTab */
+export function LabelsTabCreateButton() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="blue" className="shadow-none h-7">
+          <IconPlus className="mr-2 h-4 w-4" />
+          Create Label
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Create Label</DialogTitle>
+          <DialogDescription>
+            Buat label baru dengan warna untuk pipeline yang dipilih.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="pipeline">Pipeline</Label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Pipeline" />
+              </SelectTrigger>
+              <SelectContent>
+                {pipelines.map((p) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="labelName">Label Name</Label>
+            <Input id="labelName" placeholder="Hot" maxLength={20} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="labelColor">Color</Label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Color" />
+              </SelectTrigger>
+              <SelectContent>
+                {labelColors.map((color) => (
+                  <SelectItem key={color.value} value={color.value}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-4 w-4 rounded-full"
+                        style={{ backgroundColor: color.value }}
+                      />
+                      {color.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" className="shadow-none">
+            Cancel
+          </Button>
+          <Button type="button" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+            Save Label
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function LabelsTab() {
   const [activeTab, setActiveTab] = React.useState(0)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">Labels</h2>
-        </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="blue" className="shadow-none h-7">
-              <IconPlus className="mr-2 h-4 w-4" />
-              Create Label
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>Create Label</DialogTitle>
-              <DialogDescription>
-                Buat label baru dengan warna untuk pipeline yang dipilih.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="pipeline">Pipeline</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Pipeline" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pipelines.map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="labelName">Label Name</Label>
-                <Input
-                  id="labelName"
-                  placeholder="Hot"
-                  maxLength={20}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="labelColor">Color</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {labelColors.map((color) => (
-                      <SelectItem key={color.value} value={color.value}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-4 w-4 rounded-full"
-                            style={{ backgroundColor: color.value }}
-                          />
-                          {color.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                className="shadow-none"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="bg-blue-500 hover:bg-blue-600 shadow-none"
-              >
-                Save Label
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-4">
       <div className="space-y-4">
-        <Card>
-          <CardContent className="p-3">
+        <Card className="rounded-lg border-0">
+          <CardContent className="px-4 py-3">
             <div className="flex gap-2">
               {pipelines.map((pipeline, idx) => (
                 <button
@@ -172,19 +161,19 @@ export default function LabelsTab() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-          <CardHeader>
-            <CardTitle>Labels</CardTitle>
-            <CardDescription>
+        <Card className="rounded-lg border-0">
+          <CardHeader className="px-4 py-3 border-b">
+            <CardTitle className="text-base font-medium">Labels</CardTitle>
+            <CardDescription className="text-sm">
               Daftar label untuk mengkategorikan lead dan deal.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="p-0">
+            <div className="px-4 py-4 space-y-2">
               {pipelines[activeTab]?.labels.map((label) => (
                 <div
                   key={label.id}
-                  className="flex items-center justify-between rounded-md border p-3 hover:bg-accent"
+                  className="flex items-center justify-between rounded-md border bg-card px-4 py-3 hover:bg-accent/50"
                 >
                   <Badge
                     className="border-none"

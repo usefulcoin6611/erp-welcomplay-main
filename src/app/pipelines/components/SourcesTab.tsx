@@ -42,80 +42,70 @@ const sources = [
   { id: 5, name: 'Cold Call' },
 ] as const
 
+/** Tombol Create Source untuk action slot SmoothTab */
+export function SourcesTabCreateButton() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="blue" className="shadow-none h-7">
+          <IconPlus className="mr-2 h-4 w-4" />
+          Create Source
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Create Source</DialogTitle>
+          <DialogDescription>
+            Tambahkan sumber baru untuk lead dan deal.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="sourceName">Source Name</Label>
+            <Input id="sourceName" placeholder="Website" maxLength={20} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" className="shadow-none">
+            Cancel
+          </Button>
+          <Button type="button" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+            Save Source
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function SourcesTab() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">Sources</h2>
-        </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="blue" className="shadow-none h-7">
-              <IconPlus className="mr-2 h-4 w-4" />
-              Create Source
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>Create Source</DialogTitle>
-              <DialogDescription>
-                Tambahkan sumber baru untuk lead dan deal.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="sourceName">Source Name</Label>
-                <Input
-                  id="sourceName"
-                  placeholder="Website"
-                  maxLength={20}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                className="shadow-none"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="bg-blue-500 hover:bg-blue-600 shadow-none"
-              >
-                Save Source
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader>
-          <CardTitle>Source List</CardTitle>
-          <CardDescription>
+    <div className="space-y-4">
+      <Card className="rounded-lg border-0">
+        <CardHeader className="px-4 py-3 border-b">
+          <CardTitle className="text-base font-medium">Source List</CardTitle>
+          <CardDescription className="text-sm">
             Daftar sumber lead dan deal yang tersedia.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Source</TableHead>
-                <TableHead className="text-right w-[250px]">
-                  Action
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sources.map((source) => (
-                <TableRow key={source.id}>
-                  <TableCell className="font-medium">
-                    {source.name}
-                  </TableCell>
-                  <TableCell className="text-right">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-4 py-3 font-medium">Source</TableHead>
+                  <TableHead className="px-4 py-3 text-right w-[250px] font-medium">
+                    Action
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sources.map((source) => (
+                  <TableRow key={source.id}>
+                    <TableCell className="px-4 py-3 font-medium">
+                      {source.name}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
@@ -137,6 +127,7 @@ export default function SourcesTab() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

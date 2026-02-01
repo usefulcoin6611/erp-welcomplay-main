@@ -23,6 +23,8 @@ interface SmoothTabProps {
     value?: string;
     className?: string;
     activeColor?: string;
+    /** Optional action (e.g. Create button) rendered inline with the tab bar, aligned right */
+    action?: React.ReactNode;
     onChange?: (tabId: string) => void;
     onTabPreload?: (tabId: string) => void;
 }
@@ -54,6 +56,7 @@ export function SmoothTab({
     value,
     className,
     activeColor = "bg-cyan-600",
+    action,
     onChange,
     onTabPreload,
 }: SmoothTabProps) {
@@ -180,25 +183,26 @@ export function SmoothTab({
 
     return (
         <div className="flex flex-col w-full gap-2">
-            {/* Tab Navigation */}
-            <div
-                ref={containerRef}
-                role="tablist"
-                aria-label="Report tabs"
-                className={cn(
-                                                "flex items-center justify-start gap-1 p-1 relative",
-                                                "bg-gray-100 dark:bg-gray-800 rounded-xl",
-                                                "overflow-x-auto overflow-y-hidden scrollbar-hide",
-                                                "transition-all duration-200",
-                                                "w-fit max-w-full",
-                                                className
-                                            )}
-                style={{
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                }}
-                                    >
+            {/* Tab Navigation + Action inline */}
+            <div className="flex w-full items-center justify-between gap-2">
+                <div
+                    ref={containerRef}
+                    role="tablist"
+                    aria-label="Report tabs"
+                    className={cn(
+                        "flex items-center justify-start gap-1 p-1 relative flex-1 min-w-0",
+                        "bg-gray-100 dark:bg-gray-800 rounded-xl",
+                        "overflow-x-auto overflow-y-hidden scrollbar-hide",
+                        "transition-all duration-200",
+                        "w-fit max-w-full",
+                        className
+                    )}
+                    style={{
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                    }}
+                >
                 {/* Sliding Background */}
                 {dimensions.width > 0 && (
                     <motion.div
@@ -265,6 +269,8 @@ export function SmoothTab({
                             </motion.button>
                         );
                     })}
+                </div>
+                {action ? <div className="shrink-0">{action}</div> : null}
             </div>
 
             {/* Content Area with Animation - min-w-0 agar konten lebar (e.g. tabel) bisa scroll horizontal */}

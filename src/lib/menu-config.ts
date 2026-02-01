@@ -306,15 +306,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               { title: t("contract"), url: "/contract" },
               {
                 title: t("crmSystemSetup"),
-                url: "#",
-                items: [
-                  { title: "Pipelines", url: "/pipelines?tab=pipelines" },
-                  { title: "Lead Stages", url: "/pipelines?tab=lead-stages" },
-                  { title: "Deal Stages", url: "/pipelines?tab=deal-stages" },
-                  { title: "Sources", url: "/pipelines?tab=sources" },
-                  { title: "Labels", url: "/pipelines?tab=labels" },
-                  { title: "Contract Type", url: "/pipelines?tab=contract-type" },
-                ],
+                url: "/pipelines",
               },
             ],
           },

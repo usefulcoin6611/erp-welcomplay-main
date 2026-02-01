@@ -100,14 +100,16 @@ export function ContractDetailClient({ contract }: ContractDetailClientProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Header: title + actions */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">{contract.subject}</h1>
-          <p className="text-sm text-muted-foreground">
-            {contract.contractNumber} · {contract.client}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardContent className="px-4 py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">{contract.subject}</h1>
+              <p className="text-sm text-muted-foreground">
+                {contract.contractNumber} · {contract.client}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -186,8 +188,10 @@ export function ContractDetailClient({ contract }: ContractDetailClientProps) {
               Back
             </Link>
           </Button>
-        </div>
-      </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         {/* Sidebar nav */}
