@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -130,19 +131,29 @@ export default function TaskCalendarPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            <div className="flex items-center justify-end">
-              <div className="flex gap-2">
-                <Select value={calendarType} onValueChange={setCalendarType}>
-                  <SelectTrigger className="w-[180px] h-9">
-                    <SelectValue placeholder="Calendar Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="local">Local Calendar</SelectItem>
-                    <SelectItem value="google">Google Calendar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Kalender</CardTitle>
+                  <CardDescription>
+                    Lihat dan kelola jadwal tugas, event, dan kegiatan Anda dalam kalender. Pantau deadline dan acara penting dalam satu tampilan.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Calendar Type Selector */}
+                  <Select value={calendarType} onValueChange={setCalendarType}>
+                    <SelectTrigger className="w-[180px] h-7 shadow-none">
+                      <SelectValue placeholder="Calendar Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="local">Local Calendar</SelectItem>
+                      <SelectItem value="google">Google Calendar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+            </Card>
 
             <div className="grid gap-4 lg:grid-cols-12">
               {/* Calendar - 8 columns */}

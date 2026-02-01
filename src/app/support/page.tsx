@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -441,45 +441,54 @@ export default function SupportPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header */}
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex rounded-md bg-muted p-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 ${
-                      viewMode === 'list'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('list')}
-                    title="List view"
-                  >
-                    <List className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                      viewMode === 'grid'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid view"
-                  >
-                    <LayoutGrid className="h-3 w-3" />
-                  </Button>
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Sistem Dukungan</CardTitle>
+                  <CardDescription>
+                    Kelola dan pantau tiket dukungan (support tickets) Anda. Lihat status tiket, prioritas, dan tanggapan dari setiap tiket yang sedang ditangani.
+                  </CardDescription>
                 </div>
-                <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none h-7">
-                      <Plus className="mr-2 h-3 w-3" /> Add Support
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* View mode toggle (List / Grid) */}
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        viewMode === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('list')}
+                      title="List view"
+                    >
+                      <List className="h-3 w-3" />
                     </Button>
-                  </DialogTrigger>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        viewMode === 'grid'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('grid')}
+                      title="Grid view"
+                    >
+                      <LayoutGrid className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Add Support */}
+                  <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="blue" className="shadow-none h-7">
+                        <Plus className="mr-2 h-3 w-3" /> Add Support
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create Support</DialogTitle>
@@ -618,9 +627,10 @@ export default function SupportPage() {
                       </DialogFooter>
                     </form>
                   </DialogContent>
-                </Dialog>
-              </div>
-            </div>
+                  </Dialog>
+                </div>
+              </CardHeader>
+            </Card>
 
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -687,52 +697,56 @@ export default function SupportPage() {
 
             {/* Title and Search - shared */}
             {viewMode === 'list' ? (
-            <Card>
-              <CardContent className="p-0">
-                <div className="px-4 py-3 border-b flex items-center justify-between">
-                  <CardTitle className="text-base font-medium">Support List</CardTitle>
-                  <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                <CardTitle>Support List</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                     <Input
                       placeholder="Search support tickets..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                     />
                     {search.length > 0 && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                         onClick={() => handleSearchChange('')}
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3 font-normal">Created By</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Ticket</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Code</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Attachment</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Assign User</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Status</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Created At</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Action</TableHead>
+                        <TableHead className="px-6">Created By</TableHead>
+                        <TableHead className="px-6">Ticket</TableHead>
+                        <TableHead className="px-6">Code</TableHead>
+                        <TableHead className="px-6">Attachment</TableHead>
+                        <TableHead className="px-6">Assign User</TableHead>
+                        <TableHead className="px-6">Status</TableHead>
+                        <TableHead className="px-6">Created At</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((support) => (
                         <TableRow key={support.id}>
-                          <TableCell className="px-4 py-3">
+                          <TableCell className="px-6">
                             <div className="flex items-center gap-2">
                               <div className="relative">
-                                <Avatar className="h-8 w-8 border-2 border-primary">
+                                <Avatar className="h-9 w-9 border-2 border-white">
                                   <AvatarImage src={support.created_by.avatar} />
                                   <AvatarFallback>
                                     {getInitials(support.created_by.name)}
@@ -745,7 +759,7 @@ export default function SupportPage() {
                               <span className="text-sm font-normal">{support.created_by.name}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div>
                               <a
                                 href="#"
@@ -758,10 +772,10 @@ export default function SupportPage() {
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-sm font-normal">
+                          <TableCell className="px-6 font-mono text-sm font-normal">
                             {support.ticket_code}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             {support.attachment ? (
                               <div className="flex items-center gap-2">
                                 <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
@@ -775,14 +789,14 @@ export default function SupportPage() {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="font-normal">{support.assign_user || '-'}</TableCell>
-                          <TableCell>
+                          <TableCell className="px-6 font-normal">{support.assign_user || '-'}</TableCell>
+                          <TableCell className="px-6">
                             <Badge className={getStatusColor(support.status)}>
                               {support.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-normal">{formatDate(support.created_at)}</TableCell>
-                          <TableCell>
+                          <TableCell className="px-6 font-normal">{formatDate(support.created_at)}</TableCell>
+                          <TableCell className="px-6">
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="outline"
@@ -818,7 +832,7 @@ export default function SupportPage() {
                       ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                          <TableCell colSpan={8} className="px-6 text-center py-8 text-muted-foreground">
                             No support tickets found
                           </TableCell>
                         </TableRow>
@@ -827,7 +841,7 @@ export default function SupportPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="px-4 py-3 border-t">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -845,28 +859,6 @@ export default function SupportPage() {
             ) : (
                 /* Grid view - card terpisah per ticket */
                 <>
-                  <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
-                    <CardTitle className="text-base font-medium mb-0">Support List</CardTitle>
-                    <div className="relative w-full max-w-sm">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search support tickets..."
-                        value={search}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                      />
-                      {search.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                          onClick={() => handleSearchChange('')}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {paginatedData.length > 0 ? (
                       paginatedData.map((support) => (

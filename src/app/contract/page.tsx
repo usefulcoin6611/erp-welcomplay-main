@@ -133,263 +133,277 @@ export default function ContractPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex rounded-md bg-muted p-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 ${
-                      viewMode === 'list'
-                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                    onClick={() => setViewMode('list')}
-                    title="List view"
-                  >
-                    <IconList className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                      viewMode === 'grid'
-                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid view"
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Kontrak</CardTitle>
+                  <CardDescription>
+                    Kelola dan pantau kontrak Anda. Lihat detail kontrak, nilai kontrak, dan periode kontrak yang sedang berjalan.
+                  </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* View mode toggle (List / Grid) */}
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        viewMode === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('list')}
+                      title="List view"
+                    >
+                      <IconList className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        viewMode === 'grid'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('grid')}
+                      title="Grid view"
+                    >
+                      <IconLayoutGrid className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Action buttons - Import, Export, Add Contract */}
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Import"
                   >
-                    <IconFileImport className="h-3 w-3" />
+                    <IconFileImport className="mr-2 h-3 w-3" />
+                    Import
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Export"
                   >
-                    <IconDownload className="h-3 w-3" />
+                    <IconDownload className="mr-2 h-3 w-3" />
+                    Export
                   </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="blue" size="sm" className="shadow-none h-7">
-                      <IconPlus className="mr-2 h-3 w-3" /> Add Contract
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[560px]">
-                    <DialogHeader>
-                      <DialogTitle>Create Contract</DialogTitle>
-                      <DialogDescription>
-                        Masukkan informasi kontrak baru seperti di modul Contract ERP.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="subject">Subject</Label>
-                        <Input
-                          id="subject"
-                          placeholder="Implementasi ERP PT Maju Jaya"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4">
+                        <IconPlus className="mr-2 h-3 w-3" />
+                        Add Contract
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[560px]">
+                      <DialogHeader>
+                        <DialogTitle>Create Contract</DialogTitle>
+                        <DialogDescription>
+                          Masukkan informasi kontrak baru seperti di modul Contract ERP.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                          <Label htmlFor="client">Client</Label>
+                          <Label htmlFor="subject">Subject</Label>
                           <Input
-                            id="client"
-                            placeholder="PT Maju Jaya"
+                            id="subject"
+                            placeholder="Implementasi ERP PT Maju Jaya"
                           />
                         </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="value">Value</Label>
-                          <Input
-                            id="value"
-                            type="number"
-                            placeholder="350000000"
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="client">Client</Label>
+                            <Input
+                              id="client"
+                              placeholder="PT Maju Jaya"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="value">Value</Label>
+                            <Input
+                              id="value"
+                              type="number"
+                              placeholder="350000000"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <Label htmlFor="startDate">Start Date</Label>
+                            <Input id="startDate" type="date" />
+                          </div>
+                          <div className="space-y-3">
+                            <Label htmlFor="endDate">End Date</Label>
+                            <Input id="endDate" type="date" />
+                          </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          <Label htmlFor="startDate">Start Date</Label>
-                          <Input id="startDate" type="date" />
-                        </div>
-                        <div className="space-y-3">
-                          <Label htmlFor="endDate">End Date</Label>
-                          <Input id="endDate" type="date" />
-                        </div>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="shadow-none h-7"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="blue"
-                        size="sm"
-                        className="shadow-none h-7"
-                      >
-                        Save Contract
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none h-7"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="blue"
+                          size="sm"
+                          className="shadow-none h-7"
+                        >
+                          Save Contract
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
 
             {/* Contract List / Grid */}
             {viewMode === 'list' ? (
-            <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="p-0">
-                <div className="px-4 py-3 border-b flex items-center justify-between">
-                  <CardTitle className="text-base font-medium">Contract List</CardTitle>
-                  <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                <CardTitle>Contract List</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                     <Input
                       placeholder="Search contracts..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                     />
                     {search.length > 0 && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                         onClick={() => handleSearchChange('')}
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="px-4 py-3 font-medium">#</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Subject</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Client</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Project</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Contract Type</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Contract Value</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Start Date</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
-                      <TableHead className="px-4 py-3 font-medium">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedData.length > 0 ? (
-                      paginatedData.map((contract) => (
-                        <TableRow key={contract.id}>
-                          <TableCell className="px-4 py-3">
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none"
-                            >
-                              <Link href={`/contract/${contract.id}`}>
-                                {contract.contractNumber}
-                              </Link>
-                            </Button>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 font-normal">
-                            {contract.subject}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 font-normal">{contract.client}</TableCell>
-                          <TableCell className="px-4 py-3 font-normal">{contract.project}</TableCell>
-                          <TableCell className="px-4 py-3 font-normal">{contract.type}</TableCell>
-                          <TableCell className="px-4 py-3 font-normal">
-                            Rp {contract.value.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div className="flex items-center gap-1 text-sm font-normal">
-                              <IconCalendar className="h-3 w-3" />
-                              <span>{contract.startDate}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div className="flex items-center gap-1 text-sm font-normal">
-                              <IconCalendar className="h-3 w-3" />
-                              <span>{contract.endDate}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              {contract.status === 'accept' && (
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-6">#</TableHead>
+                        <TableHead className="px-6">Subject</TableHead>
+                        <TableHead className="px-6">Client</TableHead>
+                        <TableHead className="px-6">Project</TableHead>
+                        <TableHead className="px-6">Contract Type</TableHead>
+                        <TableHead className="px-6">Contract Value</TableHead>
+                        <TableHead className="px-6">Start Date</TableHead>
+                        <TableHead className="px-6">End Date</TableHead>
+                        <TableHead className="px-6">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedData.length > 0 ? (
+                        paginatedData.map((contract) => (
+                          <TableRow key={contract.id}>
+                            <TableCell className="px-6 font-medium">
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="shadow-none"
+                              >
+                                <Link href={`/contract/${contract.id}`}>
+                                  {contract.contractNumber}
+                                </Link>
+                              </Button>
+                            </TableCell>
+                            <TableCell className="px-6">{contract.subject}</TableCell>
+                            <TableCell className="px-6">{contract.client}</TableCell>
+                            <TableCell className="px-6">{contract.project}</TableCell>
+                            <TableCell className="px-6">{contract.type}</TableCell>
+                            <TableCell className="px-6">
+                              Rp {contract.value.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="px-6">
+                              <div className="flex items-center gap-1 text-sm font-normal">
+                                <IconCalendar className="h-3 w-3" />
+                                <span>{contract.startDate}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6">
+                              <div className="flex items-center gap-1 text-sm font-normal">
+                                <IconCalendar className="h-3 w-3" />
+                                <span>{contract.endDate}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6">
+                              <div className="flex items-center gap-2 justify-start">
+                                {contract.status === 'accept' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 w-7 p-0 bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
+                                    title="Duplicate"
+                                  >
+                                    <IconCopy className="h-3 w-3" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
-                                  title="Duplicate"
+                                  className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                                  title="View"
+                                  asChild
                                 >
-                                  <IconCopy className="h-3 w-3" />
+                                  <Link href={`/contract/${contract.id}`}>
+                                    <IconEye className="h-3 w-3" />
+                                  </Link>
                                 </Button>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                                title="View"
-                                asChild
-                              >
-                                <Link href={`/contract/${contract.id}`}>
-                                  <IconEye className="h-3 w-3" />
-                                </Link>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                title="Edit"
-                                onClick={() => openEditDialog(contract)}
-                              >
-                                <IconPencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                title="Delete"
-                                onClick={() => openDeleteConfirm(contract.id)}
-                              >
-                                <IconTrash className="h-3 w-3" />
-                              </Button>
-                            </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                  title="Edit"
+                                  onClick={() => openEditDialog(contract)}
+                                >
+                                  <IconPencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  title="Delete"
+                                  onClick={() => openDeleteConfirm(contract.id)}
+                                >
+                                  <IconTrash className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={9} className="px-6 text-center py-8 text-muted-foreground">
+                            No contracts found
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                          No contracts found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="px-4 py-3 border-t">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -407,28 +421,6 @@ export default function ContractPage() {
             ) : (
                 /* Grid view: card ringkas & modern */
                 <>
-                  <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
-                    <CardTitle className="text-base font-medium mb-0">Contract List</CardTitle>
-                    <div className="relative w-full max-w-sm">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search contracts..."
-                        value={search}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                      />
-                      {search.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                          onClick={() => handleSearchChange('')}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {paginatedData.length > 0 ? (
                       paginatedData.map((contract) => (

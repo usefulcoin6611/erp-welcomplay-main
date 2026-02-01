@@ -66,6 +66,7 @@ import {
   IconBookmark,
   IconDotsVertical,
 } from '@tabler/icons-react'
+import { X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 
 const deals = [
@@ -129,13 +130,13 @@ export default function DealsPage() {
 
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [search, setSearch] = useState('')
-  const [selectedPipeline, setSelectedPipeline] = useState('default-pipeline')
+  const [selectedPipeline, setSelectedPipeline] = useState('sales-pipeline')
   
   // Mock pipelines data - replace with actual data from API
+  // Only show Sales and Marketing (without "Pipeline" text)
   const pipelines = [
-    { id: 'default-pipeline', name: 'Default Pipeline' },
-    { id: 'sales-pipeline', name: 'Sales Pipeline' },
-    { id: 'marketing-pipeline', name: 'Marketing Pipeline' },
+    { id: 'sales-pipeline', name: 'Sales' },
+    { id: 'marketing-pipeline', name: 'Marketing' },
   ]
 
   const filteredDeals = useMemo(() => {
@@ -180,135 +181,143 @@ export default function DealsPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            <div className="flex items-center justify-between gap-3">
-              {/* Left side: Pipeline selector */}
-              <div className="flex items-center gap-3">
-                <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
-                  <SelectTrigger className="h-7 w-[180px] shadow-none">
-                    <SelectValue placeholder="Select Pipeline" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pipelines.map((pipeline) => (
-                      <SelectItem key={pipeline.id} value={pipeline.id}>
-                        {pipeline.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Right side: View toggle and Actions */}
-              <div className="flex items-center gap-3">
-                {/* View mode toggle (Kanban / List) */}
-                <div className="inline-flex rounded-md bg-muted p-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-                    className={`h-7 w-7 shadow-none p-0 ${
-                      viewMode === 'kanban'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('kanban')}
-                    title="Kanban view"
-                  >
-                    <IconLayoutKanban className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                      viewMode === 'list'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('list')}
-                    title="List view"
-                  >
-                    <IconList className="h-3 w-3" />
-                  </Button>
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Penawaran</CardTitle>
+                  <CardDescription>
+                    Kelola dan pantau penawaran (deals) Anda. Lihat status penawaran, negosiasi, dan progress dari setiap deal yang sedang berjalan.
+                  </CardDescription>
                 </div>
-
-                {/* Actions (Import / Download / Add) */}
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Pipeline Selector - Only show in Kanban mode */}
+                  {viewMode === 'kanban' && (
+                    <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
+                      <SelectTrigger className="h-7 w-[120px] shadow-none">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            {pipeline.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {/* View mode toggle (Kanban / List) */}
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        viewMode === 'kanban'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('kanban')}
+                      title="Kanban view"
+                    >
+                      <IconLayoutKanban className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        viewMode === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('list')}
+                      title="List view"
+                    >
+                      <IconList className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Action buttons - Import, Export, Add Deal */}
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Import"
                   >
-                    <IconFileImport className="h-3 w-3" />
+                    <IconFileImport className="mr-2 h-3 w-3" />
+                    Import
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Export"
                   >
-                    <IconDownload className="h-3 w-3" />
+                    <IconDownload className="mr-2 h-3 w-3" />
+                    Export
                   </Button>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="blue" size="sm" className="shadow-none h-7">
-                        <IconPlus className="h-3 w-3 mr-2" />
-                        Add Deal
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[560px]">
-                      <DialogHeader>
-                        <DialogTitle>Create Deal</DialogTitle>
-                        <DialogDescription>
-                          Masukkan informasi deal baru seperti di modul Deals ERP.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="dealName">Deal Name</Label>
-                          <Input
-                            id="dealName"
-                            placeholder="Implementasi ERP PT Maju Jaya"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
+                  {user?.type !== 'client' && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Add Deal">
+                          <IconPlus className="mr-2 h-3 w-3" />
+                          Add Deal
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[560px]">
+                        <DialogHeader>
+                          <DialogTitle>Create Deal</DialogTitle>
+                          <DialogDescription>
+                            Masukkan informasi deal baru seperti di modul Deals ERP.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
                           <div className="grid gap-2">
-                            <Label htmlFor="client">Client</Label>
+                            <Label htmlFor="dealName">Deal Name</Label>
                             <Input
-                              id="client"
-                              placeholder="PT Maju Jaya"
+                              id="dealName"
+                              placeholder="Implementasi ERP PT Maju Jaya"
                             />
                           </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="price">Price</Label>
-                            <Input
-                              id="price"
-                              type="number"
-                              placeholder="350000000"
-                            />
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="client">Client</Label>
+                              <Input
+                                id="client"
+                                placeholder="PT Maju Jaya"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="price">Price</Label>
+                              <Input
+                                id="price"
+                                type="number"
+                                placeholder="350000000"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="shadow-none"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          className="bg-blue-500 hover:bg-blue-600 shadow-none"
-                        >
-                          Save Deal
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="shadow-none"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            className="bg-blue-500 hover:bg-blue-600 shadow-none"
+                          >
+                            Save Deal
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
 
             {/* Summary Cards - 4 cards like reference */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -484,87 +493,123 @@ export default function DealsPage() {
                 })}
               </div>
             ) : (
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                  <CardTitle>Deals List</CardTitle>
+                  <div className="flex w-full max-w-md items-center gap-2">
+                    <div className="relative flex-1">
+                      <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                      <Input
+                        placeholder="Search deals..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                      />
+                      {search.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                          onClick={() => setSearch('')}
+                          aria-label="Clear search"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="px-4 py-3 font-normal">Name</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Price</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Stage</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Tasks</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Users</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredDeals.map((deal) => (
-                        <TableRow key={deal.id}>
-                          <TableCell className="px-4 py-3 font-medium">
-                            {deal.name}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            Rp {deal.price.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Badge className={getStageBadge(deal.stage)}>
-                              {deal.stage}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            {deal.tasks.completed}/{deal.tasks.total}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div className="flex -space-x-2">
-                              {deal.users.map((user) => (
-                                <Avatar
-                                  key={user.id}
-                                  className="h-6 w-6 border-2 border-background"
-                                  title={user.name}
-                                >
-                                  <AvatarImage src={user.avatar} />
-                                  <AvatarFallback className="text-xs">
-                                    {getInitials(user.name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <div className="flex items-center gap-2 justify-start">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                title="View"
-                                asChild
-                              >
-                                <Link href={`/deals/${deal.id}`}>
-                                  <IconEye className="h-3 w-3" />
-                                </Link>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                title="Edit"
-                              >
-                                <IconPencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                title="Delete"
-                              >
-                                <IconTrash className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="px-6">Name</TableHead>
+                          <TableHead className="px-6">Price</TableHead>
+                          <TableHead className="px-6">Stage</TableHead>
+                          <TableHead className="px-6">Tasks</TableHead>
+                          <TableHead className="px-6">Users</TableHead>
+                          <TableHead className="px-6">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDeals.length > 0 ? (
+                          filteredDeals.map((deal) => (
+                            <TableRow key={deal.id}>
+                              <TableCell className="px-6 font-medium">
+                                {deal.name}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                Rp {deal.price.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <Badge className={getStageBadge(deal.stage)}>
+                                  {deal.stage}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-6">
+                                {deal.tasks.completed}/{deal.tasks.total}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <div className="flex -space-x-2">
+                                  {deal.users.map((user) => (
+                                    <Avatar
+                                      key={user.id}
+                                      className="h-9 w-9 border-2 border-white"
+                                      title={user.name}
+                                    >
+                                      <AvatarImage src={user.avatar} />
+                                      <AvatarFallback className="text-xs">
+                                        {getInitials(user.name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <div className="flex items-center gap-2 justify-start">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="View"
+                                    asChild
+                                  >
+                                    <Link href={`/deals/${deal.id}`}>
+                                      <IconEye className="h-3 w-3" />
+                                    </Link>
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="Edit"
+                                  >
+                                    <IconPencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                    title="Delete"
+                                  >
+                                    <IconTrash className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
+                              No deals found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             )}

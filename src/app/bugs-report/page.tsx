@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -327,14 +328,54 @@ export default function BugsReportPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            <div className="flex items-center justify-end">
-              <div className="flex gap-2">
-                <Dialog open={createDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none h-7">
-                      <IconPlus className="mr-2 h-3 w-3" /> Create Bug Report
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Bugs Report</CardTitle>
+                  <CardDescription>
+                    Kelola dan pantau bug report Anda. Lihat status bug, prioritas, dan progress dari setiap bug yang sedang ditangani.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* View mode toggle (List / Grid) */}
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={view === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        view === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setView('list')}
+                      title="List view"
+                    >
+                      <IconList className="h-3 w-3" />
                     </Button>
-                  </DialogTrigger>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={view === 'grid' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        view === 'grid'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setView('grid')}
+                      title="Grid view"
+                    >
+                      <IconLayoutGrid className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Create Bug Report */}
+                  <Dialog open={createDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="blue" className="shadow-none h-7">
+                        <IconPlus className="mr-2 h-3 w-3" /> Create Bug Report
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create Bug Report</DialogTitle>
@@ -467,91 +508,67 @@ export default function BugsReportPage() {
                       </DialogFooter>
                     </form>
                   </DialogContent>
-                </Dialog>
-                <div className="inline-flex rounded-md bg-muted p-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 ${
-                      view === "list"
-                        ? "bg-blue-500 text-white hover:bg-blue-600"
-                        : "text-blue-600 hover:bg-blue-50"
-                    }`}
-                    onClick={() => setView("list")}
-                    title="List view"
-                  >
-                    <IconList className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                      view === "grid"
-                        ? "bg-blue-500 text-white hover:bg-blue-600"
-                        : "text-blue-600 hover:bg-blue-50"
-                    }`}
-                    onClick={() => setView("grid")}
-                    title="Grid view"
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
+                  </Dialog>
+                  {/* Back button (only for company users) */}
+                  {isCompany && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                      title="Back"
+                      asChild
+                    >
+                      <Link href="/projects">
+                        <IconArrowLeft className="mr-2 h-3 w-3" />
+                        Back
+                      </Link>
+                    </Button>
+                  )}
                 </div>
-                {isCompany && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="Back"
-                    asChild
-                  >
-                    <Link href="/projects">
-                      <IconArrowLeft className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
 
             {/* Bug List / Grid */}
             {view === "list" ? (
-            <Card>
-              <CardContent className="p-0">
-                {/* Title and Search - Top */}
-                <div className="px-4 py-3 border-b flex items-center justify-between">
-                  <CardTitle className="text-base font-medium">Bug Report List</CardTitle>
-                  <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                <CardTitle>Bug Report List</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                     <Input
                       placeholder="Search bugs..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                     />
                     {search.length > 0 && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                         onClick={() => handleSearchChange('')}
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3 font-medium">Name</TableHead>
-                        <TableHead className="px-4 py-3 font-medium">Bug Status</TableHead>
-                        <TableHead className="px-4 py-3 font-medium">Priority</TableHead>
-                        <TableHead className="px-4 py-3 font-medium">End Date</TableHead>
-                        <TableHead className="px-4 py-3 font-medium">Created By</TableHead>
-                        <TableHead className="px-4 py-3 font-medium">Assigned To</TableHead>
-                        <TableHead className="px-4 py-3 font-medium"></TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">Bug Status</TableHead>
+                        <TableHead className="px-6">Priority</TableHead>
+                        <TableHead className="px-6">End Date</TableHead>
+                        <TableHead className="px-6">Created By</TableHead>
+                        <TableHead className="px-6">Assigned To</TableHead>
+                        <TableHead className="px-6"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -560,7 +577,7 @@ export default function BugsReportPage() {
                           const dateInfo = formatDate(bug.dueDate)
                           return (
                             <TableRow key={bug.id}>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6 font-medium">
                                 <div className="space-y-1">
                                   <Link
                                     href={`/projects/${bug.projectId}/bugs/${bug.id}`}
@@ -586,17 +603,17 @@ export default function BugsReportPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <Badge className={getBugStatusClasses(bug.bugStatus)}>
                                   {bug.bugStatus}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <Badge className={getPriorityClasses(bug.priority)}>
                                   {priorityMap[bug.priority]?.label || bug.priority}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <span
                                   className={`text-sm font-normal ${
                                     dateInfo.isOverdue ? "text-red-600" : ""
@@ -605,17 +622,17 @@ export default function BugsReportPage() {
                                   {dateInfo.formatted}
                                 </span>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div className="flex items-center">
                                   <span className="text-sm font-normal">{bug.createdBy}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div className="flex -space-x-2">
                                   {bug.assignedTo.slice(0, 3).map((user, idx) => (
                                     <Avatar
                                       key={idx}
-                                      className="h-8 w-8 border-2 border-white"
+                                      className="h-9 w-9 border-2 border-white"
                                     >
                                       <AvatarFallback className="text-xs">
                                         {user.charAt(0)}
@@ -623,7 +640,7 @@ export default function BugsReportPage() {
                                     </Avatar>
                                   ))}
                                   {bug.assignedTo.length > 3 && (
-                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                    <div className="h-9 w-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
                                       <span className="text-xs font-medium">
                                         +{bug.assignedTo.length - 3}
                                       </span>
@@ -634,7 +651,7 @@ export default function BugsReportPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div className="flex items-center gap-3 justify-end">
                                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <IconPaperclip className="h-4 w-4" />
@@ -651,7 +668,7 @@ export default function BugsReportPage() {
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
                             No bugs found
                           </TableCell>
                         </TableRow>
@@ -660,7 +677,7 @@ export default function BugsReportPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="px-4 py-3 border-t">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -678,28 +695,6 @@ export default function BugsReportPage() {
             ) : (
               /* Grid view: satu card per bug */
               <>
-                <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4">
-                  <CardTitle className="text-base font-medium mb-0">Bug Report List</CardTitle>
-                  <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search bugs..."
-                      value={search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                    />
-                    {search.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                        onClick={() => handleSearchChange('')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {paginatedData.length > 0 ? (
                     paginatedData.map((bug) => {

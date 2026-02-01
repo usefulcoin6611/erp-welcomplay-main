@@ -5,10 +5,12 @@ import React from "react"
 import Link from "next/link"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { MainContentWrapper } from "@/components/main-content-wrapper"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -197,75 +199,91 @@ export default function ProjectListPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Projects</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage projects and track progress
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {view === "list" ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="Grid View"
-                    onClick={() => setView("grid")}
-                  >
-                    <IconLayoutGrid className="h-3 w-3" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-none h-7"
-                    title="List View"
-                    onClick={() => setView("list")}
-                  >
-                    <IconList className="h-3 w-3" />
-                  </Button>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Proyek</CardTitle>
+                  <CardDescription>
+                    Kelola dan pantau proyek Anda. Lihat status proyek, progress, dan tim yang terlibat dalam setiap proyek.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* View mode toggle (List / Grid) */}
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
                     <Button
-                      variant="secondary"
+                      type="button"
                       size="sm"
-                      className="shadow-none h-7"
-                      title="Filter"
+                      variant={view === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        view === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setView('list')}
+                      title="List view"
                     >
-                      <IconFilter className="h-3 w-3" />
+                      <IconList className="h-3 w-3" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleStatusFilter('all')}>
-                      Show All
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusFilter('not_started')}>
-                      Not Started
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusFilter('on_hold')}>
-                      On Hold
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusFilter('in_progress')}>
-                      In Progress
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusFilter('cancel')}>
-                      Cancel
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusFilter('finished')}>
-                      Finished
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="blue" size="sm" className="shadow-none h-7">
-                      <IconPlus className="h-3 w-3" />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={view === 'grid' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        view === 'grid'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setView('grid')}
+                      title="Grid view"
+                    >
+                      <IconLayoutGrid className="h-3 w-3" />
                     </Button>
-                  </DialogTrigger>
+                  </div>
+                  {/* Filter */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                        title="Filter"
+                      >
+                        <IconFilter className="mr-2 h-3 w-3" />
+                        Filter
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleStatusFilter('all')}>
+                        Show All
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusFilter('not_started')}>
+                        Not Started
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusFilter('on_hold')}>
+                        On Hold
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusFilter('in_progress')}>
+                        In Progress
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusFilter('cancel')}>
+                        Cancel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusFilter('finished')}>
+                        Finished
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  {/* Add Project */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4">
+                        <IconPlus className="mr-2 h-3 w-3" />
+                        Add Project
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                       <DialogTitle>Create Project</DialogTitle>
@@ -394,57 +412,53 @@ export default function ProjectListPage() {
                   </DialogContent>
                 </Dialog>
               </div>
-            </div>
+            </Card>
 
-            {/* Search */}
-            <Card className="shadow-none">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* Project List */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                <CardTitle>Project List</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                     <Input
                       placeholder="Search projects..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 focus-visible:border-0 shadow-none transition-colors"
+                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                     />
                     {search.length > 0 && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                         onClick={() => handleSearchChange('')}
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Project List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Project List</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Users</TableHead>
-                        <TableHead>Completion</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="px-6">Project</TableHead>
+                        <TableHead className="px-6">Status</TableHead>
+                        <TableHead className="px-6">Users</TableHead>
+                        <TableHead className="px-6">Completion</TableHead>
+                        <TableHead className="px-6">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((project) => (
                           <TableRow key={project.id}>
-                            <TableCell>
+                            <TableCell className="px-6 font-medium">
                               <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded border-2 border-primary bg-slate-100 flex items-center justify-center">
                                   <span className="text-xs font-semibold">
@@ -459,17 +473,17 @@ export default function ProjectListPage() {
                                 </Link>
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <Badge className={getStatusClasses(project.status)}>
                                 {statusMap[project.status]?.label || project.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <div className="flex -space-x-2">
                                 {project.users.slice(0, 3).map((user, idx) => (
                                   <Avatar
                                     key={idx}
-                                    className="h-8 w-8 border-2 border-white"
+                                    className="h-9 w-9 border-2 border-white"
                                   >
                                     <AvatarFallback className="text-xs">
                                       {user.charAt(0)}
@@ -477,7 +491,7 @@ export default function ProjectListPage() {
                                   </Avatar>
                                 ))}
                                 {project.users.length > 3 && (
-                                  <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                                  <div className="h-9 w-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
                                     <span className="text-xs font-medium">
                                       +{project.users.length - 3}
                                     </span>
@@ -485,7 +499,7 @@ export default function ProjectListPage() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <div className="space-y-1">
                                 <div className="text-sm font-medium">
                                   {project.completion}%
@@ -498,12 +512,12 @@ export default function ProjectListPage() {
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <div className="flex items-center gap-2 justify-start">
                                 <Button
-                                  variant="secondary"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                  className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
                                   title="View"
                                   asChild
                                 >
@@ -512,17 +526,17 @@ export default function ProjectListPage() {
                                   </Link>
                                 </Button>
                                 <Button
-                                  variant="secondary"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white"
+                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                   title="Edit"
                                 >
                                   <IconPencil className="h-3 w-3" />
                                 </Button>
                                 <Button
-                                  variant="destructive"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7"
+                                  className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Delete"
                                 >
                                   <IconTrash className="h-3 w-3" />
@@ -533,7 +547,7 @@ export default function ProjectListPage() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={5} className="px-6 text-center py-8 text-muted-foreground">
                             No projects found
                           </TableCell>
                         </TableRow>
@@ -542,7 +556,7 @@ export default function ProjectListPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -558,7 +572,7 @@ export default function ProjectListPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
