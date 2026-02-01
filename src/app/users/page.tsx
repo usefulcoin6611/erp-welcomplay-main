@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -218,30 +218,38 @@ export default function UsersPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">
-                  {isSuperAdmin ? 'Manage Companies' : 'Manage User'}
-                </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                {!isSuperAdmin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                    title="User Logs"
-                  >
-                    <UserCheck className="h-4 w-4" />
-                  </Button>
-                )}
-                <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none h-7" title={isSuperAdmin ? 'Create Company' : 'Create User'}>
-                      <Plus className="h-3 w-3" />
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">
+                    {isSuperAdmin ? 'Manage Companies' : 'Manage User'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isSuperAdmin 
+                      ? 'Create and manage companies in your system. Monitor company plans, users, and activity.'
+                      : 'Create and manage users in your system. Assign roles and permissions to control access.'}
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isSuperAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shadow-none h-7 px-4 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                      title="User Logs"
+                    >
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      User Logs
                     </Button>
-                  </DialogTrigger>
+                  )}
+                  <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title={isSuperAdmin ? 'Create Company' : 'Create User'}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        {isSuperAdmin ? 'Create Company' : 'Create User'}
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{isSuperAdmin ? 'Create Company' : 'Create User'}</DialogTitle>
@@ -329,8 +337,9 @@ export default function UsersPage() {
                     </form>
                   </DialogContent>
                 </Dialog>
-              </div>
-            </div>
+                </div>
+              </CardHeader>
+            </Card>
 
             {/* Companies Grid (Super Admin) */}
             {isSuperAdmin ? (

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -368,21 +368,24 @@ export default function RolesPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Manage Role</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create and manage roles in your system
-                </p>
-              </div>
-              <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="blue" className="shadow-none">
-                    <Plus className="mr-2 h-4 w-4" /> Create Role
-                  </Button>
-                </DialogTrigger>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">Manage Role</CardTitle>
+                  <CardDescription>
+                    Create and manage roles in your system. Assign permissions to control access to different modules and features.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create Role">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Role
+                      </Button>
+                    </DialogTrigger>
                 <DialogContent className="!max-w-[70vw] w-[70vw] max-h-[95vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
@@ -448,7 +451,9 @@ export default function RolesPage() {
                   </form>
                 </DialogContent>
               </Dialog>
-            </div>
+                </div>
+              </CardHeader>
+            </Card>
 
             {/* Roles Table */}
             <Card>

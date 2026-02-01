@@ -397,7 +397,7 @@ export function DebitNoteTab() {
 
       {/* Debit Notes Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Debit Note List</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -429,41 +429,41 @@ export function DebitNoteTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Debit Note</TableHead>
-                  <TableHead>Bill</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Debit Note</TableHead>
+                  <TableHead className="px-6">Bill</TableHead>
+                  <TableHead className="px-6">Date</TableHead>
+                  <TableHead className="px-6">Amount</TableHead>
+                  <TableHead className="px-6">Description</TableHead>
+                  <TableHead className="px-6">Status</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((note) => (
                     <TableRow key={note.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button variant="outline" size="sm" className="shadow-none">
                           {formatDebitNoteId(note.debitId)}
                         </Button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/bill/${note.billId}`}>
                             {note.bill}
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{formatDate(note.date)}</TableCell>
-                      <TableCell className="font-medium">{formatPrice(note.amount)}</TableCell>
-                      <TableCell>{note.description || '-'}</TableCell>
-                      <TableCell>{getDebitNoteStatusBadge(note.status)}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{formatDate(note.date)}</TableCell>
+                      <TableCell className="px-6 font-medium">{formatPrice(note.amount)}</TableCell>
+                      <TableCell className="px-6">{note.description || '-'}</TableCell>
+                      <TableCell className="px-6">{getDebitNoteStatusBadge(note.status)}</TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -489,7 +489,7 @@ export function DebitNoteTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
                       No debit notes found
                     </TableCell>
                   </TableRow>
@@ -498,7 +498,7 @@ export function DebitNoteTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

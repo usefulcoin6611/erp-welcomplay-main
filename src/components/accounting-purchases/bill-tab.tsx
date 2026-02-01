@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -191,17 +193,37 @@ export function BillTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
-          <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Bill Date</label>
-              <Input type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} className="h-9" />
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setCurrentPage(1)
+            }}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_auto] md:justify-start"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="bill-filter-date" className="text-sm font-medium">
+                Bill Date
+              </Label>
+              <DatePicker
+                id="bill-filter-date"
+                value={billDate}
+                onValueChange={(v) => setBillDate(v)}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
+              />
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Status</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Status</Label>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="h-9 w-full">
+                <SelectTrigger
+                  className={`w-full !h-9 ${
+                    status === 'all' ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -214,11 +236,26 @@ export function BillTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 md:pt-6">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
+              >
                 <Search className="h-3 w-3" />
               </Button>
-              <Button type="button" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" onClick={handleReset} title="Reset">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                onClick={handleReset}
+                title="Reset"
+              >
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
@@ -228,7 +265,7 @@ export function BillTab() {
 
       {/* Bills Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Bill List</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -254,24 +291,24 @@ export function BillTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Bill</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Bill Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Bill</TableHead>
+                  <TableHead className="px-6">Category</TableHead>
+                  <TableHead className="px-6">Bill Date</TableHead>
+                  <TableHead className="px-6">Due Date</TableHead>
+                  <TableHead className="px-6">Status</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((bill) => (
                     <TableRow key={bill.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button
                           asChild
                           variant="outline"
@@ -283,15 +320,15 @@ export function BillTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{bill.category}</TableCell>
-                      <TableCell>{bill.billDate}</TableCell>
-                      <TableCell>{bill.dueDate}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{bill.category}</TableCell>
+                      <TableCell className="px-6">{bill.billDate}</TableCell>
+                      <TableCell className="px-6">{bill.dueDate}</TableCell>
+                      <TableCell className="px-6">
                         <Badge className={getBillStatusClasses(bill.status)}>
                           {bill.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -330,7 +367,7 @@ export function BillTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
                       No bills found
                     </TableCell>
                   </TableRow>
@@ -339,7 +376,7 @@ export function BillTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

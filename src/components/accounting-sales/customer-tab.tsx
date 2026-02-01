@@ -611,7 +611,7 @@ export function CustomerTab() {
 
       {/* Customers Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Customer List</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -637,40 +637,40 @@ export function CustomerTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Balance</TableHead>
-                <TableHead>Action</TableHead>
+                <TableHead className="px-6">#</TableHead>
+                <TableHead className="px-6">Name</TableHead>
+                <TableHead className="px-6">Contact</TableHead>
+                <TableHead className="px-6">Email</TableHead>
+                <TableHead className="px-6">Balance</TableHead>
+                <TableHead className="px-6">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedCustomers.length > 0 ? (
                 paginatedCustomers.map((customer) => (
                   <TableRow key={customer.id}>
-                    <TableCell>
+                    <TableCell className="px-6">
                       <Button variant="outline" size="sm" className="shadow-none">
                         {customer.customerCode}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="px-6 font-medium">
                       {customer.name}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       {customer.contact}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       {customer.email}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       Rp {customer.balance.toLocaleString('id-ID')}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100">
                           <Eye className="h-3 w-3" />
@@ -699,7 +699,7 @@ export function CustomerTab() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
                     No customers found
                   </TableCell>
                 </TableRow>
@@ -707,7 +707,7 @@ export function CustomerTab() {
             </TableBody>
           </Table>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

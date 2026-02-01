@@ -63,7 +63,7 @@ export default function JournalEntryPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold">Journal Entries</h1>
@@ -76,12 +76,12 @@ export default function JournalEntryPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="px-6 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Entries
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-6 pt-0">
                   <div className="text-2xl font-bold">{totalEntries}</div>
                   <p className="text-xs text-muted-foreground">
                     Jurnal yang tercatat
@@ -90,16 +90,16 @@ export default function JournalEntryPage() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+              <CardHeader className="px-6">
                 <CardTitle>Filters</CardTitle>
                 <CardDescription>
                   Cari jurnal berdasarkan tanggal, referensi, atau deskripsi.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <form className="flex flex-col gap-4 md:flex-row md:items-end">
-                  <div className="flex-1 min-w-0">
+              <CardContent className="px-6 py-4">
+                <form className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[1fr_14rem] md:justify-start">
+                  <div className="min-w-0">
                     <label className="mb-1 block text-sm font-medium">
                       Search
                     </label>
@@ -111,67 +111,67 @@ export default function JournalEntryPage() {
                       />
                     </div>
                   </div>
-                  <div className="w-full md:w-44">
+                  <div className="space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       Date
                     </label>
-                    <Input type="date" />
+                    <Input type="date" className="h-9" />
                   </div>
                 </form>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+              <CardHeader className="px-6">
                 <CardTitle>Journal List</CardTitle>
                 <CardDescription>
                   Ringkasan jurnal umum, total debit dan kredit harus seimbang.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Journal</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Total Debit</TableHead>
-                      <TableHead className="text-right">Total Credit</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="px-6">Journal</TableHead>
+                      <TableHead className="px-6">Date</TableHead>
+                      <TableHead className="px-6">Reference</TableHead>
+                      <TableHead className="px-6">Description</TableHead>
+                      <TableHead className="px-6 text-right">Total Debit</TableHead>
+                      <TableHead className="px-6 text-right">Total Credit</TableHead>
+                      <TableHead className="px-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {journalEntries.map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell>
+                        <TableCell className="px-6">
                           <div className="text-sm font-semibold">
                             {entry.id}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-6">
                           <div className="flex items-center gap-1 text-sm">
                             <IconCalendar className="h-3 w-3" />
                             <span>{entry.date}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{entry.reference}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-6">{entry.reference}</TableCell>
+                        <TableCell className="px-6">
                           <span className="text-sm text-muted-foreground">
                             {entry.description}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-6 text-right">
                           <div className="font-medium">
                             Rp {entry.debit.toLocaleString()}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-6 text-right">
                           <div className="font-medium">
                             Rp {entry.credit.toLocaleString()}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-6">
                           <Badge className="bg-blue-50 text-blue-700 border-none">
                             Detail
                           </Badge>

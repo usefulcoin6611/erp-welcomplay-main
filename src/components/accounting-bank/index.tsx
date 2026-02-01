@@ -44,6 +44,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { DatePicker } from '@/components/ui/date-picker'
 
 export function AccountTab() {
   const [search, setSearch] = useState('')
@@ -469,7 +470,7 @@ export function AccountTab() {
       </Card>
 
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Semua Akun</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -495,34 +496,34 @@ export function AccountTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Chart of Account</TableHead>
-                <TableHead>Nama</TableHead>
-                <TableHead>Bank</TableHead>
-                <TableHead>No. Rekening</TableHead>
-                <TableHead className="text-right">Saldo Saat Ini</TableHead>
-                <TableHead>Kontak</TableHead>
-                <TableHead>Payment Gateway</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                <TableHead className="px-6">Chart of Account</TableHead>
+                <TableHead className="px-6">Nama</TableHead>
+                <TableHead className="px-6">Bank</TableHead>
+                <TableHead className="px-6">No. Rekening</TableHead>
+                <TableHead className="px-6 text-right">Saldo Saat Ini</TableHead>
+                <TableHead className="px-6">Kontak</TableHead>
+                <TableHead className="px-6">Payment Gateway</TableHead>
+                <TableHead className="px-6 text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedData.length > 0 ? (
                 paginatedData.map((a) => (
                   <TableRow key={a.id}>
-                    <TableCell>{a.chartOfAccount}</TableCell>
-                    <TableCell>{a.name}</TableCell>
-                    <TableCell>{a.bank}</TableCell>
-                    <TableCell className="font-mono text-sm">{a.accountNumber}</TableCell>
-                    <TableCell className="text-right">{a.currentBalance}</TableCell>
-                    <TableCell>{a.contactNumber}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">{a.chartOfAccount}</TableCell>
+                    <TableCell className="px-6">{a.name}</TableCell>
+                    <TableCell className="px-6">{a.bank}</TableCell>
+                    <TableCell className="px-6 font-mono text-sm">{a.accountNumber}</TableCell>
+                    <TableCell className="px-6 text-right">{a.currentBalance}</TableCell>
+                    <TableCell className="px-6">{a.contactNumber}</TableCell>
+                    <TableCell className="px-6">
                       <Badge variant="outline">{a.paymentGateway}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
@@ -548,7 +549,7 @@ export function AccountTab() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="px-6 text-center py-8 text-muted-foreground">
                     No accounts found
                   </TableCell>
                 </TableRow>
@@ -556,7 +557,7 @@ export function AccountTab() {
             </TableBody>
           </Table>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}
@@ -831,13 +832,21 @@ export function TransferTab() {
                     <Label htmlFor="transfer-form-date" className="form-label">
                       Date <span className="text-red-500">*</span>
                     </Label>
-                    <Input
+                    <DatePicker
                       id="transfer-form-date"
-                      type="date"
                       value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full"
+                      onValueChange={(v) => setFormData({ ...formData, date: v })}
+                      placeholder="Set a date"
+                      className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                    />
+                    {/* Keep native required validation without showing a browser date input */}
+                    <input
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
                       required
+                      value={formData.date}
+                      onChange={() => {}}
                     />
                   </div>
                 </div>
@@ -893,16 +902,16 @@ export function TransferTab() {
 
       {/* Filter Form */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
+        <CardContent className="px-6 py-4">
           <div className="grid gap-4 md:grid-cols-5">
             <div className="space-y-2">
               <Label htmlFor="transfer-date">Date</Label>
-              <Input
+              <DatePicker
                 id="transfer-date"
-                type="date"
                 value={filters.date}
-                onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))}
-                className="h-9"
+                onValueChange={(v) => setFilters((prev) => ({ ...prev, date: v }))}
+                className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                placeholder="Set a date"
               />
             </div>
             <div className="space-y-2">
@@ -975,42 +984,42 @@ export function TransferTab() {
 
       {/* Transfer Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="pl-8 pr-6">
+        <CardHeader className="px-6">
           <CardTitle>Bank Transfers</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>From Account</TableHead>
-                <TableHead>To Account</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead className="px-6">Date</TableHead>
+                <TableHead className="px-6">From Account</TableHead>
+                <TableHead className="px-6">To Account</TableHead>
+                <TableHead className="px-6 text-right">Amount</TableHead>
+                <TableHead className="px-6">Reference</TableHead>
+                <TableHead className="px-6">Description</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedTransfers.length > 0 ? (
                 paginatedTransfers.map((transfer) => (
                   <TableRow key={transfer.id}>
-                    <TableCell>{formatDate(transfer.date)}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">{formatDate(transfer.date)}</TableCell>
+                    <TableCell className="px-6">
                       {transfer.fromAccount.bankName} {transfer.fromAccount.holderName}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       {transfer.toAccount.bankName} {transfer.toAccount.holderName}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-6 text-right">
                       {formatCurrency(transfer.amount)}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{transfer.reference}</TableCell>
-                    <TableCell>{transfer.description}</TableCell>
+                    <TableCell className="px-6 font-mono text-sm">{transfer.reference}</TableCell>
+                    <TableCell className="px-6">{transfer.description}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
                     No transfers found
                   </TableCell>
                 </TableRow>
@@ -1018,7 +1027,7 @@ export function TransferTab() {
             </TableBody>
           </Table>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

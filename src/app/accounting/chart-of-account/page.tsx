@@ -98,7 +98,7 @@ export default function ChartOfAccountPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold">Chart of Accounts</h1>
@@ -111,12 +111,12 @@ export default function ChartOfAccountPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="px-6 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Accounts
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-6 pt-0">
                   <div className="text-2xl font-bold">{totalAccounts}</div>
                   <p className="text-xs text-muted-foreground">
                     Semua akun dalam sistem
@@ -125,16 +125,16 @@ export default function ChartOfAccountPage() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+              <CardHeader className="px-6">
                 <CardTitle>Filters</CardTitle>
                 <CardDescription>
                   Filter akun berdasarkan tipe, sub tipe, dan status.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <form className="flex flex-col gap-4 md:flex-row md:items-end">
-                  <div className="flex-1 min-w-0">
+              <CardContent className="px-6 py-4">
+                <form className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[1fr_14rem_14rem] md:justify-start">
+                  <div className="min-w-0">
                     <label className="mb-1 block text-sm font-medium">
                       Search
                     </label>
@@ -146,12 +146,12 @@ export default function ChartOfAccountPage() {
                       />
                     </div>
                   </div>
-                  <div className="w-full md:w-44">
+                  <div className="space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       Account Type
                     </label>
                     <Select defaultValue="all">
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full h-9 border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground">
                         <SelectValue placeholder="All Types" />
                       </SelectTrigger>
                       <SelectContent>
@@ -164,12 +164,12 @@ export default function ChartOfAccountPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-full md:w-40">
+                  <div className="space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       Status
                     </label>
                     <Select defaultValue="all">
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full h-9 border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground">
                         <SelectValue placeholder="All Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -185,47 +185,47 @@ export default function ChartOfAccountPage() {
 
             {accountTypes.map((group) => (
               <Card key={group.type}>
-                <CardHeader>
+                <CardHeader className="px-6">
                   <CardTitle>{group.type}</CardTitle>
                   <CardDescription>
                     Akun di bawah tipe {group.type}.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Account Name</TableHead>
-                        <TableHead>Sub Type</TableHead>
-                        <TableHead>Balance</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="px-6">Code</TableHead>
+                        <TableHead className="px-6">Account Name</TableHead>
+                        <TableHead className="px-6">Sub Type</TableHead>
+                        <TableHead className="px-6">Balance</TableHead>
+                        <TableHead className="px-6">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {group.accounts.map((account) => (
                         <TableRow key={account.code}>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <span className="text-sm font-medium">
                               {account.code}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm font-medium">
                               {account.name}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <span className="text-sm text-muted-foreground">
                               {account.subType}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="font-medium">
                               Rp {account.balance.toLocaleString()}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <Badge
                               className={getAccountStatusClasses(account.status)}
                             >

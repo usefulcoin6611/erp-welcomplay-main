@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Table,
   TableBody,
@@ -267,27 +268,42 @@ export function JournalEntryTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
             }}
-            className="flex flex-col gap-4 md:flex-row md:items-end"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_auto] md:justify-start"
           >
-            <div className="w-full md:w-44">
-              <label className="text-sm font-medium">Date</label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9" />
+            <div className="space-y-2">
+              <Label htmlFor="je-filter-date" className="text-sm font-medium">
+                Date
+              </Label>
+              <DatePicker
+                id="je-filter-date"
+                value={date}
+                onValueChange={setDate}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
+              />
             </div>
-            <div className="flex items-end gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Search">
+            <div className="flex items-center gap-2 md:pt-6">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Search"
+              >
                 <Search className="h-3 w-3" />
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                 title="Reset"
                 onClick={() => {
                   setSearch('')
@@ -303,7 +319,7 @@ export function JournalEntryTab() {
 
       {/* Journal Entries Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Journal Entries</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -329,23 +345,23 @@ export function JournalEntryTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Journal ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Journal ID</TableHead>
+                  <TableHead className="px-6">Date</TableHead>
+                  <TableHead className="px-6">Amount</TableHead>
+                  <TableHead className="px-6">Description</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button
                           asChild
                           variant="outline"
@@ -357,14 +373,14 @@ export function JournalEntryTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{entry.date}</TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6">{entry.date}</TableCell>
+                      <TableCell className="px-6 font-medium">
                         {formatPrice(entry.amount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <span className="text-sm">{entry.description || '-'}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -390,7 +406,7 @@ export function JournalEntryTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="px-6 text-center py-8 text-muted-foreground">
                       No journal entries found
                     </TableCell>
                   </TableRow>
@@ -399,7 +415,7 @@ export function JournalEntryTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

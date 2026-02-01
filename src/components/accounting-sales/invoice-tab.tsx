@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Select,
   SelectContent,
@@ -764,28 +765,36 @@ export function InvoiceTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="py-4">
-          <form 
-            className="flex flex-col gap-4 md:flex-row md:items-end"
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
+          <form
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_14rem_auto] md:justify-start"
             onSubmit={(e) => {
               e.preventDefault()
             }}
           >
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Issue Date</label>
-              <Input 
-                type="date" 
-                name="issue_date" 
+            <div className="space-y-2">
+              <Label htmlFor="invoice-filter-issue-date" className="text-sm font-medium">
+                Issue Date
+              </Label>
+              <DatePicker
+                id="invoice-filter-issue-date"
                 value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="h-9"
+                onValueChange={(v) => setDateFilter(v)}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
               />
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Customer</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Customer</Label>
               <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                <SelectTrigger className="h-9 w-full">
+                <SelectTrigger
+                  className={`w-full !h-9 ${
+                    customerFilter === 'all' ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -798,25 +807,47 @@ export function InvoiceTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Status</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 w-full">
+                <SelectTrigger
+                  className={`w-full !h-9 ${
+                    statusFilter === 'all' ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Select Status</SelectItem>
                   {Object.entries(statusMap).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>{value.label}</SelectItem>
+                    <SelectItem key={key} value={key}>
+                      {value.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+
+            {/* Actions (aligned with input row on md+) */}
+            <div className="flex items-center gap-2 md:pt-6">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
+              >
                 <Search className="h-3 w-3" />
               </Button>
-              <Button type="button" variant="outline" size="sm" className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Reset" onClick={handleReset}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                title="Reset"
+                onClick={handleReset}
+              >
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
@@ -826,44 +857,44 @@ export function InvoiceTab() {
 
       {/* Invoice list table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="pl-8 pr-6">
+        <CardHeader className="px-6">
           <CardTitle>Invoice List</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Due Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Invoice</TableHead>
+                  <TableHead className="px-6">Issue Date</TableHead>
+                  <TableHead className="px-6">Due Date</TableHead>
+                  <TableHead className="px-6">Due Amount</TableHead>
+                  <TableHead className="px-6">Status</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedInvoices.length > 0 ? (
                   paginatedInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/invoice/${invoice.id}`}>{invoice.id}</Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{formatDate(invoice.issueDate)}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{formatDate(invoice.issueDate)}</TableCell>
+                      <TableCell className="px-6">
                         <span>{formatDate(invoice.dueDate)}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         Rp {invoice.dueAmount.toLocaleString('id-ID')}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Badge className={statusMap[invoice.status].color}>
                           {statusMap[invoice.status].label}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" title="View" asChild>
                             <Link href={`/accounting/invoice/${invoice.id}`}>
@@ -896,7 +927,7 @@ export function InvoiceTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
                       No invoices found
                     </TableCell>
                   </TableRow>
@@ -905,7 +936,7 @@ export function InvoiceTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

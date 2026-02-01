@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Download, Search, RefreshCw, X } from 'lucide-react'
+import { Label } from '@/components/ui/label'
 
 // Mock data based on reference structure
 const chart_accounts = [
@@ -127,36 +129,48 @@ export function LedgerTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
             }}
-            className="flex flex-col gap-4 md:flex-row md:items-end"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_14rem_auto] md:justify-start"
           >
-            <div className="w-full md:w-44 space-y-3">
-              <label className="block text-sm font-medium">Start Date</label>
-              <Input
-                type="date"
+            <div className="space-y-2">
+              <Label htmlFor="ledger-start-date" className="text-sm font-medium">
+                Start Date
+              </Label>
+              <DatePicker
+                id="ledger-start-date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-9"
+                onValueChange={setStartDate}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
               />
             </div>
-            <div className="w-full md:w-44 space-y-3">
-              <label className="block text-sm font-medium">End Date</label>
-              <Input
-                type="date"
+            <div className="space-y-2">
+              <Label htmlFor="ledger-end-date" className="text-sm font-medium">
+                End Date
+              </Label>
+              <DatePicker
+                id="ledger-end-date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-9"
+                onValueChange={setEndDate}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
               />
             </div>
-            <div className="w-full md:w-52">
-              <label className="text-sm font-medium">Account</label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Account</Label>
               <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger
+                  className={`w-full !h-9 ${
+                    selectedAccount === '0' ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -168,15 +182,21 @@ export function LedgerTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+            <div className="flex items-center gap-2 md:pt-6">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
+              >
                 <Search className="h-3 w-3" />
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                 onClick={() => {
                   setStartDate('2025-01-01')
                   setEndDate('2025-12-31')
@@ -194,7 +214,7 @@ export function LedgerTab() {
       {/* Ledger Table */}
       <div id="printableArea">
         <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
             <CardTitle>Ledger Details</CardTitle>
             <div className="flex w-full max-w-md items-center gap-2">
               <div className="relative flex-1">
@@ -220,18 +240,18 @@ export function LedgerTab() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <div className="table-responsive overflow-x-auto">
               <Table className="w-full min-w-full table-auto">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Account Name</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Transaction Type</TableHead>
-                    <TableHead>Transaction Date</TableHead>
-                    <TableHead>Debit</TableHead>
-                    <TableHead>Credit</TableHead>
-                    <TableHead>Balance</TableHead>
+                    <TableHead className="px-6">Account Name</TableHead>
+                    <TableHead className="px-6">Name</TableHead>
+                    <TableHead className="px-6">Transaction Type</TableHead>
+                    <TableHead className="px-6">Transaction Date</TableHead>
+                    <TableHead className="px-6">Debit</TableHead>
+                    <TableHead className="px-6">Credit</TableHead>
+                    <TableHead className="px-6">Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -261,13 +281,13 @@ export function LedgerTab() {
                       }
                       return (
                         <TableRow key={`${idx}-${accIdx}`}>
-                          <TableCell>{account.account_name}</TableCell>
-                          <TableCell>{account.user_name || '-'}</TableCell>
-                          <TableCell>{account.reference}</TableCell>
-                          <TableCell>{account.date}</TableCell>
-                          <TableCell>{formatPrice(account.debit)}</TableCell>
-                          <TableCell>{formatPrice(account.credit)}</TableCell>
-                          <TableCell>{formatPrice(runningBalance)}</TableCell>
+                          <TableCell className="px-6">{account.account_name}</TableCell>
+                          <TableCell className="px-6">{account.user_name || '-'}</TableCell>
+                          <TableCell className="px-6">{account.reference}</TableCell>
+                          <TableCell className="px-6">{account.date}</TableCell>
+                          <TableCell className="px-6">{formatPrice(account.debit)}</TableCell>
+                          <TableCell className="px-6">{formatPrice(account.credit)}</TableCell>
+                          <TableCell className="px-6">{formatPrice(runningBalance)}</TableCell>
                         </TableRow>
                       )
                     })

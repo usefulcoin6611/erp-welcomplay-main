@@ -125,7 +125,7 @@ export function UnitTab() {
       </Card>
 
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Units</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -157,21 +157,21 @@ export function UnitTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Unit Name</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Unit Name</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((unit) => (
                     <TableRow key={unit.id} className="font-style">
-                      <TableCell>{unit.name}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{unit.name}</TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -197,7 +197,7 @@ export function UnitTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={2} className="px-6 text-center py-8 text-muted-foreground">
                       No units found
                     </TableCell>
                   </TableRow>
@@ -206,7 +206,7 @@ export function UnitTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

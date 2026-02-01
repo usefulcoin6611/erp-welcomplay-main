@@ -453,15 +453,28 @@ export default function ProductServicesPage() {
               </CardHeader>
             </Card>
 
-            {/* Filter Section */}
-            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardContent className="py-4">
-                <div className="flex flex-col md:flex-row md:items-end gap-3">
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <Label htmlFor="category">Category</Label>
+            {/* Filters */}
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+              <CardContent className="px-6 py-4">
+                <form
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_auto] md:justify-start"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    handleApplyFilters()
+                  }}
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="category-filter" className="text-sm font-medium">
+                      Category
+                    </Label>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger id="category" className="h-9">
-                        <SelectValue placeholder="All Categories" />
+                      <SelectTrigger
+                        id="category-filter"
+                        className={`w-full !h-9 ${
+                          selectedCategory === 'All Categories' ? 'text-muted-foreground' : ''
+                        } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                      >
+                        <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
@@ -472,17 +485,18 @@ export default function ProductServicesPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center gap-2 md:ml-auto">
+                  <div className="flex items-center gap-2 md:pt-6">
                     <Button
+                      type="submit"
                       variant="outline"
                       size="sm"
                       className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                       title="Apply"
-                      onClick={handleApplyFilters}
                     >
                       <Search className="h-3 w-3" />
                     </Button>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
@@ -492,53 +506,53 @@ export default function ProductServicesPage() {
                       <RefreshCw className="h-3 w-3" />
                     </Button>
                   </div>
-                </div>
+                </form>
               </CardContent>
             </Card>
 
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+              <CardHeader className="px-6">
                 <CardTitle>All Product & Services</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Sku</TableHead>
-                        <TableHead>Sale Price</TableHead>
-                        <TableHead>Purchase Price</TableHead>
-                        <TableHead>Tax</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Unit</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">Sku</TableHead>
+                        <TableHead className="px-6">Sale Price</TableHead>
+                        <TableHead className="px-6">Purchase Price</TableHead>
+                        <TableHead className="px-6">Tax</TableHead>
+                        <TableHead className="px-6">Category</TableHead>
+                        <TableHead className="px-6">Unit</TableHead>
+                        <TableHead className="px-6 text-right">Quantity</TableHead>
+                        <TableHead className="px-6">Type</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="px-6 text-center py-8 text-muted-foreground">
                             No product & services found
                           </TableCell>
                         </TableRow>
                       ) : (
                         paginatedData.map((item) => (
                           <TableRow key={item.id} className="font-style">
-                            <TableCell className="font-medium">{item.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{item.sku}</TableCell>
-                            <TableCell>{formatRupiah(item.sale_price)}</TableCell>
-                            <TableCell>{formatRupiah(item.purchase_price)}</TableCell>
-                            <TableCell>{item.tax || '-'}</TableCell>
-                            <TableCell>{item.category}</TableCell>
-                            <TableCell>{item.unit}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="px-6 font-medium">{item.name}</TableCell>
+                            <TableCell className="px-6 text-muted-foreground">{item.sku}</TableCell>
+                            <TableCell className="px-6">{formatRupiah(item.sale_price)}</TableCell>
+                            <TableCell className="px-6">{formatRupiah(item.purchase_price)}</TableCell>
+                            <TableCell className="px-6">{item.tax || '-'}</TableCell>
+                            <TableCell className="px-6">{item.category}</TableCell>
+                            <TableCell className="px-6">{item.unit}</TableCell>
+                            <TableCell className="px-6 text-right">
                               {item.type === 'product' ? item.quantity ?? 0 : '-'}
                             </TableCell>
-                            <TableCell className="capitalize">{item.type}</TableCell>
-                            <TableCell>
+                            <TableCell className="px-6 capitalize">{item.type}</TableCell>
+                            <TableCell className="px-6">
                               <div className="flex items-center gap-2">
                                 <Button
                                   asChild
@@ -580,7 +594,7 @@ export default function ProductServicesPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4 pb-4">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       currentPage={currentPage}
                       totalCount={totalRecords}

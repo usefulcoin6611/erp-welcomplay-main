@@ -350,7 +350,7 @@ export function CreditNoteTab() {
 
       {/* Credit Notes Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Credit Notes</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -376,47 +376,47 @@ export function CreditNoteTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Credit Note</TableHead>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Credit Note</TableHead>
+                  <TableHead className="px-6">Invoice</TableHead>
+                  <TableHead className="px-6">Date</TableHead>
+                  <TableHead className="px-6">Amount</TableHead>
+                  <TableHead className="px-6">Description</TableHead>
+                  <TableHead className="px-6">Status</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedCreditNotes.length > 0 ? (
                   paginatedCreditNotes.map((creditNote) => (
                     <TableRow key={creditNote.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/credit-note/${creditNote.id}`}>
                             {formatCreditNoteId(creditNote.creditId)}
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/invoice/${creditNote.invoiceId}`}>
                             {creditNote.invoice}
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{formatDate(creditNote.date)}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{formatDate(creditNote.date)}</TableCell>
+                      <TableCell className="px-6">
                         <span className="font-medium">{formatPrice(creditNote.amount)}</span>
                       </TableCell>
-                      <TableCell>{creditNote.description || '-'}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{creditNote.description || '-'}</TableCell>
+                      <TableCell className="px-6">
                         {getStatusBadge(creditNote.status)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -442,7 +442,7 @@ export function CreditNoteTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
                       No credit notes found
                     </TableCell>
                   </TableRow>
@@ -451,7 +451,7 @@ export function CreditNoteTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

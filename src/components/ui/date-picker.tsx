@@ -22,6 +22,8 @@ type DatePickerProps = {
   hasError?: boolean
   className?: string
   disabled?: boolean
+  /** Where to render the calendar icon. Default: left */
+  iconPlacement?: 'left' | 'right' | 'none'
 }
 
 function toDate(value: string | undefined): Date | undefined {
@@ -46,12 +48,15 @@ export function DatePicker({
   hasError,
   className,
   disabled,
+  iconPlacement = 'left',
 }: DatePickerProps) {
   const date = toDate(value)
 
   const handleSelect = (d: Date | undefined) => {
     onValueChange(toYYYYMMDD(d))
   }
+
+  const content = date ? format(date, 'PPP') : placeholder
 
   return (
     <Popover>
@@ -64,14 +69,22 @@ export function DatePicker({
           aria-invalid={hasError}
           aria-describedby={hasError ? `${id}-error` : undefined}
           className={cn(
-            'h-10 w-full justify-start text-left font-normal',
+            'h-10 w-full text-left font-normal',
+            iconPlacement === 'right' ? 'justify-between' : 'justify-start',
             !value && 'text-muted-foreground',
             hasError && 'border-red-500 focus-visible:ring-red-500',
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, 'PPP') : <span>{placeholder}</span>}
+          {iconPlacement === 'left' && (
+            <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+          )}
+          <span className={cn('min-w-0', iconPlacement === 'right' && 'flex-1 truncate')}>
+            {content}
+          </span>
+          {iconPlacement === 'right' && (
+            <CalendarIcon className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

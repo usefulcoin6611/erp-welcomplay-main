@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
+import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
   Select,
   SelectContent,
@@ -131,6 +133,8 @@ export function RevenueTab() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [revenueToDelete, setRevenueToDelete] = useState<RevenueRow | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({
     date: '',
     amount: '',
@@ -156,6 +160,7 @@ export function RevenueTab() {
   const handleApply = () => {
     // Apply filters logic here
     console.log('Apply filters:', filters)
+    setCurrentPage(1)
   }
 
   const handleReset = () => {
@@ -165,6 +170,7 @@ export function RevenueTab() {
       customer: '',
       category: '',
     })
+    setCurrentPage(1)
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -255,26 +261,36 @@ export function RevenueTab() {
   }
 
   // Filter data based on filters
-  const filteredData = rows.filter((revenue) => {
-    if (filters.account) {
-      const accountName = accounts.find(a => a.id === filters.account)?.name
-      if (accountName && revenue.account !== accountName) return false
-    }
-    if (filters.customer) {
-      const customerName = customers.find(c => c.id === filters.customer)?.name
-      if (customerName && revenue.customer !== customerName) return false
-    }
-    if (filters.category) {
-      const categoryName = categories.find(c => c.id === filters.category)?.name
-      if (categoryName && revenue.category !== categoryName) return false
-    }
-    if (filters.date) {
-      // Simple date filter - can be enhanced with date range
-      const filterDate = new Date(filters.date).toISOString().split('T')[0]
-      if (revenue.date !== filterDate) return false
-    }
-    return true
-  })
+  const filteredData = useMemo(() => {
+    return rows.filter((revenue) => {
+      if (filters.account) {
+        const accountName = accounts.find((a) => a.id === filters.account)?.name
+        if (accountName && revenue.account !== accountName) return false
+      }
+      if (filters.customer) {
+        const customerName = customers.find((c) => c.id === filters.customer)?.name
+        if (customerName && revenue.customer !== customerName) return false
+      }
+      if (filters.category) {
+        const categoryName = categories.find((c) => c.id === filters.category)?.name
+        if (categoryName && revenue.category !== categoryName) return false
+      }
+      if (filters.date) {
+        // Simple date filter - can be enhanced with date range
+        const filterDate = new Date(filters.date).toISOString().split('T')[0]
+        if (revenue.date !== filterDate) return false
+      }
+      return true
+    })
+  }, [rows, filters.account, filters.category, filters.customer, filters.date])
+
+  const totalRecords = filteredData.length
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    return filteredData.slice(startIndex, endIndex)
+  }, [filteredData, currentPage, pageSize])
 
   return (
     <div className="space-y-4">
@@ -462,29 +478,38 @@ export function RevenueTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
           <form
-            className="flex flex-col gap-4 md:flex-row md:items-end"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_14rem_14rem_auto] md:justify-start"
             onSubmit={(e) => {
               e.preventDefault()
               handleApply()
             }}
           >
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="date">Date</label>
-              <Input
-                id="date"
-                type="date"
+            <div className="space-y-2">
+              <Label htmlFor="revenue-filter-date" className="text-sm font-medium">
+                Date
+              </Label>
+              <DatePicker
+                id="revenue-filter-date"
                 value={filters.date}
-                onChange={(e) => handleFilterChange('date', e.target.value)}
-                className="h-9"
+                onValueChange={(v) => handleFilterChange('date', v)}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
               />
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="account">Account</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Account</Label>
               <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
-                <SelectTrigger id="account" className="h-9 w-full">
+                <SelectTrigger
+                  id="revenue-filter-account"
+                  className={`w-full !h-9 ${
+                    !filters.account ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -496,10 +521,16 @@ export function RevenueTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="customer">Customer</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Customer</Label>
               <Select value={filters.customer} onValueChange={(value) => handleFilterChange('customer', value)}>
-                <SelectTrigger id="customer" className="h-9 w-full">
+                <SelectTrigger
+                  id="revenue-filter-customer"
+                  className={`w-full !h-9 ${
+                    !filters.customer ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -511,10 +542,16 @@ export function RevenueTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="category">Category</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Category</Label>
               <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
-                <SelectTrigger id="category" className="h-9 w-full">
+                <SelectTrigger
+                  id="revenue-filter-category"
+                  className={`w-full !h-9 ${
+                    !filters.category ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -526,78 +563,80 @@ export function RevenueTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
-                <Button
-                  type="submit"
-                  variant="outline"
-                  size="sm"
-                  className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                  title="Apply"
-                >
-                  <Search className="h-3 w-3" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                  title="Reset"
-                  onClick={handleReset}
-                >
-                  <RefreshCw className="h-3 w-3" />
-                </Button>
-              </div>
+
+            {/* Actions (aligned with input row on md+) */}
+            <div className="flex items-center gap-2 md:pt-6">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
+              >
+                <Search className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                title="Reset"
+                onClick={handleReset}
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
 
       {/* Revenue Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="pl-8 pr-6">
+        <CardHeader className="px-6">
           <CardTitle>Revenue List</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Payment Receipt</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="px-6">Date</TableHead>
+                  <TableHead className="px-6">Amount</TableHead>
+                  <TableHead className="px-6">Account</TableHead>
+                  <TableHead className="px-6">Customer</TableHead>
+                  <TableHead className="px-6">Category</TableHead>
+                  <TableHead className="px-6">Reference</TableHead>
+                  <TableHead className="px-6">Description</TableHead>
+                  <TableHead className="px-6">Payment Receipt</TableHead>
+                  <TableHead className="px-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.length > 0 ? (
-                  filteredData.map((revenue) => (
+                {paginatedData.length > 0 ? (
+                  paginatedData.map((revenue) => (
                     <TableRow key={revenue.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {formatDate(revenue.date)}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 font-medium">
                         {formatPrice(revenue.amount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {revenue.account}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {revenue.customer || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {revenue.category || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {revenue.reference || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {revenue.description || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {revenue.paymentReceipt ? (
                           <div className="flex items-center gap-2">
                             <Button
@@ -629,7 +668,7 @@ export function RevenueTab() {
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -655,7 +694,7 @@ export function RevenueTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="px-6 text-center py-8 text-muted-foreground">
                       No revenue found
                     </TableCell>
                   </TableRow>
@@ -663,6 +702,20 @@ export function RevenueTab() {
               </TableBody>
             </Table>
           </div>
+          {totalRecords > 0 && (
+            <div className="px-6 pb-6 pt-4">
+              <SimplePagination
+                totalCount={totalRecords}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

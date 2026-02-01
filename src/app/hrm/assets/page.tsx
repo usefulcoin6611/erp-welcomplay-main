@@ -496,7 +496,7 @@ export default function EmployeesAssetSetupPage() {
 
             {/* Assets Table */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
                 <CardTitle>Assets List</CardTitle>
                 <div className="flex w-full max-w-md items-center gap-2">
                   <div className="relative flex-1">
@@ -522,28 +522,28 @@ export default function EmployeesAssetSetupPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Users</TableHead>
-                        <TableHead>Purchase Date</TableHead>
-                        <TableHead>Supported Date</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">Users</TableHead>
+                        <TableHead className="px-6">Purchase Date</TableHead>
+                        <TableHead className="px-6">Supported Date</TableHead>
+                        <TableHead className="px-6">Amount</TableHead>
+                        <TableHead className="px-6">Description</TableHead>
+                        <TableHead className="px-6">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((asset) => (
                           <TableRow key={asset.id}>
-                            <TableCell className="font-medium">
+                            <TableCell className="px-6 font-medium">
                               {asset.name}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <div className="flex -space-x-2">
                                 {asset.employees.map((employee) => (
                                   <Avatar
@@ -558,19 +558,19 @@ export default function EmployeesAssetSetupPage() {
                                 ))}
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               {formatDate(asset.purchaseDate)}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               {formatDate(asset.supportedDate)}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               {formatPrice(asset.amount)}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               {asset.description || '-'}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <div className="flex items-center gap-2 justify-start">
                                 <Button
                                   variant="outline"
@@ -596,7 +596,7 @@ export default function EmployeesAssetSetupPage() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
                             No assets found
                           </TableCell>
                         </TableRow>
@@ -605,7 +605,7 @@ export default function EmployeesAssetSetupPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="mt-4">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}

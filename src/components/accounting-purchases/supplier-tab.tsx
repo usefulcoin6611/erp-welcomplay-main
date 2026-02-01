@@ -599,7 +599,7 @@ export function SupplierTab() {
 
       {/* Suppliers Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Supplier List</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -631,24 +631,24 @@ export function SupplierTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Balance</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">#</TableHead>
+                  <TableHead className="px-6">Name</TableHead>
+                  <TableHead className="px-6">Contact</TableHead>
+                  <TableHead className="px-6">Email</TableHead>
+                  <TableHead className="px-6">Balance</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((vendor) => (
                     <TableRow key={vendor.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button
                           asChild
                           variant="outline"
@@ -660,13 +660,13 @@ export function SupplierTab() {
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="font-medium">{vendor.name}</TableCell>
-                      <TableCell>{vendor.contact}</TableCell>
-                      <TableCell>{vendor.email}</TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 font-medium">{vendor.name}</TableCell>
+                      <TableCell className="px-6">{vendor.contact}</TableCell>
+                      <TableCell className="px-6">{vendor.email}</TableCell>
+                      <TableCell className="px-6 font-medium">
                         {formatPrice(vendor.balance)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             variant="outline"
@@ -703,7 +703,7 @@ export function SupplierTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
                       No suppliers found
                     </TableCell>
                   </TableRow>
@@ -712,7 +712,7 @@ export function SupplierTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

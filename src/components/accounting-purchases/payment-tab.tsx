@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Select,
   SelectContent,
@@ -451,23 +452,38 @@ export function PaymentTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
-          <form onSubmit={(e) => { e.preventDefault(); handleApply(); }} className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="date">Date</label>
-              <Input
-                id="date"
-                type="date"
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleApply()
+            }}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_14rem_14rem_auto] md:justify-start"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="payment-filter-date" className="text-sm font-medium">
+                Date
+              </Label>
+              <DatePicker
+                id="payment-filter-date"
                 value={filters.date}
-                onChange={(e) => handleFilterChange('date', e.target.value)}
-                className="h-9"
+                onValueChange={(v) => handleFilterChange('date', v)}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
               />
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="account">Account</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Account</Label>
               <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
-                <SelectTrigger id="account" className="h-9 w-full">
+                <SelectTrigger
+                  id="payment-filter-account"
+                  className={`w-full !h-9 ${
+                    !filters.account ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -479,10 +495,16 @@ export function PaymentTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="vendor">Vendor</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Vendor</Label>
               <Select value={filters.vendor} onValueChange={(value) => handleFilterChange('vendor', value)}>
-                <SelectTrigger id="vendor" className="h-9 w-full">
+                <SelectTrigger
+                  id="payment-filter-vendor"
+                  className={`w-full !h-9 ${
+                    !filters.vendor ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Vendor" />
                 </SelectTrigger>
                 <SelectContent>
@@ -494,10 +516,16 @@ export function PaymentTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium" htmlFor="category">Category</label>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Category</Label>
               <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
-                <SelectTrigger id="category" className="h-9 w-full">
+                <SelectTrigger
+                  id="payment-filter-category"
+                  className={`w-full !h-9 ${
+                    !filters.category ? 'text-muted-foreground' : ''
+                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
+                >
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -509,7 +537,9 @@ export function PaymentTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 md:pt-6">
               <Button
                 type="submit"
                 size="sm"
@@ -536,7 +566,7 @@ export function PaymentTab() {
 
       {/* Payments Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Payment List</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -562,38 +592,38 @@ export function PaymentTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Payment Receipt</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Date</TableHead>
+                  <TableHead className="px-6">Amount</TableHead>
+                  <TableHead className="px-6">Account</TableHead>
+                  <TableHead className="px-6">Vendor</TableHead>
+                  <TableHead className="px-6">Category</TableHead>
+                  <TableHead className="px-6">Reference</TableHead>
+                  <TableHead className="px-6">Description</TableHead>
+                  <TableHead className="px-6">Payment Receipt</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         {formatDate(payment.date)}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 font-medium">
                         {formatPrice(payment.amount)}
                       </TableCell>
-                      <TableCell>{payment.account}</TableCell>
-                      <TableCell>{payment.vendor}</TableCell>
-                      <TableCell>{payment.category}</TableCell>
-                      <TableCell>{payment.reference || '-'}</TableCell>
-                      <TableCell>{payment.description || '-'}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{payment.account}</TableCell>
+                      <TableCell className="px-6">{payment.vendor}</TableCell>
+                      <TableCell className="px-6">{payment.category}</TableCell>
+                      <TableCell className="px-6">{payment.reference || '-'}</TableCell>
+                      <TableCell className="px-6">{payment.description || '-'}</TableCell>
+                      <TableCell className="px-6">
                         {payment.paymentReceipt ? (
                           <div className="flex items-center gap-2">
                             <Button
@@ -619,7 +649,7 @@ export function PaymentTab() {
                           '-'
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button
                             size="sm"
@@ -645,7 +675,7 @@ export function PaymentTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="px-6 text-center py-8 text-muted-foreground">
                       No payments found
                     </TableCell>
                   </TableRow>
@@ -654,18 +684,18 @@ export function PaymentTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-          <div className="mt-4 pb-4">
-            <SimplePagination
-              totalCount={totalRecords}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={(page) => setCurrentPage(page)}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
-            />
-          </div>
+            <div className="px-6 pb-6 pt-4">
+              <SimplePagination
+                totalCount={totalRecords}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Select,
   SelectContent,
@@ -557,12 +558,22 @@ export function EstimateTab() {
                   <Label htmlFor="issueDate">
                     Issue Date <span className="text-red-500">*</span>
                   </Label>
-                  <Input
+                  <DatePicker
                     id="issueDate"
-                    type="date"
                     value={formData.issueDate}
-                    onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
+                    onValueChange={(v) => setFormData({ ...formData, issueDate: v })}
+                    placeholder="Set a date"
+                    className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                iconPlacement="right"
+                  />
+                  {/* Keep native required validation without showing a browser date input */}
+                  <input
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
                     required
+                    value={formData.issueDate}
+                    onChange={() => {}}
                   />
                 </div>
                 <div className="space-y-2">
@@ -788,40 +799,52 @@ export function EstimateTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardContent className="py-4">
-          <form 
-            className="flex flex-col gap-4 md:flex-row md:items-end"
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
+          <form
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_auto] md:justify-start"
             onSubmit={(e) => {
               e.preventDefault()
               // Filter is handled by useEffect
             }}
           >
-            <div className="w-full md:w-56">
-              <label className="mb-1 block text-sm font-medium">Date</label>
-              <Input 
-                type="date" 
-                name="issue_date" 
+            <div className="space-y-2">
+              <Label htmlFor="estimate-filter-date" className="text-sm font-medium">
+                Date
+              </Label>
+              <DatePicker
+                id="estimate-filter-date"
                 value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="h-9"
+                onValueChange={(v) => setDateFilter(v)}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
               />
             </div>
-            <div className="flex items-end gap-2">
-              <div className="w-full md:w-56">
-                <label className="mb-1 block text-sm font-medium">Status</label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Select Status</SelectItem>
-                    {Object.entries(statusMap).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>{value.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger
+                  className={`w-full !h-9 border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground ${
+                    statusFilter === 'all' ? 'text-muted-foreground' : ''
+                  }`}
+                >
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Select Status</SelectItem>
+                  {Object.entries(statusMap).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>
+                      {value.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Actions (aligned with input row on md+) */}
+            <div className="flex items-center gap-2 md:pt-6">
               <Button
                 type="submit"
                 variant="outline"
@@ -848,43 +871,43 @@ export function EstimateTab() {
 
       {/* Proposal list table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="pl-8 pr-6">
+        <CardHeader className="px-6">
           <CardTitle>Estimate List</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Proposal</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Proposal</TableHead>
+                  <TableHead className="px-6">Category</TableHead>
+                  <TableHead className="px-6">Issue Date</TableHead>
+                  <TableHead className="px-6">Status</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedProposals.length > 0 ? (
                   paginatedProposals.map((proposal) => (
                     <TableRow key={proposal.id}>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">
                           <Link href={`/accounting/proposal/${proposal.id}`}>{proposal.id}</Link>
                         </Button>
                       </TableCell>
-                      <TableCell>{proposal.category}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{proposal.category}</TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3" />
                           <span>{proposal.issueDate}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <Badge className={getProposalStatusClasses(proposal.status)}>
                           {statusMap[proposal.status].label}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
                           <Button variant="outline" size="sm" className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100" title="Convert Invoice">
                             <ArrowLeftRight className="h-3 w-3" />
@@ -921,7 +944,7 @@ export function EstimateTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="px-6 text-center py-8 text-muted-foreground">
                       No proposals found
                     </TableCell>
                   </TableRow>
@@ -930,7 +953,7 @@ export function EstimateTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

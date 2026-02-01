@@ -370,7 +370,7 @@ export default function FinancialGoalPage() {
 
             {/* Goals Table */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
                 <CardTitle>Goals</CardTitle>
                 <div className="flex w-full max-w-md items-center gap-2">
                   <div className="relative flex-1">
@@ -402,32 +402,32 @@ export default function FinancialGoalPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>From</TableHead>
-                        <TableHead>To</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Is Dashboard Display</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">Type</TableHead>
+                        <TableHead className="px-6">From</TableHead>
+                        <TableHead className="px-6">To</TableHead>
+                        <TableHead className="px-6">Amount</TableHead>
+                        <TableHead className="px-6">Is Dashboard Display</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((goal) => (
                           <TableRow key={goal.id}>
-                            <TableCell className="font-style">{goal.name}</TableCell>
-                            <TableCell className="font-style">{goal.type}</TableCell>
-                            <TableCell className="font-style">{goal.from}</TableCell>
-                            <TableCell className="font-style">{goal.to}</TableCell>
-                            <TableCell className="font-style">
+                            <TableCell className="px-6 font-style">{goal.name}</TableCell>
+                            <TableCell className="px-6 font-style">{goal.type}</TableCell>
+                            <TableCell className="px-6 font-style">{goal.from}</TableCell>
+                            <TableCell className="px-6 font-style">{goal.to}</TableCell>
+                            <TableCell className="px-6 font-style">
                               {formatPrice(goal.amount)}
                             </TableCell>
-                            <TableCell className="font-style">
+                            <TableCell className="px-6 font-style">
                               <Badge
                                 className={
                                   goal.is_display === 1
@@ -438,7 +438,7 @@ export default function FinancialGoalPage() {
                                 {goal.is_display === 1 ? 'Yes' : 'No'}
                               </Badge>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
@@ -464,7 +464,7 @@ export default function FinancialGoalPage() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
                             No goals found
                           </TableCell>
                         </TableRow>
@@ -472,7 +472,7 @@ export default function FinancialGoalPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4 pb-4">
+                <div className="px-6 pb-6 pt-4">
                   <SimplePagination
                     totalCount={totalRecords}
                     currentPage={currentPage}

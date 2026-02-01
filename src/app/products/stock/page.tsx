@@ -108,33 +108,33 @@ export default function ProductStockPage() {
 
             {/* Main Content */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+              <CardHeader className="px-6">
                 <CardTitle>All Products</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Sku</TableHead>
-                        <TableHead className="text-right">Current Quantity</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">Sku</TableHead>
+                        <TableHead className="px-6 text-right">Current Quantity</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={4} className="px-6 text-center py-8 text-muted-foreground">
                             No products found
                           </TableCell>
                         </TableRow>
                       ) : (
                         paginatedData.map((product) => (
                           <TableRow key={product.id} className="font-style">
-                            <TableCell className="font-medium">{product.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{product.sku}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="px-6 font-medium">{product.name}</TableCell>
+                            <TableCell className="px-6 text-muted-foreground">{product.sku}</TableCell>
+                            <TableCell className="px-6 text-right">
                               {(() => {
                                 const q = product.quantity
                                 const cls =
@@ -150,7 +150,7 @@ export default function ProductStockPage() {
                                 )
                               })()}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -169,7 +169,7 @@ export default function ProductStockPage() {
                 </div>
 
                 {totalRecords > 0 && (
-                  <div className="mt-4 pb-4">
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       currentPage={currentPage}
                       totalCount={totalRecords}

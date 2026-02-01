@@ -152,7 +152,7 @@ export function TaxesTab() {
       </Card>
 
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Taxes</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -184,23 +184,23 @@ export function TaxesTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tax Name</TableHead>
-                  <TableHead>Rate %</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="px-6">Tax Name</TableHead>
+                  <TableHead className="px-6">Rate %</TableHead>
+                  <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((tax) => (
                     <TableRow key={tax.id} className="font-style">
-                      <TableCell>{tax.name}</TableCell>
-                      <TableCell>{tax.rate}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-6">{tax.name}</TableCell>
+                      <TableCell className="px-6">{tax.rate}</TableCell>
+                      <TableCell className="px-6">
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -226,7 +226,7 @@ export function TaxesTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={3} className="px-6 text-center py-8 text-muted-foreground">
                       No taxes found
                     </TableCell>
                   </TableRow>
@@ -235,7 +235,7 @@ export function TaxesTab() {
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="mt-4 pb-4">
+            <div className="px-6 pb-6 pt-4">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}

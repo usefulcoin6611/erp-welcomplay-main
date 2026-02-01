@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Select,
   SelectContent,
@@ -527,33 +528,57 @@ export function ChartOfAccountTab() {
       </Card>
 
       {/* Filters */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardContent className="py-4">
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+        <CardContent className="px-6 py-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               // mock apply
               console.log('Apply filter:', { startDate, endDate })
             }}
-            className="flex flex-col gap-4 md:flex-row md:items-end"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_auto] md:justify-start"
           >
-            <div className="w-full md:w-44 space-y-3">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9" />
+            <div className="space-y-2">
+              <Label htmlFor="coa-filter-start-date" className="text-sm font-medium">
+                Start Date
+              </Label>
+              <DatePicker
+                id="coa-filter-start-date"
+                value={startDate}
+                onValueChange={setStartDate}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
+              />
             </div>
-            <div className="w-full md:w-44 space-y-3">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9" />
+            <div className="space-y-2">
+              <Label htmlFor="coa-filter-end-date" className="text-sm font-medium">
+                End Date
+              </Label>
+              <DatePicker
+                id="coa-filter-end-date"
+                value={endDate}
+                onValueChange={setEndDate}
+                placeholder="Set a date"
+                className="!h-9 px-3"
+                iconPlacement="right"
+              />
             </div>
-            <div className="flex items-end gap-2">
-              <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
+            <div className="flex items-center gap-2 md:pt-6">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                title="Apply"
+              >
                 <Search className="h-3 w-3" />
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                 title="Reset"
                 onClick={() => {
                   setStartDate('')
@@ -568,7 +593,7 @@ export function ChartOfAccountTab() {
       </Card>
 
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pl-8 pr-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle>Accounts</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
@@ -594,34 +619,43 @@ export function ChartOfAccountTab() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredGroups.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">No accounts found</div>
+            <div className="px-6 py-8 text-center text-muted-foreground">No accounts found</div>
           ) : (
             <div className="space-y-6">
               {filteredGroups.map((group, idx) => (
                 <div key={group.type} className={idx === 0 ? '' : 'pt-6 border-t'}>
-                  <div className="px-2 pb-2 text-sm font-semibold text-muted-foreground">
+                  <div className="px-6 pb-2 text-sm font-semibold text-muted-foreground">
                     {group.type}
                   </div>
                   <div className="overflow-x-auto w-full">
-                    <Table className="w-full min-w-full table-auto">
+                    <Table className="w-full table-fixed">
+                      <colgroup>
+                        <col className="w-[100px]" />
+                        <col className="w-[250px]" />
+                        <col className="w-[180px]" />
+                        <col className="w-[200px]" />
+                        <col className="w-[180px]" />
+                        <col className="w-[120px]" />
+                        <col className="w-[160px]" />
+                      </colgroup>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Parent Account Name</TableHead>
-                          <TableHead>Balance</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Action</TableHead>
+                          <TableHead className="px-6">Code</TableHead>
+                          <TableHead className="px-6">Name</TableHead>
+                          <TableHead className="px-6">Type</TableHead>
+                          <TableHead className="px-6">Parent Account Name</TableHead>
+                          <TableHead className="px-6">Balance</TableHead>
+                          <TableHead className="px-6">Status</TableHead>
+                          <TableHead className="px-6">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {group.accounts.map((account) => (
                           <TableRow key={account.id}>
-                            <TableCell>{account.code}</TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">{account.code}</TableCell>
+                            <TableCell className="px-6">
                               <Link
                                 className="text-sm font-medium text-primary hover:underline"
                                 href={`/accounting/double-entry?tab=ledger&account=${account.id}`}
@@ -629,11 +663,11 @@ export function ChartOfAccountTab() {
                                 {account.name}
                               </Link>
                             </TableCell>
-                            <TableCell>{account.subType}</TableCell>
-                            <TableCell className="text-muted-foreground">{account.parentAccountName || '-'}</TableCell>
-                            <TableCell className="font-medium">{formatPrice(account.balance)}</TableCell>
-                            <TableCell>{getEnabledBadge(account.isEnabled)}</TableCell>
-                            <TableCell>
+                            <TableCell className="px-6">{account.subType}</TableCell>
+                            <TableCell className="px-6 text-muted-foreground">{account.parentAccountName || '-'}</TableCell>
+                            <TableCell className="px-6 font-medium">{formatPrice(account.balance)}</TableCell>
+                            <TableCell className="px-6">{getEnabledBadge(account.isEnabled)}</TableCell>
+                            <TableCell className="px-6">
                               <div className="flex items-center gap-2 justify-start">
                                 <Button
                                   variant="outline"
