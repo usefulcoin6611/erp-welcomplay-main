@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -46,11 +45,11 @@ import {
 const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
 const projectStages = [
-  { id: 1, name: "Planning", color: "#F59E0B", order: 1 },
-  { id: 2, name: "In Progress", color: "#3B82F6", order: 2 },
-  { id: 3, name: "On Hold", color: "#9CA3AF", order: 3 },
-  { id: 4, name: "Review", color: "#8B5CF6", order: 4 },
-  { id: 5, name: "Completed", color: "#10B981", order: 5 },
+  { id: 1, name: "Planning", order: 1 },
+  { id: 2, name: "In Progress", order: 2 },
+  { id: 3, name: "On Hold", order: 3 },
+  { id: 4, name: "Review", order: 4 },
+  { id: 5, name: "Completed", order: 5 },
 ] as const
 
 const bugStatuses = [
@@ -85,10 +84,6 @@ function CreateStageButton() {
           <div className="grid gap-2">
             <Label htmlFor="stageName">Stage Name</Label>
             <Input id="stageName" placeholder="Planning" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="color">Color</Label>
-            <Input id="color" type="color" defaultValue="#3B82F6" />
           </div>
         </div>
         <DialogFooter>
@@ -162,7 +157,6 @@ function ProjectTaskStageContent() {
           <TableHeader>
             <TableRow>
               <TableHead className="px-6">Stage</TableHead>
-              <TableHead className="px-6">Color</TableHead>
               <TableHead className="px-6">Order</TableHead>
               <TableHead className="w-[180px] px-6">Actions</TableHead>
             </TableRow>
@@ -172,17 +166,6 @@ function ProjectTaskStageContent() {
               <TableRow key={stage.id}>
                 <TableCell className="px-6">
                   <div className="text-sm font-medium">{stage.name}</div>
-                </TableCell>
-                <TableCell className="px-6">
-                  <Badge
-                    className="border-none"
-                    style={{
-                      backgroundColor: `${stage.color}20`,
-                      color: stage.color,
-                    }}
-                  >
-                    {stage.color}
-                  </Badge>
                 </TableCell>
                 <TableCell className="px-6">
                   <span className="text-sm">{stage.order}</span>
@@ -234,15 +217,6 @@ function ProjectTaskStageContent() {
                 placeholder="Planning"
                 defaultValue={editingStage?.name ?? ""}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editColor">Color</Label>
-              <Input
-                id="editColor"
-                type="color"
-                defaultValue={editingStage?.color ?? "#3B82F6"}
-              />
-              <p className="text-xs text-muted-foreground">For chart representation</p>
             </div>
           </div>
           <DialogFooter>

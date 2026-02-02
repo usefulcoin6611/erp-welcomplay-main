@@ -27,7 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -56,11 +55,11 @@ import {
 const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
 const initialProjectStages = [
-  { id: 1, name: "Planning", color: "#F59E0B", order: 1 },
-  { id: 2, name: "In Progress", color: "#3B82F6", order: 2 },
-  { id: 3, name: "On Hold", color: "#9CA3AF", order: 3 },
-  { id: 4, name: "Review", color: "#8B5CF6", order: 4 },
-  { id: 5, name: "Completed", color: "#10B981", order: 5 },
+  { id: 1, name: "Planning", order: 1 },
+  { id: 2, name: "In Progress", order: 2 },
+  { id: 3, name: "On Hold", order: 3 },
+  { id: 4, name: "Review", order: 4 },
+  { id: 5, name: "Completed", order: 5 },
 ]
 
 const initialBugStatuses = [
@@ -95,10 +94,6 @@ function CreateStageButton() {
           <div className="grid gap-2">
             <Label htmlFor="stageName">Stage Name</Label>
             <Input id="stageName" placeholder="Planning" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="color">Color</Label>
-            <Input id="color" type="color" defaultValue="#3B82F6" />
           </div>
         </div>
         <DialogFooter>
@@ -179,15 +174,6 @@ function SortableProjectStageRow({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <IconGripVertical className="h-5 w-5 shrink-0 text-muted-foreground" />
         <span className="font-medium truncate">{stage.name}</span>
-        <Badge
-          className="border-none shrink-0"
-          style={{
-            backgroundColor: `${stage.color}20`,
-            color: stage.color,
-          }}
-        >
-          {stage.color}
-        </Badge>
       </div>
       <div
         className="flex shrink-0 gap-2"
@@ -291,15 +277,6 @@ function ProjectTaskStageContent() {
                 placeholder="Planning"
                 defaultValue={editingStage?.name ?? ""}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editColor">Color</Label>
-              <Input
-                id="editColor"
-                type="color"
-                defaultValue={editingStage?.color ?? "#3B82F6"}
-              />
-              <p className="text-xs text-muted-foreground">For chart representation</p>
             </div>
           </div>
           <DialogFooter>

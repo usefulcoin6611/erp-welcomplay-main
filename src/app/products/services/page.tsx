@@ -101,6 +101,7 @@ function formatRupiah(amount: number): string {
 export default function ProductServicesPage() {
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories')
+  const [search, setSearch] = useState('')
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -124,13 +125,23 @@ export default function ProductServicesPage() {
   // Filtered data
   const filteredData = useMemo(() => {
     let result = mockProducts
-    
+
     // Category filter
     if (selectedCategory !== 'All Categories') {
       result = result.filter(p => p.category === selectedCategory)
     }
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q)
+      )
+    }
+
     return result
-  }, [selectedCategory])
+  }, [selectedCategory, search])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -146,6 +157,7 @@ export default function ProductServicesPage() {
 
   const handleReset = () => {
     setSelectedCategory('All Categories')
+    setSearch('')
     setCurrentPage(1)
   }
 
@@ -457,7 +469,7 @@ export default function ProductServicesPage() {
             <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
               <CardContent className="px-6 py-4">
                 <form
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_auto] md:justify-start"
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_minmax(0,1fr)_auto] md:justify-start"
                   onSubmit={(e) => {
                     e.preventDefault()
                     handleApplyFilters()
@@ -484,6 +496,24 @@ export default function ProductServicesPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="search" className="text-sm font-medium">
+                      Search
+                    </Label>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="search"
+                        value={search}
+                        onChange={(e) => {
+                          setSearch(e.target.value)
+                          setCurrentPage(1)
+                        }}
+                        placeholder="Search name or SKU..."
+                        className="h-9 pl-9 pr-3 border-0 bg-gray-50 shadow-none focus-visible:border-0 focus-visible:ring-0 hover:bg-gray-100"
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 md:pt-6">
                     <Button
