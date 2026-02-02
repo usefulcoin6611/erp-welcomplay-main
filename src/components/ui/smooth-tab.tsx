@@ -190,7 +190,7 @@ export function SmoothTab({
                     role="tablist"
                     aria-label="Report tabs"
                     className={cn(
-                        "flex items-center justify-start gap-1 p-1 relative flex-1 min-w-0",
+                        "flex items-center justify-start gap-1 p-1 relative min-w-0 shrink-0",
                         "bg-gray-100 dark:bg-gray-800 rounded-xl",
                         "overflow-x-auto overflow-y-hidden scrollbar-hide",
                         "transition-all duration-200",

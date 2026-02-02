@@ -167,7 +167,7 @@ export function POSVsPurchaseTab() {
               </Select>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleApply} className="flex-1 h-10">
+              <Button onClick={handleApply} className="flex-1 h-10 bg-blue-600 text-white hover:bg-blue-700 shadow-none">
                 <Search className="h-4 w-4 mr-2" />
                 Apply
               </Button>

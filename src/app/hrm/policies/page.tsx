@@ -1,16 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { AppSidebar } from '@/components/app-sidebar';
-import { Separator } from '@/components/ui/separator';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SiteHeader } from '@/components/site-header';
+import { MainContentWrapper } from '@/components/main-content-wrapper';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -19,7 +32,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Plus, Pencil, Trash2, FileText, Download, Eye, Building2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  FileText,
+  Download,
+  Eye,
+  Building2,
+  X,
+} from 'lucide-react';
 
 interface CompanyPolicy {
   id: number;
@@ -27,100 +68,126 @@ interface CompanyPolicy {
   title: string;
   description: string;
   attachment?: string;
-  createdDate: string;
-  updatedDate: string;
+}
+
+const BRANCHES = [
+  { value: 'main', label: 'Main Branch' },
+  { value: 'branch-office', label: 'Branch Office' },
+  { value: 'remote', label: 'Remote Office' },
+];
+
+const defaultFormData = {
+  branch: '',
+  title: '',
+  description: '',
+  attachment: '' as string | File | '',
+};
+
+const statCardClass =
+  'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
+
+function getBranchLabel(value: string): string {
+  return (BRANCHES.find((b) => b.value === value)?.label ?? value) || '-';
 }
 
 export default function CompanyPolicyPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
-    branch: '',
-    title: '',
-    description: '',
-    attachment: '',
-  });
+  const [formData, setFormData] = useState(defaultFormData);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [policyToDelete, setPolicyToDelete] = useState<CompanyPolicy | null>(null);
 
   const [policies, setPolicies] = useState<CompanyPolicy[]>([
     {
       id: 1,
-      branch: 'Head Office',
+      branch: 'main',
       title: 'Work From Home Policy',
-      description: 'Guidelines for remote work arrangements, including eligibility criteria, equipment provision, and communication expectations.',
+      description:
+        'Guidelines for remote work arrangements, including eligibility criteria, equipment provision, and communication expectations.',
       attachment: 'wfh-policy.pdf',
-      createdDate: '2023-01-15',
-      updatedDate: '2023-11-20',
     },
     {
       id: 2,
-      branch: 'All Branches',
+      branch: 'main',
       title: 'Code of Conduct',
-      description: 'Ethical standards and behavioral expectations for all employees, including conflict of interest, confidentiality, and professional conduct.',
+      description:
+        'Ethical standards and behavioral expectations for all employees, including conflict of interest, confidentiality, and professional conduct.',
       attachment: 'code-of-conduct.pdf',
-      createdDate: '2022-06-10',
-      updatedDate: '2024-01-05',
     },
     {
       id: 3,
-      branch: 'Jakarta Branch',
+      branch: 'branch-office',
       title: 'Attendance and Leave Policy',
-      description: 'Regulations regarding working hours, attendance tracking, leave types, and approval procedures.',
+      description:
+        'Regulations regarding working hours, attendance tracking, leave types, and approval procedures.',
       attachment: 'attendance-leave.pdf',
-      createdDate: '2023-03-20',
-      updatedDate: '2023-12-15',
     },
     {
       id: 4,
-      branch: 'All Branches',
+      branch: 'main',
       title: 'Health and Safety Policy',
-      description: 'Workplace safety protocols, emergency procedures, and health regulations to ensure employee well-being.',
-      createdDate: '2023-02-10',
-      updatedDate: '2023-10-25',
+      description:
+        'Workplace safety protocols, emergency procedures, and health regulations to ensure employee well-being.',
     },
     {
       id: 5,
-      branch: 'Head Office',
+      branch: 'main',
       title: 'Data Protection and Privacy Policy',
-      description: 'Guidelines for handling confidential information, customer data, and compliance with data protection regulations.',
+      description:
+        'Guidelines for handling confidential information, customer data, and compliance with data protection regulations.',
       attachment: 'data-protection.pdf',
-      createdDate: '2023-04-15',
-      updatedDate: '2024-01-10',
     },
   ]);
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData({ ...defaultFormData });
+    }
+  };
+
+  const handleAdd = () => {
+    setEditingId(null);
+    setFormData({ ...defaultFormData });
+    setDialogOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.branch || !formData.title.trim()) return;
+    const attachmentName =
+      typeof formData.attachment === 'string'
+        ? formData.attachment
+        : formData.attachment instanceof File
+          ? formData.attachment.name
+          : '';
     if (editingId !== null) {
       setPolicies(
-        policies.map((policy) =>
-          policy.id === editingId
+        policies.map((p) =>
+          p.id === editingId
             ? {
-                ...policy,
+                ...p,
                 branch: formData.branch,
                 title: formData.title,
                 description: formData.description,
-                attachment: formData.attachment || undefined,
-                updatedDate: new Date().toISOString().split('T')[0],
+                attachment: attachmentName || undefined,
               }
-            : policy
+            : p
         )
       );
-      setEditingId(null);
     } else {
       const newPolicy: CompanyPolicy = {
         id: Math.max(0, ...policies.map((p) => p.id)) + 1,
         branch: formData.branch,
         title: formData.title,
         description: formData.description,
-        attachment: formData.attachment || undefined,
-        createdDate: new Date().toISOString().split('T')[0],
-        updatedDate: new Date().toISOString().split('T')[0],
+        attachment: attachmentName || undefined,
       };
       setPolicies([...policies, newPolicy]);
     }
-    setShowForm(false);
-    setFormData({ branch: '', title: '', description: '', attachment: '' });
+    handleDialogOpenChange(false);
   };
 
   const handleEdit = (policy: CompanyPolicy) => {
@@ -128,244 +195,366 @@ export default function CompanyPolicyPage() {
       branch: policy.branch,
       title: policy.title,
       description: policy.description,
-      attachment: policy.attachment || '',
+      attachment: policy.attachment ?? '',
     });
     setEditingId(policy.id);
-    setShowForm(true);
+    setDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this policy?')) {
-      setPolicies(policies.filter((policy) => policy.id !== id));
+  const openDeleteConfirm = (policy: CompanyPolicy) => {
+    setPolicyToDelete(policy);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (policyToDelete) {
+      setPolicies(policies.filter((p) => p.id !== policyToDelete.id));
+      setPolicyToDelete(null);
     }
+    setDeleteAlertOpen(false);
   };
 
-  const filteredPolicies = policies.filter(
-    (policy) =>
-      policy.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.branch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPolicies = useMemo(
+    () =>
+      policies.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+          getBranchLabel(p.branch).toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+          p.description.toLowerCase().includes(searchTerm.trim().toLowerCase())
+      ),
+    [policies, searchTerm]
   );
 
   const totalPolicies = policies.length;
-  const policiesWithAttachments = policies.filter((p) => p.attachment).length;
-  const branches = [...new Set(policies.map((p) => p.branch))].length;
+  const withAttachments = policies.filter((p) => p.attachment).length;
+  const branchCount = new Set(policies.map((p) => p.branch)).size;
 
   return (
     <SidebarProvider
-      style={{
-        '--sidebar-width': 'calc(var(--spacing) * 72)',
-        '--header-height': 'calc(var(--spacing) * 12)',
-      } as React.CSSProperties}
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-            <h1 className="text-base font-medium">Company Policy</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
+        <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <MainContentWrapper>
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+              {/* Title Card - reference: Manage Company Policy */}
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="px-6">
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl font-semibold">Company Policy</CardTitle>
+                    <CardDescription>
+                      Manage Company Policy. Kelola kebijakan perusahaan per branch, lampiran, dan deskripsi.
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Policies</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{totalPolicies}</div>
-                <p className="text-xs text-muted-foreground mt-1">Active policies</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">With Attachments</CardTitle>
-                <Download className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{policiesWithAttachments}</div>
-                <p className="text-xs text-muted-foreground mt-1">Documents available</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Branches Covered</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{branches}</div>
-                <p className="text-xs text-muted-foreground mt-1">Different locations</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Company Policies</h2>
-            <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Policy
-            </Button>
-          </div>
-
-          <Card>
-            <CardContent className="space-y-4 pt-6">
-              {showForm && (
-                <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="branch">Branch</Label>
-                      <Input
-                        id="branch"
-                        value={formData.branch}
-                        onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                        placeholder="e.g., Head Office"
-                        required
-                      />
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className={statCardClass}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Policies</p>
+                        <p className="text-2xl font-bold">{totalPolicies}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-sky-100">
+                        <FileText className="w-5 h-5 text-sky-600" />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Policy Title</Label>
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="e.g., Work From Home Policy"
-                        required
-                      />
+                  </CardContent>
+                </Card>
+                <Card className={statCardClass}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">With Attachments</p>
+                        <p className="text-2xl font-bold text-blue-600">{withAttachments}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100">
+                        <Download className="w-5 h-5 text-blue-600" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Policy details and guidelines"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="attachment">Attachment (filename)</Label>
-                    <Input
-                      id="attachment"
-                      value={formData.attachment}
-                      onChange={(e) => setFormData({ ...formData, attachment: e.target.value })}
-                      placeholder="e.g., policy-document.pdf (optional)"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
-                      {editingId !== null ? 'Update' : 'Create'} Policy
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowForm(false);
-                        setEditingId(null);
-                        setFormData({ branch: '', title: '', description: '', attachment: '' });
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              )}
-
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search policies..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
+                  </CardContent>
+                </Card>
+                <Card className={statCardClass}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Branches Covered</p>
+                        <p className="text-2xl font-bold text-green-600">{branchCount}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-100">
+                        <Building2 className="w-5 h-5 text-green-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Branch</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Attachment</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPolicies.map((policy) => (
-                      <TableRow key={policy.id}>
-                        <TableCell>
-                          <Badge variant="secondary" className="whitespace-nowrap">{policy.branch}</Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{policy.title}</TableCell>
-                        <TableCell className="max-w-md">
-                          <p className="text-sm text-muted-foreground line-clamp-2">{policy.description}</p>
-                        </TableCell>
-                        <TableCell>
-                          {policy.attachment ? (
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                                title="Download"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 hover:bg-gray-50 hover:text-gray-600"
-                                title="Preview"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(policy)}
-                              className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                              title="Edit"
+              {/* Table Card - reference: Branch, Title, Description, Attachment, Action */}
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 py-3.5">
+                  <div className="flex w-full max-w-md items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search policies..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+                      />
+                      {searchTerm.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                          onClick={() => setSearchTerm('')}
+                          aria-label="Clear search"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                    onClick={handleAdd}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="px-6">Branch</TableHead>
+                          <TableHead className="px-6">Title</TableHead>
+                          <TableHead className="px-6">Description</TableHead>
+                          <TableHead className="px-6">Attachment</TableHead>
+                          <TableHead className="px-6 text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPolicies.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="px-6 text-center py-8 text-muted-foreground"
                             >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(policy.id)}
-                              className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-          </div>
+                              No policies found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredPolicies.map((policy) => (
+                            <TableRow key={policy.id}>
+                              <TableCell className="px-6">
+                                {getBranchLabel(policy.branch)}
+                              </TableCell>
+                              <TableCell className="px-6 font-medium">{policy.title}</TableCell>
+                              <TableCell className="px-6 max-w-xs">
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {policy.description}
+                                </p>
+                              </TableCell>
+                              <TableCell className="px-6">
+                                {policy.attachment ? (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200"
+                                      title="Download"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0"
+                                      title="Preview"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                                    onClick={() => handleEdit(policy)}
+                                    title="Edit"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+                                    onClick={() => openDeleteConfirm(policy)}
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </MainContentWrapper>
         </div>
       </SidebarInset>
+
+      {/* Create/Edit Dialog - reference: Branch (required), Title (required), Description, Attachment (file) */}
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId !== null ? 'Edit Company Policy' : 'Create New Company Policy'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingId !== null
+                ? 'Ubah kebijakan perusahaan.'
+                : 'Tambah kebijakan baru. Isi Branch dan Title yang wajib.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="branch">
+                    Branch <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.branch}
+                    onValueChange={(value) => setFormData({ ...formData, branch: value })}
+                    required
+                  >
+                    <SelectTrigger id="branch">
+                      <SelectValue placeholder="Select Branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BRANCHES.map((b) => (
+                        <SelectItem key={b.value} value={b.value}>
+                          {b.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create branch here.{' '}
+                    <Link
+                      href="/hrm/setup/branch"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Create branch
+                    </Link>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">
+                    Title <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter Title"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Enter Description"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="attachment">Attachment</Label>
+                <Input
+                  id="attachment"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setFormData({
+                      ...formData,
+                      attachment: file ?? '',
+                    });
+                  }}
+                />
+                {typeof formData.attachment === 'string' && formData.attachment && (
+                  <p className="text-xs text-muted-foreground">
+                    Current: {formData.attachment}
+                  </p>
+                )}
+                {formData.attachment instanceof File && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {formData.attachment.name}
+                  </p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleDialogOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="blue" className="shadow-none">
+                {editingId !== null ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Company Policy?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{policyToDelete?.title}&quot; akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-rose-600 hover:bg-rose-700"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

@@ -181,7 +181,7 @@ export default function AccountingPrintSettingsPage() {
                                   setSettings(tab, (p) => ({ ...p, template: v }))
                                 }
                               >
-                                <SelectTrigger id={`${tab}-template`} className="h-9 w-full max-w-[220px] border-input bg-background">
+                                <SelectTrigger id={`${tab}-template`} className="h-9 w-full max-w-[220px] border border-gray-200 bg-white text-foreground shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-foreground">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

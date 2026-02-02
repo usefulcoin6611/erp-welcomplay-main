@@ -101,7 +101,7 @@ export function SiteHeader() {
                 aria-autocomplete="list"
                 aria-controls="navbar-search-results"
                 id="navbar-search-input"
-                className="h-9"
+                className="h-9 bg-gray-100 hover:bg-gray-200 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-primary/20 transition-colors"
               />
             </div>
           </PopoverAnchor>

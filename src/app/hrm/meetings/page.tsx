@@ -1,115 +1,222 @@
 'use client';
 
-import { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { useState, useMemo } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
-import { Separator } from '@/components/ui/separator';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { Card, CardContent } from '@/components/ui/card';
+import { SiteHeader } from '@/components/site-header';
+import { MainContentWrapper } from '@/components/main-content-wrapper';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Calendar as CalendarIcon, Clock, Users, Video } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Plus, Pencil, Trash2, Search, Calendar as CalendarIcon, List, X, Clock } from 'lucide-react';
+import { EventCalendar } from '@/components/event-calendar';
+import { getEmployeesList } from '@/lib/employee-data';
 
 interface Meeting {
   id: string;
   title: string;
+  branch: string;
+  department: string;
+  employeeId: string;
   date: string;
   time: string;
-  duration: number;
-  type: string;
-  attendees: string[];
-  location: string;
+  note: string;
   status: string;
 }
 
+const BRANCHES = [
+  { value: 'main', label: 'Main Branch' },
+  { value: 'branch-office', label: 'Branch Office' },
+  { value: 'remote', label: 'Remote Office' },
+];
+
+const DEPARTMENTS = [
+  { value: 'it', label: 'IT Department' },
+  { value: 'hr', label: 'HR Department' },
+  { value: 'sales', label: 'Sales Department' },
+  { value: 'finance', label: 'Finance Department' },
+  { value: 'marketing', label: 'Marketing Department' },
+];
+
+const employeesList = getEmployeesList();
+
+const defaultFormData = {
+  branch: '',
+  department: '',
+  employeeId: '',
+  title: '',
+  date: '',
+  time: '',
+  note: '',
+};
+
+function getBranchLabel(value: string): string {
+  return (BRANCHES.find((b) => b.value === value)?.label ?? value) || '-';
+}
+function getDepartmentLabel(value: string): string {
+  return (DEPARTMENTS.find((d) => d.value === value)?.label ?? value) || '-';
+}
+function getEmployeeName(employeeId: string): string {
+  return employeesList.find((e) => e.id.toString() === employeeId)?.name ?? '-';
+}
+
+const initialMeetings: Meeting[] = [
+  {
+    id: '1',
+    title: 'Weekly Team Standup',
+    branch: 'main',
+    department: 'it',
+    employeeId: '1',
+    date: '2024-03-20',
+    time: '09:00',
+    note: 'Daily sync',
+    status: 'Scheduled',
+  },
+  {
+    id: '2',
+    title: 'Client Presentation',
+    branch: 'main',
+    department: 'sales',
+    employeeId: '3',
+    date: '2024-03-21',
+    time: '14:00',
+    note: '',
+    status: 'Scheduled',
+  },
+  {
+    id: '3',
+    title: 'Project Review',
+    branch: 'branch-office',
+    department: 'it',
+    employeeId: '2',
+    date: '2024-03-18',
+    time: '10:00',
+    note: '',
+    status: 'Completed',
+  },
+];
+
+function getStatusBadgeColor(status: string) {
+  switch (status) {
+    case 'Scheduled':
+      return 'bg-blue-100 text-blue-800';
+    case 'Completed':
+      return 'bg-green-100 text-green-800';
+    case 'Cancelled':
+      return 'bg-red-100 text-red-800';
+    case 'Rescheduled':
+      return 'bg-yellow-100 text-yellow-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
 export default function MeetingsPage() {
+  const [meetings, setMeetings] = useState<Meeting[]>(initialMeetings);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    date: '',
-    time: '',
-    duration: '',
-    type: '',
-    location: '',
-    notes: '',
-  });
+  const [formData, setFormData] = useState(defaultFormData);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [meetingToDelete, setMeetingToDelete] = useState<Meeting | null>(null);
 
-  // Mock data
-  const [meetings, setMeetings] = useState<Meeting[]>([
-    {
-      id: '1',
-      title: 'Weekly Team Standup',
-      date: '2024-03-20',
-      time: '09:00',
-      duration: 30,
-      type: 'Internal',
-      attendees: ['John Doe', 'Jane Smith', 'Bob Wilson'],
-      location: 'Meeting Room A',
-      status: 'Scheduled',
-    },
-    {
-      id: '2',
-      title: 'Client Presentation',
-      date: '2024-03-21',
-      time: '14:00',
-      duration: 60,
-      type: 'External',
-      attendees: ['Sarah Johnson', 'Mike Brown'],
-      location: 'Video Call',
-      status: 'Scheduled',
-    },
-    {
-      id: '3',
-      title: 'Project Review',
-      date: '2024-03-18',
-      time: '10:00',
-      duration: 45,
-      type: 'Internal',
-      attendees: ['Emily Davis', 'David Lee'],
-      location: 'Conference Room',
-      status: 'Completed',
-    },
-  ]);
-
-  const meetingTypes = ['Internal', 'External', 'Board Meeting', 'Training'];
-  const statuses = ['Scheduled', 'Completed', 'Cancelled', 'Rescheduled'];
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData(defaultFormData);
+    }
+  };
 
   const handleAdd = () => {
-    setShowForm(true);
     setEditingId(null);
+    setFormData({ ...defaultFormData });
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (item: Meeting) => {
+    setEditingId(item.id);
     setFormData({
-      title: '',
-      date: '',
-      time: '',
-      duration: '',
-      type: '',
-      location: '',
-      notes: '',
+      branch: item.branch,
+      department: item.department,
+      employeeId: item.employeeId,
+      title: item.title,
+      date: item.date,
+      time: item.time,
+      note: item.note ?? '',
     });
+    setDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (
+      !formData.branch ||
+      !formData.department ||
+      !formData.employeeId ||
+      !formData.title.trim() ||
+      !formData.date ||
+      !formData.time
+    ) {
+      return;
+    }
 
     if (editingId) {
-      setMeetings(
-        meetings.map((item) =>
+      setMeetings((prev) =>
+        prev.map((item) =>
           item.id === editingId
             ? {
                 ...item,
+                branch: formData.branch,
+                department: formData.department,
+                employeeId: formData.employeeId,
                 title: formData.title,
                 date: formData.date,
                 time: formData.time,
-                duration: parseInt(formData.duration),
-                type: formData.type,
-                location: formData.location,
+                note: formData.note,
               }
             : item
         )
@@ -118,378 +225,495 @@ export default function MeetingsPage() {
       const newItem: Meeting = {
         id: Date.now().toString(),
         title: formData.title,
+        branch: formData.branch,
+        department: formData.department,
+        employeeId: formData.employeeId,
         date: formData.date,
         time: formData.time,
-        duration: parseInt(formData.duration),
-        type: formData.type,
-        attendees: [],
-        location: formData.location,
+        note: formData.note,
         status: 'Scheduled',
       };
-      setMeetings([...meetings, newItem]);
+      setMeetings((prev) => [newItem, ...prev]);
     }
-    setShowForm(false);
+    handleDialogOpenChange(false);
   };
 
-  const handleEdit = (item: Meeting) => {
-    setShowForm(true);
-    setEditingId(item.id);
-    setFormData({
-      title: item.title,
-      date: item.date,
-      time: item.time,
-      duration: item.duration.toString(),
-      type: item.type,
-      location: item.location,
-      notes: '',
-    });
+  const openDeleteConfirm = (meeting: Meeting) => {
+    setMeetingToDelete(meeting);
+    setDeleteAlertOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this meeting?')) {
-      setMeetings(meetings.filter((item) => item.id !== id));
+  const handleConfirmDelete = () => {
+    if (meetingToDelete) {
+      setMeetings((prev) => prev.filter((item) => item.id !== meetingToDelete.id));
+      setMeetingToDelete(null);
     }
+    setDeleteAlertOpen(false);
   };
 
-  const filteredData = meetings.filter(
-    (meeting) =>
-      meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meeting.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meeting.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return meetings;
+    const q = searchTerm.trim().toLowerCase();
+    return meetings.filter(
+      (m) =>
+        m.title.toLowerCase().includes(q) ||
+        getBranchLabel(m.branch).toLowerCase().includes(q) ||
+        getDepartmentLabel(m.department).toLowerCase().includes(q) ||
+        getEmployeeName(m.employeeId).toLowerCase().includes(q)
+    );
+  }, [meetings, searchTerm]);
+
+  const upcomingMeetings = useMemo(
+    () =>
+      meetings
+        .filter(
+          (m) =>
+            m.status === 'Scheduled' &&
+            new Date(`${m.date}T${m.time}`) >= new Date()
+        )
+        .sort(
+          (a, b) =>
+            new Date(`${a.date}T${a.time}`).getTime() -
+            new Date(`${b.date}T${b.time}`).getTime()
+        )
+        .slice(0, 5),
+    [meetings]
   );
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'Scheduled':
-        return 'bg-blue-100 text-blue-800';
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'Rescheduled':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const upcomingMeetings = meetings
-    .filter((m) => m.status === 'Scheduled' && new Date(m.date) >= new Date())
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 5);
+  const calendarEvents = useMemo(
+    () =>
+      meetings.map((m) => ({
+        id: m.id,
+        title: m.title,
+        date: m.date,
+        time: m.time,
+        type: 'meeting' as const,
+      })),
+    [meetings]
+  );
 
   return (
     <SidebarProvider
-      style={{
-        '--sidebar-width': 'calc(var(--spacing) * 72)',
-        '--header-height': 'calc(var(--spacing) * 12)',
-      } as React.CSSProperties}
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-            <h1 className="text-base font-medium">Meetings</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
+        <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Meetings</p>
-                    <p className="text-2xl font-bold">{meetings.length}</p>
+          <MainContentWrapper>
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+              {/* Title Card */}
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                  <div className="min-w-0 space-y-1 flex-1">
+                    <CardTitle className="text-lg font-semibold">Meetings</CardTitle>
+                    <CardDescription>
+                      Kelola jadwal rapat internal dan eksternal. Lihat dalam bentuk daftar atau kalender.
+                    </CardDescription>
                   </div>
-                  <Users className="w-8 h-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Scheduled</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {meetings.filter((m) => m.status === 'Scheduled').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {meetings.filter((m) => m.status === 'Completed').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">This Week</p>
-                    <p className="text-2xl font-bold text-purple-600">{upcomingMeetings.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Add Button */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Manage Meetings</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" className="shadow-none">
-                <CalendarIcon className="w-4 h-4 mr-2" />
-                Calendar View
-              </Button>
-              <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Meeting
-              </Button>
-            </div>
-          </div>
-
-          {/* Add/Edit Form */}
-          {showForm && (
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Meeting</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Meeting Title</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setFormData({ ...formData, title: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Date</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setFormData({ ...formData, date: e.target.value })
-                        }
-                        required
-                      />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* View toggle: List | Calendar */}
+                    <div className="inline-flex rounded-md bg-muted p-0.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                        className={`h-7 w-7 shadow-none p-0 ${
+                          viewMode === 'list'
+                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                            : 'text-blue-600 hover:bg-blue-50'
+                        }`}
+                        onClick={() => setViewMode('list')}
+                        title="List view"
+                      >
+                        <List className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                        className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                          viewMode === 'calendar'
+                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                            : 'text-blue-600 hover:bg-blue-50'
+                        }`}
+                        onClick={() => setViewMode('calendar')}
+                        title="Calendar view"
+                      >
+                        <CalendarIcon className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="time">Time</Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={formData.time}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setFormData({ ...formData, time: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Duration (minutes)</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        value={formData.duration}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setFormData({ ...formData, duration: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Meeting Type</Label>
-                      <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {meetingTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={formData.location}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setFormData({ ...formData, location: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                        setFormData({ ...formData, notes: e.target.value })
-                      }
-                      rows={3}
-                      placeholder="Meeting notes or agenda..."
-                    />
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
-                      {editingId ? 'Update' : 'Create'}
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Upcoming Meetings */}
-          {upcomingMeetings.length > 0 && (
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold mb-4">Upcoming Meetings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcomingMeetings.map((meeting) => (
-                    <Card key={meeting.id} className="border-l-4 border-blue-500">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold">{meeting.title}</h4>
-                          <Badge className={getStatusBadgeColor(meeting.status)}>{meeting.status}</Badge>
-                        </div>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="w-4 h-4" />
-                            <span>{meeting.date}</span>
+                    <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+                      <Button
+                        size="sm"
+                        variant="blue"
+                        className="shadow-none h-7"
+                        onClick={handleAdd}
+                      >
+                        <Plus className="mr-2 h-3 w-3" />
+                        Create Meeting
+                      </Button>
+                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {editingId ? 'Edit Meeting' : 'Create New Meeting'}
+                          </DialogTitle>
+                          <DialogDescription>
+                            {editingId
+                              ? 'Ubah informasi rapat.'
+                              : 'Buat rapat baru. Isi field yang wajib.'}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleSubmit}>
+                          <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="branch">
+                                Branch <span className="text-red-500">*</span>
+                              </Label>
+                              <Select
+                                value={formData.branch}
+                                onValueChange={(value) =>
+                                  setFormData({ ...formData, branch: value })
+                                }
+                                required
+                              >
+                                <SelectTrigger id="branch">
+                                  <SelectValue placeholder="Select Branch" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {BRANCHES.map((b) => (
+                                    <SelectItem key={b.value} value={b.value}>
+                                      {b.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="department">
+                                Department <span className="text-red-500">*</span>
+                              </Label>
+                              <Select
+                                value={formData.department}
+                                onValueChange={(value) =>
+                                  setFormData({ ...formData, department: value })
+                                }
+                                required
+                              >
+                                <SelectTrigger id="department">
+                                  <SelectValue placeholder="Select Department" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {DEPARTMENTS.map((d) => (
+                                    <SelectItem key={d.value} value={d.value}>
+                                      {d.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="employeeId">
+                                Employee <span className="text-red-500">*</span>
+                              </Label>
+                              <Select
+                                value={formData.employeeId}
+                                onValueChange={(value) =>
+                                  setFormData({ ...formData, employeeId: value })
+                                }
+                                required
+                              >
+                                <SelectTrigger id="employeeId">
+                                  <SelectValue placeholder="Select Employee" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {employeesList.map((emp) => (
+                                    <SelectItem key={emp.id} value={emp.id.toString()}>
+                                      {emp.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="title">
+                                Meeting Title <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                id="title"
+                                value={formData.title}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, title: e.target.value })
+                                }
+                                placeholder="Enter Meeting Title"
+                                required
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="date">
+                                  Meeting Date <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative">
+                                  <CalendarIcon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                  <Input
+                                    id="date"
+                                    type="date"
+                                    value={formData.date}
+                                    onChange={(e) =>
+                                      setFormData({ ...formData, date: e.target.value })
+                                    }
+                                    className="pr-9"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="time">
+                                  Meeting Time <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative">
+                                  <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                  <Input
+                                    id="time"
+                                    type="time"
+                                    value={formData.time}
+                                    onChange={(e) =>
+                                      setFormData({ ...formData, time: e.target.value })
+                                    }
+                                    className="pr-9"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="note">Meeting Note</Label>
+                              <Textarea
+                                id="note"
+                                value={formData.note}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                                  setFormData({ ...formData, note: e.target.value })
+                                }
+                                rows={3}
+                                placeholder="Enter Meeting Note"
+                              />
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span>
-                              {meeting.time} ({meeting.duration} min)
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {meeting.location.includes('Video') ? (
-                              <Video className="w-4 h-4" />
-                            ) : (
-                              <Users className="w-4 h-4" />
-                            )}
-                            <span>{meeting.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            <span>{meeting.attendees.length} attendees</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Meetings Table */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search meetings..."
-                  value={searchTerm}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Meeting Title</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No meetings found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredData.map((meeting) => (
-                      <TableRow key={meeting.id}>
-                        <TableCell className="font-medium">{meeting.title}</TableCell>
-                        <TableCell>{meeting.date}</TableCell>
-                        <TableCell>{meeting.time}</TableCell>
-                        <TableCell>{meeting.duration} min</TableCell>
-                        <TableCell>{meeting.type}</TableCell>
-                        <TableCell>{meeting.location}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusBadgeColor(meeting.status)}>{meeting.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleEdit(meeting)} title="Edit">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
+                          <DialogFooter>
                             <Button
-                              size="sm"
+                              type="button"
                               variant="outline"
-                              onClick={() => handleDelete(meeting.id)}
-                              title="Delete"
-                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDialogOpenChange(false)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              Cancel
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          </div>
+                            <Button type="submit" variant="blue" className="shadow-none">
+                              {editingId ? 'Update' : 'Create'}
+                            </Button>
+                          </DialogFooter>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Stats Cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600 font-medium">Total Meetings</p>
+                        <h3 className="text-3xl font-semibold text-gray-900">{meetings.length}</h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+                        <CalendarIcon className="w-6 h-6 text-sky-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600 font-medium">Scheduled</p>
+                        <h3 className="text-3xl font-semibold text-gray-900">
+                          {meetings.filter((m) => m.status === 'Scheduled').length}
+                        </h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <CalendarIcon className="w-6 h-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600 font-medium">Completed</p>
+                        <h3 className="text-3xl font-semibold text-gray-900">
+                          {meetings.filter((m) => m.status === 'Completed').length}
+                        </h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                        <CalendarIcon className="w-6 h-6 text-green-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600 font-medium">This Week</p>
+                        <h3 className="text-3xl font-semibold text-gray-900">
+                          {upcomingMeetings.length}
+                        </h3>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                        <CalendarIcon className="w-6 h-6 text-purple-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Content: only one view at a time */}
+              {viewMode === 'list' && (
+                <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                    <CardTitle>Meeting List</CardTitle>
+                    <div className="flex w-full max-w-md items-center gap-2">
+                      <div className="relative flex-1">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          placeholder="Search meetings..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                        />
+                        {searchTerm.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                            onClick={() => setSearchTerm('')}
+                            aria-label="Clear search"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="px-6">Title</TableHead>
+                            <TableHead className="px-6">Branch</TableHead>
+                            <TableHead className="px-6">Department</TableHead>
+                            <TableHead className="px-6">Employee</TableHead>
+                            <TableHead className="px-6">Meeting Date</TableHead>
+                            <TableHead className="px-6">Meeting Time</TableHead>
+                            <TableHead className="px-6">Status</TableHead>
+                            <TableHead className="px-6 text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredData.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={8}
+                                className="px-6 text-center py-8 text-muted-foreground"
+                              >
+                                No meetings found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredData.map((meeting) => (
+                              <TableRow key={meeting.id}>
+                                <TableCell className="px-6 font-medium">{meeting.title}</TableCell>
+                                <TableCell className="px-6">{getBranchLabel(meeting.branch)}</TableCell>
+                                <TableCell className="px-6">{getDepartmentLabel(meeting.department)}</TableCell>
+                                <TableCell className="px-6">{getEmployeeName(meeting.employeeId)}</TableCell>
+                                <TableCell className="px-6">{meeting.date}</TableCell>
+                                <TableCell className="px-6">{meeting.time}</TableCell>
+                                <TableCell className="px-6">
+                                  <Badge className={getStatusBadgeColor(meeting.status)}>
+                                    {meeting.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="px-6">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200 shadow-none h-8"
+                                      onClick={() => handleEdit(meeting)}
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200 shadow-none h-8"
+                                      onClick={() => openDeleteConfirm(meeting)}
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {viewMode === 'calendar' && (
+                <EventCalendar events={calendarEvents} />
+              )}
+            </div>
+          </MainContentWrapper>
         </div>
       </SidebarInset>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Meeting?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Meeting &quot;{meetingToDelete?.title}&quot; akan dihapus. Tindakan ini tidak dapat
+              dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-rose-600 hover:bg-rose-700"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

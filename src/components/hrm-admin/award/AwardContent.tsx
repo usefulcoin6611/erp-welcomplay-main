@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Search, Award } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+const statCardClass = 'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
+const tabColor = { iconBg: 'bg-amber-100', iconText: 'text-amber-600', accent: 'text-amber-600' };
 
 interface AwardRecord {
   id: string;
@@ -23,6 +36,8 @@ export function AwardContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [idToDelete, setIdToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     employeeName: '',
     awardType: '',
@@ -110,9 +125,16 @@ export function AwardContent() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this award?')) {
-      setAwards(awards.filter((item) => item.id !== id));
+  const handleDeleteClick = (id: string) => {
+    setIdToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (idToDelete) {
+      setAwards(awards.filter((item) => item.id !== idToDelete));
+      setIdToDelete(null);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -124,51 +146,45 @@ export function AwardContent() {
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards - thin border, tab color: Award = amber */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
+        <Card className={statCardClass}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Awards</p>
                 <p className="text-2xl font-bold">{awards.length}</p>
               </div>
-              <Award className="w-8 h-8 text-muted-foreground" />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tabColor.iconBg}`}>
+                <Award className={`w-5 h-5 ${tabColor.iconText}`} />
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={statCardClass}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className={`text-2xl font-bold ${tabColor.accent}`}>
                   {awards.filter((a) => a.date.startsWith('2024-02')).length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={statCardClass}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">This Year</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className={`text-2xl font-bold ${tabColor.accent}`}>
                   {awards.filter((a) => a.date.startsWith('2024')).length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Add Button */}
-      <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Award
-        </Button>
       </div>
 
       {/* Add/Edit Form */}
@@ -263,55 +279,63 @@ export function AwardContent() {
         </Card>
       )}
 
-      {/* Awards List */}
+      {/* Awards List - search inline with button, no border, separated bg */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search by employee or award type..."
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        <CardHeader className="flex flex-row items-center justify-end space-y-0 px-6 py-3.5">
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="relative w-56 sm:w-64">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by employee or award type..."
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="h-8 bg-gray-50 pl-9 pr-3 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+              />
+            </div>
+            <Button onClick={handleAdd} size="sm" className="h-8 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200 flex-shrink-0">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Award
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Award Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Gift</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="px-6">Employee Name</TableHead>
+                <TableHead className="px-6">Award Type</TableHead>
+                <TableHead className="px-6">Date</TableHead>
+                <TableHead className="px-6">Gift</TableHead>
+                <TableHead className="px-6">Description</TableHead>
+                <TableHead className="px-6 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
                     No awards found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((award) => (
                   <TableRow key={award.id}>
-                    <TableCell className="font-medium">{award.employeeName}</TableCell>
-                    <TableCell>{award.awardType}</TableCell>
-                    <TableCell>{award.date}</TableCell>
-                    <TableCell>{award.gift}</TableCell>
-                    <TableCell className="max-w-xs truncate">{award.description}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-6 font-medium">{award.employeeName}</TableCell>
+                    <TableCell className="px-6">{award.awardType}</TableCell>
+                    <TableCell className="px-6">{award.date}</TableCell>
+                    <TableCell className="px-6">{award.gift}</TableCell>
+                    <TableCell className="px-6 max-w-xs truncate">{award.description}</TableCell>
+                    <TableCell className="px-6">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(award)} title="Edit">
+                        <Button size="sm" variant="outline" className="h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200" onClick={() => handleEdit(award)} title="Edit">
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(award.id)}
+                          className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+                          onClick={() => handleDeleteClick(award.id)}
                           title="Delete"
-                          className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -324,6 +348,23 @@ export function AwardContent() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus award?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin menghapus?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDeleteConfirm}>
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

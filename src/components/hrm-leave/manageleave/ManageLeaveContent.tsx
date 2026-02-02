@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle } from 'lucide-react';
+
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 interface Leave {
   id: string;
@@ -166,8 +168,8 @@ export function ManageLeaveContent() {
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Requests</p>
@@ -177,8 +179,8 @@ export function ManageLeaveContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -189,8 +191,8 @@ export function ManageLeaveContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Approved</p>
@@ -201,8 +203,8 @@ export function ManageLeaveContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Rejected</p>
@@ -217,7 +219,7 @@ export function ManageLeaveContent() {
 
       {/* Add Button */}
       <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
+        <Button onClick={handleAdd} className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
           <Plus className="w-4 h-4 mr-2" />
           Apply Leave
         </Button>
@@ -225,8 +227,8 @@ export function ManageLeaveContent() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4 pt-6">
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Apply'} Leave</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -293,7 +295,7 @@ export function ManageLeaveContent() {
                 />
               </div>
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
                   {editingId ? 'Update' : 'Submit'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -306,62 +308,65 @@ export function ManageLeaveContent() {
       )}
 
       {/* Leave List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
+      <Card className={cardClass}>
+        <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between gap-4">
+          <h3 className="text-sm font-medium">Leave Requests</h3>
+          <div className="relative w-full max-w-[280px] ml-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search by employee name, ID, or leave type..."
               value={searchTerm}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-0 bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Leave Type</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead className="text-center">Days</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="px-4 py-3">Employee ID</TableHead>
+                <TableHead className="px-4 py-3">Employee Name</TableHead>
+                <TableHead className="px-4 py-3">Leave Type</TableHead>
+                <TableHead className="px-4 py-3">Start Date</TableHead>
+                <TableHead className="px-4 py-3">End Date</TableHead>
+                <TableHead className="px-4 py-3 text-center">Days</TableHead>
+                <TableHead className="px-4 py-3">Reason</TableHead>
+                <TableHead className="px-4 py-3 text-center">Status</TableHead>
+                <TableHead className="px-4 py-3 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No leave requests found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((leave) => (
                   <TableRow key={leave.id}>
-                    <TableCell className="font-medium">{leave.employeeId}</TableCell>
-                    <TableCell>{leave.employeeName}</TableCell>
-                    <TableCell>{leave.leaveType}</TableCell>
-                    <TableCell>{leave.startDate}</TableCell>
-                    <TableCell>{leave.endDate}</TableCell>
-                    <TableCell className="text-center">{leave.days}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{leave.reason}</TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="px-4 py-3 font-medium">{leave.employeeId}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.employeeName}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.leaveType}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.startDate}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.endDate}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">{leave.days}</TableCell>
+                    <TableCell className="px-4 py-3 max-w-[200px] truncate">{leave.reason}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">
                       <Badge
                         className={
                           leave.status === 'Approved'
-                            ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                             : leave.status === 'Rejected'
-                            ? 'bg-red-100 text-red-700 hover:bg-red-100'
-                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
+                            ? 'bg-red-50 text-red-700 border-red-100'
+                            : 'bg-amber-50 text-amber-700 border-amber-100'
                         }
                       >
                         {leave.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         {leave.status === 'Pending' && (
                           <>
@@ -370,7 +375,7 @@ export function ManageLeaveContent() {
                               variant="outline"
                               onClick={() => handleApprove(leave.id)}
                               title="Approve"
-                              className="text-green-600 hover:text-green-700"
+                              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
                             >
                               <CheckCircle className="w-4 h-4" />
                             </Button>
@@ -379,13 +384,19 @@ export function ManageLeaveContent() {
                               variant="outline"
                               onClick={() => handleReject(leave.id)}
                               title="Reject"
-                              className="text-red-600 hover:text-red-700"
+                              className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             >
                               <XCircle className="w-4 h-4" />
                             </Button>
                           </>
                         )}
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(leave)} title="Edit">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(leave)}
+                          title="Edit"
+                          className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
@@ -393,7 +404,7 @@ export function ManageLeaveContent() {
                           variant="outline"
                           onClick={() => handleDelete(leave.id)}
                           title="Delete"
-                          className="text-red-600 hover:text-red-700"
+                          className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

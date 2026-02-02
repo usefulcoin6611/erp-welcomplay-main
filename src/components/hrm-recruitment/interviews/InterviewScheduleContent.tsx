@@ -1,29 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Calendar, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Calendar, Clock, Eye } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { getInterviewsList, addInterview, updateInterview, removeInterviewById, type InterviewScheduleDetail } from '@/lib/recruitment-data';
 
-interface InterviewSchedule {
-  id: string;
-  candidateName: string;
-  position: string;
-  interviewDate: string;
-  interviewTime: string;
-  interviewer: string;
-  location: string;
-  status: string;
-}
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 export function InterviewScheduleContent() {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [deleteScheduleId, setDeleteScheduleId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     candidateName: '',
     position: '',
@@ -34,40 +40,23 @@ export function InterviewScheduleContent() {
     status: '',
     notes: '',
   });
+  const [schedules, setSchedules] = useState<InterviewScheduleDetail[]>(() => getInterviewsList());
 
-  // Mock data
-  const [schedules, setSchedules] = useState<InterviewSchedule[]>([
-    {
-      id: '1',
-      candidateName: 'John Smith',
-      position: 'Senior Software Engineer',
-      interviewDate: '2024-03-15',
-      interviewTime: '10:00',
-      interviewer: 'Sarah Johnson',
-      location: 'Meeting Room A',
-      status: 'Scheduled',
-    },
-    {
-      id: '2',
-      candidateName: 'Mike Brown',
-      position: 'Marketing Manager',
-      interviewDate: '2024-03-16',
-      interviewTime: '14:00',
-      interviewer: 'Emily Davis',
-      location: 'Video Call',
-      status: 'Scheduled',
-    },
-    {
-      id: '3',
-      candidateName: 'Lisa Wilson',
-      position: 'Accountant',
-      interviewDate: '2024-03-12',
-      interviewTime: '11:00',
-      interviewer: 'David Lee',
-      location: 'Meeting Room B',
-      status: 'Completed',
-    },
-  ]);
+  const refreshSchedules = () => setSchedules([...getInterviewsList()]);
+
+  const openDeleteConfirm = (id: string) => {
+    setDeleteScheduleId(id);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteScheduleId) {
+      removeInterviewById(deleteScheduleId);
+      refreshSchedules();
+      setDeleteScheduleId(null);
+    }
+    setDeleteAlertOpen(false);
+  };
 
   const interviewers = ['Sarah Johnson', 'Emily Davis', 'David Lee', 'Michael Brown'];
   const locations = ['Meeting Room A', 'Meeting Room B', 'Video Call', 'Phone Call'];
@@ -90,27 +79,8 @@ export function InterviewScheduleContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (editingId) {
-      setSchedules(
-        schedules.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                candidateName: formData.candidateName,
-                position: formData.position,
-                interviewDate: formData.interviewDate,
-                interviewTime: formData.interviewTime,
-                interviewer: formData.interviewer,
-                location: formData.location,
-                status: formData.status,
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: InterviewSchedule = {
-        id: Date.now().toString(),
+      updateInterview(editingId, {
         candidateName: formData.candidateName,
         position: formData.position,
         interviewDate: formData.interviewDate,
@@ -118,13 +88,23 @@ export function InterviewScheduleContent() {
         interviewer: formData.interviewer,
         location: formData.location,
         status: formData.status,
-      };
-      setSchedules([...schedules, newItem]);
+      });
+    } else {
+      addInterview({
+        candidateName: formData.candidateName,
+        position: formData.position,
+        interviewDate: formData.interviewDate,
+        interviewTime: formData.interviewTime,
+        interviewer: formData.interviewer,
+        location: formData.location,
+        status: formData.status,
+      });
     }
+    refreshSchedules();
     setShowForm(false);
   };
 
-  const handleEdit = (item: InterviewSchedule) => {
+  const handleEdit = (item: InterviewScheduleDetail) => {
     setShowForm(true);
     setEditingId(item.id);
     setFormData({
@@ -137,12 +117,6 @@ export function InterviewScheduleContent() {
       status: item.status,
       notes: '',
     });
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this interview schedule?')) {
-      setSchedules(schedules.filter((item) => item.id !== id));
-    }
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -166,10 +140,10 @@ export function InterviewScheduleContent() {
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards - reference-erp interview schedule */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Interviews</p>
@@ -179,8 +153,8 @@ export function InterviewScheduleContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Scheduled</p>
@@ -191,8 +165,8 @@ export function InterviewScheduleContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
@@ -203,8 +177,8 @@ export function InterviewScheduleContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Cancelled</p>
@@ -217,18 +191,10 @@ export function InterviewScheduleContent() {
         </Card>
       </div>
 
-      {/* Add Button */}
-      <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
-          <Plus className="w-4 h-4 mr-2" />
-          Schedule Interview
-        </Button>
-      </div>
-
       {/* Add/Edit Form */}
       {showForm && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 pt-6 pb-6">
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Schedule New'} Interview</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,7 +318,7 @@ export function InterviewScheduleContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
                   {editingId ? 'Update' : 'Schedule'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -364,17 +330,24 @@ export function InterviewScheduleContent() {
         </Card>
       )}
 
-      {/* Upcoming Interviews */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-semibold mb-4">Upcoming Interviews</h3>
+      {/* Interview Schedule - satu card: header (title + Create), content (upcoming list) */}
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 pb-4">
+          <CardTitle className="text-base font-semibold">Interview Schedule</CardTitle>
+          <Button size="sm" className="h-9 shadow-none bg-blue-600 text-white hover:bg-blue-700" onClick={handleAdd}>
+            <Plus className="h-4 w-4 mr-1" />
+            Schedule Interview
+          </Button>
+        </CardHeader>
+        <CardContent className="px-6 pt-0">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Upcoming Interviews</h3>
           <div className="space-y-3">
             {upcomingSchedules.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">No upcoming interviews</p>
             ) : (
               upcomingSchedules.map((schedule) => (
-                <Card key={schedule.id}>
-                  <CardContent className="pt-6">
+                <Card key={schedule.id} className={cardClass}>
+                  <CardContent className="px-4 py-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -397,16 +370,13 @@ export function InterviewScheduleContent() {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(schedule)} title="Edit">
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/hrm/recruitment/interviews/${schedule.id}`)} title="View" className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/hrm/recruitment/interviews/${schedule.id}/edit`)} title="Edit" className="h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(schedule.id)}
-                          title="Delete"
-                          className="text-red-600 hover:text-red-700"
-                        >
+                        <Button size="sm" variant="outline" onClick={() => openDeleteConfirm(schedule.id)} title="Delete" className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -418,6 +388,23 @@ export function InterviewScheduleContent() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Interview Schedule?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Jadwal interview akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
+              <span>Hapus</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

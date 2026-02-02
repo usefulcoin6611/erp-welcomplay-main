@@ -1,12 +1,10 @@
 "use client"
 
-import React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import React, { useState } from "react"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -30,8 +28,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { IconPlus, IconSearch, IconPhoto, IconTrash } from "@tabler/icons-react"
+
+const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
 const timeTrackers = [
   {
@@ -65,72 +75,77 @@ const timeTrackers = [
 
 export default function TimeTrackerPage() {
   const totalTrackers = timeTrackers.length
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
+  const [trackerToDelete, setTrackerToDelete] = useState<typeof timeTrackers[number] | null>(null)
+
+  const handleDeleteClick = (tracker: typeof timeTrackers[number]) => {
+    setTrackerToDelete(tracker)
+    setDeleteAlertOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    setTrackerToDelete(null)
+    setDeleteAlertOpen(false)
+  }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Time Tracker</h1>
-              </div>
-            </div>
+    <>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1 flex-1">
+            <CardTitle className="text-2xl font-semibold">Time Tracker</CardTitle>
+            <CardDescription>
+              Lacak waktu per task dan project. Lihat screenshot dan total jam.
+            </CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Time Tracker List</CardTitle>
-              </CardHeader>
-              <CardContent>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="px-6 py-3.5">
+          <CardTitle>Time Tracker List</CardTitle>
+        </CardHeader>
+        <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Task</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Start Time</TableHead>
-                        <TableHead>End Time</TableHead>
-                        <TableHead>Total Time</TableHead>
-                        <TableHead className="w-[120px]">Action</TableHead>
+                        <TableHead className="px-6">Title</TableHead>
+                        <TableHead className="px-6">Task</TableHead>
+                        <TableHead className="px-6">Project</TableHead>
+                        <TableHead className="px-6">Start Time</TableHead>
+                        <TableHead className="px-6">End Time</TableHead>
+                        <TableHead className="px-6">Total Time</TableHead>
+                        <TableHead className="w-[120px] px-6">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {timeTrackers.map((tracker) => (
                         <TableRow key={tracker.id}>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm font-medium">{tracker.title}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{tracker.task}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{tracker.project}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{tracker.startTime}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{tracker.endTime}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm font-medium">{tracker.totalTime}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="flex gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 w-8 p-0 shadow-none"
+                                className="h-8 w-8 p-0 shadow-none bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200"
                                 title="View Screenshot images"
                               >
                                 <IconPhoto className="h-4 w-4" />
@@ -138,8 +153,9 @@ export default function TimeTrackerPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 w-8 p-0 shadow-none text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-8 w-8 p-0 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                                 title="Delete"
+                                onClick={() => handleDeleteClick(tracker)}
                               >
                                 <IconTrash className="h-4 w-4" />
                               </Button>
@@ -150,11 +166,28 @@ export default function TimeTrackerPage() {
                     </TableBody>
                   </Table>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Time Tracker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Entri &quot;{trackerToDelete?.title}&quot; akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

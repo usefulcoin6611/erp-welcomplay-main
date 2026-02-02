@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, TrendingUp, Eye } from 'lucide-react';
+import { StarRatingDisplay } from '../StarRatingDisplay';
+
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 interface Indicator {
   id: string;
@@ -157,19 +159,12 @@ export function IndicatorContent() {
       indicator.designation.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRatingColor = (rating: number) => {
-    if (rating >= 4.5) return 'text-green-600';
-    if (rating >= 3.5) return 'text-blue-600';
-    if (rating >= 2.5) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Indicators</p>
@@ -179,8 +174,8 @@ export function IndicatorContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Average Rating</p>
@@ -193,8 +188,8 @@ export function IndicatorContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">High Performers</p>
@@ -205,8 +200,8 @@ export function IndicatorContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Needs Improvement</p>
@@ -336,7 +331,7 @@ export function IndicatorContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
                   {editingId ? 'Update' : 'Create'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -348,56 +343,69 @@ export function IndicatorContent() {
         </Card>
       )}
 
-      {/* Indicator List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
+      {/* Indicator List - reference: indicator/index */}
+      <Card className={cardClass}>
+        <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between gap-4">
+          <h3 className="text-sm font-medium">Manage Indicator</h3>
+          <div className="relative w-full max-w-[280px] ml-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search by branch, department, or designation..."
               value={searchTerm}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-0 bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Branch</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead className="text-center">Overall Rating</TableHead>
-                <TableHead>Added By</TableHead>
-                <TableHead>Created Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="px-4 py-3">Branch</TableHead>
+                <TableHead className="px-4 py-3">Department</TableHead>
+                <TableHead className="px-4 py-3">Designation</TableHead>
+                <TableHead className="px-4 py-3 text-center">Overall Rating</TableHead>
+                <TableHead className="px-4 py-3">Added By</TableHead>
+                <TableHead className="px-4 py-3">Created At</TableHead>
+                <TableHead className="px-4 py-3 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No indicators found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((indicator) => (
                   <TableRow key={indicator.id}>
-                    <TableCell className="font-medium">{indicator.branch}</TableCell>
-                    <TableCell>{indicator.department}</TableCell>
-                    <TableCell>{indicator.designation}</TableCell>
-                    <TableCell className="text-center">
-                      <span className={`text-lg font-bold ${getRatingColor(indicator.overallRating)}`}>
-                        {indicator.overallRating}
-                      </span>
+                    <TableCell className="px-4 py-3 font-medium">{indicator.branch}</TableCell>
+                    <TableCell className="px-4 py-3">{indicator.department}</TableCell>
+                    <TableCell className="px-4 py-3">{indicator.designation}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">
+                      <StarRatingDisplay rating={indicator.overallRating} />
                     </TableCell>
-                    <TableCell>{indicator.addedBy}</TableCell>
-                    <TableCell>{indicator.createdAt}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3">{indicator.addedBy}</TableCell>
+                    <TableCell className="px-4 py-3">{indicator.createdAt}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleView(indicator.id)} title="View">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleView(indicator.id)}
+                          title="View"
+                          className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(indicator)} title="Edit">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(indicator)}
+                          title="Edit"
+                          className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
@@ -405,7 +413,7 @@ export function IndicatorContent() {
                           variant="outline"
                           onClick={() => handleDelete(indicator.id)}
                           title="Delete"
-                          className="text-red-600 hover:text-red-700"
+                          className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

@@ -632,62 +632,55 @@ export default function SupportPage() {
               </CardHeader>
             </Card>
 
-            {/* Statistics Cards */}
+            {/* Statistics Cards - separated, no border */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* Total Tickets */}
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <p className="text-sm text-gray-600 font-medium">Total Tickets</p>
                       <h3 className="text-3xl font-semibold text-gray-900">{totalTickets}</h3>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                      <TicketIcon className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+                      <TicketIcon className="w-6 h-6 text-sky-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Open Tickets */}
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <p className="text-sm text-gray-600 font-medium">Open Tickets</p>
                       <h3 className="text-3xl font-semibold text-gray-900">{openTickets}</h3>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
                       <CheckCircle2 className="w-6 h-6 text-green-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* On Hold Tickets */}
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <p className="text-sm text-gray-600 font-medium">On Hold Tickets</p>
                       <h3 className="text-3xl font-semibold text-gray-900">{onHoldTickets}</h3>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-                      <PauseCircle className="w-6 h-6 text-yellow-600" />
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                      <PauseCircle className="w-6 h-6 text-amber-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Close Tickets */}
-              <Card className="rounded-lg">
+              <Card className="rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <p className="text-sm text-gray-600 font-medium">Close Tickets</p>
                       <h3 className="text-3xl font-semibold text-gray-900">{closeTickets}</h3>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
                       <XCircle className="w-6 h-6 text-gray-600" />
                     </div>
                   </div>
@@ -778,10 +771,10 @@ export default function SupportPage() {
                           <TableCell className="px-6">
                             {support.attachment ? (
                               <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
+                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
                                   <Download className="h-3 w-3" />
                                 </Button>
-                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100">
+                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">
                                   <Eye className="h-3 w-3" />
                                 </Button>
                               </div>
@@ -801,7 +794,7 @@ export default function SupportPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                className="shadow-none h-7 bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200"
                                 onClick={() => {
                                   setReplySupport(support)
                                   setReplyMessage('')
@@ -813,7 +806,7 @@ export default function SupportPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                                 onClick={() => openEditDialog(support)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -821,7 +814,7 @@ export default function SupportPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                className="shadow-none h-7 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                                 onClick={() => openDeleteConfirm(support.id)}
                               >
                                 <Trash className="h-4 w-4" />
@@ -899,7 +892,7 @@ export default function SupportPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                  className="shadow-none h-7 w-7 p-0 bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200"
                                   title="Reply"
                                   onClick={() => {
                                     setReplySupport(support)
@@ -912,7 +905,7 @@ export default function SupportPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                  className="shadow-none h-7 w-7 p-0 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                                   title="Edit"
                                   onClick={() => openEditDialog(support)}
                                 >
@@ -921,7 +914,7 @@ export default function SupportPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  className="shadow-none h-7 w-7 p-0 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                                   title="Delete"
                                   onClick={() => openDeleteConfirm(support.id)}
                                 >

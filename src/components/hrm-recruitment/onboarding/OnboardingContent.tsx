@@ -1,70 +1,104 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, UserCheck } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  UserCheck,
+  Eye,
+  Download,
+  FileText,
+  X,
+  UserPlus,
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  getOnboardingsList,
+  addOnboarding,
+  updateOnboarding,
+  removeOnboardingById,
+  type OnboardingDetail,
+} from '@/lib/recruitment-data';
+import { toast } from 'sonner';
 
-interface Onboarding {
-  id: string;
-  employeeName: string;
-  position: string;
-  department: string;
-  joinDate: string;
-  status: string;
-  progress: number;
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]';
+
+function formatDate(value: string | undefined): string {
+  if (!value) return '-';
+  try {
+    return new Date(value).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return value;
+  }
 }
 
 export function OnboardingContent() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [deleteOnboardingId, setDeleteOnboardingId] = useState<string | null>(null);
+  const [onboardings, setOnboardings] = useState(() => getOnboardingsList());
+
   const [formData, setFormData] = useState({
     employeeName: '',
     position: '',
     department: '',
     joinDate: '',
     status: '',
+    branch: '',
+    appliedAt: '',
   });
 
-  // Mock data
-  const [onboardings, setOnboardings] = useState<Onboarding[]>([
-    {
-      id: '1',
-      employeeName: 'John Smith',
-      position: 'Senior Software Engineer',
-      department: 'IT',
-      joinDate: '2024-03-01',
-      status: 'In Progress',
-      progress: 60,
-    },
-    {
-      id: '2',
-      employeeName: 'Sarah Johnson',
-      position: 'Marketing Manager',
-      department: 'Marketing',
-      joinDate: '2024-02-15',
-      status: 'Completed',
-      progress: 100,
-    },
-    {
-      id: '3',
-      employeeName: 'Mike Brown',
-      position: 'Accountant',
-      department: 'Finance',
-      joinDate: '2024-03-10',
-      status: 'Pending',
-      progress: 20,
-    },
-  ]);
+  const refreshOnboardings = () => setOnboardings([...getOnboardingsList()]);
 
   const departments = ['IT', 'Marketing', 'Finance', 'HR', 'Operations'];
   const statuses = ['Pending', 'In Progress', 'Completed'];
+  const branches = ['Head Office', 'Branch A', 'Branch B'];
 
   const handleAdd = () => {
     setShowForm(true);
@@ -74,44 +108,44 @@ export function OnboardingContent() {
       position: '',
       department: '',
       joinDate: '',
-      status: '',
+      status: 'Pending',
+      branch: '',
+      appliedAt: '',
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (editingId) {
-      setOnboardings(
-        onboardings.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                employeeName: formData.employeeName,
-                position: formData.position,
-                department: formData.department,
-                joinDate: formData.joinDate,
-                status: formData.status,
-              }
-            : item
-        )
-      );
+      updateOnboarding(editingId, {
+        employeeName: formData.employeeName,
+        position: formData.position,
+        department: formData.department,
+        joinDate: formData.joinDate,
+        status: formData.status,
+        branch: formData.branch || undefined,
+        appliedAt: formData.appliedAt || undefined,
+      });
+      toast.success('Onboarding berhasil diupdate');
     } else {
-      const newItem: Onboarding = {
-        id: Date.now().toString(),
+      addOnboarding({
         employeeName: formData.employeeName,
         position: formData.position,
         department: formData.department,
         joinDate: formData.joinDate,
         status: formData.status,
         progress: 0,
-      };
-      setOnboardings([...onboardings, newItem]);
+        branch: formData.branch || undefined,
+        appliedAt: formData.appliedAt || undefined,
+        convertToEmployeeId: null,
+      });
+      toast.success('Onboarding berhasil dibuat');
     }
     setShowForm(false);
+    refreshOnboardings();
   };
 
-  const handleEdit = (item: Onboarding) => {
+  const handleEdit = (item: OnboardingDetail) => {
     setShowForm(true);
     setEditingId(item.id);
     setFormData({
@@ -120,41 +154,74 @@ export function OnboardingContent() {
       department: item.department,
       joinDate: item.joinDate,
       status: item.status,
+      branch: item.branch ?? '',
+      appliedAt: item.appliedAt ?? '',
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this onboarding?')) {
-      setOnboardings(onboardings.filter((item) => item.id !== id));
+  const openDeleteConfirm = (id: string) => {
+    setDeleteOnboardingId(id);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteOnboardingId) {
+      removeOnboardingById(deleteOnboardingId);
+      refreshOnboardings();
+      setDeleteOnboardingId(null);
     }
+    setDeleteAlertOpen(false);
+    toast.success('Onboarding dihapus');
+  };
+
+  const handleConvertToEmployee = (item: OnboardingDetail) => {
+    const employeeId = `emp-${item.id}`;
+    updateOnboarding(item.id, { convertToEmployeeId: employeeId });
+    refreshOnboardings();
+    toast.success(`${item.employeeName} berhasil dikonversi ke karyawan`);
+  };
+
+  const handleViewEmployee = (employeeId: string) => {
+    router.push(`/hrm/employees/${employeeId}`);
+  };
+
+  const handleDownloadOfferLetter = (format: 'pdf' | 'doc', item: OnboardingDetail) => {
+    toast.success(`Download Offer Letter ${format.toUpperCase()}: ${item.employeeName}`);
   };
 
   const filteredData = onboardings.filter(
-    (onboarding) =>
-      onboarding.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      onboarding.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      onboarding.department.toLowerCase().includes(searchTerm.toLowerCase())
+    (o) =>
+      o.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (o.department && o.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (o.branch && o.branch.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'Completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'In Progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
+  const isConfirm = (status: string) => status === 'Completed';
+  const canConvert = (o: OnboardingDetail) =>
+    isConfirm(o.status) && (o.convertToEmployeeId == null || o.convertToEmployeeId === '');
+  const hasConverted = (o: OnboardingDetail) =>
+    isConfirm(o.status) && o.convertToEmployeeId != null && o.convertToEmployeeId !== '';
+
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards - sesuai acuan */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Onboarding</p>
@@ -164,219 +231,347 @@ export function OnboardingContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {onboardings.filter((o) => o.status === 'In Progress').length}
-                </p>
-              </div>
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
+            <div>
+              <p className="text-sm text-muted-foreground">In Progress</p>
+              <p className="text-2xl font-bold text-amber-600">
+                {onboardings.filter((o) => o.status === 'In Progress').length}
+              </p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {onboardings.filter((o) => o.status === 'Completed').length}
-                </p>
-              </div>
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Completed</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {onboardings.filter((o) => o.status === 'Completed').length}
+              </p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {onboardings.filter((o) => o.status === 'Pending').length}
-                </p>
-              </div>
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Pending</p>
+              <p className="text-2xl font-bold text-amber-600">
+                {onboardings.filter((o) => o.status === 'Pending').length}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Add Button */}
-      <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Onboarding
-        </Button>
-      </div>
-
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Onboarding</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employeeName">Employee Name</Label>
-                  <Input
-                    id="employeeName"
-                    value={formData.employeeName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, employeeName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="position">Position</Label>
-                  <Input
-                    id="position"
-                    value={formData.position}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, position: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value) => setFormData({ ...formData, department: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="joinDate">Join Date</Label>
-                  <Input
-                    id="joinDate"
-                    type="date"
-                    value={formData.joinDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, joinDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
+      {/* Card: Title + Create Button - sesuai reference-erp action-btn */}
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+          <CardTitle className="text-base font-semibold">Manage Job On-boarding</CardTitle>
+          <div className="flex items-center gap-2">
+            <div className="relative w-full min-w-[200px] max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, job, department..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+              />
+              {searchTerm.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Onboarding List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search by employee name, position, or department..."
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+              )}
+            </div>
+            <Button
+              size="sm"
+              className="h-9 shadow-none bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleAdd}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Create
+            </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Join Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No onboarding records found
-                  </TableCell>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b bg-muted/30">
+                  <TableHead className="px-6 font-medium">Name</TableHead>
+                  <TableHead className="px-6 font-medium">Job</TableHead>
+                  <TableHead className="px-6 font-medium">Branch</TableHead>
+                  <TableHead className="px-6 font-medium">Applied at</TableHead>
+                  <TableHead className="px-6 font-medium">Joining at</TableHead>
+                  <TableHead className="px-6 font-medium">Status</TableHead>
+                  <TableHead className="px-6 font-medium text-right">Action</TableHead>
                 </TableRow>
-              ) : (
-                filteredData.map((onboarding) => (
-                  <TableRow key={onboarding.id}>
-                    <TableCell className="font-medium">{onboarding.employeeName}</TableCell>
-                    <TableCell>{onboarding.position}</TableCell>
-                    <TableCell>{onboarding.department}</TableCell>
-                    <TableCell>{onboarding.joinDate}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeColor(onboarding.status)}>{onboarding.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                          <div
-                            className="bg-blue-500 h-2 rounded-full"
-                            style={{ width: `${onboarding.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm">{onboarding.progress}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(onboarding)} title="Edit">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(onboarding.id)}
-                          title="Delete"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredData.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="px-6 py-8 text-center text-muted-foreground"
+                    >
+                      No onboarding records found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredData.map((o) => (
+                    <TableRow key={o.id} className="border-b">
+                      <TableCell className="px-6 font-medium">{o.employeeName}</TableCell>
+                      <TableCell className="px-6">{o.position}</TableCell>
+                      <TableCell className="px-6">{o.branch ?? '-'}</TableCell>
+                      <TableCell className="px-6">{formatDate(o.appliedAt)}</TableCell>
+                      <TableCell className="px-6">{formatDate(o.joinDate)}</TableCell>
+                      <TableCell className="px-6">
+                        <Badge className={getStatusBadgeColor(o.status)} variant="outline">
+                          {o.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-6">
+                        <div className="flex items-center justify-end gap-1 flex-wrap">
+                          {canConvert(o) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 shadow-none bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
+                              onClick={() => handleConvertToEmployee(o)}
+                              title="Convert to Employee"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {hasConverted(o) && o.convertToEmployeeId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                              onClick={() => handleViewEmployee(o.convertToEmployeeId!)}
+                              title="View Employee"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                            onClick={() => handleEdit(o)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+                            onClick={() => openDeleteConfirm(o.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          {isConfirm(o.status) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 shadow-none bg-blue-600 text-white hover:bg-blue-700 border-0"
+                                onClick={() => handleDownloadOfferLetter('pdf', o)}
+                                title="Offer Letter PDF"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 shadow-none bg-blue-600 text-white hover:bg-blue-700 border-0"
+                                onClick={() => handleDownloadOfferLetter('doc', o)}
+                                title="Offer Letter DOC"
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Add/Edit Form - modal sesuai reference-erp (data-ajax-popup) */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          setShowForm(open);
+          if (!open) setEditingId(null);
+        }}
+      >
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Job OnBoard' : 'Create New Job OnBoard'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-employeeName">Employee Name</Label>
+                <Input
+                  id="modal-employeeName"
+                  value={formData.employeeName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, employeeName: e.target.value })
+                  }
+                  className="h-9"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-position">Job</Label>
+                <Input
+                  id="modal-position"
+                  value={formData.position}
+                  onChange={(e) =>
+                    setFormData({ ...formData, position: e.target.value })
+                  }
+                  className="h-9"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-branch">Branch</Label>
+                <Select
+                  value={formData.branch || 'all'}
+                  onValueChange={(v) =>
+                    setFormData({ ...formData, branch: v === 'all' ? '' : v })
+                  }
+                >
+                  <SelectTrigger id="modal-branch" className="h-9">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">-</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-appliedAt">Applied at</Label>
+                <Input
+                  id="modal-appliedAt"
+                  type="date"
+                  value={formData.appliedAt}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appliedAt: e.target.value })
+                  }
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-joinDate">Joining at</Label>
+                <Input
+                  id="modal-joinDate"
+                  type="date"
+                  value={formData.joinDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, joinDate: e.target.value })
+                  }
+                  className="h-9"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-department">Department</Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(v) => setFormData({ ...formData, department: v })}
+                >
+                  <SelectTrigger id="modal-department" className="h-9">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => setFormData({ ...formData, status: v })}
+                >
+                  <SelectTrigger id="modal-status" className="h-9">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9"
+                onClick={() => setShowForm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="h-9 bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+              >
+                {editingId ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Onboarding?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Data onboarding akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

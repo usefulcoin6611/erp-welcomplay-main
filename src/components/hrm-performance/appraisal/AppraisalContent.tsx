@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, Star, Eye } from 'lucide-react';
+import { StarRatingDisplay } from '../StarRatingDisplay';
+
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 interface Appraisal {
   id: string;
@@ -170,21 +172,12 @@ export function AppraisalContent() {
       appraisal.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRatingBadge = (rating: number, target: number) => {
-    if (rating >= target) {
-      return 'bg-green-100 text-green-700 hover:bg-green-100';
-    } else if (rating >= target - 0.5) {
-      return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
-    }
-    return 'bg-red-100 text-red-700 hover:bg-red-100';
-  };
-
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Appraisals</p>
@@ -194,8 +187,8 @@ export function AppraisalContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Average Rating</p>
@@ -208,8 +201,8 @@ export function AppraisalContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Exceeded Target</p>
@@ -220,8 +213,8 @@ export function AppraisalContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Below Target</p>
@@ -236,7 +229,7 @@ export function AppraisalContent() {
 
       {/* Add Button */}
       <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
+        <Button onClick={handleAdd} className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
           <Plus className="w-4 h-4 mr-2" />
           Create Appraisal
         </Button>
@@ -244,8 +237,8 @@ export function AppraisalContent() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4 pt-6">
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Appraisal</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -371,7 +364,7 @@ export function AppraisalContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
                   {editingId ? 'Update' : 'Create'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -383,58 +376,73 @@ export function AppraisalContent() {
         </Card>
       )}
 
-      {/* Appraisal List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
+      {/* Appraisal List - reference: appraisal/index */}
+      <Card className={cardClass}>
+        <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between gap-4">
+          <h3 className="text-sm font-medium">Manage Appraisal</h3>
+          <div className="relative w-full max-w-[280px] ml-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search by branch, employee, or department..."
               value={searchTerm}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-0 bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Branch</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead className="text-center">Target Rating</TableHead>
-                <TableHead className="text-center">Overall Rating</TableHead>
-                <TableHead>Appraisal Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="px-4 py-3">Branch</TableHead>
+                <TableHead className="px-4 py-3">Department</TableHead>
+                <TableHead className="px-4 py-3">Designation</TableHead>
+                <TableHead className="px-4 py-3">Employee</TableHead>
+                <TableHead className="px-4 py-3 text-center">Target Rating</TableHead>
+                <TableHead className="px-4 py-3 text-center">Overall Rating</TableHead>
+                <TableHead className="px-4 py-3">Appraisal Date</TableHead>
+                <TableHead className="px-4 py-3 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No appraisals found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((appraisal) => (
                   <TableRow key={appraisal.id}>
-                    <TableCell className="font-medium">{appraisal.branch}</TableCell>
-                    <TableCell>{appraisal.department}</TableCell>
-                    <TableCell>{appraisal.designation}</TableCell>
-                    <TableCell>{appraisal.employee}</TableCell>
-                    <TableCell className="text-center font-semibold">{appraisal.targetRating}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={getRatingBadge(appraisal.overallRating, appraisal.targetRating)}>
-                        {appraisal.overallRating}
-                      </Badge>
+                    <TableCell className="px-4 py-3 font-medium">{appraisal.branch}</TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.department}</TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.designation}</TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.employee}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">
+                      <StarRatingDisplay rating={appraisal.targetRating} />
                     </TableCell>
-                    <TableCell>{appraisal.appraisalDate}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3 text-center">
+                      <StarRatingDisplay rating={appraisal.overallRating} />
+                    </TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.appraisalDate}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleView(appraisal.id)} title="View">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleView(appraisal.id)}
+                          title="View"
+                          className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(appraisal)} title="Edit">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(appraisal)}
+                          title="Edit"
+                          className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
@@ -442,7 +450,7 @@ export function AppraisalContent() {
                           variant="outline"
                           onClick={() => handleDelete(appraisal.id)}
                           title="Delete"
-                          className="text-red-600 hover:text-red-700"
+                          className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

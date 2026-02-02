@@ -100,7 +100,7 @@ function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: stri
             <Button
               variant="outline"
               size="sm"
-              className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+              className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
               onClick={() => router.push(`/hrm/employees/${employeeId}/edit`)}
               title={t('edit')}
             >
@@ -124,6 +124,8 @@ function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: stri
 }
 
 import { use } from 'react'
+import { notFound } from 'next/navigation'
+import { getEmployeeById } from '@/lib/employee-data'
 
 interface EmployeeDetailPageProps {
   params: Promise<{
@@ -134,38 +136,11 @@ interface EmployeeDetailPageProps {
 export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) {
   const t = useTranslations('hrm.employee');
   const { employeeId } = use(params);
-  
-  // Mock data - in real app, fetch based on employeeId
-  const employee = {
-    id: 1,
-    employeeId: employeeId,
-    name: "Richard Atkinson",
-    email: "keanu2006@gmail.com",
-    phone: "04893258663",
-    dateOfBirth: "1990-07-21",
-    gender: "Male",
-    address: "Roshita Apartment",
-    branch: "India",
-    department: "Telecommunications",
-    designation: "Chartered",
-    dateOfJoining: "2020-01-01",
-    lastLogin: "2024-10-31 09:30:00",
-    isActive: true,
-    salaryType: "Hourly Payslip",
-    basicSalary: "15000",
-    documents: {
-      certificate: "certificate.png",
-      photo: "profile.png"
-    },
-    bankAccount: {
-      accountHolderName: "Madaline Owen",
-      accountNumber: "14202546",
-      bankName: "Colby Bowen",
-      bankIdentifierCode: "5879823",
-      branchLocation: "Pariatur Voluptas v",
-      taxPayerId: "95682"
-    }
-  };
+  const employee = getEmployeeById(employeeId);
+
+  if (!employee) {
+    notFound();
+  }
 
   return (
     <SidebarProvider
@@ -215,6 +190,10 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                       <span className="text-sm font-medium text-muted-foreground">{t("address")}</span>
                       <p className="text-sm text-foreground">{employee.address}</p>
                     </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">{t("gender")}</span>
+                      <p className="text-sm text-foreground">{employee.gender}</p>
+                    </div>
                     <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">Salary Type</span>
                       <p className="text-sm text-foreground"><span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded">{employee.salaryType}</span></p>
@@ -251,6 +230,22 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("dateOfJoining")}</span>
                       <p className="text-sm text-foreground">{new Date(employee.dateOfJoining).toLocaleDateString()}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">{t("lastLogin")}</span>
+                      <p className="text-sm text-foreground">
+                        {employee.lastLogin
+                          ? new Date(employee.lastLogin).toLocaleString()
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">{t("status")}</span>
+                      <p className="text-sm text-foreground">
+                        <span className={employee.isActive ? 'bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded' : 'bg-gray-100 text-gray-800 px-2 py-0.5 rounded'}>
+                          {employee.isActive ? t('active') : t('inactive')}
+                        </span>
+                      </p>
                     </div>
                   </div>
                 </CardContent>

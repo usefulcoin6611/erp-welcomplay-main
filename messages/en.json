@@ -606,7 +606,9 @@
       "editEmployee": "Edit Employee",
       "updateEmployee": "Update",
       "backToDetail": "Back to Detail",
-      "chooseFileHere": "Choose file here"
+      "chooseFileHere": "Choose file here",
+      "deleteConfirmTitle": "Delete employee?",
+      "deleteConfirmDescription": "This action cannot be undone. Are you sure you want to continue?"
     }
   },
   "reports": {

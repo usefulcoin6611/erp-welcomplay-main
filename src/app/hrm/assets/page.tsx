@@ -505,7 +505,7 @@ export default function EmployeesAssetSetupPage() {
                       placeholder="Search assets..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                      className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
                     />
                     {search.length > 0 && (
                       <Button
@@ -575,7 +575,7 @@ export default function EmployeesAssetSetupPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                  className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                                   title="Edit"
                                   onClick={() => handleEdit(asset)}
                                 >
@@ -584,7 +584,7 @@ export default function EmployeesAssetSetupPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  className="shadow-none h-7 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                                   title="Delete"
                                   onClick={() => handleDelete(asset.id)}
                                 >

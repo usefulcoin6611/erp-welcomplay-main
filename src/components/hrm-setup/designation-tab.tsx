@@ -14,6 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Search, Plus, Pencil, Trash2, Briefcase } from 'lucide-react';
 
 interface Designation {
@@ -76,10 +86,20 @@ export default function DesignationTab() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this designation?')) {
-      setDesignations(designations.filter((d) => d.id !== id));
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [designationToDelete, setDesignationToDelete] = useState<Designation | null>(null);
+
+  const openDeleteConfirm = (designation: Designation) => {
+    setDesignationToDelete(designation);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (designationToDelete) {
+      setDesignations(designations.filter((d) => d.id !== designationToDelete.id));
+      setDesignationToDelete(null);
     }
+    setDeleteAlertOpen(false);
   };
 
   const filteredDesignations = designations.filter(
@@ -106,7 +126,11 @@ export default function DesignationTab() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Designations</h2>
-        <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          size="sm"
+          className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200 h-8"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Designation
         </Button>
@@ -149,7 +173,11 @@ export default function DesignationTab() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
                   {editingId !== null ? 'Update' : 'Create'} Designation
                 </Button>
                 <Button
@@ -202,24 +230,24 @@ export default function DesignationTab() {
                     </TableCell>
                     <TableCell className="font-medium">{designation.name}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleEdit(designation)}
-                          className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                          className="shadow-none h-7 w-7 p-0 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                           title="Edit"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(designation.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          onClick={() => openDeleteConfirm(designation)}
+                          className="shadow-none h-7 w-7 p-0 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                           title="Delete"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
@@ -230,6 +258,26 @@ export default function DesignationTab() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDesignationToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Designation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{designationToDelete?.name}&quot; akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

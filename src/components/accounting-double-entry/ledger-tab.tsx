@@ -223,7 +223,7 @@ export function LedgerTab() {
                   placeholder="Search ledger..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                  className="h-9 border-0 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0"
                 />
                 {search.length > 0 && (
                   <Button

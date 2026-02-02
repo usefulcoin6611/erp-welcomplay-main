@@ -1,19 +1,5 @@
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SiteHeader } from '@/components/site-header';
-import { SidebarInset } from '@/components/ui/sidebar';
-import { PayslipContent } from '@/components/hrm-payroll/payslip/PayslipContent';
+import { redirect } from 'next/navigation'
 
-export default function PayslipPage() {
-  return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex-1 p-6">
-          <PayslipContent />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
+export default function PayslipRedirect() {
+  redirect('/hrm/payroll?tab=payslip')
 }

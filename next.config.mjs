@@ -4,6 +4,13 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Route project system: timesheet-list & projectstages pakai (project-system) layout. Yang lain tetap rewrite ke /projects/*
+  async rewrites() {
+    return [
+      { source: '/project', destination: '/projects' },
+      { source: '/time-tracker', destination: '/projects/time-tracker' },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

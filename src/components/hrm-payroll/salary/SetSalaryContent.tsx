@@ -78,147 +78,33 @@ export function SetSalaryContent() {
       emp.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSetSalary = (employeeId: string) => {
-    console.log('Set salary for employee:', employeeId);
-    // TODO: Open modal or navigate to set salary page
+  const handleSetSalary = (id: string) => {
+    router.push(`/hrm/payroll/set-salary/${id}/edit`);
   };
 
-  const handleViewDetails = (employeeId: string) => {
-    console.log('View details for employee:', employeeId);
-    // TODO: Open modal with salary details
+  const handleViewDetails = (id: string) => {
+    router.push(`/hrm/payroll/set-salary/${id}`);
   };
+
+  const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search by name, employee ID, or department..."
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Employee List */}
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Payroll Type</TableHead>
-                <TableHead className="text-right">Base Salary</TableHead>
-                <TableHead className="text-right">Allowances</TableHead>
-                <TableHead className="text-right">Deductions</TableHead>
-                <TableHead className="text-right">Net Salary</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No employees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredData.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell>
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto font-medium text-primary"
-                        onClick={() => handleViewDetails(employee.id)}
-                      >
-                        {employee.employeeId}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
-                    <TableCell>{employee.department}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{employee.payrollType}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.salary)}
-                    </TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.allowances)}
-                    </TableCell>
-                    <TableCell className="text-right text-red-600">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.deductions)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.netSalary)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewDetails(employee.id)}
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSetSalary(employee.id)}
-                          title="Set Salary"
-                          className="bg-blue-500 hover:bg-blue-600 shadow-none"
-                        >
-                          <Calculator className="w-4 h-4 mr-1" />
-                          Set Salary
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Summary Statistics */}
+      {/* Summary Statistics - placement seragam dengan Leave/Performance/Training */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Employees</p>
                 <p className="text-2xl font-bold">{employees.length}</p>
               </div>
+              <Calculator className="w-8 h-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Base Salary</p>
@@ -234,8 +120,8 @@ export function SetSalaryContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Allowances</p>
@@ -251,8 +137,8 @@ export function SetSalaryContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Net Salary</p>
@@ -269,6 +155,121 @@ export function SetSalaryContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Employee List - search menyatu dengan table, kanan atas */}
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 px-4 py-3 border-b">
+          <CardTitle className="text-base font-medium">Set Salary</CardTitle>
+          <div className="relative w-56 shrink-0">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search name, ID, department..."
+              value={searchTerm}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              className="h-9 border-0 bg-gray-50 pl-9 pr-3 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 w-full"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3 font-medium">Employee ID</TableHead>
+                <TableHead className="px-4 py-3 font-medium">Name</TableHead>
+                <TableHead className="px-4 py-3 font-medium">Department</TableHead>
+                <TableHead className="px-4 py-3 font-medium">Payroll Type</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Base Salary</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Allowances</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Deductions</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Net Salary</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-center w-[140px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                    No employees found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredData.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell className="px-4 py-3">
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto font-medium text-primary"
+                        onClick={() => handleViewDetails(employee.id)}
+                      >
+                        {employee.employeeId}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 font-medium">{employee.name}</TableCell>
+                    <TableCell className="px-4 py-3">{employee.department}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <Badge variant="outline">{employee.payrollType}</Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(employee.salary)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right text-green-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(employee.allowances)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right text-red-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(employee.deductions)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right font-semibold">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(employee.netSalary)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(employee.id)}
+                          title="View Details"
+                          className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSetSalary(employee.id)}
+                          title="Set Salary"
+                          className="h-7 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
+                          <Calculator className="w-4 h-4 mr-1" />
+                          Set Salary
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

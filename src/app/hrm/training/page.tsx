@@ -1,90 +1,112 @@
-'use client';
+'use client'
 
-import { lazy, useMemo } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SmoothTab } from '@/components/ui/smooth-tab';
-import { Separator } from '@/components/ui/separator';
-import { LanguageSwitcher } from '@/components/language-switcher';
-
-// Lazy load tab components
-const preloadTab = {
-  'training-list': () => import('@/components/hrm-training').then((mod) => mod.TrainingListTab),
-  trainer: () => import('@/components/hrm-training').then((mod) => mod.TrainerTab),
-};
+import { useMemo, lazy, Suspense, useRef } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { AppSidebar } from '@/components/app-sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
+import { SmoothTab } from '@/components/ui/smooth-tab'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const TrainingListTab = lazy(() =>
   import('@/components/hrm-training').then((mod) => ({ default: mod.TrainingListTab }))
-);
-const TrainerTab = lazy(() => import('@/components/hrm-training').then((mod) => ({ default: mod.TrainerTab })));
+)
+const TrainerTab = lazy(() => import('@/components/hrm-training').then((mod) => ({ default: mod.TrainerTab })))
+
+const preloadTab = {
+  'training-list': () => import('@/components/hrm-training'),
+  trainer: () => import('@/components/hrm-training'),
+}
+
+const TabLoadingSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-[100px] w-full" />
+    <Skeleton className="h-[400px] w-full" />
+  </div>
+)
+
+function TabContentWithCache({
+  tabId,
+  Component,
+  cache,
+}: {
+  tabId: string
+  Component: React.ComponentType
+  cache: { [key: string]: React.ReactNode }
+}) {
+  if (!cache[tabId]) {
+    cache[tabId] = <Component />
+  }
+  return <>{cache[tabId]}</>
+}
 
 export default function TrainingSetupPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const activeTab = searchParams.get('tab') || 'training-list';
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const activeTab = searchParams.get('tab') || 'training-list'
+  const tabContentCache = useRef<{ [key: string]: React.ReactNode }>({})
 
   const trainingTabs = useMemo(
     () => [
       {
         id: 'training-list',
         title: 'Training List',
-        content: <TrainingListTab />,
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache
+              tabId="training-list"
+              Component={TrainingListTab}
+              cache={tabContentCache.current}
+            />
+          </Suspense>
+        ),
       },
       {
         id: 'trainer',
         title: 'Trainer',
-        content: <TrainerTab />,
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="trainer" Component={TrainerTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
       },
     ],
     []
-  );
+  )
 
   const handleTabChange = (tabId: string) => {
-    router.push(`?tab=${tabId}`);
-  };
+    router.push(`/hrm/training?tab=${tabId}`, { scroll: false })
+  }
 
   return (
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
         } as React.CSSProperties
       }
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mx-2 data-[orientation=vertical]:h-4"
-            />
-            <h1 className="text-base font-medium">Training Setup</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <SiteHeader />
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <SmoothTab
               items={trainingTabs}
+              value={activeTab}
               defaultTabId={activeTab}
               activeColor="bg-white dark:bg-gray-700 shadow-xs"
               onChange={handleTabChange}
               onTabPreload={(tabId) => {
-                // Preload tab component on hover for instant switching
-                if (preloadTab[tabId as keyof typeof preloadTab]) {
-                  preloadTab[tabId as keyof typeof preloadTab]();
-                }
+                const preload = preloadTab[tabId as keyof typeof preloadTab]
+                if (preload) preload()
               }}
             />
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
-  );
+  )
 }

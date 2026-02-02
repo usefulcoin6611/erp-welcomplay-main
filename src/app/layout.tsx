@@ -6,6 +6,8 @@ import { getMessages } from 'next-intl/server'
 import { SuppressPreloadWarnings } from '@/components/suppress-preload-warnings'
 import { AuthProvider } from '@/contexts/auth-context'
 import { AuthWrapper } from '@/components/auth-wrapper'
+import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 // Load Inter font - optimized for ERP/dashboard applications
@@ -41,11 +43,14 @@ export default async function RootLayout({children}: Props) {
       <body className={`${inter.variable} font-sans antialiased`} style={{ fontFeatureSettings: '"kern" 1, "liga" 1, "calt" 1', fontKerning: 'normal', fontVariantNumeric: 'tabular-nums' }} suppressHydrationWarning>
         <SuppressPreloadWarnings />
         <NextIntlClientProvider messages={messages}>
-          <AuthProvider>
-            <AuthWrapper>
-              {children}
-            </AuthWrapper>
-          </AuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <AuthProvider>
+              <AuthWrapper>
+                {children}
+              </AuthWrapper>
+            </AuthProvider>
+            <Toaster richColors position="top-center" />
+          </ThemeProvider>
         </NextIntlClientProvider>
         <Analytics />
       </body>

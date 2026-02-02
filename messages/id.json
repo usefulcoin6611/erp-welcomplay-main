@@ -606,7 +606,9 @@
       "editEmployee": "Ubah Karyawan",
       "updateEmployee": "Perbarui",
       "backToDetail": "Kembali ke Detail",
-      "chooseFileHere": "Pilih file di sini"
+      "chooseFileHere": "Pilih file di sini",
+      "deleteConfirmTitle": "Hapus karyawan?",
+      "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin melanjutkan?"
     }
   },
   "reports": {

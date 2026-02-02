@@ -1,49 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, HelpCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, HelpCircle, Eye } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { getQuestionsList, addQuestion, updateQuestion, removeQuestionById } from '@/lib/recruitment-data';
 
-interface CustomQuestion {
-  id: string;
-  question: string;
-  isRequired: string;
-}
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 export function CustomQuestionsContent() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     question: '',
     isRequired: '',
   });
+  const [questions, setQuestions] = useState(() => getQuestionsList());
 
-  // Mock data
-  const [questions, setQuestions] = useState<CustomQuestion[]>([
-    {
-      id: '1',
-      question: 'Why do you want to work for our company?',
-      isRequired: 'yes',
-    },
-    {
-      id: '2',
-      question: 'What are your salary expectations?',
-      isRequired: 'no',
-    },
-    {
-      id: '3',
-      question: 'When are you available to start?',
-      isRequired: 'yes',
-    },
-  ]);
+  const refreshQuestions = () => setQuestions([...getQuestionsList()]);
 
   const handleAdd = () => {
     setShowForm(true);
@@ -56,35 +51,17 @@ export function CustomQuestionsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (editingId) {
-      setQuestions(
-        questions.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                question: formData.question,
-                isRequired: formData.isRequired,
-              }
-            : item
-        )
-      );
+      updateQuestion(editingId, { question: formData.question, isRequired: formData.isRequired });
     } else {
-      const newItem: CustomQuestion = {
-        id: Date.now().toString(),
-        question: formData.question,
-        isRequired: formData.isRequired,
-      };
-      setQuestions([...questions, newItem]);
+      addQuestion({ question: formData.question, isRequired: formData.isRequired });
     }
+    refreshQuestions();
     setShowForm(false);
-    setFormData({
-      question: '',
-      isRequired: '',
-    });
+    setFormData({ question: '', isRequired: '' });
   };
 
-  const handleEdit = (item: CustomQuestion) => {
+  const handleEdit = (item: { id: string; question: string; isRequired: string }) => {
     setShowForm(true);
     setEditingId(item.id);
     setFormData({
@@ -93,10 +70,18 @@ export function CustomQuestionsContent() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this question?')) {
-      setQuestions(questions.filter((item) => item.id !== id));
+  const openDeleteConfirm = (id: string) => {
+    setDeleteQuestionId(id);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteQuestionId) {
+      removeQuestionById(deleteQuestionId);
+      refreshQuestions();
+      setDeleteQuestionId(null);
     }
+    setDeleteAlertOpen(false);
   };
 
   const filteredData = questions.filter((question) =>
@@ -105,10 +90,10 @@ export function CustomQuestionsContent() {
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards - reference-erp custom question */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Questions</p>
@@ -118,8 +103,8 @@ export function CustomQuestionsContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Required</p>
@@ -130,8 +115,8 @@ export function CustomQuestionsContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Optional</p>
@@ -144,18 +129,10 @@ export function CustomQuestionsContent() {
         </Card>
       </div>
 
-      {/* Add Button */}
-      <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Question
-        </Button>
-      </div>
-
       {/* Add/Edit Form */}
       {showForm && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4 pt-6">
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Custom Question</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -201,56 +178,62 @@ export function CustomQuestionsContent() {
         </Card>
       )}
 
-      {/* Questions List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search questions..."
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* Custom Question - satu card: header (title + search + Create), table */}
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 pb-4">
+          <CardTitle className="text-base font-semibold">Custom Question</CardTitle>
+          <div className="flex items-center gap-2">
+            <div className="relative w-full min-w-[200px] max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search questions..."
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+              />
+            </div>
+            <Button size="sm" className="h-9 shadow-none bg-blue-600 text-white hover:bg-blue-700" onClick={handleAdd}>
+              <Plus className="h-4 w-4 mr-1" />
+              Create Question
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Question</TableHead>
-                <TableHead>Is Required</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="border-b bg-muted/30">
+                <TableHead className="px-6">Question</TableHead>
+                <TableHead className="px-6">Is Required</TableHead>
+                <TableHead className="px-6 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="px-6 text-center py-8 text-muted-foreground">
                     No custom questions found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((question) => (
-                  <TableRow key={question.id}>
-                    <TableCell className="font-medium">{question.question}</TableCell>
-                    <TableCell>
+                  <TableRow key={question.id} className="border-b">
+                    <TableCell className="px-6 font-medium">{question.question}</TableCell>
+                    <TableCell className="px-6">
                       {question.isRequired === 'yes' ? (
                         <Badge className="bg-blue-100 text-blue-800">Required</Badge>
                       ) : (
                         <Badge className="bg-gray-100 text-gray-800">Optional</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(question)} title="Edit">
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/hrm/recruitment/questions/${question.id}`)} title="View" className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/hrm/recruitment/questions/${question.id}/edit`)} title="Edit" className="h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(question.id)}
-                          title="Delete"
-                          className="text-red-600 hover:text-red-700"
-                        >
+                        <Button size="sm" variant="outline" onClick={() => openDeleteConfirm(question.id)} title="Delete" className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -262,6 +245,23 @@ export function CustomQuestionsContent() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Custom Question?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Pertanyaan akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
+              <span>Hapus</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
