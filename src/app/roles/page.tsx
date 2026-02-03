@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -335,6 +335,13 @@ export default function RolesPage() {
     permissions: [] as string[],
   })
   const [selectedCategory, setSelectedCategory] = useState<'staff' | 'crm' | 'project' | 'hrm' | 'account' | 'pos'>('staff')
+  const permissionsScrollRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (permissionsScrollRef.current) {
+      permissionsScrollRef.current.scrollTop = 0
+    }
+  }, [selectedCategory])
 
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
@@ -471,8 +478,8 @@ export default function RolesPage() {
           </h6>
         </div>
         <div className="border rounded-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-visible">
+            <Table containerClassName="overflow-visible">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
@@ -568,19 +575,14 @@ export default function RolesPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="!max-w-[70vw] w-[70vw] max-h-[95vh] overflow-hidden p-0">
+                    <DialogContent className="!max-w-[85vw] w-[85vw] h-[90vh] max-h-[95vh] overflow-hidden p-0 flex flex-col">
                       <div className="border-b px-6 py-4">
                         <DialogHeader>
                           <DialogTitle>{editRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
-                          <DialogDescription>
-                            {editRole
-                              ? 'Update role information and permissions.'
-                              : 'Add a new role to your system. Select permissions for this role.'}
-                          </DialogDescription>
                         </DialogHeader>
                       </div>
-                      <form onSubmit={handleCreateSubmit} className="max-h-[70vh] overflow-y-auto px-6 py-5">
-                        <div className="grid gap-4">
+                      <form onSubmit={handleCreateSubmit} className="flex flex-1 flex-col overflow-hidden px-6 pb-5">
+                        <div ref={permissionsScrollRef} className="grid flex-1 gap-4 overflow-y-auto content-start">
                           <div className="space-y-2">
                             <Label htmlFor="name">
                               Name <span className="text-red-500">*</span>
@@ -622,7 +624,7 @@ export default function RolesPage() {
                             </TabsContent>
                           </Tabs>
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="pt-4">
                           <Button
                             type="button"
                             variant="outline"
