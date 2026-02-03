@@ -14,6 +14,16 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
@@ -87,6 +97,8 @@ const categories = ['All Categories', 'Software', 'Jasa', 'Electronics', 'Access
 const formCategories = ['Software', 'Jasa', 'Electronics', 'Accessories']
 const units = ['Paket', 'Hari', 'Pcs', 'Box', '-']
 const taxes = ['PPN 11%', 'PPN 10%', 'No Tax']
+const incomeAccounts = ['Sales', 'Service Revenue', 'Other Income']
+const expenseAccounts = ['Cost of Goods Sold', 'Operational Expense', 'Other Expense']
 
 // Format currency to Rupiah
 function formatRupiah(amount: number): string {
@@ -109,18 +121,26 @@ export default function ProductServicesPage() {
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewItem, setViewItem] = useState<ProductService | null>(null)
+  const [deleteItem, setDeleteItem] = useState<ProductService | null>(null)
   const [type, setType] = useState<'product' | 'service'>('product')
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
     sale_price: '',
+    sale_account: '',
     purchase_price: '',
+    expense_account: '',
     tax: '',
     category: '',
     unit: '',
     quantity: '',
+    image: null as File | null,
     description: '',
   })
+  const [imagePreview, setImagePreview] = useState('')
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -162,9 +182,40 @@ export default function ProductServicesPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm('Are you sure you want to delete this product/service?')) return
-    // Handle delete logic here
-    console.log('Delete:', id)
+    const target = mockProducts.find((p) => p.id === id) ?? null
+    setDeleteItem(target)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!deleteItem) return
+    console.log('Delete:', deleteItem.id)
+    setDeleteItem(null)
+  }
+
+  const handleOpenView = (item: ProductService) => {
+    setViewItem(item)
+    setViewOpen(true)
+  }
+
+  const handleOpenEdit = (item: ProductService) => {
+    setEditingId(item.id)
+    setType(item.type)
+    setFormData({
+      name: item.name,
+      sku: item.sku,
+      sale_price: String(item.sale_price),
+      sale_account: incomeAccounts[0],
+      purchase_price: String(item.purchase_price),
+      expense_account: expenseAccounts[0],
+      tax: item.tax ?? '',
+      category: item.category,
+      unit: item.unit,
+      quantity: item.quantity ? String(item.quantity) : '',
+      image: null,
+      description: '',
+    })
+    setImagePreview('')
+    setDialogOpen(true)
   }
 
   const generateSKU = () => {
@@ -174,22 +225,26 @@ export default function ProductServicesPage() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log('Form data:', { ...formData, type })
+    console.log('Form data:', { ...formData, type, editingId })
     // Reset form and close dialog
     setFormData({
       name: '',
       sku: '',
       sale_price: '',
+      sale_account: '',
       purchase_price: '',
+      expense_account: '',
       tax: '',
       category: '',
       unit: '',
       quantity: '',
+      image: null,
       description: '',
     })
     setType('product')
     setDialogOpen(false)
+    setEditingId(null)
+    setImagePreview('')
     // Optionally refresh the list or add the new item
   }
 
@@ -201,14 +256,19 @@ export default function ProductServicesPage() {
         name: '',
         sku: '',
         sale_price: '',
+        sale_account: '',
         purchase_price: '',
+        expense_account: '',
         tax: '',
         category: '',
         unit: '',
         quantity: '',
+        image: null,
         description: '',
       })
       setType('product')
+      setEditingId(null)
+      setImagePreview('')
     }
   }
 
@@ -261,7 +321,7 @@ export default function ProductServicesPage() {
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Create New Product & Service</DialogTitle>
+                      <DialogTitle>{editingId ? 'Edit Product & Service' : 'Create New Product & Service'}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit} className="space-y-6">
                       <div className="grid gap-4 md:grid-cols-2">
@@ -309,6 +369,32 @@ export default function ProductServicesPage() {
                           />
                         </div>
 
+                        {/* Income Account */}
+                        <div className="space-y-2">
+                          <Label htmlFor="sale_account">Income Account <span className="text-red-500">*</span></Label>
+                          <Select
+                            value={formData.sale_account}
+                            onValueChange={(value) => setFormData({ ...formData, sale_account: value })}
+                          >
+                            <SelectTrigger id="sale_account">
+                              <SelectValue placeholder="Select Chart of Account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {incomeAccounts.map((acc) => (
+                                <SelectItem key={acc} value={acc}>
+                                  {acc}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Create account here.{' '}
+                            <Link href="/accounting/chart-of-account" className="text-primary underline">
+                              Create account
+                            </Link>
+                          </p>
+                        </div>
+
                         {/* Purchase Price */}
                         <div className="space-y-2">
                           <Label htmlFor="purchase_price">Purchase Price <span className="text-red-500">*</span></Label>
@@ -321,6 +407,32 @@ export default function ProductServicesPage() {
                             required
                             step="0.01"
                           />
+                        </div>
+
+                        {/* Expense Account */}
+                        <div className="space-y-2">
+                          <Label htmlFor="expense_account">Expense Account <span className="text-red-500">*</span></Label>
+                          <Select
+                            value={formData.expense_account}
+                            onValueChange={(value) => setFormData({ ...formData, expense_account: value })}
+                          >
+                            <SelectTrigger id="expense_account">
+                              <SelectValue placeholder="Select Chart of Account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {expenseAccounts.map((acc) => (
+                                <SelectItem key={acc} value={acc}>
+                                  {acc}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Create account here.{' '}
+                            <Link href="/accounting/chart-of-account" className="text-primary underline">
+                              Create account
+                            </Link>
+                          </p>
                         </div>
 
                         {/* Tax */}
@@ -339,6 +451,12 @@ export default function ProductServicesPage() {
                               ))}
                             </SelectContent>
                           </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Create tax here.{' '}
+                            <Link href="/accounting/setup/taxes" className="text-primary underline">
+                              Create tax
+                            </Link>
+                          </p>
                         </div>
 
                         {/* Category */}
@@ -360,6 +478,12 @@ export default function ProductServicesPage() {
                               ))}
                             </SelectContent>
                           </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Create category here.{' '}
+                            <Link href="/accounting/setup/category" className="text-primary underline">
+                              Create Category
+                            </Link>
+                          </p>
                         </div>
 
                         {/* Unit */}
@@ -381,6 +505,29 @@ export default function ProductServicesPage() {
                               ))}
                             </SelectContent>
                           </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Create unit here.{' '}
+                            <Link href="/accounting/setup/unit" className="text-primary underline">
+                              Create unit
+                            </Link>
+                          </p>
+                        </div>
+
+                        {/* Product Image */}
+                        <div className="space-y-2">
+                          <Label htmlFor="image">Product Image</Label>
+                          <Input
+                            id="image"
+                            type="file"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] ?? null
+                              setFormData({ ...formData, image: file })
+                              setImagePreview(file ? URL.createObjectURL(file) : '')
+                            }}
+                          />
+                          {imagePreview && (
+                            <img src={imagePreview} alt="Preview" className="h-20 w-20 rounded-md border object-cover" />
+                          )}
                         </div>
 
                         {/* Type */}
@@ -455,7 +602,7 @@ export default function ProductServicesPage() {
                           variant="blue"
                           className="shadow-none"
                         >
-                          Create
+                          {editingId ? 'Update' : 'Create'}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -585,26 +732,22 @@ export default function ProductServicesPage() {
                             <TableCell className="px-6">
                               <div className="flex items-center gap-2">
                                 <Button
-                                  asChild
                                   variant="outline"
                                   size="sm"
                                   className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                                   title="Warehouse Details"
+                                  onClick={() => handleOpenView(item)}
                                 >
-                                  <Link href={`/products/services/${item.id}`}>
-                                    <Eye className="h-4 w-4" />
-                                  </Link>
+                                  <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  asChild
                                   variant="outline"
                                   size="sm"
                                   className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                                   title="Edit"
+                                  onClick={() => handleOpenEdit(item)}
                                 >
-                                  <Link href={`/products/services/${item.id}/edit`}>
-                                    <Pencil className="h-4 w-4" />
-                                  </Link>
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -640,6 +783,57 @@ export default function ProductServicesPage() {
               </CardContent>
             </Card>
           </div>
+          <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+            <DialogContent className="sm:max-w-[520px]">
+              <DialogHeader>
+                <DialogTitle>Warehouse Details</DialogTitle>
+              </DialogHeader>
+              {viewItem && (
+                <div className="grid gap-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Name</span>
+                    <span className="font-medium">{viewItem.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">SKU</span>
+                    <span className="font-medium">{viewItem.sku}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Category</span>
+                    <span className="font-medium">{viewItem.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Unit</span>
+                    <span className="font-medium">{viewItem.unit}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type</span>
+                    <span className="font-medium capitalize">{viewItem.type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Quantity</span>
+                    <span className="font-medium">{viewItem.type === 'product' ? viewItem.quantity ?? 0 : '-'}</span>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          <AlertDialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hapus product & service?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tindakan ini tidak dapat dibatalkan. Item &quot;{deleteItem?.name}&quot; akan dihapus.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleConfirmDelete}>
+                  Hapus
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>

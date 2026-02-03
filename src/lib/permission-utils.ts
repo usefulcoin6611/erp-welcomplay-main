@@ -35,7 +35,7 @@ export function hasRouteAccess(route: string, userRole: UserRole): boolean {
       '/notifications',
       // Explicitly deny user management routes
       // '/users',
-      // '/users/roles',
+      // '/roles',
       // '/users/clients',
     ],
     'client': [
@@ -102,7 +102,7 @@ export function hasRouteAccess(route: string, userRole: UserRole): boolean {
 export function isUserManagementRoute(route: string): boolean {
   const userManagementRoutes = [
     '/users',
-    '/users/roles',
+    '/roles',
     '/users/clients',
   ]
   return userManagementRoutes.some((r) => route.startsWith(r))

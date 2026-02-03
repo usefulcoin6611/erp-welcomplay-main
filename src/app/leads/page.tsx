@@ -12,6 +12,8 @@ import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +28,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import {
   Table,
@@ -43,7 +51,7 @@ import {
   IconPhone,
   IconPlus,
 } from '@tabler/icons-react'
-import { List, LayoutGrid, Search as SearchIcon, X, Eye, Pencil } from 'lucide-react'
+import { List, LayoutGrid, Search as SearchIcon, X, Eye, Pencil, MoreVertical, Trash2 } from 'lucide-react'
 
 type Lead = {
   id: string
@@ -157,6 +165,11 @@ export default function LeadsPage() {
 
   const totalRecords = filteredData.length
   const totalLeads = leadsData.length
+  const stages = Array.from(new Set(leadsData.map((lead) => lead.stage)))
+  const leadsByStage = stages.map((stage) => ({
+    stage,
+    leads: filteredData.filter((lead) => lead.stage === stage),
+  }))
 
   return (
     <SidebarProvider
@@ -172,64 +185,72 @@ export default function LeadsPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header - sama seperti support: view toggle, Filter, Create */}
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex rounded-md bg-muted p-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 ${
-                      viewMode === 'list'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('list')}
-                    title="List view"
-                  >
-                    <List className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                      viewMode === 'grid'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid view"
-                  >
-                    <LayoutGrid className="h-3 w-3" />
-                  </Button>
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Leads</CardTitle>
+                  <CardDescription>
+                    Kelola dan pantau prospek Anda. Lihat status lead, pipeline, dan aktivitas terbaru.
+                  </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        viewMode === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('list')}
+                      title="List view"
+                    >
+                      <List className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        viewMode === 'grid'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('grid')}
+                      title="Kanban view"
+                    >
+                      <LayoutGrid className="h-3 w-3" />
+                    </Button>
+                  </div>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Import"
                   >
-                    <IconFileImport className="h-3 w-3" />
+                    <IconFileImport className="mr-2 h-3 w-3" />
+                    Import
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Export"
                   >
-                    <IconDownload className="h-3 w-3" />
+                    <IconDownload className="mr-2 h-3 w-3" />
+                    Export
                   </Button>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="blue" className="shadow-none h-7">
-                        <IconPlus className="mr-2 h-4 w-4" />
+                      <Button size="sm" variant="blue" className="shadow-none h-7 px-4">
+                        <IconPlus className="mr-2 h-3 w-3" />
                         Create Lead
                       </Button>
                     </DialogTrigger>
-                  <DialogContent className="sm:max-w-[560px]">
+                    <DialogContent className="sm:max-w-[560px]">
                     <DialogHeader>
                       <DialogTitle>Create Lead</DialogTitle>
                       <DialogDescription>
@@ -273,52 +294,112 @@ export default function LeadsPage() {
                   </DialogContent>
                 </Dialog>
                 </div>
-              </div>
+              </CardHeader>
+            </Card>
+
+            {/* Summary Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Total Leads</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-cyan-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">This Month Total Leads</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">This Week Total Leads</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600 font-medium">Last 30 Days Total Leads</p>
+                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+                      <IconCalendar className="w-6 h-6 text-red-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* List view */}
             {viewMode === 'list' ? (
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-0">
-                  <div className="px-4 py-3 border-b flex items-center justify-between gap-4">
-                    <CardTitle className="text-base font-medium">Lead List</CardTitle>
-                    <div className="relative w-full max-w-sm">
-                      <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                  <CardTitle>Lead List</CardTitle>
+                  <div className="flex w-full max-w-md items-center gap-2">
+                    <div className="relative flex-1">
+                      <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                       <Input
                         placeholder="Search leads..."
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                        className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                       />
                       {search.length > 0 && (
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                           onClick={() => handleSearchChange('')}
+                          aria-label="Clear search"
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-4 py-3 font-normal">Lead</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Contact</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Pipeline / Stage</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Owner</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Created</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Action</TableHead>
+                          <TableHead className="px-6">Lead</TableHead>
+                          <TableHead className="px-6">Contact</TableHead>
+                          <TableHead className="px-6">Pipeline / Stage</TableHead>
+                          <TableHead className="px-6">Owner</TableHead>
+                          <TableHead className="px-6">Created</TableHead>
+                          <TableHead className="px-6">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {paginatedData.length > 0 ? (
                           paginatedData.map((lead) => (
                             <TableRow key={lead.id}>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div>
                                   <Link
                                     href={`/leads/${lead.id}`}
@@ -330,7 +411,7 @@ export default function LeadsPage() {
                                   <span className="text-xs text-muted-foreground block">{lead.id}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div className="flex flex-col gap-1 text-sm">
                                   <span>{lead.email}</span>
                                   <div className="flex items-center gap-1">
@@ -339,39 +420,39 @@ export default function LeadsPage() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div className="space-y-1">
                                   <div className="text-sm text-muted-foreground">{lead.pipeline}</div>
                                   <Badge className={getStageBadge(lead.stage)}>{lead.stage}</Badge>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">{lead.owner}</TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">{lead.owner}</TableCell>
+                              <TableCell className="px-6">
                                 <div className="flex items-center gap-1 text-sm">
                                   <IconCalendar className="h-3 w-3" />
                                   <span>{formatDate(lead.createdAt)}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
-                                <div className="flex gap-1">
+                              <TableCell className="px-6">
+                                <div className="flex items-center gap-2 justify-start">
                                   <Button
                                     asChild
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="View"
                                   >
                                     <Link href={`/leads/${lead.id}`}>
-                                      <Eye className="h-3 w-3 mr-1" />
-                                      View
+                                      <Eye className="h-3 w-3" />
                                     </Link>
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="Edit"
                                   >
-                                    <Pencil className="h-3 w-3 mr-1" />
-                                    Edit
+                                    <Pencil className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </TableCell>
@@ -391,7 +472,7 @@ export default function LeadsPage() {
                     </Table>
                   </div>
                   {totalRecords > 0 && (
-                    <div className="px-4 py-3 border-t">
+                    <div className="px-6 py-3 border-t">
                       <SimplePagination
                         totalCount={totalRecords}
                         currentPage={currentPage}
@@ -407,115 +488,99 @@ export default function LeadsPage() {
                 </CardContent>
               </Card>
             ) : (
-              /* Grid view - card per lead seperti support */
+              /* Kanban view sesuai reference-erp */
               <>
-                <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4 border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                  <CardTitle className="text-base font-medium mb-0">Lead List</CardTitle>
-                  <div className="relative w-full max-w-sm">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search leads..."
-                      value={search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                    />
-                    {search.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                        onClick={() => handleSearchChange('')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                <div className="flex gap-4 overflow-x-auto pb-1">
+                  {leadsByStage.map(({ stage, leads }) => (
+                    <Card key={stage} className="min-w-[260px] max-w-sm flex flex-col">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <CardTitle className="text-sm font-medium">{stage}</CardTitle>
+                            <CardDescription className="text-xs">
+                              {leads.length} lead{leads.length !== 1 ? 's' : ''}
+                            </CardDescription>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={getStageBadge(stage) + ' text-[10px] px-2 py-0.5'}
+                          >
+                            {leads.length}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 pb-3 space-y-2 flex-1">
+                        {leads.length > 0 ? (
+                          leads.map((lead) => (
+                            <div key={lead.id} className="rounded-md border bg-white p-3 space-y-3 shadow-xs">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-1">
+                                  <Link
+                                    href={`/leads/${lead.id}`}
+                                    className="text-sm font-medium leading-tight line-clamp-2 hover:underline"
+                                  >
+                                    {lead.name}
+                                  </Link>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {lead.subject}
+                                  </p>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="shadow-none h-7 w-7 p-0">
+                                      <MoreVertical className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem asChild>
+                                      <Link href={`/leads/${lead.id}`}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View
+                                      </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge className={getStageBadge(lead.stage)}>{lead.stage}</Badge>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                  <IconPhone className="h-3 w-3" />
+                                  {lead.phone}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                  {lead.email}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                  Owner {lead.owner}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                  <IconCalendar className="h-3 w-3" />
+                                  {formatDate(lead.createdAt)}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-muted-foreground py-3 text-center border border-dashed rounded-md">
+                            No leads in this stage
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {paginatedData.length > 0 ? (
-                    paginatedData.map((lead) => (
-                      <Card
-                        key={lead.id}
-                        className="flex flex-col rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
-                      >
-                        <CardContent className="p-4 flex flex-col flex-1">
-                          <div className="flex flex-1 items-start gap-3 border-b pb-3 mb-3">
-                            <div className="min-w-0 flex-1">
-                              <Link
-                                href={`/leads/${lead.id}`}
-                                className="font-medium text-sm hover:underline block truncate"
-                              >
-                                {lead.name}
-                              </Link>
-                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                                {lead.subject}
-                              </p>
-                              <span className="text-xs text-muted-foreground">{lead.id}</span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-1.5 border-b pb-3 mb-3 text-sm">
-                            <div className="flex items-center gap-1.5">
-                              <IconPhone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              <span className="truncate">{lead.phone}</span>
-                            </div>
-                            <span className="text-muted-foreground truncate block">{lead.email}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-b pb-3 mb-3 text-sm">
-                            <span className="text-muted-foreground">Stage:</span>
-                            <Badge className={getStageBadge(lead.stage)}>{lead.stage}</Badge>
-                            <span className="text-muted-foreground">Owner:</span>
-                            <span className="font-medium truncate max-w-[80px]">{lead.owner}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-auto">
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <IconCalendar className="h-4 w-4" />
-                              {formatDate(lead.createdAt)}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                title="View"
-                                asChild
-                              >
-                                <Link href={`/leads/${lead.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                title="Edit"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
-                      No leads found
-                    </div>
-                  )}
-                </div>
-                {totalRecords > 0 && (
-                  <div className="mt-4">
-                    <SimplePagination
-                      totalCount={totalRecords}
-                      currentPage={currentPage}
-                      pageSize={pageSize}
-                      onPageChange={setCurrentPage}
-                      onPageSizeChange={(size) => {
-                        setPageSize(size)
-                        setCurrentPage(1)
-                      }}
-                    />
-                  </div>
-                )}
               </>
             )}
           </div>

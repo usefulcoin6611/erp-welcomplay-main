@@ -5,15 +5,14 @@ import { useParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Save, ArrowLeft } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
 
 // Types
 interface EmailTemplate {
@@ -327,42 +326,25 @@ export default function EmailTemplateDetailPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col bg-gray-100">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3 shadow-none"
-                >
-                  <Link href="/email_template">
-                    <ArrowLeft className="mr-1 h-4 w-4" />
-                    Back
-                  </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-semibold">{template.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Manage email template settings
-                  </p>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">{template.name}</CardTitle>
+                  <CardDescription>
+                    Manage email template settings.
+                  </CardDescription>
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
 
-            {/* Name and Variables Layout */}
             <div className="grid gap-4 lg:grid-cols-2">
-              {/* Name Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-                    Name
-                  </CardTitle>
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="px-6">
+                  <CardTitle>Name</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="name" className="text-sm font-medium">Name</Label>
@@ -373,7 +355,6 @@ export default function EmailTemplateDetailPage() {
                           setFormData({ ...formData, name: e.target.value })
                         }
                         placeholder="New User"
-                        className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
                       />
                     </div>
                     <div className="space-y-2">
@@ -385,7 +366,6 @@ export default function EmailTemplateDetailPage() {
                           setFormData({ ...formData, from: e.target.value })
                         }
                         placeholder="erpgo_saas"
-                        className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
                       />
                     </div>
                     <div className="flex justify-end pt-2">
@@ -397,15 +377,11 @@ export default function EmailTemplateDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Variables Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-                    Variables
-                  </CardTitle>
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="px-6">
+                  <CardTitle>Variables</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-2">
                     {Object.entries(template.variables).map(([label, variable]) => (
                       <div key={variable} className="flex items-center gap-2 text-sm">
@@ -419,10 +395,8 @@ export default function EmailTemplateDetailPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-4">
-
-              {/* Language Sidebar */}
               <div className="lg:col-span-1">
-                <Card className="sticky top-4">
+                <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] sticky top-4">
                   <CardContent className="p-0">
                     <div className="flex flex-col">
                       {languages.map((lang) => (
@@ -444,9 +418,11 @@ export default function EmailTemplateDetailPage() {
                 </Card>
               </div>
 
-              {/* Form Content */}
               <div className="lg:col-span-3">
-                <Card>
+                <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                  <CardHeader className="px-6">
+                    <CardTitle>Email Content</CardTitle>
+                  </CardHeader>
                   <CardContent className="p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div className="space-y-2">
@@ -461,7 +437,6 @@ export default function EmailTemplateDetailPage() {
                           }
                           required
                           placeholder="Enter email subject. Use {variable_name} for variables."
-                          className="focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         />
                         <p className="text-xs text-muted-foreground">
                           Use variables in curly braces like {'{variable_name}'} to insert dynamic content.
@@ -479,7 +454,7 @@ export default function EmailTemplateDetailPage() {
                           }
                           rows={12}
                           required
-                          className="font-mono text-sm focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                          className="font-mono text-sm"
                           placeholder="Enter email content. Use {variable_name} for variables."
                         />
                         <p className="text-xs text-muted-foreground">
@@ -497,7 +472,7 @@ export default function EmailTemplateDetailPage() {
               </div>
             </div>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

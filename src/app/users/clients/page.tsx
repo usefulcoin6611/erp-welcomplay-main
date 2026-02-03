@@ -146,8 +146,8 @@ export default function ClientsPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* Title Page */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="px-6">
-                <div className="min-w-0 space-y-1">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
                   <CardTitle className="text-lg font-semibold">Manage Client</CardTitle>
                   <CardDescription>
                     Create and manage clients in your system. Track client information, deals, and projects.
@@ -161,7 +161,7 @@ export default function ClientsPage() {
                         Create Client
                       </Button>
                     </DialogTrigger>
-                <DialogContent>
+                    <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create New Client</DialogTitle>
                     <DialogDescription>
@@ -239,8 +239,8 @@ export default function ClientsPage() {
                       <Button type="submit" variant="blue">Create</Button>
                     </DialogFooter>
                   </form>
-                </DialogContent>
-              </Dialog>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
             </Card>
@@ -248,11 +248,14 @@ export default function ClientsPage() {
             {/* Client Cards Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {clients.map((client) => (
-                <Card key={client.id} className="shadow-none">
-                  <CardContent className="p-4">
+                <Card
+                  key={client.id}
+                  className="h-full rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
+                >
+                  <CardContent className="p-6">
                     {/* Client Info */}
                     <div className="flex items-center gap-3 pb-3 mb-3 border-b">
-                      <Avatar className="h-16 w-16 border-2 border-blue-500">
+                      <Avatar className="h-14 w-14 border-2 border-blue-500">
                         <AvatarImage src={client.avatar} alt={client.name} />
                         <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
                       </Avatar>
@@ -261,8 +264,8 @@ export default function ClientsPage() {
                           <h5 className="font-semibold truncate flex-1">{client.name}</h5>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreVertical className="h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -297,25 +300,25 @@ export default function ClientsPage() {
                     {/* Deals and Projects */}
                     <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b">
                       <div className="flex-1">
-                        <span className="text-sm font-medium">Deals: </span>
-                        <span className="text-sm">{client.deals_count}</span>
+                        <p className="text-xs text-muted-foreground">Deals</p>
+                        <p className="text-sm font-semibold">{client.deals_count}</p>
                       </div>
                       <div className="flex-1 text-end">
-                        <span className="text-sm font-medium">Projects: </span>
-                        <span className="text-sm">{client.projects_count}</span>
+                        <p className="text-xs text-muted-foreground">Projects</p>
+                        <p className="text-sm font-semibold">{client.projects_count}</p>
                       </div>
                     </div>
 
                     {/* Last Login */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-50">
                           <Calendar className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-sm">{formatDate(client.last_login_at)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                        <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-50">
                           <Clock className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-sm">{formatTime(client.last_login_at)}</span>
@@ -325,21 +328,6 @@ export default function ClientsPage() {
                 </Card>
               ))}
 
-              {/* Add New Client Card */}
-              <Card
-                className="shadow-none border-dashed border-2 cursor-pointer hover:border-blue-500 transition-colors"
-                onClick={() => setDialogOpen(true)}
-              >
-                <CardContent className="p-4 flex flex-col items-center justify-center h-full min-h-[280px] text-center">
-                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 mb-3">
-                    <Plus className="h-8 w-8 text-white" />
-                  </div>
-                  <h6 className="font-semibold mb-2">Create Client</h6>
-                  <p className="text-sm text-muted-foreground">
-                    Click here to add new client
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </MainContentWrapper>

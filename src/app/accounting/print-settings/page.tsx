@@ -171,41 +171,42 @@ export default function AccountingPrintSettingsPage() {
                         title: tab === 'proposal' ? 'Proposal Print Setting' : tab === 'invoice' ? 'Invoice Print Setting' : 'Bill Print Setting',
                         content: (
                           <form onSubmit={handleSave} className="space-y-5 pt-2">
-                            <div className="space-y-2">
-                              <Label htmlFor={`${tab}-template`} className="text-sm font-medium text-foreground">
-                                {label} Template
-                              </Label>
-                              <Select
-                                value={settings.template}
-                                onValueChange={(v) =>
-                                  setSettings(tab, (p) => ({ ...p, template: v }))
-                                }
-                              >
-                                <SelectTrigger id={`${tab}-template`} className="h-9 w-full max-w-[220px] border border-gray-200 bg-white text-foreground shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-foreground">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TEMPLATE_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>
-                                      {o.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-4 max-w-sm">
-                              <Label htmlFor={`${tab}-qr`} className="text-sm font-medium text-foreground cursor-pointer">
-                                QR Display?
-                              </Label>
-                              <Switch
-                                id={`${tab}-qr`}
-                                checked={settings.qrDisplay}
-                                onCheckedChange={(checked) =>
-                                  setSettings(tab, (p) => ({ ...p, qrDisplay: checked }))
-                                }
-                                className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                              />
+                            <div className="flex flex-wrap items-center justify-between gap-4 max-w-sm">
+                              <div className="space-y-2">
+                                <Label htmlFor={`${tab}-template`} className="text-sm font-medium text-foreground">
+                                  {label} Template
+                                </Label>
+                                <Select
+                                  value={settings.template}
+                                  onValueChange={(v) =>
+                                    setSettings(tab, (p) => ({ ...p, template: v }))
+                                  }
+                                >
+                                  <SelectTrigger id={`${tab}-template`} className="h-9 w-full max-w-[220px] border border-gray-200 bg-white text-foreground shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-foreground">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TEMPLATE_OPTIONS.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>
+                                        {o.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Label htmlFor={`${tab}-qr`} className="text-sm font-medium text-foreground cursor-pointer">
+                                  QR Display?
+                                </Label>
+                                <Switch
+                                  id={`${tab}-qr`}
+                                  checked={settings.qrDisplay}
+                                  onCheckedChange={(checked) =>
+                                    setSettings(tab, (p) => ({ ...p, qrDisplay: checked }))
+                                  }
+                                  className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                                />
+                              </div>
                             </div>
 
                             <div className="space-y-2">

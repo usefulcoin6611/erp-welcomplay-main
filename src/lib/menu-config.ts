@@ -40,23 +40,7 @@ export interface MenuItem {
 // Define which roles can access each menu item
 export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
   // Common secondary navigation for all roles
-  const commonSecondary = [
-    {
-      title: "Zoom Meeting",
-      url: "/zoom",
-      icon: IconVideo,
-    },
-    {
-      title: "Notification Template",
-      url: "/notifications",
-      icon: IconBell,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: IconSettings,
-    },
-  ]
+  const commonSecondary: MenuItem[] = []
 
   switch (role) {
     case 'super admin':
@@ -292,7 +276,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             icon: IconUsersGroup,
             items: [
               { title: t("users"), url: "/users" },
-              { title: "Roles", url: "/users/roles" },
+              { title: "Roles", url: "/roles" },
               { title: "Client", url: "/users/clients" },
             ],
           },
@@ -300,6 +284,25 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             title: t("supportSystem"),
             url: "/support",
             icon: IconHeadphones,
+          },
+          {
+            title: "Templates",
+            url: "#",
+            icon: IconMessage,
+            items: [
+              { title: "Notification Template", url: "/notifications" },
+              { title: "Email Template", url: "/email_template" },
+            ],
+          },
+          {
+            title: "Zoom Meeting",
+            url: "/zoom",
+            icon: IconVideo,
+          },
+          {
+            title: "Settings",
+            url: "/settings",
+            icon: IconSettings,
           },
         ],
         navSecondary: commonSecondary,
@@ -447,14 +450,24 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             icon: IconHeadphones,
           },
           {
-            title: "Messenger",
-            url: "/messenger",
-            icon: IconMessage,
-          },
-          {
             title: "Zoom Meeting",
             url: "/zoom",
             icon: IconVideo,
+          },
+          {
+            title: "Notification Template",
+            url: "/notifications",
+            icon: IconBell,
+          },
+          {
+            title: "Settings",
+            url: "/settings",
+            icon: IconSettings,
+          },
+          {
+            title: "Messenger",
+            url: "/messenger",
+            icon: IconMessage,
           },
         ],
         navSecondary: [],

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -40,18 +40,30 @@ export default function ProductStockPage() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [search, setSearch] = useState('')
 
   // Dialog state for update quantity
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductStock | null>(null)
   const [quantity, setQuantity] = useState<string>('')
 
+  // Filtered data
+  const filteredData = useMemo(() => {
+    if (!search.trim()) return mockProductStocks
+    const q = search.trim().toLowerCase()
+    return mockProductStocks.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.sku.toLowerCase().includes(q)
+    )
+  }, [search])
+
   // Paginated data
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
     const endIndex = startIndex + pageSize
-    return mockProductStocks.slice(startIndex, endIndex)
-  }, [currentPage, pageSize])
+    return filteredData.slice(startIndex, endIndex)
+  }, [currentPage, pageSize, filteredData])
 
   // Handlers
   const handleUpdateQuantity = (product: ProductStock) => {
@@ -82,7 +94,7 @@ export default function ProductStockPage() {
   }
 
   // Pagination calculations
-  const totalRecords = mockProductStocks.length
+  const totalRecords = filteredData.length
 
   return (
     <SidebarProvider
@@ -108,8 +120,20 @@ export default function ProductStockPage() {
 
             {/* Main Content */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="px-6">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
                 <CardTitle>All Products</CardTitle>
+                <div className="relative w-full max-w-sm">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value)
+                      setCurrentPage(1)
+                    }}
+                    placeholder="Search name or SKU..."
+                    className="h-9 pl-9 pr-3 border-0 bg-gray-50 shadow-none focus-visible:border-0 focus-visible:ring-0 hover:bg-gray-100"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">

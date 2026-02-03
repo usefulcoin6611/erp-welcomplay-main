@@ -295,6 +295,9 @@ export default function SupportPage() {
   // Edit dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editSupport, setEditSupport] = useState<Support | null>(null)
+  // Attachment preview dialog
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewAttachment, setPreviewAttachment] = useState<string | null>(null)
   // Delete confirmation
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [deleteSupportId, setDeleteSupportId] = useState<string | null>(null)
@@ -343,6 +346,16 @@ export default function SupportPage() {
   const openEditDialog = (support: Support) => {
     setEditSupport(support)
     setEditDialogOpen(true)
+  }
+
+  const openPreview = (attachment: string) => {
+    setPreviewAttachment(attachment)
+    setPreviewOpen(true)
+  }
+
+  const closePreview = () => {
+    setPreviewOpen(false)
+    setPreviewAttachment(null)
   }
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -397,6 +410,19 @@ export default function SupportPage() {
       month: 'long',
       day: 'numeric',
     })
+  }
+
+  const getAttachmentUrl = (attachment: string) => `/attachments/${attachment}`
+
+  const isImageAttachment = (attachment: string) => {
+    const lower = attachment.toLowerCase()
+    return (
+      lower.endsWith('.png') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.gif') ||
+      lower.endsWith('.webp')
+    )
   }
 
   // Filtered data
@@ -771,10 +797,24 @@ export default function SupportPage() {
                           <TableCell className="px-6">
                             {support.attachment ? (
                               <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
-                                  <Download className="h-3 w-3" />
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
+                                  title="Download"
+                                >
+                                  <a href={getAttachmentUrl(support.attachment)} download>
+                                    <Download className="h-3 w-3" />
+                                  </a>
                                 </Button>
-                                <Button variant="outline" size="sm" className="shadow-none h-7 bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-gray-700 text-white hover:bg-gray-800 border-gray-700"
+                                  title="Preview"
+                                  onClick={() => openPreview(support.attachment)}
+                                >
                                   <Eye className="h-3 w-3" />
                                 </Button>
                               </div>
@@ -792,6 +832,7 @@ export default function SupportPage() {
                           <TableCell className="px-6">
                             <div className="flex items-center gap-2">
                               <Button
+                                type="button"
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200"
@@ -800,24 +841,29 @@ export default function SupportPage() {
                                   setReplyMessage('')
                                   setReplyDialogOpen(true)
                                 }}
+                                title="Reply"
                               >
-                                <Reply className="h-4 w-4" />
+                                <Reply className="h-3 w-3" />
                               </Button>
                               <Button
+                                type="button"
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                                 onClick={() => openEditDialog(support)}
+                                title="Edit"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Pencil className="h-3 w-3" />
                               </Button>
                               <Button
+                                type="button"
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-7 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                                 onClick={() => openDeleteConfirm(support.id)}
+                                title="Delete"
                               >
-                                <Trash className="h-4 w-4" />
+                                <Trash className="h-3 w-3" />
                               </Button>
                             </div>
                           </TableCell>
@@ -1052,7 +1098,7 @@ export default function SupportPage() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-red-600 text-white hover:bg-red-700"
                     onClick={() => deleteSupportId && handleDelete(deleteSupportId)}
                   >
                     Delete
@@ -1060,6 +1106,49 @@ export default function SupportPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Attachment preview */}
+            <Dialog open={previewOpen} onOpenChange={(open) => (open ? setPreviewOpen(true) : closePreview())}>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Attachment Preview</DialogTitle>
+                  <DialogDescription>
+                    {previewAttachment ? previewAttachment : 'No attachment selected'}
+                  </DialogDescription>
+                </DialogHeader>
+                {previewAttachment && (
+                  <div className="space-y-4">
+                    <div className="rounded-md border bg-muted/30 p-4">
+                      {isImageAttachment(previewAttachment) ? (
+                        <img
+                          src={getAttachmentUrl(previewAttachment)}
+                          alt={previewAttachment}
+                          className="max-h-[420px] w-full rounded-md object-contain"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm">
+                            <p className="font-medium">File</p>
+                            <p className="text-muted-foreground">{previewAttachment}</p>
+                          </div>
+                          <Button asChild variant="outline" size="sm" className="shadow-none">
+                            <a href={getAttachmentUrl(previewAttachment)} download>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={closePreview}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </MainContentWrapper>
       </SidebarInset>

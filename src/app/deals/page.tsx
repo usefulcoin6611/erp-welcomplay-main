@@ -53,7 +53,6 @@ import {
 } from '@/components/ui/table'
 import {
   IconCalendar,
-  IconFilter,
   IconPlus,
   IconSearch,
   IconEye,
@@ -80,6 +79,12 @@ const deals = [
     status: 'Open',
     createdAt: '2025-11-02',
     tasks: { total: 5, completed: 3 },
+    productsCount: 2,
+    sourcesCount: 1,
+    labels: [
+      { id: 'lbl-1', name: 'Priority', color: 'blue' },
+      { id: 'lbl-2', name: 'Enterprise', color: 'purple' },
+    ],
     users: [
       { id: '1', name: 'John Doe', avatar: '' },
       { id: '2', name: 'Jane Smith', avatar: '' },
@@ -95,6 +100,11 @@ const deals = [
     status: 'Open',
     createdAt: '2025-11-05',
     tasks: { total: 8, completed: 2 },
+    productsCount: 1,
+    sourcesCount: 2,
+    labels: [
+      { id: 'lbl-3', name: 'Follow Up', color: 'amber' },
+    ],
     users: [
       { id: '3', name: 'Bob Johnson', avatar: '' },
     ],
@@ -122,6 +132,23 @@ function getStageBadge(stage: string) {
       return 'bg-red-100 text-red-700 border-none'
     default:
       return 'bg-gray-100 text-gray-700 border-none'
+  }
+}
+
+function getLabelBadge(color: string) {
+  switch (color) {
+    case 'blue':
+      return 'bg-blue-50 text-blue-700 border-blue-100'
+    case 'purple':
+      return 'bg-purple-50 text-purple-700 border-purple-100'
+    case 'amber':
+      return 'bg-amber-50 text-amber-700 border-amber-100'
+    case 'green':
+      return 'bg-green-50 text-green-700 border-green-100'
+    case 'red':
+      return 'bg-red-50 text-red-700 border-red-100'
+    default:
+      return 'bg-gray-50 text-gray-700 border-gray-100'
   }
 }
 
@@ -408,55 +435,20 @@ export default function DealsPage() {
                           stageDeals.map((deal) => (
                             <div
                               key={deal.id}
-                              className="rounded-md border bg-white p-3 space-y-2 shadow-xs"
+                              className="rounded-md border bg-white p-3 space-y-3 shadow-xs"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="space-y-1">
-                                  <p className="text-sm font-medium leading-tight line-clamp-2">
+                                  <Link
+                                    href={`/deals/${deal.id}`}
+                                    className="text-sm font-medium leading-tight line-clamp-2 hover:underline"
+                                  >
                                     {deal.name}
-                                  </p>
+                                  </Link>
                                   <p className="text-[11px] text-muted-foreground">
                                     {deal.client}
                                   </p>
                                 </div>
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 border-blue-100"
-                                >
-                                  Rp {deal.price.toLocaleString()}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                                <span>
-                                  Tasks {deal.tasks.completed}/{deal.tasks.total}
-                                </span>
-                                <div className="flex -space-x-1.5">
-                                  {deal.users.map((user) => (
-                                    <Avatar
-                                      key={user.id}
-                                      className="h-6 w-6 border-2 border-background"
-                                      title={user.name}
-                                    >
-                                      <AvatarImage src={user.avatar} />
-                                      <AvatarFallback className="text-[10px]">
-                                        {getInitials(user.name)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-end gap-1 pt-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                  title="View"
-                                  asChild
-                                >
-                                  <Link href={`/deals/${deal.id}`}>
-                                    <IconEye className="h-3 w-3" />
-                                  </Link>
-                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
@@ -483,6 +475,52 @@ export default function DealsPage() {
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
+                              </div>
+                              {deal.labels.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {deal.labels.map((label) => (
+                                    <span
+                                      key={label.id}
+                                      className={`text-[10px] font-medium px-2 py-0.5 rounded border ${getLabelBadge(
+                                        label.color,
+                                      )}`}
+                                    >
+                                      {label.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                  Tasks {deal.tasks.completed}/{deal.tasks.total}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                  Rp {deal.price.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                  <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                    Product {deal.productsCount}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                                    Source {deal.sourcesCount}
+                                  </span>
+                                </div>
+                                <div className="flex -space-x-1.5">
+                                  {deal.users.map((user) => (
+                                    <Avatar
+                                      key={user.id}
+                                      className="h-6 w-6 border-2 border-background"
+                                      title={user.name}
+                                    >
+                                      <AvatarImage src={user.avatar} />
+                                      <AvatarFallback className="text-[10px]">
+                                        {getInitials(user.name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           ))

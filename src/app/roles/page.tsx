@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,7 +31,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-// Types
 interface Role {
   id: string
   name: string
@@ -44,51 +44,49 @@ interface Permission {
   category: 'staff' | 'crm' | 'project' | 'hrm' | 'account' | 'pos'
 }
 
-// Mock permissions data based on reference Laravel
 const staffModules = [
-  'user', 'role', 'client', 'product & service', 'constant unit', 'constant tax', 
-  'constant category', 'zoom meeting', 'company settings', 'permission'
+  'user', 'role', 'client', 'product & service', 'constant unit', 'constant tax',
+  'constant category', 'zoom meeting', 'company settings', 'permission',
 ]
 
 const crmModules = [
-  'crm dashboard', 'lead', 'convert', 'pipeline', 'lead stage', 'source', 
-  'label', 'lead email', 'lead call', 'deal', 'stage', 'task', 'form builder', 
-  'form response', 'form field', 'contract', 'contract type'
+  'crm dashboard', 'lead', 'convert', 'pipeline', 'lead stage', 'source',
+  'label', 'lead email', 'lead call', 'deal', 'stage', 'task', 'form builder',
+  'form response', 'form field', 'contract', 'contract type',
 ]
 
 const projectModules = [
-  'project dashboard', 'project', 'project stage', 'project milestone', 
-  'project task', 'project bug', 'project timesheet', 'project expense', 
-  'project file', 'project comment', 'project activity', 'project note'
+  'project dashboard', 'project', 'project stage', 'project milestone',
+  'project task', 'project bug', 'project timesheet', 'project expense',
+  'project file', 'project comment', 'project activity', 'project note',
 ]
 
 const hrmModules = [
-  'hrm dashboard', 'employee', 'set salary', 'payslip', 'leave', 'attendance', 
-  'performance', 'training', 'recruitment', 'job', 'job application', 
-  'job board', 'custom question', 'interview schedule', 'career', 'event', 
-  'meeting', 'assets', 'document', 'company policy', 'branch', 'department', 
-  'designation', 'leave type', 'document type', 'payslip type', 'allowance option', 
-  'loan option', 'deduction option', 'goal type', 'training type', 'award type', 
-  'termination type', 'job category', 'job stage', 'performance type', 'competencies'
+  'hrm dashboard', 'employee', 'set salary', 'payslip', 'leave', 'attendance',
+  'performance', 'training', 'recruitment', 'job', 'job application',
+  'job board', 'custom question', 'interview schedule', 'career', 'event',
+  'meeting', 'assets', 'document', 'company policy', 'branch', 'department',
+  'designation', 'leave type', 'document type', 'payslip type', 'allowance option',
+  'loan option', 'deduction option', 'goal type', 'training type', 'award type',
+  'termination type', 'job category', 'job stage', 'performance type', 'competencies',
 ]
 
 const accountModules = [
-  'account dashboard', 'banking', 'account', 'transfer', 'sales', 'customer', 
-  'estimate', 'invoice', 'revenue', 'credit note', 'purchases', 'supplier', 
-  'bill', 'expense', 'payment', 'debit note', 'double entry', 'chart of account', 
-  'journal entry', 'ledger', 'balance sheet', 'profit & loss', 'trial balance', 
-  'budget planner', 'financial goal', 'accounting setup'
+  'account dashboard', 'banking', 'account', 'transfer', 'sales', 'customer',
+  'estimate', 'invoice', 'revenue', 'credit note', 'purchases', 'supplier',
+  'bill', 'expense', 'payment', 'debit note', 'double entry', 'chart of account',
+  'journal entry', 'ledger', 'balance sheet', 'profit & loss', 'trial balance',
+  'budget planner', 'financial goal', 'accounting setup',
 ]
 
 const posModules = [
-  'pos dashboard', 'product & services', 'product category', 'product coupon', 
-  'brand', 'unit', 'variant', 'purchase', 'purchase return', 'warehouse', 
-  'warehouse transfer', 'pos', 'pos return', 'reports'
+  'pos dashboard', 'product & services', 'product category', 'product coupon',
+  'brand', 'unit', 'variant', 'purchase', 'purchase return', 'warehouse',
+  'warehouse transfer', 'pos', 'pos return', 'reports',
 ]
 
 const permissionTypes = ['view', 'add', 'move', 'manage', 'create', 'edit', 'delete', 'show']
 
-// Generate permissions for a module
 const generatePermissions = (modules: string[], category: Permission['category']): Permission[] => {
   const permissions: Permission[] = []
   modules.forEach((module) => {
@@ -113,7 +111,6 @@ const allPermissions: Permission[] = [
   ...generatePermissions(posModules, 'pos'),
 ]
 
-// Mock data
 const mockRoles: Role[] = [
   {
     id: '1',
@@ -166,7 +163,6 @@ export default function RolesPage() {
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (editRole) {
-      // Handle update
       setRoles(
         roles.map((r) =>
           r.id === editRole.id
@@ -175,7 +171,6 @@ export default function RolesPage() {
         )
       )
     } else {
-      // Handle create
       const newRole: Role = {
         id: String(roles.length + 1),
         name: formData.name,
@@ -205,9 +200,8 @@ export default function RolesPage() {
       (p) => p.module === module && p.category === category
     )
     const allSelected = modulePermissions.every((p) => formData.permissions.includes(p.id))
-    
+
     if (allSelected) {
-      // Deselect all
       setFormData({
         ...formData,
         permissions: formData.permissions.filter(
@@ -215,7 +209,6 @@ export default function RolesPage() {
         ),
       })
     } else {
-      // Select all
       const newPermissions = [...formData.permissions]
       modulePermissions.forEach((p) => {
         if (!newPermissions.includes(p.id)) {
@@ -232,9 +225,8 @@ export default function RolesPage() {
   const toggleCategoryPermissions = (category: Permission['category']) => {
     const categoryPermissions = allPermissions.filter((p) => p.category === category)
     const allSelected = categoryPermissions.every((p) => formData.permissions.includes(p.id))
-    
+
     if (allSelected) {
-      // Deselect all
       setFormData({
         ...formData,
         permissions: formData.permissions.filter(
@@ -242,7 +234,6 @@ export default function RolesPage() {
         ),
       })
     } else {
-      // Select all
       const newPermissions = [...formData.permissions]
       categoryPermissions.forEach((p) => {
         if (!newPermissions.includes(p.id)) {
@@ -253,23 +244,6 @@ export default function RolesPage() {
         ...formData,
         permissions: newPermissions,
       })
-    }
-  }
-
-  const getCategoryModules = (category: Permission['category']) => {
-    switch (category) {
-      case 'staff':
-        return staffModules
-      case 'crm':
-        return crmModules
-      case 'project':
-        return projectModules
-      case 'hrm':
-        return hrmModules
-      case 'account':
-        return accountModules
-      case 'pos':
-        return posModules
     }
   }
 
@@ -325,7 +299,7 @@ export default function RolesPage() {
                       <TableCell>
                         <div className="flex flex-wrap gap-2">
                           {modulePermissions.map((permission) => {
-                            const permissionName = permission.name.split(' ')[0] // Get first word (view, create, etc)
+                            const permissionName = permission.name.split(' ')[0]
                             return (
                               <div key={permission.id} className="flex items-center space-x-1">
                                 <Checkbox
@@ -367,137 +341,134 @@ export default function RolesPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Title Page */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="px-6">
-                <div className="min-w-0 space-y-1">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
                   <CardTitle className="text-lg font-semibold">Manage Role</CardTitle>
                   <CardDescription>
-                    Create and manage roles in your system. Assign permissions to control access to different modules and features.
+                    Create and manage roles in your system. Assign permissions to control access to modules and features.
                   </CardDescription>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                     <DialogTrigger asChild>
-                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create Role">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Role
+                      <Button variant="blue" size="sm" className="shadow-none h-7 w-7 p-0" title="Create Role">
+                        <Plus className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                <DialogContent className="!max-w-[70vw] w-[70vw] max-h-[95vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>{editRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
-                    <DialogDescription>
-                      {editRole
-                        ? 'Update role information and permissions.'
-                        : 'Add a new role to your system. Select permissions for this role.'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleCreateSubmit}>
-                    <div className="grid gap-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">
-                          Name <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="Enter Role Name"
-                          required
-                        />
-                      </div>
-                      <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as typeof selectedCategory)}>
-                        <TabsList className="grid w-full grid-cols-6">
-                          <TabsTrigger value="staff">Staff</TabsTrigger>
-                          <TabsTrigger value="crm">CRM</TabsTrigger>
-                          <TabsTrigger value="project">Project</TabsTrigger>
-                          <TabsTrigger value="hrm">HRM</TabsTrigger>
-                          <TabsTrigger value="account">Account</TabsTrigger>
-                          <TabsTrigger value="pos">POS</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="staff" className="mt-4">
-                          {renderPermissionTable('staff', staffModules)}
-                        </TabsContent>
-                        <TabsContent value="crm" className="mt-4">
-                          {renderPermissionTable('crm', crmModules)}
-                        </TabsContent>
-                        <TabsContent value="project" className="mt-4">
-                          {renderPermissionTable('project', projectModules)}
-                        </TabsContent>
-                        <TabsContent value="hrm" className="mt-4">
-                          {renderPermissionTable('hrm', hrmModules)}
-                        </TabsContent>
-                        <TabsContent value="account" className="mt-4">
-                          {renderPermissionTable('account', accountModules)}
-                        </TabsContent>
-                        <TabsContent value="pos" className="mt-4">
-                          {renderPermissionTable('pos', posModules)}
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleDialogOpenChange(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" variant="blue">{editRole ? 'Update' : 'Create'}</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                    <DialogContent className="!max-w-[70vw] w-[70vw] max-h-[95vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>{editRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
+                        <DialogDescription>
+                          {editRole
+                            ? 'Update role information and permissions.'
+                            : 'Add a new role to your system. Select permissions for this role.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateSubmit}>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">
+                              Name <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="name"
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              placeholder="Enter Role Name"
+                              required
+                            />
+                          </div>
+                          <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as typeof selectedCategory)}>
+                            <TabsList className="grid w-full grid-cols-6">
+                              <TabsTrigger value="staff">Staff</TabsTrigger>
+                              <TabsTrigger value="crm">CRM</TabsTrigger>
+                              <TabsTrigger value="project">Project</TabsTrigger>
+                              <TabsTrigger value="hrm">HRM</TabsTrigger>
+                              <TabsTrigger value="account">Account</TabsTrigger>
+                              <TabsTrigger value="pos">POS</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="staff" className="mt-4">
+                              {renderPermissionTable('staff', staffModules)}
+                            </TabsContent>
+                            <TabsContent value="crm" className="mt-4">
+                              {renderPermissionTable('crm', crmModules)}
+                            </TabsContent>
+                            <TabsContent value="project" className="mt-4">
+                              {renderPermissionTable('project', projectModules)}
+                            </TabsContent>
+                            <TabsContent value="hrm" className="mt-4">
+                              {renderPermissionTable('hrm', hrmModules)}
+                            </TabsContent>
+                            <TabsContent value="account" className="mt-4">
+                              {renderPermissionTable('account', accountModules)}
+                            </TabsContent>
+                            <TabsContent value="pos" className="mt-4">
+                              {renderPermissionTable('pos', posModules)}
+                            </TabsContent>
+                          </Tabs>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleDialogOpenChange(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button type="submit" variant="blue">{editRole ? 'Update' : 'Create'}</Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
             </Card>
 
-            {/* Roles Table */}
-            <Card>
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Permissions</TableHead>
-                        <TableHead className="w-[150px]">Action</TableHead>
+                        <TableHead className="px-6">Role</TableHead>
+                        <TableHead className="px-6">Permissions</TableHead>
+                        <TableHead className="px-6 w-[150px]">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {roles.map((role) => (
                         <TableRow key={role.id}>
-                          <TableCell className="font-medium">{role.name}</TableCell>
-                          <TableCell>
+                          <TableCell className="px-6 font-medium">{role.name}</TableCell>
+                          <TableCell className="px-6">
                             <div className="flex flex-wrap gap-1">
                               {role.permissions.map((permission) => (
-                                <Badge key={permission} className="text-xs bg-blue-100 text-blue-700">
+                                <Badge key={permission} className="text-xs bg-blue-100 text-blue-700 border-blue-100">
                                   {permission}
                                 </Badge>
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="flex items-center gap-2">
                               <Button
-                                variant="blue"
+                                variant="outline"
                                 size="sm"
-                                className="shadow-none"
+                                className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                                 onClick={() => handleEdit(role)}
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Pencil className="h-3 w-3" />
                               </Button>
                               {role.name !== 'Employee' && (
                                 <Button
-                                  variant="destructive"
+                                  variant="outline"
                                   size="sm"
-                                  className="shadow-none"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   onClick={() => handleDelete(role.id)}
                                 >
-                                  <Trash className="h-4 w-4" />
+                                  <Trash className="h-3 w-3" />
                                 </Button>
                               )}
                             </div>
@@ -510,10 +481,8 @@ export default function RolesPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
 }
-
-

@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent } from '@/components/ui/card'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Eye } from 'lucide-react'
 import {
@@ -16,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useAuth } from '@/contexts/auth-context'
 
 // Types
 interface NotificationTemplate {
@@ -58,6 +60,8 @@ const mockTemplates: NotificationTemplate[] = [
 ]
 
 export default function NotificationTemplatesPage() {
+  const { user } = useAuth()
+  const isCompany = user?.type === 'company'
   const [templates] = useState<NotificationTemplate[]>(mockTemplates)
 
   return (
@@ -72,44 +76,49 @@ export default function NotificationTemplatesPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Notification Template</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage notification templates for your system
-                </p>
-              </div>
-            </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">Notification Template</CardTitle>
+                  <CardDescription>
+                    Manage notification templates for your system.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+            </Card>
 
-            {/* Templates Table */}
-            <Card>
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <CardTitle>Template List</CardTitle>
+              </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="w-[150px] text-right">Action</TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        {isCompany && <TableHead className="px-6 w-[150px]">Action</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {templates.map((template) => (
                         <TableRow key={template.id}>
-                          <TableCell className="font-medium">{template.name}</TableCell>
-                          <TableCell className="text-right">
-                            <Link href={`/notifications/${template.id}`}>
-                              <Button 
-                                variant="secondary" 
-                                size="sm" 
-                                className="shadow-none h-7 bg-gray-500 hover:bg-gray-600 text-white"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </TableCell>
+                          <TableCell className="px-6 font-medium">{template.name}</TableCell>
+                          {isCompany && (
+                            <TableCell className="px-6">
+                              <Link href={`/notifications/${template.id}`}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                              </Link>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -118,7 +127,7 @@ export default function NotificationTemplatesPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

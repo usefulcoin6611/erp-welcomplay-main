@@ -1,15 +1,16 @@
 "use client"
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { cn } from '@/lib/utils'
 import {
   Plus,
   Trash,
@@ -18,6 +19,7 @@ import {
   Video,
   Clock,
   List,
+  Search,
 } from 'lucide-react'
 import { EventCalendar } from '@/components/event-calendar'
 import {
@@ -39,6 +41,18 @@ import {
 } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // Types
 interface ZoomMeeting {
@@ -117,7 +131,12 @@ export default function ZoomMeetingPage() {
   const [meetings, setMeetings] = useState<ZoomMeeting[]>(mockMeetings)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [search, setSearch] = useState('')
   const [selectedProject, setSelectedProject] = useState<string>('')
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
+  const [startTime, setStartTime] = useState('')
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
+  const [deleteMeetingId, setDeleteMeetingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     project_id: '',
@@ -143,6 +162,8 @@ export default function ZoomMeetingPage() {
         client_id: true,
       })
       setSelectedProject('')
+      setStartDate(undefined)
+      setStartTime('')
     }
   }
 
@@ -154,8 +175,14 @@ export default function ZoomMeetingPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm('Are you sure you want to delete this meeting?')) return
     setMeetings(meetings.filter((m) => m.id !== id))
+    setDeleteMeetingId(null)
+    setDeleteAlertOpen(false)
+  }
+
+  const openDeleteConfirm = (id: string) => {
+    setDeleteMeetingId(id)
+    setDeleteAlertOpen(true)
   }
 
   const getInitials = (name: string) => {
@@ -178,6 +205,20 @@ export default function ZoomMeetingPage() {
     })
   }
 
+  const formatDateInput = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const buildStartDateValue = (date?: Date, time?: string) => {
+    if (!date) return ''
+    const dateValue = formatDateInput(date)
+    if (time) return `${dateValue}T${time}`
+    return dateValue
+  }
+
   const checkDateTime = (startDate: string) => {
     return new Date(startDate) > new Date()
   }
@@ -195,6 +236,16 @@ export default function ZoomMeetingPage() {
     
     return <Badge className="bg-green-100 text-green-700">Started</Badge>
   }
+
+  const filteredMeetings = useMemo(() => {
+    if (!search.trim()) return meetings
+    const q = search.trim().toLowerCase()
+    return meetings.filter((meeting) =>
+      meeting.title.toLowerCase().includes(q) ||
+      (meeting.project ?? '').toLowerCase().includes(q) ||
+      meeting.users.some((user) => user.name.toLowerCase().includes(q)),
+    )
+  }, [meetings, search])
 
   return (
     <SidebarProvider
@@ -242,7 +293,7 @@ export default function ZoomMeetingPage() {
                       <Plus className="mr-2 h-4 w-4" /> Create
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-3xl w-[90vw] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create New Meeting</DialogTitle>
                       <DialogDescription>
@@ -250,8 +301,8 @@ export default function ZoomMeetingPage() {
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit}>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
+                      <div className="grid gap-6 py-6">
+                        <div className="space-y-2 sm:col-span-2">
                           <Label htmlFor="title">
                             Title <span className="text-red-500">*</span>
                           </Label>
@@ -265,7 +316,7 @@ export default function ZoomMeetingPage() {
                             required
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-6 sm:grid-cols-2">
                           <div className="space-y-2">
                             <Label htmlFor="project_id">Project</Label>
                             <Select
@@ -275,7 +326,7 @@ export default function ZoomMeetingPage() {
                                 setSelectedProject(value)
                               }}
                             >
-                              <SelectTrigger id="project_id">
+                              <SelectTrigger id="project_id" className="bg-white text-foreground border border-input">
                                 <SelectValue placeholder="Select Project" />
                               </SelectTrigger>
                               <SelectContent>
@@ -304,7 +355,7 @@ export default function ZoomMeetingPage() {
                                 setFormData({ ...formData, user_id: users })
                               }}
                             >
-                              <SelectTrigger id="user_id">
+                              <SelectTrigger id="user_id" className="bg-white text-foreground border border-input">
                                 <SelectValue placeholder="Select User" />
                               </SelectTrigger>
                               <SelectContent>
@@ -319,19 +370,63 @@ export default function ZoomMeetingPage() {
                               Create user here. <span className="font-medium text-primary cursor-pointer">Create user</span>
                             </p>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 sm:col-span-2">
                             <Label htmlFor="start_date">
                               Start Date / Time <span className="text-red-500">*</span>
                             </Label>
-                            <Input
-                              id="start_date"
-                              type="datetime-local"
-                              value={formData.start_date}
-                              onChange={(e) =>
-                                setFormData({ ...formData, start_date: e.target.value })
-                              }
-                              required
-                            />
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={cn(
+                                      'w-full justify-start text-left font-normal shadow-none',
+                                      !startDate && 'text-muted-foreground',
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? (
+                                      startDate.toLocaleDateString('id-ID', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })
+                                    ) : (
+                                      <span>Pilih tanggal</span>
+                                    )}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={startDate}
+                                    onSelect={(date) => {
+                                      setStartDate(date)
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        start_date: buildStartDateValue(date, startTime),
+                                      }))
+                                    }}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <Input
+                                id="start_time"
+                                type="time"
+                                value={startTime}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  setStartTime(value)
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    start_date: buildStartDateValue(startDate, value),
+                                  }))
+                                }}
+                                required
+                              />
+                            </div>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="duration">
@@ -361,7 +456,7 @@ export default function ZoomMeetingPage() {
                             />
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between sm:col-span-2">
                           <Label htmlFor="synchronize_type">
                             Synchronize in Google Calendar?
                           </Label>
@@ -373,7 +468,7 @@ export default function ZoomMeetingPage() {
                             }
                           />
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between sm:col-span-2">
                           <Label htmlFor="client_id">Invite Client For Zoom Meeting</Label>
                           <Switch
                             id="client_id"
@@ -404,7 +499,21 @@ export default function ZoomMeetingPage() {
             {/* List View */}
             {viewMode === 'list' && (
               <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-                <CardContent className="px-5 pt-5 pb-5">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                  <CardTitle>Zoom Meeting List</CardTitle>
+                  <div className="flex w-full max-w-md items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                      <Input
+                        placeholder="Search meetings..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-9 bg-gray-50 pl-9 pr-3 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0 border-0"
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-5 pt-0 pb-5">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -420,7 +529,7 @@ export default function ZoomMeetingPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {meetings.map((meeting) => (
+                        {filteredMeetings.map((meeting) => (
                           <TableRow key={meeting.id}>
                             <TableCell className="font-medium">{meeting.title}</TableCell>
                             <TableCell>{meeting.project || '-'}</TableCell>
@@ -488,7 +597,7 @@ export default function ZoomMeetingPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shadow-none h-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200/60"
-                                onClick={() => handleDelete(meeting.id)}
+                                onClick={() => openDeleteConfirm(meeting.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -575,6 +684,31 @@ export default function ZoomMeetingPage() {
                 </div>
               </div>
             )}
+            <AlertDialog
+              open={deleteAlertOpen}
+              onOpenChange={(open) => {
+                setDeleteAlertOpen(open)
+                if (!open) setDeleteMeetingId(null)
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete meeting?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. Do you want to continue?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 text-white hover:bg-red-700"
+                    onClick={() => deleteMeetingId && handleDelete(deleteMeetingId)}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SidebarInset>

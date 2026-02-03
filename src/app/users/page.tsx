@@ -220,8 +220,8 @@ export default function UsersPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* Title Page */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="px-6">
-                <div className="min-w-0 space-y-1">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
                   <CardTitle className="text-lg font-semibold">
                     {isSuperAdmin ? 'Manage Companies' : 'Manage User'}
                   </CardTitle>
@@ -239,18 +239,18 @@ export default function UsersPage() {
                       className="shadow-none h-7 px-4 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                       title="User Logs"
                     >
-                      <UserCheck className="mr-2 h-4 w-4" />
+                      <UserCheck className="mr-2 h-3 w-3" />
                       User Logs
                     </Button>
                   )}
                   <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                     <DialogTrigger asChild>
                       <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title={isSuperAdmin ? 'Create Company' : 'Create User'}>
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="mr-2 h-3 w-3" />
                         {isSuperAdmin ? 'Create Company' : 'Create User'}
                       </Button>
                     </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{isSuperAdmin ? 'Create Company' : 'Create User'}</DialogTitle>
                     </DialogHeader>
@@ -335,8 +335,8 @@ export default function UsersPage() {
                         </Button>
                       </DialogFooter>
                     </form>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
             </Card>
@@ -347,9 +347,9 @@ export default function UsersPage() {
                 {companies.map((company) => (
                   <Card
                     key={company.id}
-                    className="flex flex-col h-full border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow"
+                    className="flex flex-col h-full rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow"
                   >
-                    <CardContent className="p-4 flex flex-col flex-1">
+                    <CardContent className="p-6 flex flex-col flex-1">
                       {/* Header with Plan Badge and Actions */}
                       <div className="flex items-center justify-between mb-3">
                         <Badge className={getPlanBadgeColors(company.plan || 'No Plan')}>
@@ -358,8 +358,8 @@ export default function UsersPage() {
                         {company.is_active && company.is_enable_login ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreVertical className="h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -384,7 +384,7 @@ export default function UsersPage() {
 
                       {/* Company Info */}
                       <div className="flex items-center gap-3 border-b pb-3 mb-3">
-                        <Avatar className="h-16 w-16 border-2 border-primary">
+                        <Avatar className="h-14 w-14 border-2 border-primary">
                           <AvatarImage src={company.avatar} />
                           <AvatarFallback className="text-lg">
                             {getInitials(company.name)}
@@ -461,23 +461,6 @@ export default function UsersPage() {
                   </Card>
                 ))}
 
-                {/* Add New Company Card */}
-                <Card
-                  className="border-2 border-dashed border-blue-200 cursor-pointer hover:border-blue-400 transition-colors bg-white"
-                  onClick={() => setDialogOpen(true)}
-                >
-                  <CardContent className="p-6 flex flex-col items-center justify-center h-full min-h-[400px]">
-                    <div className="flex flex-col items-center">
-                      <div className="h-14 w-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4">
-                        <Plus className="h-7 w-7 text-white" />
-                      </div>
-                      <h6 className="text-lg font-semibold mb-2">Create Company</h6>
-                      <p className="text-sm text-muted-foreground text-center">
-                        Click here to add new company
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             ) : (
               /* Users Table (Company/HR) */
@@ -486,9 +469,9 @@ export default function UsersPage() {
                   {filteredUsers.map((u) => (
                     <Card
                       key={u.id}
-                      className="flex flex-col h-full border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow"
+                      className="flex flex-col h-full rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-[0_2px_4px_0_rgb(0_0_0_/_0.05)] transition-shadow"
                     >
-                      <CardContent className="p-4 flex flex-col flex-1">
+                      <CardContent className="p-6 flex flex-col flex-1">
                         {/* Header with Type Badge and Actions */}
                         <div className="flex items-center justify-between mb-3">
                           <Badge className="bg-blue-100 text-blue-700 border-blue-200">
@@ -497,8 +480,8 @@ export default function UsersPage() {
                           {u.is_active && u.is_enable_login ? (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreVertical className="h-4 w-4" />
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <MoreVertical className="h-3 w-3" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
@@ -533,7 +516,7 @@ export default function UsersPage() {
 
                         {/* User Info */}
                         <div className="flex items-center gap-3 border-b pb-3 mb-3">
-                          <Avatar className="h-16 w-16 border-2 border-blue-500">
+                          <Avatar className="h-14 w-14 border-2 border-blue-500">
                             <AvatarImage src={u.avatar} />
                             <AvatarFallback className="text-lg">{getInitials(u.name)}</AvatarFallback>
                           </Avatar>
@@ -549,15 +532,15 @@ export default function UsersPage() {
                         </div>
 
                         {/* Last Login Date & Time */}
-                        <div className="flex items-center justify-between gap-2 mt-auto">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                            <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-50">
                               <Calendar className="h-4 w-4 text-blue-600" />
                             </div>
                             <span className="text-sm">{formatDate(u.last_login_at)}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-100">
+                            <div className="flex items-center justify-center h-8 w-8 rounded bg-blue-50">
                               <Clock className="h-4 w-4 text-blue-600" />
                             </div>
                             <span className="text-sm">{formatTime(u.last_login_at)}</span>
@@ -567,23 +550,6 @@ export default function UsersPage() {
                     </Card>
                   ))}
 
-                  {/* Add New User Card */}
-                  <Card
-                    className="border-2 border-dashed border-blue-200 cursor-pointer hover:border-blue-400 transition-colors bg-white"
-                    onClick={() => setDialogOpen(true)}
-                  >
-                    <CardContent className="p-4 flex flex-col items-center justify-center h-full min-h-[280px] text-center">
-                      <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-500 mb-3">
-                          <Plus className="h-8 w-8 text-white" />
-                        </div>
-                        <h6 className="text-lg font-semibold mb-2">Create User</h6>
-                        <p className="text-sm text-muted-foreground text-center">
-                          Click here to add new user
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               </div>
             )}
