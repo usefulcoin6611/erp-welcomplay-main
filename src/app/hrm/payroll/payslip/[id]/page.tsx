@@ -43,33 +43,42 @@ export default function PayslipDetailPage({ params }: PayslipDetailPageProps) {
   const monthLabel = MONTH_NAMES[payslip.month] ?? payslip.month
 
   return (
-    <>
-      <SiteHeader />
-      <MainContentWrapper>
-        <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Detail Payslip - {payslip.employeeName}</h1>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
-                onClick={() => router.push(`/hrm/payroll/payslip/${id}/edit`)}
-              >
-                <Pencil className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => router.push('/hrm/payroll?tab=payslip')}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Kembali ke Payslip
-              </Button>
+    <SidebarProvider
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-semibold">Detail Payslip - {payslip.employeeName}</h1>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-7 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                  onClick={() => router.push(`/hrm/payroll/payslip/${id}/edit`)}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => router.push('/hrm/payroll?tab=payslip')}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Kembali ke Payslip
+                </Button>
+              </div>
             </div>
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className={cardClass}>
@@ -140,8 +149,8 @@ export default function PayslipDetailPage({ params }: PayslipDetailPageProps) {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </MainContentWrapper>
+          </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

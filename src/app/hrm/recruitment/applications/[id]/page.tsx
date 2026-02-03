@@ -114,6 +114,7 @@ export default function ApplicationDetailPage({ params }: ApplicationDetailPageP
                       Kembali ke Job Application
                     </Button>
                   </div>
+                </div>
               </CardHeader>
               <CardContent className="px-5 pb-5 pt-0 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

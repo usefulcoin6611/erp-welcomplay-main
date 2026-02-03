@@ -53,22 +53,31 @@ export default function SetSalaryEditPage({ params }: SetSalaryEditPageProps) {
   }
 
   return (
-    <>
-      <SiteHeader />
-      <MainContentWrapper>
-        <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Edit Set Salary - {salary.name}</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-              onClick={() => router.push('/hrm/payroll?tab=set-salary')}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Kembali ke Set Salary
-            </Button>
-          </div>
+    <SidebarProvider
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-semibold">Edit Set Salary - {salary.name}</h1>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => router.push('/hrm/payroll?tab=set-salary')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Kembali ke Set Salary
+              </Button>
+            </div>
 
           <Card className={cardClass}>
             <CardHeader className="px-5 pt-5 pb-3">
@@ -149,8 +158,8 @@ export default function SetSalaryEditPage({ params }: SetSalaryEditPageProps) {
               </form>
             </CardContent>
           </Card>
-        </div>
-      </MainContentWrapper>
+          </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
