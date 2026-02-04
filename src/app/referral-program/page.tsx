@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Check, X, Copy, Send } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { PLAN_DATA } from '@/lib/plan-data'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
@@ -55,26 +56,32 @@ interface ReferralSettings {
   guideline: string
 }
 
+const planPriceByName = (planName: string) =>
+  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
+
+const buildReferralTransaction = (
+  id: string,
+  companyName: string,
+  referralCompanyName: string,
+  planName: string,
+  commission: number,
+): ReferralTransaction => {
+  const planPrice = planPriceByName(planName)
+  return {
+    id,
+    company_name: companyName,
+    referral_company_name: referralCompanyName,
+    plan_name: planName,
+    plan_price: planPrice,
+    commission,
+    commission_amount: Math.round((planPrice * commission) / 100),
+  }
+}
+
 // Mock data - Harga dalam rupiah
 const mockTransactions: ReferralTransaction[] = [
-  {
-    id: '1',
-    company_name: 'Acme Corporation',
-    referral_company_name: 'Tech Solutions Inc',
-    plan_name: 'Gold',
-    plan_price: 750000,
-    commission: 10,
-    commission_amount: 75000,
-  },
-  {
-    id: '2',
-    company_name: 'Global Enterprises',
-    referral_company_name: 'Startup Company',
-    plan_name: 'Platinum',
-    plan_price: 1500000,
-    commission: 10,
-    commission_amount: 150000,
-  },
+  buildReferralTransaction('1', 'Acme Corporation', 'Tech Solutions Inc', 'Gold', 10),
+  buildReferralTransaction('2', 'Global Enterprises', 'Startup Company', 'Platinum', 10),
 ]
 
 const mockPayoutRequests: PayoutRequest[] = [

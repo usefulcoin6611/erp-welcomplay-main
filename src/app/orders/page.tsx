@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { FileText, Trash, CheckCircle, RotateCcw, Search, X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { PLAN_DATA } from '@/lib/plan-data'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,9 @@ interface Order {
   is_refund: number
 }
 
+const planPriceByName = (planName: string) =>
+  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
+
 // Mock data - Harga dalam rupiah (sesuai dengan harga plan)
 const mockOrders: Order[] = [
   {
@@ -46,7 +50,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-001',
     user_name: 'Acme Corporation',
     plan_name: 'Gold',
-    price: 750000,
+    price: planPriceByName('Gold'),
     payment_status: 'success',
     payment_type: 'STRIPE',
     date: '2024-01-15',
@@ -59,7 +63,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-002',
     user_name: 'Tech Solutions Inc',
     plan_name: 'Platinum',
-    price: 1500000,
+    price: planPriceByName('Platinum'),
     payment_status: 'Pending',
     payment_type: 'Bank Transfer',
     date: '2024-01-14',
@@ -71,7 +75,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-003',
     user_name: 'Global Enterprises',
     plan_name: 'Silver',
-    price: 250000,
+    price: planPriceByName('Silver'),
     payment_status: 'Approved',
     payment_type: 'Manually',
     date: '2024-01-13',

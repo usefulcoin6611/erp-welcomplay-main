@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, Suspense, type ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -178,11 +177,11 @@ function BrandSettingsContent() {
   ]
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Brand Settings</CardTitle>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Logo Dark Card */}
@@ -593,15 +592,15 @@ function EmailSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Email Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
           This SMTP will be used for system-level email sending. Additionally, if a company user
           does not set their SMTP, then this SMTP will be used for sending emails.
         </p>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -742,15 +741,15 @@ function PaymentSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Payment Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
           These details will be used to collect subscription plan payments. Each subscription plan
           will have a payment button based on the below configuration.
         </p>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -989,11 +988,11 @@ function PusherSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Pusher Settings</CardTitle>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -1073,8 +1072,8 @@ function ReCaptchaSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 !flex !flex-row !items-start !justify-between">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 !flex !flex-row !items-start !justify-between">
         <div>
           <CardTitle className="text-base font-medium leading-none">ReCaptcha Settings</CardTitle>
           <a
@@ -1098,7 +1097,7 @@ function ReCaptchaSettingsContent() {
           />
         </div>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -1188,11 +1187,11 @@ function StorageSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Storage Settings</CardTitle>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Storage Type Selection */}
           <div className="flex gap-2 flex-wrap">
@@ -1540,11 +1539,11 @@ function SEOSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">SEO Settings</CardTitle>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
@@ -1631,8 +1630,8 @@ function CookieSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 !flex !flex-row !items-center !justify-between">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 !flex !flex-row !items-center !justify-between">
         <CardTitle className="text-base font-medium leading-none">Cookie Settings</CardTitle>
         <div className="flex items-center gap-2">
           <Label htmlFor="enable_cookie" className="text-sm font-medium">Enable cookie:</Label>
@@ -1646,7 +1645,7 @@ function CookieSettingsContent() {
           />
         </div>
       </CardHeader>
-      <CardContent className={`p-3 ${!formData.enable_cookie ? 'opacity-50 pointer-events-none' : ''}`}>
+      <CardContent className={`px-6 py-4 ${!formData.enable_cookie ? 'opacity-50 pointer-events-none' : ''}`}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
@@ -1788,14 +1787,14 @@ function CacheSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Cache Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
           This is a page meant for more advanced users, simply ignore it if you don't understand what cache is.
         </p>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleClearCache} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="cache_size" className="text-sm font-medium text-gray-700 dark:text-gray-300">Current cache size</Label>
@@ -1842,11 +1841,11 @@ function ChatGPTSettingsContent() {
   }
 
   return (
-    <Card className=" rounded-lg">
-      <CardHeader className="p-3 rounded-t-lg">
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Chat GPT Settings</CardTitle>
       </CardHeader>
-      <CardContent className="p-3">
+      <CardContent className="px-6 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1893,92 +1892,594 @@ function ChatGPTSettingsContent() {
   )
 }
 
-function SystemSettingsContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const subTabParam = searchParams.get('subtab')
-  const activeSubTab = subTabParam || 'brand-settings'
+type SectionCardProps = {
+  title: string
+  description?: string
+  children: ReactNode
+}
 
+function SectionCard({ title, description, children }: SectionCardProps) {
+  return (
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
+        <CardTitle className="text-base font-medium leading-none">{title}</CardTitle>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </CardHeader>
+      <CardContent className="px-6 py-4">{children}</CardContent>
+    </Card>
+  )
+}
+
+function SystemSettingsSection() {
+  return (
+    <SectionCard
+      title="System Settings"
+      description="Edit your system details"
+    >
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="site_date_format">Date Format</Label>
+            <Select defaultValue="M j, Y">
+              <SelectTrigger id="site_date_format">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="M j, Y">Jan 1, 2015</SelectItem>
+                <SelectItem value="d-m-Y">dd-mm-yyyy</SelectItem>
+                <SelectItem value="m-d-Y">mm-dd-yyyy</SelectItem>
+                <SelectItem value="Y-m-d">yyyy-mm-dd</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="site_time_format">Time Format</Label>
+            <Select defaultValue="g:i A">
+              <SelectTrigger id="site_time_format">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="g:i A">10:30 PM</SelectItem>
+                <SelectItem value="g:i a">10:30 pm</SelectItem>
+                <SelectItem value="H:i">22:30</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customer_prefix">Customer Prefix</Label>
+            <Input id="customer_prefix" placeholder="Enter Customer Prefix" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vendor_prefix">Vendor Prefix</Label>
+            <Input id="vendor_prefix" placeholder="Enter Vendor Prefix" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="proposal_prefix">Proposal Prefix</Label>
+            <Input id="proposal_prefix" placeholder="Enter Proposal Prefix" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="invoice_prefix">Invoice Prefix</Label>
+            <Input id="invoice_prefix" placeholder="Enter Invoice Prefix" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function CompanySettingsSection() {
+  return (
+    <SectionCard
+      title="Company Settings"
+      description="Edit your company details"
+    >
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="company_name">Company Name</Label>
+            <Input id="company_name" placeholder="Enter Company Name" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_address">Address</Label>
+            <Input id="company_address" placeholder="Enter Company Address" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_city">City</Label>
+            <Input id="company_city" placeholder="Enter Company City" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_state">State</Label>
+            <Input id="company_state" placeholder="Enter Company State" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_zipcode">Zip/Post Code</Label>
+            <Input id="company_zipcode" placeholder="Enter Company Zip" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_country">Country</Label>
+            <Input id="company_country" placeholder="Enter Company Country" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_telephone">Telephone</Label>
+            <Input id="company_telephone" placeholder="Enter Company Telephone" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registration_number">Company Registration Number</Label>
+            <Input id="registration_number" placeholder="Enter Registration Number" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_start_time">Company Start Time</Label>
+            <Input id="company_start_time" type="time" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_end_time">Company End Time</Label>
+            <Input id="company_end_time" type="time" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="timezone">Timezone</Label>
+            <Select>
+              <SelectTrigger id="timezone">
+                <SelectValue placeholder="Select Timezone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Asia/Jakarta">Asia/Jakarta</SelectItem>
+                <SelectItem value="Asia/Singapore">Asia/Singapore</SelectItem>
+                <SelectItem value="UTC">UTC</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function CurrencySettingsSection() {
+  return (
+    <SectionCard
+      title="Currency Settings"
+      description="Edit your currency details"
+    >
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="currency_code">Currency</Label>
+            <Input id="currency_code" placeholder="Enter Currency Code" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="currency_symbol">Currency Symbol</Label>
+            <Input id="currency_symbol" placeholder="Enter Currency Symbol" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="currency_symbol_position">Currency Symbol Position</Label>
+            <Select defaultValue="pre">
+              <SelectTrigger id="currency_symbol_position">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pre">Pre</SelectItem>
+                <SelectItem value="post">Post</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="decimal_number">Decimal Number Format</Label>
+            <Input id="decimal_number" type="number" placeholder="Enter Decimal Number" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function TimeTrackerSettingsSection() {
+  return (
+    <SectionCard title="Time Tracker Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between rounded-md border px-4 py-3">
+            <div>
+              <Label htmlFor="time_tracker_enabled" className="text-sm font-medium">
+                Enable Time Tracker
+              </Label>
+              <p className="text-xs text-muted-foreground">Enable time tracking for projects.</p>
+            </div>
+            <Switch id="time_tracker_enabled" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="time_tracker_limit">Daily Working Hours</Label>
+            <Input id="time_tracker_limit" type="number" placeholder="Enter hours per day" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function ZoomSettingsSection() {
+  return (
+    <SectionCard title="Zoom Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="zoom_api_key">Zoom API Key</Label>
+            <Input id="zoom_api_key" placeholder="Enter Zoom API Key" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="zoom_api_secret">Zoom API Secret</Label>
+            <Input id="zoom_api_secret" type="password" placeholder="Enter Zoom API Secret" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function SlackSettingsSection() {
+  return (
+    <SectionCard title="Slack Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="slack_webhook">Slack Webhook URL</Label>
+            <Input id="slack_webhook" placeholder="Enter Slack Webhook URL" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="slack_channel">Slack Channel</Label>
+            <Input id="slack_channel" placeholder="Enter Slack Channel" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function TelegramSettingsSection() {
+  return (
+    <SectionCard title="Telegram Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="telegram_bot_token">Telegram Bot Token</Label>
+            <Input id="telegram_bot_token" placeholder="Enter Bot Token" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
+            <Input id="telegram_chat_id" placeholder="Enter Chat ID" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function TwilioSettingsSection() {
+  return (
+    <SectionCard title="Twilio Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="twilio_sid">Twilio SID</Label>
+            <Input id="twilio_sid" placeholder="Enter Twilio SID" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="twilio_token">Twilio Token</Label>
+            <Input id="twilio_token" type="password" placeholder="Enter Twilio Token" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="twilio_from">Twilio From</Label>
+            <Input id="twilio_from" placeholder="Enter From Number" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function EmailNotificationSettingsSection() {
+  return (
+    <SectionCard title="Email Notification Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { id: 'notify_new_user', label: 'New User' },
+            { id: 'notify_new_order', label: 'New Order' },
+            { id: 'notify_plan_expired', label: 'Plan Expired' },
+            { id: 'notify_payment', label: 'Payment Status' },
+          ].map((item) => (
+            <div key={item.id} className="flex items-center justify-between rounded-md border px-4 py-3">
+              <Label htmlFor={item.id} className="text-sm font-medium">
+                {item.label}
+              </Label>
+              <Switch id={item.id} />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function LetterTemplateSection({ title }: { title: string }) {
+  return (
+    <SectionCard title={title}>
+      <form className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor={`${title}-template`}>Template</Label>
+          <Textarea id={`${title}-template`} rows={6} placeholder="Enter template content" />
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function GoogleCalendarSettingsSection() {
+  return (
+    <SectionCard title="Google Calendar Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between rounded-md border px-4 py-3">
+            <Label htmlFor="google_calendar_enable" className="text-sm font-medium">
+              Enable Google Calendar
+            </Label>
+            <Switch id="google_calendar_enable" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="google_calendar_client_id">Client ID</Label>
+            <Input id="google_calendar_client_id" placeholder="Enter Client ID" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="google_calendar_client_secret">Client Secret</Label>
+            <Input id="google_calendar_client_secret" type="password" placeholder="Enter Client Secret" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="google_calendar_redirect_url">Redirect URL</Label>
+            <Input id="google_calendar_redirect_url" placeholder="Enter Redirect URL" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function WebhookSettingsSection() {
+  return (
+    <SectionCard title="Webhook Settings">
+      <form className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="webhook_url">Webhook URL</Label>
+            <Input id="webhook_url" placeholder="Enter Webhook URL" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="webhook_method">Method</Label>
+            <Select defaultValue="post">
+              <SelectTrigger id="webhook_method">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="post">POST</SelectItem>
+                <SelectItem value="get">GET</SelectItem>
+                <SelectItem value="put">PUT</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="webhook_secret">Secret</Label>
+            <Input id="webhook_secret" type="password" placeholder="Enter Secret" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function IpRestrictionSettingsSection() {
+  return (
+    <SectionCard title="IP Restriction Settings">
+      <form className="space-y-4">
+        <div className="flex items-center justify-between rounded-md border px-4 py-3">
+          <Label htmlFor="ip_restriction_enable" className="text-sm font-medium">
+            Enable IP Restriction
+          </Label>
+          <Switch id="ip_restriction_enable" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="allowed_ips">Allowed IPs</Label>
+            <Textarea id="allowed_ips" rows={4} placeholder="Enter allowed IPs (comma separated)" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="blocked_ips">Blocked IPs</Label>
+            <Textarea id="blocked_ips" rows={4} placeholder="Enter blocked IPs (comma separated)" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-4 border-t">
+          <Button type="submit" variant="blue" className="shadow-none">
+            <Save className="mr-2 h-4 w-4" /> Save Changes
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+function SystemSettingsContent() {
   const systemMenuItems = [
     { id: 'brand-settings', label: 'Brand Settings' },
+    { id: 'system-settings', label: 'System Settings' },
+    { id: 'company-settings', label: 'Company Settings' },
+    { id: 'currency-settings', label: 'Currency Settings' },
     { id: 'email-settings', label: 'Email Settings' },
+    { id: 'time-tracker-settings', label: 'Time Tracker Settings' },
     { id: 'payment-settings', label: 'Payment Settings' },
-    { id: 'pusher-settings', label: 'Pusher Settings' },
-    { id: 'recaptcha-settings', label: 'ReCaptcha Settings' },
-    { id: 'storage-settings', label: 'Storage Settings' },
-    { id: 'seo-settings', label: 'SEO Settings' },
-    { id: 'cookie-settings', label: 'Cookie Settings' },
-    { id: 'cache-settings', label: 'Cache Settings' },
-    { id: 'chatgpt-settings', label: 'Chat GPT Settings' },
+    { id: 'zoom-settings', label: 'Zoom Settings' },
+    { id: 'slack-settings', label: 'Slack Settings' },
+    { id: 'telegram-settings', label: 'Telegram Settings' },
+    { id: 'twilio-settings', label: 'Twilio Settings' },
+    { id: 'email-notification-settings', label: 'Email Notification Settings' },
+    { id: 'offer-letter-settings', label: 'Offer Letter Settings' },
+    { id: 'joining-letter-settings', label: 'Joining Letter Settings' },
+    { id: 'experience-certificate-settings', label: 'Experience Certificate Settings' },
+    { id: 'noc-settings', label: 'NOC Settings' },
+    { id: 'google-calendar-settings', label: 'Google Calendar Settings' },
+    { id: 'webhook-settings', label: 'Webhook Settings' },
+    { id: 'ip-restriction-settings', label: 'IP Restriction Settings' },
   ]
 
-  const handleMenuClick = (itemId: string) => {
-    router.push(`/settings?subtab=${itemId}`, { scroll: false })
-  }
-
-  const renderContent = () => {
-    switch (activeSubTab) {
-      case 'brand-settings':
-        return <BrandSettingsContent />
-      case 'email-settings':
-        return <EmailSettingsContent />
-      case 'payment-settings':
-        return <PaymentSettingsContent />
-      case 'pusher-settings':
-        return <PusherSettingsContent />
-      case 'recaptcha-settings':
-        return <ReCaptchaSettingsContent />
-      case 'storage-settings':
-        return <StorageSettingsContent />
-      case 'seo-settings':
-        return <SEOSettingsContent />
-      case 'cookie-settings':
-        return <CookieSettingsContent />
-      case 'cache-settings':
-        return <CacheSettingsContent />
-      case 'chatgpt-settings':
-        return <ChatGPTSettingsContent />
-      default:
-        return <BrandSettingsContent />
-    }
-  }
+  const PlaceholderSection = ({ title }: { title: string }) => (
+    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <CardHeader className="px-6 py-4 rounded-t-lg">
+        <CardTitle className="text-base font-medium leading-none">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="px-6 py-4">
+        <p className="text-sm text-muted-foreground">Konten belum tersedia.</p>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <div className="grid gap-4 xl:grid-cols-12">
       {/* Vertical Sidebar - col-xl-3 (25%) */}
       <div className="xl:col-span-3">
-        <Card className="h-fit xl:sticky xl:top-6  rounded-lg border-r">
-          <CardContent className="p-1">
-            <div className="space-y-0">
-              {systemMenuItems.map((item) => {
-                const isActive = activeSubTab === item.id
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleMenuClick(item.id)}
-                    className={`relative w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-300 ease-out border-0 cursor-pointer rounded-md mx-1 my-0.5 group ${
-                      isActive
-                        ? 'bg-gradient-to-r from-blue-50/80 to-transparent dark:from-blue-950/50 dark:to-transparent text-blue-700 dark:text-blue-300 font-medium border-l-2 border-blue-500 dark:border-blue-400'
-                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                    }`}
-                  >
-                    <span className="relative z-10">{item.label}</span>
-                    {isActive && (
-                      <span className="relative z-10 text-blue-600 dark:text-blue-400 text-xs font-medium">→</span>
-                    )}
-                    {!isActive && (
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground text-xs">→</span>
-                    )}
-                  </button>
-                )
-              })}
+        <Card className="h-fit xl:sticky xl:top-6 rounded-lg">
+          <CardContent className="p-2">
+            <div className="space-y-1">
+              {systemMenuItems.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                >
+                  <span>{item.label}</span>
+                  <span className="text-xs text-muted-foreground">›</span>
+                </a>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Content Area - col-xl-9 (75%) */}
-      <div className="xl:col-span-9 space-y-4">{renderContent()}</div>
+      <div className="xl:col-span-9 space-y-4">
+        <div id="brand-settings">
+          <BrandSettingsContent />
+        </div>
+        <div id="system-settings">
+          <SystemSettingsSection />
+        </div>
+        <div id="company-settings">
+          <CompanySettingsSection />
+        </div>
+        <div id="currency-settings">
+          <CurrencySettingsSection />
+        </div>
+        <div id="email-settings">
+          <EmailSettingsContent />
+        </div>
+        <div id="time-tracker-settings">
+          <TimeTrackerSettingsSection />
+        </div>
+        <div id="payment-settings">
+          <PaymentSettingsContent />
+        </div>
+        <div id="zoom-settings">
+          <ZoomSettingsSection />
+        </div>
+        <div id="slack-settings">
+          <SlackSettingsSection />
+        </div>
+        <div id="telegram-settings">
+          <TelegramSettingsSection />
+        </div>
+        <div id="twilio-settings">
+          <TwilioSettingsSection />
+        </div>
+        <div id="email-notification-settings">
+          <EmailNotificationSettingsSection />
+        </div>
+        <div id="offer-letter-settings">
+          <LetterTemplateSection title="Offer Letter Settings" />
+        </div>
+        <div id="joining-letter-settings">
+          <LetterTemplateSection title="Joining Letter Settings" />
+        </div>
+        <div id="experience-certificate-settings">
+          <LetterTemplateSection title="Experience Certificate Settings" />
+        </div>
+        <div id="noc-settings">
+          <LetterTemplateSection title="NOC Settings" />
+        </div>
+        <div id="google-calendar-settings">
+          <GoogleCalendarSettingsSection />
+        </div>
+        <div id="webhook-settings">
+          <WebhookSettingsSection />
+        </div>
+        <div id="ip-restriction-settings">
+          <IpRestrictionSettingsSection />
+        </div>
+      </div>
     </div>
   )
 }

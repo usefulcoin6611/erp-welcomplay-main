@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { PLAN_DATA } from '@/lib/plan-data'
 
 interface Order {
   id: string
@@ -30,13 +31,16 @@ interface Order {
   receipt?: string
 }
 
+const planPriceByName = (planName: string) =>
+  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
+
 const mockOrders: Order[] = [
   {
     id: '1',
     order_id: 'ORD-001',
     name: 'PT Maju Jaya',
     plan_name: 'Gold',
-    price: 49,
+    price: planPriceByName('Gold'),
     status: 'success',
     payment_type: 'STRIPE',
     date: '2024-01-15',
@@ -48,7 +52,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-002',
     name: 'CV Kreatif Digital',
     plan_name: 'Silver',
-    price: 99,
+    price: planPriceByName('Silver'),
     status: 'Pending',
     payment_type: 'Bank Transfer',
     date: '2024-01-16',
@@ -59,7 +63,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-003',
     name: 'PT Teknologi',
     plan_name: 'Platinum',
-    price: 199,
+    price: planPriceByName('Platinum'),
     status: 'succeeded',
     payment_type: 'PayPal',
     date: '2024-01-17',
@@ -79,7 +83,7 @@ const mockOrders: Order[] = [
     order_id: 'ORD-005',
     name: 'CV Digital Indonesia',
     plan_name: 'Gold',
-    price: 49,
+    price: planPriceByName('Gold'),
     status: 'Pending',
     payment_type: 'Bank Transfer',
     date: '2024-01-19',
@@ -139,7 +143,12 @@ export function OrderTab() {
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US').format(price)
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
   }
 
   return (
@@ -200,7 +209,7 @@ export function OrderTab() {
                         {order.plan_name}
                       </Badge>
                     </TableCell>
-                    <TableCell>${formatPrice(order.price)}</TableCell>
+                    <TableCell>{formatPrice(order.price)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>
                         {getStatusLabel(order.status)}
