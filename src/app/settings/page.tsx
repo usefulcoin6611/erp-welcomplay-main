@@ -10,6 +10,7 @@ import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SystemSettingsTab } from './components/SystemSettingsTab'
 import { SubscriptionPlanTab } from './components/SubscriptionPlanTab'
 import { OrderTab } from './components/OrderTab'
 import { ReferralProgramTab } from './components/ReferralProgramTab'
@@ -22,9 +23,9 @@ function SettingsContent() {
   const tabParam = searchParams.get('tab')
   
   // Validasi tab: hanya user company yang bisa akses settings
-  const companyTabs = ['subscription-plan', 'order', 'referral-program']
+  const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program']
   const isValidTab = isCompany && (!tabParam || companyTabs.includes(tabParam))
-  const activeTab = isValidTab ? (tabParam || 'subscription-plan') : 'subscription-plan'
+  const activeTab = isValidTab ? (tabParam || 'system-settings') : 'system-settings'
 
   // Redirect jika user bukan company atau tab tidak valid
   React.useEffect(() => {
@@ -35,7 +36,7 @@ function SettingsContent() {
       return
     }
     if (!isValidTab && tabParam) {
-      router.replace(`/settings?tab=subscription-plan`, { scroll: false })
+      router.replace(`/settings?tab=system-settings`, { scroll: false })
     }
   }, [isLoading, isCompany, isValidTab, tabParam, router])
 
@@ -45,9 +46,18 @@ function SettingsContent() {
 
   const tabs = React.useMemo(
     () => {
-      // Hanya tampilkan 3 tab untuk user company (tanpa System Settings)
+      // Tampilkan 4 tab untuk user company
       if (isCompany) {
         return [
+          {
+            id: 'system-settings',
+            title: 'System Settings',
+            content: (
+              <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+                <SystemSettingsTab />
+              </Suspense>
+            ),
+          },
           {
             id: 'subscription-plan',
             title: 'Subscription Plan',
