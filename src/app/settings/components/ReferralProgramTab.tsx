@@ -438,8 +438,7 @@ function ReferralProgramContent() {
   ]
 
   const handleMenuClick = (itemId: string) => {
-    const currentTab = searchParams.get('tab') || 'referral-program'
-    router.push(`/settings?tab=${currentTab}&subtab=${itemId}`, { scroll: false })
+    router.push(`/settings?tab=referral-program&subtab=${itemId}`, { scroll: false })
   }
 
   const renderContent = () => {

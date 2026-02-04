@@ -114,7 +114,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
           // ========== SETTINGS ==========
           {
             title: "Settings",
-            url: "/settings",
+            url: "/systems",
             icon: IconSettings,
           },
         ],
