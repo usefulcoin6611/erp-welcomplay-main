@@ -78,8 +78,12 @@ const MenuItemComponent = ({
     return false
   })
 
-  // Keep dropdown open if child is active
-  const effectiveOpen = hasChildren ? Boolean(isOpen) || Boolean(childIsActive) : Boolean(isOpen)
+  // Allow manual close even when a child is active
+  const effectiveOpen = hasChildren
+    ? isOpen !== undefined
+      ? isOpen
+      : Boolean(childIsActive)
+    : Boolean(isOpen)
   
   // Determine padding based on level for proper indentation
   const paddingLeft = level === 0 ? "pl-3" : level === 1 ? "pl-7" : level === 2 ? "pl-12" : "pl-16"

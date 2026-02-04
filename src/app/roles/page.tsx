@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Pencil, Trash } from 'lucide-react'
+import { REFERENCE_PERMISSIONS } from '@/lib/reference-permissions'
+import { useAuth } from '@/contexts/auth-context'
 import {
   Dialog,
   DialogContent,
@@ -44,93 +46,288 @@ interface Permission {
   category: 'staff' | 'crm' | 'project' | 'hrm' | 'account' | 'pos'
 }
 
-const staffModules = [
-  'user', 'role', 'client', 'product & service', 'constant unit', 'constant tax',
-  'constant category', 'zoom meeting', 'company settings', 'permission',
+const ACTIONS = [
+  'view',
+  'add',
+  'move',
+  'manage',
+  'create',
+  'edit',
+  'delete',
+  'show',
+  'send',
+  'create payment',
+  'delete payment',
+  'income',
+  'expense',
+  'income vs expense',
+  'loss & profit',
+  'tax',
+  'invoice',
+  'bill',
+  'duplicate',
+  'balance sheet',
+  'ledger',
+  'trial balance',
+  'convert',
+  'copy',
 ]
 
-const crmModules = [
-  'crm dashboard', 'lead', 'convert', 'pipeline', 'lead stage', 'source',
-  'label', 'lead email', 'lead call', 'deal', 'stage', 'task', 'form builder',
-  'form response', 'form field', 'contract', 'contract type',
+const STAFF_MODULES_BASE = [
+  'user',
+  'role',
+  'client',
+  'product & service',
+  'constant unit',
+  'constant tax',
+  'constant category',
+  'zoom meeting',
+  'company settings',
+  'permission',
+  'language',
 ]
 
-const projectModules = [
-  'project dashboard', 'project', 'project stage', 'project milestone',
-  'project task', 'project bug', 'project timesheet', 'project expense',
-  'project file', 'project comment', 'project activity', 'project note',
+const CRM_MODULES = [
+  'crm dashboard',
+  'lead',
+  'convert',
+  'pipeline',
+  'lead stage',
+  'source',
+  'label',
+  'lead email',
+  'lead call',
+  'deal',
+  'stage',
+  'task',
+  'form builder',
+  'form response',
+  'form field',
+  'contract',
+  'contract type',
 ]
 
-const hrmModules = [
-  'hrm dashboard', 'employee', 'set salary', 'payslip', 'leave', 'attendance',
-  'performance', 'training', 'recruitment', 'job', 'job application',
-  'job board', 'custom question', 'interview schedule', 'career', 'event',
-  'meeting', 'assets', 'document', 'company policy', 'branch', 'department',
-  'designation', 'leave type', 'document type', 'payslip type', 'allowance option',
-  'loan option', 'deduction option', 'goal type', 'training type', 'award type',
-  'termination type', 'job category', 'job stage', 'performance type', 'competencies',
+const PROJECT_MODULES = [
+  'project dashboard',
+  'project',
+  'milestone',
+  'grant chart',
+  'project stage',
+  'timesheet',
+  'project expense',
+  'project task',
+  'activity',
+  'CRM activity',
+  'project task stage',
+  'bug report',
+  'bug status',
 ]
 
-const accountModules = [
-  'account dashboard', 'banking', 'account', 'transfer', 'sales', 'customer',
-  'estimate', 'invoice', 'revenue', 'credit note', 'purchases', 'supplier',
-  'bill', 'expense', 'payment', 'debit note', 'double entry', 'chart of account',
-  'journal entry', 'ledger', 'balance sheet', 'profit & loss', 'trial balance',
-  'budget planner', 'financial goal', 'accounting setup',
+const HRM_MODULES = [
+  'hrm dashboard',
+  'employee',
+  'employee profile',
+  'department',
+  'designation',
+  'branch',
+  'document type',
+  'document',
+  'payslip type',
+  'allowance',
+  'commission',
+  'allowance option',
+  'loan option',
+  'deduction option',
+  'loan',
+  'saturation deduction',
+  'other payment',
+  'overtime',
+  'set salary',
+  'pay slip',
+  'company policy',
+  'appraisal',
+  'goal tracking',
+  'goal type',
+  'indicator',
+  'event',
+  'meeting',
+  'training',
+  'trainer',
+  'training type',
+  'award',
+  'award type',
+  'resignation',
+  'travel',
+  'promotion',
+  'complaint',
+  'warning',
+  'termination',
+  'termination type',
+  'job application',
+  'job application note',
+  'job onBoard',
+  'job category',
+  'job',
+  'job stage',
+  'custom question',
+  'interview schedule',
+  'career',
+  'estimation',
+  'holiday',
+  'transfer',
+  'announcement',
+  'leave',
+  'leave type',
+  'attendance',
 ]
 
-const posModules = [
-  'pos dashboard', 'product & services', 'product category', 'product coupon',
-  'brand', 'unit', 'variant', 'purchase', 'purchase return', 'warehouse',
-  'warehouse transfer', 'pos', 'pos return', 'reports',
+const ACCOUNT_MODULES = [
+  'account dashboard',
+  'proposal',
+  'invoice',
+  'bill',
+  'revenue',
+  'payment',
+  'proposal product',
+  'invoice product',
+  'bill product',
+  'goal',
+  'credit note',
+  'debit note',
+  'bank account',
+  'bank transfer',
+  'transaction',
+  'customer',
+  'vender',
+  'constant custom field',
+  'assets',
+  'chart of account',
+  'journal entry',
+  'report',
 ]
 
-const permissionTypes = ['view', 'add', 'move', 'manage', 'create', 'edit', 'delete', 'show']
+const POS_MODULES = [
+  'pos dashboard',
+  'warehouse',
+  'quotation',
+  'purchase',
+  'pos',
+  'barcode',
+]
 
-const generatePermissions = (modules: string[], category: Permission['category']): Permission[] => {
-  const permissions: Permission[] = []
-  modules.forEach((module) => {
-    permissionTypes.forEach((type) => {
+const getStaffModules = (isCompany: boolean, isEdit: boolean) => {
+  const baseModules = [
+    'user',
+    'role',
+    'client',
+    'product & service',
+    'constant unit',
+    'constant tax',
+    'constant category',
+    'zoom meeting',
+    'company settings',
+  ]
+  if (!isCompany) return baseModules
+  const modules = [...baseModules, 'permission']
+  if (isEdit) modules.push('language')
+  return modules
+}
+
+type PermissionItem = Permission & {
+  action: string
+  moduleLabel: string
+}
+
+const referencePermissionLookup = new Map(
+  REFERENCE_PERMISSIONS.map((permission) => [permission.toLowerCase(), permission])
+)
+
+const buildPermissionsForModules = (modules: string[], category: Permission['category']) => {
+  const permissions: PermissionItem[] = []
+  modules.forEach((moduleLabel) => {
+    ACTIONS.forEach((action) => {
+      const rawPermission = `${action} ${moduleLabel}`
+      const matchedPermission = referencePermissionLookup.get(rawPermission.toLowerCase())
+      if (!matchedPermission) return
       permissions.push({
-        id: `${category}-${module}-${type}`,
-        name: `${type} ${module}`,
-        module,
+        id: matchedPermission,
+        name: matchedPermission,
+        module: moduleLabel,
+        moduleLabel,
         category,
+        action,
       })
     })
   })
   return permissions
 }
 
-const allPermissions: Permission[] = [
-  ...generatePermissions(staffModules, 'staff'),
-  ...generatePermissions(crmModules, 'crm'),
-  ...generatePermissions(projectModules, 'project'),
-  ...generatePermissions(hrmModules, 'hrm'),
-  ...generatePermissions(accountModules, 'account'),
-  ...generatePermissions(posModules, 'pos'),
+const allPermissions: PermissionItem[] = [
+  ...buildPermissionsForModules(STAFF_MODULES_BASE, 'staff'),
+  ...buildPermissionsForModules(CRM_MODULES, 'crm'),
+  ...buildPermissionsForModules(PROJECT_MODULES, 'project'),
+  ...buildPermissionsForModules(HRM_MODULES, 'hrm'),
+  ...buildPermissionsForModules(ACCOUNT_MODULES, 'account'),
+  ...buildPermissionsForModules(POS_MODULES, 'pos'),
 ]
+
+const permissionById = new Map(allPermissions.map((permission) => [permission.id, permission]))
+
+const normalizePermissions = (permissions: string[]) =>
+  Array.from(new Set(permissions.filter((permissionId) => permissionById.has(permissionId))))
+
+const actionOrder = ACTIONS
+
+const sortPermissionsByAction = (permissions: PermissionItem[]) =>
+  [...permissions].sort((a, b) => {
+    const idxA = actionOrder.indexOf(a.action)
+    const idxB = actionOrder.indexOf(b.action)
+    if (idxA === idxB) return a.action.localeCompare(b.action)
+    if (idxA === -1) return 1
+    if (idxB === -1) return -1
+    return idxA - idxB
+  })
+
+const formatActionLabel = (action: string) => {
+  if (action === 'income vs expense') return 'Income VS Expense'
+  if (action === 'loss & profit') return 'Loss & Profit'
+  if (action === 'create payment') return 'Create Payment'
+  if (action === 'delete payment') return 'Delete Payment'
+  if (action === 'balance sheet') return 'Balance Sheet'
+  if (action === 'trial balance') return 'Trial Balance'
+  return action
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 const mockRoles: Role[] = [
   {
     id: '1',
     name: 'Admin',
-    permissions: ['view user', 'create user', 'edit user', 'delete user'],
+    permissions: ['manage user', 'create user', 'edit user', 'delete user'],
   },
   {
     id: '2',
     name: 'HR',
-    permissions: ['view user', 'create user', 'edit user'],
+    permissions: ['manage employee', 'view employee', 'edit employee'],
   },
   {
     id: '3',
     name: 'Manager',
-    permissions: ['view user', 'edit user'],
+    permissions: ['view project', 'edit project', 'view employee'],
   },
 ]
 
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[]>(mockRoles)
+  const { user } = useAuth()
+  const isCompany = user?.type === 'company'
+  const [roles, setRoles] = useState<Role[]>(
+    mockRoles.map((role) => ({
+      ...role,
+      permissions: normalizePermissions(role.permissions),
+    }))
+  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editRole, setEditRole] = useState<Role | null>(null)
   const [formData, setFormData] = useState({
@@ -138,6 +335,13 @@ export default function RolesPage() {
     permissions: [] as string[],
   })
   const [selectedCategory, setSelectedCategory] = useState<'staff' | 'crm' | 'project' | 'hrm' | 'account' | 'pos'>('staff')
+  const permissionsScrollRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (permissionsScrollRef.current) {
+      permissionsScrollRef.current.scrollTop = 0
+    }
+  }, [selectedCategory])
 
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
@@ -152,11 +356,16 @@ export default function RolesPage() {
   }
 
   const handleEdit = (role: Role) => {
+    const nextCategory =
+      role.permissions
+        .map((permissionId) => permissionById.get(permissionId)?.category)
+        .find((category): category is Permission['category'] => Boolean(category)) ?? 'staff'
     setEditRole(role)
     setFormData({
       name: role.name,
       permissions: role.permissions,
     })
+    setSelectedCategory(nextCategory)
     setDialogOpen(true)
   }
 
@@ -195,10 +404,11 @@ export default function RolesPage() {
     })
   }
 
-  const toggleModulePermissions = (module: string, category: Permission['category']) => {
+  const toggleModulePermissions = (moduleLabel: string, category: Permission['category']) => {
     const modulePermissions = allPermissions.filter(
-      (p) => p.module === module && p.category === category
+      (p) => p.module === moduleLabel && p.category === category
     )
+    if (modulePermissions.length === 0) return
     const allSelected = modulePermissions.every((p) => formData.permissions.includes(p.id))
 
     if (allSelected) {
@@ -247,13 +457,13 @@ export default function RolesPage() {
     }
   }
 
-  const getCategoryPermissions = (category: Permission['category']) => {
-    return allPermissions.filter((p) => p.category === category)
-  }
+  const getCategoryPermissions = (category: Permission['category']) =>
+    allPermissions.filter((p) => p.category === category)
 
   const renderPermissionTable = (category: Permission['category'], modules: string[]) => {
     const categoryPermissions = getCategoryPermissions(category)
-    const allCategorySelected = categoryPermissions.every((p) => formData.permissions.includes(p.id))
+    const allCategorySelected =
+      categoryPermissions.length > 0 && categoryPermissions.every((p) => formData.permissions.includes(p.id))
 
     return (
       <div className="space-y-4">
@@ -268,14 +478,15 @@ export default function RolesPage() {
           </h6>
         </div>
         <div className="border rounded-md overflow-hidden">
-          <div className="overflow-x-auto max-h-[500px]">
-            <Table>
+          <div className="overflow-visible">
+            <Table containerClassName="overflow-visible">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
                       checked={allCategorySelected}
                       onCheckedChange={() => toggleCategoryPermissions(category)}
+                      className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                     />
                   </TableHead>
                   <TableHead className="min-w-[200px]">Module</TableHead>
@@ -283,38 +494,44 @@ export default function RolesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {modules.map((module) => {
-                  const modulePermissions = categoryPermissions.filter((p) => p.module === module)
-                  const allModuleSelected = modulePermissions.every((p) => formData.permissions.includes(p.id))
+                {modules.map((moduleLabel) => {
+                  const modulePermissions = sortPermissionsByAction(
+                    categoryPermissions.filter((p) => p.module === moduleLabel)
+                  )
+                  const allModuleSelected =
+                    modulePermissions.length > 0 &&
+                    modulePermissions.every((p) => formData.permissions.includes(p.id))
 
                   return (
-                    <TableRow key={module}>
+                    <TableRow key={moduleLabel}>
                       <TableCell>
                         <Checkbox
                           checked={allModuleSelected}
-                          onCheckedChange={() => toggleModulePermissions(module, category)}
+                          onCheckedChange={() => toggleModulePermissions(moduleLabel, category)}
+                          className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                         />
                       </TableCell>
-                      <TableCell className="font-medium capitalize">{module}</TableCell>
+                      <TableCell className="font-medium">{moduleLabel}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-2">
                           {modulePermissions.map((permission) => {
-                            const permissionName = permission.name.split(' ')[0]
-                            return (
-                              <div key={permission.id} className="flex items-center space-x-1">
-                                <Checkbox
-                                  id={permission.id}
-                                  checked={formData.permissions.includes(permission.id)}
-                                  onCheckedChange={() => togglePermission(permission.id)}
-                                />
-                                <Label
-                                  htmlFor={permission.id}
-                                  className="text-xs font-normal cursor-pointer capitalize"
-                                >
-                                  {permissionName}
-                                </Label>
-                              </div>
-                            )
+                                const permissionName = formatActionLabel(permission.action)
+                                return (
+                                  <div key={permission.id} className="flex items-center gap-2 border rounded-md px-2 py-1">
+                                    <Checkbox
+                                      id={permission.id}
+                                      checked={formData.permissions.includes(permission.id)}
+                                      onCheckedChange={() => togglePermission(permission.id)}
+                                      className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                                    />
+                                    <Label
+                                      htmlFor={permission.id}
+                                      className="text-xs font-normal cursor-pointer"
+                                    >
+                                      {permissionName}
+                                    </Label>
+                                  </div>
+                                )
                           })}
                         </div>
                       </TableCell>
@@ -358,17 +575,14 @@ export default function RolesPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="!max-w-[70vw] w-[70vw] max-h-[95vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>{editRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
-                        <DialogDescription>
-                          {editRole
-                            ? 'Update role information and permissions.'
-                            : 'Add a new role to your system. Select permissions for this role.'}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateSubmit}>
-                        <div className="grid gap-4 py-4">
+                    <DialogContent className="!max-w-[85vw] w-[85vw] h-[90vh] max-h-[95vh] overflow-hidden p-0 flex flex-col">
+                      <div className="border-b px-6 py-4">
+                        <DialogHeader>
+                          <DialogTitle>{editRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
+                        </DialogHeader>
+                      </div>
+                      <form onSubmit={handleCreateSubmit} className="flex flex-1 flex-col overflow-hidden px-6 pb-5">
+                        <div ref={permissionsScrollRef} className="grid flex-1 gap-4 overflow-y-auto content-start">
                           <div className="space-y-2">
                             <Label htmlFor="name">
                               Name <span className="text-red-500">*</span>
@@ -391,26 +605,26 @@ export default function RolesPage() {
                               <TabsTrigger value="pos">POS</TabsTrigger>
                             </TabsList>
                             <TabsContent value="staff" className="mt-4">
-                              {renderPermissionTable('staff', staffModules)}
+                              {renderPermissionTable('staff', getStaffModules(isCompany, Boolean(editRole)))}
                             </TabsContent>
                             <TabsContent value="crm" className="mt-4">
-                              {renderPermissionTable('crm', crmModules)}
+                              {renderPermissionTable('crm', CRM_MODULES)}
                             </TabsContent>
                             <TabsContent value="project" className="mt-4">
-                              {renderPermissionTable('project', projectModules)}
+                              {renderPermissionTable('project', PROJECT_MODULES)}
                             </TabsContent>
                             <TabsContent value="hrm" className="mt-4">
-                              {renderPermissionTable('hrm', hrmModules)}
+                              {renderPermissionTable('hrm', HRM_MODULES)}
                             </TabsContent>
                             <TabsContent value="account" className="mt-4">
-                              {renderPermissionTable('account', accountModules)}
+                              {renderPermissionTable('account', ACCOUNT_MODULES)}
                             </TabsContent>
                             <TabsContent value="pos" className="mt-4">
-                              {renderPermissionTable('pos', posModules)}
+                              {renderPermissionTable('pos', POS_MODULES)}
                             </TabsContent>
                           </Tabs>
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="pt-4">
                           <Button
                             type="button"
                             variant="outline"
@@ -444,9 +658,9 @@ export default function RolesPage() {
                           <TableCell className="px-6 font-medium">{role.name}</TableCell>
                           <TableCell className="px-6">
                             <div className="flex flex-wrap gap-1">
-                              {role.permissions.map((permission) => (
-                                <Badge key={permission} className="text-xs bg-blue-100 text-blue-700 border-blue-100">
-                                  {permission}
+                              {role.permissions.map((permissionId) => (
+                                <Badge key={permissionId} className="text-xs bg-blue-100 text-blue-700 border-blue-100">
+                                  {permissionById.get(permissionId)?.name ?? permissionId}
                                 </Badge>
                               ))}
                             </div>
