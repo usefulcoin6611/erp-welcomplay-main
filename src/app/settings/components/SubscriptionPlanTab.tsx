@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -112,9 +113,14 @@ const mockPlans: Plan[] = [
 ]
 
 export function SubscriptionPlanTab() {
+  const router = useRouter()
   const [plans] = useState<Plan[]>(mockPlans)
   const currentPlanId =
     plans.find((plan) => plan.is_active)?.id ?? plans[0]?.id
+
+  const handleSubscribe = (planId: string) => {
+    router.push(`/plans/${planId}/subscribe`)
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US').format(price)
@@ -270,7 +276,12 @@ export function SubscriptionPlanTab() {
                       <Check className="h-4 w-4 mr-2" /> Current Plan
                     </Button>
                   ) : (
-                    <Button size="sm" variant="blue" className="shadow-none h-8">
+                    <Button 
+                      size="sm" 
+                      variant="blue" 
+                      className="shadow-none h-8"
+                      onClick={() => handleSubscribe(plan.id)}
+                    >
                       Berlangganan
                     </Button>
                   )}
