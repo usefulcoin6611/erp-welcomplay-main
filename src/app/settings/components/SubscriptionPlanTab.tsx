@@ -7,17 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
 import { Check, CirclePlus, CircleMinus } from 'lucide-react'
-
-interfacimport { PLAN_DATA } from '@/lib/plan-data'
+import { PLAN_DATA, PlanData } from '@/lib/plan-data'
 
 export function SubscriptionPlanTab() {
   const router = useRouter()
-  const [plans] = useState<Plan[]>(mockPlans)
-  const currentPlanId =
-    plans.find((plan) => plan.is_active)?.id ?? plans[0]?.id
-
-  const [plans] = useState(PLAN_DATA)
-  const currentPlanId = plans[0]?.id
+  const [plans] = useState<PlanData[]>(PLAN_DATA)
+  const currentPlanId = plans.find((plan) => plan.is_disable === false)?.id ?? plans[0]?.id
 
   const handleSubscribe = (planId: string) => {
     router.push(`/plans/${planId}/subscribe`)
@@ -97,7 +92,11 @@ export function SubscriptionPlanTab() {
                       <CirclePlus className="h-4 w-4 text-primary" />
                       <span>
                         {plan.max_venders === -1 ? 'Unlimited' : plan.max_venders} Vendors
-                    <span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CirclePlus className="h-4 w-4 text-primary" />
+                      <span>
                         {plan.max_clients === -1 ? 'Unlimited' : plan.max_clients} Clients
                       </span>
                     </div>
