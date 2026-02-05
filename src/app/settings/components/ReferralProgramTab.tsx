@@ -9,6 +9,7 @@ import { Copy, Search, PiggyBank, Wallet } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { PLAN_DATA } from '@/lib/plan-data'
 import {
   Select,
   SelectContent,
@@ -42,39 +43,31 @@ interface PayoutRequest {
   status: 'Approved' | 'Rejected' | 'In Progress'
 }
 
+const planPriceByName = (planName: string) =>
+  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
+
+const buildTransaction = (
+  id: string,
+  companyName: string,
+  planName: string,
+  commissionPercent: number,
+): Transaction => {
+  const planPrice = planPriceByName(planName)
+  return {
+    id,
+    company_name: companyName,
+    plan_name: planName,
+    plan_price: planPrice,
+    commission_percent: commissionPercent,
+    commission_amount: Math.round((planPrice * commissionPercent) / 100),
+  }
+}
+
 const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    company_name: 'Murray Group',
-    plan_name: 'Gold',
-    plan_price: 400,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
-  {
-    id: '2',
-    company_name: 'ABHISHEK DWIVEDI',
-    plan_name: 'Silver',
-    plan_price: 300,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
-  {
-    id: '3',
-    company_name: 'Shaine Mcdowell',
-    plan_name: 'Gold',
-    plan_price: 400,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
-  {
-    id: '4',
-    company_name: 'Nerea Hart',
-    plan_name: 'Gold',
-    plan_price: 400,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
+  buildTransaction('1', 'Murray Group', 'Gold', 10),
+  buildTransaction('2', 'ABHISHEK DWIVEDI', 'Silver', 10),
+  buildTransaction('3', 'Shaine Mcdowell', 'Gold', 10),
+  buildTransaction('4', 'Nerea Hart', 'Platinum', 10),
 ]
 
 const mockPayoutRequests: PayoutRequest[] = [
@@ -82,28 +75,28 @@ const mockPayoutRequests: PayoutRequest[] = [
     id: '1',
     company_name: 'Workdo',
     requested_date: '2024-04-10',
-    requested_amount: 30,
+    requested_amount: 50000,
     status: 'Approved',
   },
   {
     id: '2',
     company_name: 'Workdo',
     requested_date: '2024-04-10',
-    requested_amount: 10,
+    requested_amount: 25000,
     status: 'Rejected',
   },
   {
     id: '3',
     company_name: 'Workdo',
     requested_date: '2024-04-10',
-    requested_amount: 20,
+    requested_amount: 100000,
     status: 'Approved',
   },
   {
     id: '4',
     company_name: 'Workdo',
     requested_date: '2024-04-10',
-    requested_amount: 50,
+    requested_amount: 75000,
     status: 'In Progress',
   },
 ]
@@ -115,9 +108,11 @@ function TransactionContent() {
   const [currentPage, setCurrentPage] = useState(1)
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount)
   }
 
