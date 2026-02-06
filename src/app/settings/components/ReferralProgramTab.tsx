@@ -212,9 +212,9 @@ function TransactionContent() {
                           {transaction.plan_name}
                         </Badge>
                       </TableCell>
-                      <TableCell>${formatCurrency(transaction.plan_price)}</TableCell>
+                      <TableCell>{formatCurrency(transaction.plan_price)}</TableCell>
                       <TableCell>{transaction.commission_percent}</TableCell>
-                      <TableCell>${formatCurrency(commissionAmount)}</TableCell>
+                      <TableCell>{formatCurrency(commissionAmount)}</TableCell>
                     </TableRow>
                   )
                 })
@@ -239,9 +239,11 @@ function TransactionContent() {
 // Payout Request Component
 function PayoutRequestContent() {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount)
   }
 
@@ -290,7 +292,7 @@ function PayoutRequestContent() {
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Total Commission Amount</p>
                 <p className="text-3xl font-bold text-pink-700 dark:text-pink-300">
-                  ${formatCurrency(totalCommissionAmount)}
+                  {formatCurrency(totalCommissionAmount)}
                 </p>
               </div>
               <div className="bg-pink-100 dark:bg-pink-900 p-3 rounded-lg">
@@ -307,7 +309,7 @@ function PayoutRequestContent() {
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Paid Amount</p>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                  ${formatCurrency(paidAmount)}
+                  {formatCurrency(paidAmount)}
                 </p>
               </div>
               <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
@@ -349,7 +351,7 @@ function PayoutRequestContent() {
                       <TableCell>{request.company_name}</TableCell>
                       <TableCell>{request.requested_date}</TableCell>
                       <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell>${formatCurrency(request.requested_amount)}</TableCell>
+                      <TableCell>{formatCurrency(request.requested_amount)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -384,8 +386,8 @@ function ReferralSettingsContent() {
             </h3>
             <ol className="space-y-3 list-decimal list-inside">
               <li className="text-sm">
-                Refer new users to us and earn ${commissionAmount} for each successful referral.
-                (${commissionAmount} - set commission amount)
+                Refer new users to us and earn {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(commissionAmount))} for each successful referral.
+                (Commission amount in Rupiah - set commission amount)
               </li>
               <li className="text-sm">Share your link and start earning today!</li>
             </ol>

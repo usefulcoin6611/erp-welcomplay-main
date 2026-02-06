@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
 import { ArrowLeft, Check, Search, Monitor, Briefcase, Calendar, FileText, Target, Users, Database, CreditCard, Building2 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { PLAN_DATA } from '@/lib/plan-data'
 
 interface Plan {
   id: string
@@ -174,10 +175,12 @@ export default function SubscribePage({ params }: SubscribePageProps) {
     loadParams()
   }, [params])
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+  const formatPriceIdr = (price: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(price)
   }
 
@@ -255,7 +258,8 @@ export default function SubscribePage({ params }: SubscribePageProps) {
     )
   }
 
-  const totalPrice = plan.price * 1.1 // Include 10% tax
+  const planPriceIdr = PLAN_DATA.find((p) => p.name === plan.name)?.price ?? plan.price
+  const totalPrice = Math.round(planPriceIdr * 1.1) // Include 10% tax (Pajak 10%)
 
   return (
     <SidebarProvider
@@ -271,19 +275,20 @@ export default function SubscribePage({ params }: SubscribePageProps) {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header */}
+            {/* Header - Subscribe to Plan card with back button inside, rata kanan */}
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="px-6">
-                <div className="flex items-center justify-between">
-                  <div>
+              <CardHeader className="px-6 w-full">
+                <div className="flex w-full items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
                     <CardTitle className="text-lg font-semibold">Subscribe to Plan</CardTitle>
                     <CardDescription>
                       Complete your subscription by providing payment information
                     </CardDescription>
                   </div>
-                  <Link href="/settings?tab=subscription-plan">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Link href="/settings?tab=subscription-plan" className="shrink-0 ml-auto">
+                    <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
                       <ArrowLeft className="h-4 w-4" />
+                      Kembali ke Daftar Plan
                     </Button>
                   </Link>
                 </div>
@@ -376,10 +381,10 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                         <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-base px-4 py-2`}>
                           {plan.name}
                         </Badge>
-                        {plan.price > 0 && (
+                        {planPriceIdr > 0 && (
                           <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold">${formatPrice(plan.price)}</span>
-                            <span className="text-sm text-muted-foreground">/month</span>
+                            <span className="text-2xl font-bold">{formatPriceIdr(planPriceIdr)}</span>
+                            <span className="text-sm text-muted-foreground">/bulan</span>
                           </div>
                         )}
                       </div>
@@ -476,7 +481,7 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                         type="submit"
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-none h-12 text-base font-semibold mt-2"
                       >
-                        Subscribe to Plan - {plan.price === 0 ? 'Free' : `$${formatPrice(totalPrice)}`}
+                        Subscribe to Plan - {planPriceIdr === 0 ? 'Gratis' : formatPriceIdr(totalPrice)}
                       </Button>
                     </form>
                   </CardContent>
