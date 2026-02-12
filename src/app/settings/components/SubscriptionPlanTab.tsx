@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
-import { Check, CirclePlus, CircleMinus } from 'lucide-react'
+import { Check, CirclePlus } from 'lucide-react'
 import { PLAN_DATA, PlanData } from '@/lib/plan-data'
 
 export function SubscriptionPlanTab() {
@@ -109,54 +109,42 @@ export function SubscriptionPlanTab() {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      {plan.account ? (
-                        <CirclePlus className="h-4 w-4 text-primary" />
-                      ) : (
-                        <CircleMinus className="h-4 w-4 text-destructive" />
-                      )}
-                      <span>{plan.account ? 'Enable' : 'Disable'} Account</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      {plan.crm ? (
-                        <CirclePlus className="h-4 w-4 text-primary" />
-                      ) : (
-                        <CircleMinus className="h-4 w-4 text-destructive" />
-                      )}
-                      <span>{plan.crm ? 'Enable' : 'Disable'} CRM</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      {plan.hrm ? (
-                        <CirclePlus className="h-4 w-4 text-primary" />
-                      ) : (
-                        <CircleMinus className="h-4 w-4 text-destructive" />
-                      )}
-                      <span>{plan.hrm ? 'Enable' : 'Disable'} HRM</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      {plan.project ? (
-                        <CirclePlus className="h-4 w-4 text-primary" />
-                      ) : (
-                        <CircleMinus className="h-4 w-4 text-destructive" />
-                      )}
-                      <span>{plan.project ? 'Enable' : 'Disable'} Project</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      {plan.pos ? (
-                        <CirclePlus className="h-4 w-4 text-primary" />
-                      ) : (
-                        <CircleMinus className="h-4 w-4 text-destructive" />
-                      )}
-                      <span>{plan.pos ? 'Enable' : 'Disable'} POS</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      {plan.chatgpt ? (
-                        <CirclePlus className="h-4 w-4 text-primary" />
-                      ) : (
-                        <CircleMinus className="h-4 w-4 text-destructive" />
-                      )}
-                      <span>{plan.chatgpt ? 'Enable' : 'Disable'} Chat GPT</span>
-                    </div>
+                    {plan.account && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>Account</span>
+                      </div>
+                    )}
+                    {plan.crm && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>CRM</span>
+                      </div>
+                    )}
+                    {plan.hrm && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>HRM</span>
+                      </div>
+                    )}
+                    {plan.project && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>Project</span>
+                      </div>
+                    )}
+                    {plan.pos && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>POS</span>
+                      </div>
+                    )}
+                    {plan.chatgpt && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>Chat GPT</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

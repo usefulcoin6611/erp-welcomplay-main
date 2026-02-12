@@ -38,7 +38,7 @@ interface Company {
   email: string
   avatar?: string
   plan?: string
-  plan_expire_date?: string
+  plan_expire_date?: string | null
   is_active: boolean
   is_enable_login: boolean
   last_login_at: string
