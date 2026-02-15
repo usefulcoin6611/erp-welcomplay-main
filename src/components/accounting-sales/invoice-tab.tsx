@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import * as React from 'react'
 import Link from "next/link"
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -54,67 +55,26 @@ import {
   Pencil,
   Trash2,
   RefreshCw,
+  ArrowLeft,
 } from "lucide-react"
+import * as QRCode from 'qrcode'
 
-// Mock invoice data
-const mockInvoices = [
-  {
-    id: "INV-2025-001",
-    issueDate: "2025-12-01",
-    dueDate: "2025-12-31",
-    dueAmount: 12500000,
-    status: 0, // Draft
-  },
-  {
-    id: "INV-2025-002",
-    issueDate: "2025-12-03",
-    dueDate: "2025-12-20",
-    dueAmount: 9800000,
-    status: 1, // Sent
-  },
-  {
-    id: "INV-2025-003",
-    issueDate: "2025-12-05",
-    dueDate: "2025-12-15",
-    dueAmount: 15000000,
-    status: 2, // Unpaid
-  },
-  {
-    id: "INV-2025-004",
-    issueDate: "2025-12-07",
-    dueDate: "2025-12-10",
-    dueAmount: 7500000,
-    status: 3, // Partial
-  },
-  {
-    id: "INV-2025-005",
-    issueDate: "2025-12-10",
-    dueDate: "2025-12-25",
-    dueAmount: 20000000,
-    status: 4, // Paid
-  },
-]
+// Backend data holders
+const initialInvoices: any[] = []
 
 const statusMap: {
   [key: number]: { label: string; color: string }
 } = {
-  0: { label: "Draft", color: "bg-gray-100 text-gray-700" },
-  1: { label: "Sent", color: "bg-yellow-100 text-yellow-700" },
-  2: { label: "Unpaid", color: "bg-red-100 text-red-700" },
-  3: { label: "Partial", color: "bg-cyan-100 text-cyan-700" },
-  4: { label: "Paid", color: "bg-blue-100 text-blue-700" },
+  0: { label: "Draft", color: "bg-blue-100 text-blue-700 border-none" },
+  1: { label: "Sent", color: "bg-yellow-100 text-yellow-700 border-none" },
+  2: { label: "Unpaid", color: "bg-red-100 text-red-700 border-none" },
+  3: { label: "Partially Paid", color: "bg-cyan-100 text-cyan-700 border-none" },
+  4: { label: "Paid", color: "bg-blue-100 text-blue-700 border-none" },
 }
 
-const mockCustomers = [
-  { id: 1, name: 'PT Teknologi Digital Indonesia' },
-  { id: 2, name: 'CV Mitra Sejahtera' },
-  { id: 3, name: 'PT Maju Jaya' },
-]
+const initialCustomers: { id: string; name: string }[] = []
 
-const mockCategories = [
-  { id: 1, name: 'Income' },
-  { id: 2, name: 'Expense' },
-]
+const initialCategories: { id: string; name: string }[] = []
 
 const mockProducts = [
   { id: 1, name: 'Product A', price: 100000, unit: 'pcs' },
@@ -141,7 +101,7 @@ export function InvoiceTab() {
     amount: number
   }
 
-  type InvoiceRow = (typeof mockInvoices)[number] & {
+  type InvoiceRow = (typeof initialInvoices)[number] & {
     customer: string
     category: string
     refNumber: string
@@ -149,26 +109,11 @@ export function InvoiceTab() {
     items: InvoiceItem[]
   }
 
-  const [invoices, setInvoices] = useState<InvoiceRow[]>(() =>
-    mockInvoices.map((inv) => ({
-      ...inv,
-      customer: '',
-      category: '',
-      refNumber: '',
-      description: '',
-      items: [],
-    })),
-  )
-  const [filteredInvoices, setFilteredInvoices] = useState<InvoiceRow[]>(() =>
-    mockInvoices.map((inv) => ({
-      ...inv,
-      customer: '',
-      category: '',
-      refNumber: '',
-      description: '',
-      items: [],
-    })),
-  )
+  const searchParams = useSearchParams()
+  const preselectInvoiceId = searchParams.get('invoiceId')
+
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([])
+  const [filteredInvoices, setFilteredInvoices] = useState<InvoiceRow[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [dateFilter, setDateFilter] = useState('')
@@ -186,8 +131,155 @@ export function InvoiceTab() {
     refNumber: '',
     description: '',
   })
-  const [invoiceNumber] = useState(`INV-2025-${String(mockInvoices.length + 1).padStart(3, '0')}`)
+  const [invoiceNumber] = useState(`INV-2026-${String((invoices?.length || 0) + 1).padStart(3, '0')}`)
   const [items, setItems] = useState<InvoiceItem[]>([])
+  const [customers, setCustomers] = useState(initialCustomers)
+  const [categories, setCategories] = useState(initialCategories)
+
+  type InvoiceDetail = {
+    invoiceId: string
+    status: number
+    issueDate: string
+    dueDate: string
+    dueAmount: number
+    description?: string
+    customerId?: string
+    categoryId?: string
+    customer?: { name?: string; customerCode?: string }
+    items: {
+      id: string
+      itemName: string
+      quantity: number
+      price: number
+      discount: number
+      taxRate: number
+      amount: number
+      description?: string
+    }[]
+  }
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+
+  const loadInvoiceDetail = async (invoiceId: string) => {
+    setLoadingDetail(true)
+    setDetailError(null)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}`)
+      const json = await res.json()
+      if (!json.success) {
+        setDetailError('Failed to load invoice')
+      } else {
+        const e = json.data as any
+        setSelectedInvoice({
+          invoiceId: e.invoiceId,
+          status: e.status,
+          issueDate: e.issueDate,
+          dueDate: e.dueDate,
+          dueAmount: e.dueAmount,
+          description: e.description ?? '',
+          customerId: e.customerId ?? '',
+          categoryId: e.categoryId ?? '',
+          customer: { name: e.customer?.name ?? '', customerCode: e.customer?.customerCode ?? '' },
+          items: (e.items ?? []).map((it: any) => ({
+            id: it.id,
+            itemName: it.itemName,
+            quantity: it.quantity,
+            price: it.price,
+            discount: it.discount,
+            taxRate: it.taxRate,
+            amount: it.amount,
+            description: it.description ?? '',
+          })),
+        })
+      }
+    } catch {
+      setDetailError('Failed to load invoice')
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
+  const computeTotals = React.useMemo(() => {
+    if (!selectedInvoice) return { subTotal: 0, discount: 0, tax: 0, total: 0 }
+    const subTotal = selectedInvoice.items.reduce((sum, it) => sum + (it.quantity * it.price - it.discount), 0)
+    const tax = selectedInvoice.items.reduce((sum, it) => {
+      const base = it.quantity * it.price - it.discount
+      return sum + (it.taxRate / 100) * base
+    }, 0)
+    const total = selectedInvoice.items.reduce((sum, it) => sum + it.amount, 0) || subTotal + tax
+    const discount = selectedInvoice.items.reduce((sum, it) => sum + it.discount, 0)
+    return { subTotal, discount, tax, total }
+  }, [selectedInvoice])
+
+  useEffect(() => {
+    if (!selectedInvoice) {
+      setQrDataUrl(null)
+      return
+    }
+    const text = selectedInvoice.invoiceId ? String(selectedInvoice.invoiceId) : ''
+    QRCode.toDataURL(text, {
+      errorCorrectionLevel: 'M',
+      width: 100,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    })
+      .then((url: string) => setQrDataUrl(url))
+      .catch(() => setQrDataUrl(null))
+  }, [selectedInvoice])
+
+  useEffect(() => {
+    if (preselectInvoiceId) {
+      loadInvoiceDetail(preselectInvoiceId)
+    }
+  }, [preselectInvoiceId])
+
+  useEffect(() => {
+    const loadBaseData = async () => {
+      try {
+        const [invRes, custRes, catRes] = await Promise.all([
+          fetch(`/api/invoices`).then(r => r.json()).catch(() => ({ success: false })),
+          fetch(`/api/customers`).then(r => r.json()).catch(() => ({ success: false })),
+          fetch(`/api/categories`).then(r => r.json()).catch(() => ({ success: false })),
+        ])
+        if (invRes?.success && Array.isArray(invRes.data)) {
+          const loaded: InvoiceRow[] = invRes.data.map((e: any) => ({
+            id: e.id,
+            issueDate: e.issueDate,
+            dueDate: e.dueDate,
+            dueAmount: e.dueAmount,
+            status: e.status,
+            customer: e.customerId || '',
+            category: e.categoryId || '',
+            refNumber: '',
+            description: e.description || '',
+            items: (e.items || []).map((it: any) => ({
+              id: it.id,
+              item: it.item,
+              quantity: it.quantity,
+              price: it.price,
+              discount: it.discount,
+              tax: '',
+              taxRate: it.taxRate,
+              description: it.description || '',
+              amount: it.amount || 0,
+            })),
+          }))
+          setInvoices(loaded)
+          setFilteredInvoices(loaded)
+        }
+        if (custRes?.success && Array.isArray(custRes.data)) {
+          setCustomers(custRes.data.map((c: any) => ({ id: c.id, name: c.name })))
+        }
+        if (catRes?.success && Array.isArray(catRes.data)) {
+          setCategories(catRes.data.map((c: any) => ({ id: c.id, name: c.name })))
+        }
+      } catch {
+        // silent fallback
+      }
+    }
+    loadBaseData()
+  }, [])
 
   // Calculate item amount
   const calculateItemAmount = (item: typeof items[0]) => {
@@ -246,11 +338,16 @@ export function InvoiceTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!invoiceToDelete) return
-    setInvoices((prev) => prev.filter((i) => i.id !== invoiceToDelete.id))
-    setInvoiceToDelete(null)
-    setDeleteDialogOpen(false)
+    try {
+      await fetch(`/api/invoices/${invoiceToDelete.id}`, { method: "DELETE" })
+      setInvoices((prev) => prev.filter((i) => i.id !== invoiceToDelete.id))
+      setFilteredInvoices((prev) => prev.filter((i) => i.id !== invoiceToDelete.id))
+    } finally {
+      setInvoiceToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   const addItem = () => {
@@ -295,43 +392,91 @@ export function InvoiceTab() {
     }))
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const { totalAmount } = calculateTotals()
 
     if (editingId) {
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.id === editingId
-            ? {
-                ...inv,
-                customer: formData.customer,
-                category: formData.category,
-                issueDate: formData.issueDate,
-                dueDate: formData.dueDate,
-                refNumber: formData.refNumber,
-                description: formData.description,
-                items,
-                dueAmount: totalAmount,
-              }
-            : inv,
-        ),
-      )
-    } else {
-      const newId = `INV-2025-${String(invoices.length + 1).padStart(3, '0')}`
-      const newInvoice: InvoiceRow = {
-        id: newId,
-        issueDate: formData.issueDate,
-        dueDate: formData.dueDate,
-        dueAmount: totalAmount,
-        status: 0,
-        customer: formData.customer,
-        category: formData.category,
-        refNumber: formData.refNumber,
-        description: formData.description,
-        items,
+      await fetch(`/api/invoices/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: formData.customer,
+          categoryId: formData.category,
+          issueDate: formData.issueDate,
+          dueDate: formData.dueDate,
+          description: formData.description,
+          dueAmount: totalAmount,
+        }),
+      })
+      const res = await fetch(`/api/invoices`).then(r => r.json()).catch(() => ({ success: false }))
+      if (res?.success && Array.isArray(res.data)) {
+        const loaded: InvoiceRow[] = res.data.map((e: any) => ({
+          id: e.id,
+          issueDate: e.issueDate,
+          dueDate: e.dueDate,
+          dueAmount: e.dueAmount,
+          status: e.status,
+          customer: e.customerId || '',
+          category: e.categoryId || '',
+          refNumber: '',
+          description: e.description || '',
+          items: (e.items || []).map((it: any) => ({
+            id: it.id,
+            item: it.item,
+            quantity: it.quantity,
+            price: it.price,
+            discount: it.discount,
+            tax: '',
+            taxRate: it.taxRate,
+            description: it.description || '',
+            amount: it.amount || 0,
+          })),
+        }))
+        setInvoices(loaded)
+        setFilteredInvoices(loaded)
       }
-      setInvoices((prev) => [...prev, newInvoice])
+    } else {
+      await fetch(`/api/invoices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: formData.customer,
+          categoryId: formData.category,
+          issueDate: formData.issueDate,
+          dueDate: formData.dueDate,
+          description: formData.description,
+          dueAmount: totalAmount,
+          items,
+        }),
+      })
+      const res = await fetch(`/api/invoices`).then(r => r.json()).catch(() => ({ success: false }))
+      if (res?.success && Array.isArray(res.data)) {
+        const loaded: InvoiceRow[] = res.data.map((e: any) => ({
+          id: e.id,
+          issueDate: e.issueDate,
+          dueDate: e.dueDate,
+          dueAmount: e.dueAmount,
+          status: e.status,
+          customer: e.customerId || '',
+          category: e.categoryId || '',
+          refNumber: '',
+          description: e.description || '',
+          items: (e.items || []).map((it: any) => ({
+            id: it.id,
+            item: it.item,
+            quantity: it.quantity,
+            price: it.price,
+            discount: it.discount,
+            tax: '',
+            taxRate: it.taxRate,
+            description: it.description || '',
+            amount: it.amount || 0,
+          })),
+        }))
+        setInvoices(loaded)
+        setFilteredInvoices(loaded)
+      }
     }
     setCreateDialogOpen(false)
     setEditingId(null)
@@ -362,7 +507,7 @@ export function InvoiceTab() {
     }
   }
 
-  // Filter invoices
+  // Filter invoices (client-side backup)
   useEffect(() => {
     let filtered = [...invoices]
     
@@ -373,10 +518,13 @@ export function InvoiceTab() {
     if (statusFilter !== 'all') {
       filtered = filtered.filter(i => i.status === parseInt(statusFilter))
     }
+    if (customerFilter !== 'all') {
+      filtered = filtered.filter(i => i.customer === customerFilter)
+    }
     
     setFilteredInvoices(filtered)
     setCurrentPage(1)
-  }, [dateFilter, statusFilter, invoices])
+  }, [dateFilter, statusFilter, customerFilter, invoices])
 
   // Paginated invoices
   const paginatedInvoices = filteredInvoices.slice(
@@ -405,48 +553,300 @@ export function InvoiceTab() {
     return new Date(dueDate) < new Date()
   }
 
-  return (
-    <div className="space-y-4 w-full">
-      {/* Title Tab */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="px-6">
-          <div className="min-w-0 space-y-1">
-            <CardTitle className="text-lg font-semibold">Invoice</CardTitle>
-            <CardDescription>Create and manage invoices for customers.</CardDescription>
+  if (selectedInvoice) {
+    return (
+      <div className="space-y-6 w-full">
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+          <CardHeader className="px-6">
+            <div className="flex items-center gap-4 w-full">
+              <div className="min-w-0 space-y-1 flex-1">
+                <CardTitle className="text-base font-normal truncate">Invoice Detail</CardTitle>
+                <p className="text-sm text-muted-foreground truncate">{selectedInvoice.invoiceId}</p>
+              </div>
+              <div className="ml-auto flex items-center gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-8 px-3 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                  asChild
+                >
+                  <Link href={`/accounting/invoice/${selectedInvoice.invoiceId}/edit`}>Edit</Link>
+                </Button>
+                <Select
+                  value={String(selectedInvoice.status)}
+                  onValueChange={(v) => {
+                    const n = parseInt(v, 10)
+                    fetch(`/api/invoices/${selectedInvoice.invoiceId}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: n }),
+                    }).then(() => {
+                      setSelectedInvoice({ ...selectedInvoice, status: n })
+                    })
+                  }}
+                >
+                  <SelectTrigger className="w-40 h-8">
+                    <SelectValue placeholder={statusMap[selectedInvoice.status].label} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusMap).map(([k, v]) => (
+                      <SelectItem key={k} value={String(k)}>{v.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" className="shadow-none h-8 w-8 p-0" onClick={() => setSelectedInvoice(null)}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border rounded-md p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Create Invoice</div>
+                    <div className="text-muted-foreground">{new Date(selectedInvoice.issueDate).toLocaleDateString('id-ID')}</div>
+                  </div>
+                  <Badge className={statusMap[0].color}>{statusMap[0].label}</Badge>
+                </div>
+              </div>
+              <div className="border rounded-md p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Send Invoice</div>
+                    <div className="text-muted-foreground">{new Date(selectedInvoice.issueDate).toLocaleDateString('id-ID')}</div>
+                  </div>
+                  <Badge className={statusMap[Math.max(1, selectedInvoice.status)].color}>{statusMap[Math.max(1, selectedInvoice.status)].label}</Badge>
+                </div>
+              </div>
+              <div className="border rounded-md p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Get Paid</div>
+                    <div className="text-muted-foreground">Awaiting payment</div>
+                  </div>
+                  <Button variant="outline" size="sm" className="shadow-none h-8 px-3">Add Payment</Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+            {selectedInvoice.status !== 0 && (
+          <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
+            {selectedInvoice.status !== 4 && (
+              <>
+                <Button size="sm" variant="default" className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700">
+                  Apply Credit Note
+                </Button>
+                <Button size="sm" variant="default" className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700">
+                  Receipt Reminder
+                </Button>
+              </>
+            )}
+            <Button size="sm" variant="default" className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700">
+              Resend Invoice
+            </Button>
+            <Button size="sm" variant="default" className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700">
+              Download
+            </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-            title="Export"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export Invoice
-          </Button>
-          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-            <DialogTrigger asChild>
+        )}
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+          <CardHeader className="px-6">
+            <div className="w-full flex items-center justify-between">
+              <CardTitle className="text-base font-normal">Invoice</CardTitle>
+              <span className="text-base font-semibold">#{selectedInvoice.invoiceId}</span>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6 space-y-6">
+            <div className="flex justify-end">
+              <div className="flex items-center gap-6">
+                <div>
+                  <div className="text-xs text-muted-foreground">Issue Date :</div>
+                  <div className="text-sm font-medium">{new Date(selectedInvoice.issueDate).toLocaleDateString('id-ID')}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Due Date :</div>
+                  <div className="text-sm font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString('id-ID')}</div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-1 text-sm">
+                <div className="font-medium">Billed To :</div>
+                <div>{selectedInvoice.customer?.name || '-'}</div>
+                <div className="text-muted-foreground">{selectedInvoice.customer?.customerCode || '-'}</div>
+                <div className="text-muted-foreground">Tax Number : 001</div>
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="font-medium">Shipped To :</div>
+                <div>{selectedInvoice.customer?.name || '-'}</div>
+                <div className="text-muted-foreground">{selectedInvoice.customer?.customerCode || '-'}</div>
+              </div>
+              <div className="flex items-start justify-end">
+                <div className="flex flex-col items-end gap-3">
+                  {qrDataUrl ? (
+                    <img src={qrDataUrl} alt="QR" className="w-[100px] h-[100px] rounded-lg border border-border bg-white p-1" />
+                  ) : (
+                    <div className="w-[100px] h-[100px] rounded-lg bg-white p-2 border border-border" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-sm">
+              <span className="text-muted-foreground">Status :</span>{' '}
+              <Badge className={statusMap[selectedInvoice.status].color}>
+                {statusMap[selectedInvoice.status].label}
+              </Badge>
+            </div>
+
+            <div className="overflow-x-auto w-full">
+              <Table className="w-full min-w-full table-auto">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-6">#</TableHead>
+                    <TableHead className="px-6">Product</TableHead>
+                    <TableHead className="px-6">Quantity</TableHead>
+                    <TableHead className="px-6">Rate</TableHead>
+                    <TableHead className="px-6">Discount</TableHead>
+                    <TableHead className="px-6">Tax</TableHead>
+                    <TableHead className="px-6">Description</TableHead>
+                    <TableHead className="px-6 text-right">Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectedInvoice.items.map((it, idx) => {
+                    const qty = it.quantity
+                    const rate = it.price
+                    const base = qty * rate - it.discount
+                    const taxAmount = (it.taxRate / 100) * base
+                    const total = base + taxAmount
+                    return (
+                      <TableRow key={it.id}>
+                        <TableCell className="px-6">{idx + 1}</TableCell>
+                        <TableCell className="px-6">{it.itemName}</TableCell>
+                        <TableCell className="px-6">{qty} <span className="text-muted-foreground text-xs">Piece</span></TableCell>
+                        <TableCell className="px-6">Rp {rate.toLocaleString('id-ID')}</TableCell>
+                        <TableCell className="px-6">Rp {it.discount.toLocaleString('id-ID')}</TableCell>
+                        <TableCell className="px-6">
+                          <div>Tax ({it.taxRate}%)</div>
+                          <div className="text-muted-foreground">Rp {taxAmount.toLocaleString('id-ID')}</div>
+                        </TableCell>
+                        <TableCell className="px-6">{it.description || '-'}</TableCell>
+                        <TableCell className="px-6 text-right">
+                          <div>Rp {total.toLocaleString('id-ID')}</div>
+                          <div className="text-[10px] text-pink-600">after tax & discount</div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-start-4 md:col-span-1 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Sub Total</span><span>Rp {computeTotals.subTotal.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span>Rp {computeTotals.discount.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>Rp {computeTotals.tax.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between font-medium border-t pt-2"><span>Total</span><span>Rp {computeTotals.total.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Paid</span><span>Rp {(Math.max(computeTotals.total - (selectedInvoice?.dueAmount || 0), 0)).toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Credit Note Applied</span><span>Rp {0..toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Credit Note Issued</span><span>Rp {0..toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Due</span><span>Rp {(selectedInvoice?.dueAmount || 0).toLocaleString('id-ID')}</span></div>
+              </div>
+            </div>
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+              <CardHeader className="px-6">
+                <CardTitle className="text-base font-normal">Receipt Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6">
+                <div className="overflow-x-auto w-full">
+                  <Table className="w-full min-w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-6">Payment Receipt</TableHead>
+                        <TableHead className="px-6">Date</TableHead>
+                        <TableHead className="px-6">Amount</TableHead>
+                        <TableHead className="px-6">Payment Type</TableHead>
+                        <TableHead className="px-6">Account</TableHead>
+                        <TableHead className="px-6">Reference</TableHead>
+                        <TableHead className="px-6">Description</TableHead>
+                        <TableHead className="px-6">Receipt</TableHead>
+                        <TableHead className="px-6">OrderId</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No receipts found</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+              <CardHeader className="px-6">
+                <CardTitle className="text-base font-normal">Credit Note Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6">
+                <div className="overflow-x-auto w-full">
+                  <Table className="w-full min-w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-6">Credit Note</TableHead>
+                        <TableHead className="px-6">Date</TableHead>
+                        <TableHead className="px-6">Amount</TableHead>
+                        <TableHead className="px-6">Description</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No Data Found</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (createDialogOpen) {
+    return (
+      <div className="space-y-6 w-full">
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+          <CardHeader className="px-6">
+            <div className="min-w-0 space-y-1">
+              <CardTitle className="text-lg font-semibold">{editingId ? 'Edit Invoice' : 'Create Invoice'}</CardTitle>
+              <CardDescription>{editingId ? 'Update invoice information.' : 'Create a new invoice. Fill in the required information.'}</CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="blue"
+                variant="outline"
                 size="sm"
-                className="shadow-none h-7 px-4"
-                title="Create"
-                onClick={() => setEditingId(null)}
+                className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                onClick={() => handleDialogOpenChange(false)}
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Invoice
+                Cancel
               </Button>
-            </DialogTrigger>
-          <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto" style={{ width: '95vw', maxWidth: '95vw' }}>
-            <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Invoice' : 'Create Invoice'}</DialogTitle>
-              <DialogDescription>
-                {editingId ? 'Update invoice information' : 'Create a new invoice. Fill in the required information.'}
-              </DialogDescription>
-            </DialogHeader>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+          <CardContent className="px-6">
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="customer">
                       Customer <span className="text-red-500">*</span>
@@ -456,12 +856,12 @@ export function InvoiceTab() {
                       onValueChange={(value) => setFormData({ ...formData, customer: value })}
                       required
                     >
-                      <SelectTrigger id="customer">
+                      <SelectTrigger id="customer" className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3">
                         <SelectValue placeholder="Select Customer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockCustomers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id.toString()}>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
                             {customer.name}
                           </SelectItem>
                         ))}
@@ -471,20 +871,48 @@ export function InvoiceTab() {
                       Create customer here. <span className="font-medium text-primary cursor-pointer">Create customer</span>
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="issueDate">
-                        Issue Date <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="issueDate"
-                        type="date"
-                        value={formData.issueDate}
-                        onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
-                        required
-                      />
+                  <div className="space-y-2">
+                    <Label htmlFor="issueDate">
+                      Issue Date <span className="text-red-500">*</span>
+                    </Label>
+                    <DatePicker
+                      id="issueDate"
+                      value={formData.issueDate}
+                      onValueChange={(v) => setFormData({ ...formData, issueDate: v })}
+                      placeholder="Set a date"
+                      className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                      iconPlacement="right"
+                    />
+                    <input tabIndex={-1} aria-hidden="true" className="sr-only" required value={formData.issueDate} onChange={() => {}} />
+                    <div className="space-y-2 mt-3">
+                      <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                      <Input id="invoiceNumber" value={invoiceNumber} disabled className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3" />
                     </div>
-                    <div className="space-y-2">
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                      required
+                    >
+                      <SelectTrigger id="category" className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Create category here. <Link href="/accounting/setup/custom-field?tab=category" className="font-medium text-primary">Create category</Link>
+                    </p>
+                    <div className="space-y-2 mt-3">
                       <Label htmlFor="dueDate">
                         Due Date <span className="text-red-500">*</span>
                       </Label>
@@ -494,43 +922,10 @@ export function InvoiceTab() {
                         value={formData.dueDate}
                         onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                         required
+                        className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                      <Input
-                        id="invoiceNumber"
-                        type="text"
-                        value={invoiceNumber}
-                        readOnly
-                        className="bg-gray-50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">
-                        Category <span className="text-red-500">*</span>
-                      </Label>
-                      <Select
-                        value={formData.category}
-                        onValueChange={(value) => setFormData({ ...formData, category: value })}
-                        required
-                      >
-                        <SelectTrigger id="category">
-                          <SelectValue placeholder="Select Category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {mockCategories.map((category) => (
-                            <SelectItem key={category.id} value={category.id.toString()}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Create category here. <span className="font-medium text-primary cursor-pointer">Create category</span>
-                      </p>
-                    </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-3">
                       <Label htmlFor="refNumber">Ref Number</Label>
                       <Input
                         id="refNumber"
@@ -538,6 +933,7 @@ export function InvoiceTab() {
                         value={formData.refNumber}
                         onChange={(e) => setFormData({ ...formData, refNumber: e.target.value })}
                         placeholder="Enter Ref Number"
+                        className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
                       />
                     </div>
                   </div>
@@ -554,7 +950,6 @@ export function InvoiceTab() {
                 </div>
               </div>
 
-              {/* Product & Services Section */}
               <div className="mt-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-lg font-semibold">Product & Services</h5>
@@ -715,7 +1110,6 @@ export function InvoiceTab() {
                   </div>
                 )}
 
-                {/* Totals Section */}
                 {items.length > 0 && (
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex justify-end">
@@ -749,17 +1143,53 @@ export function InvoiceTab() {
                   </div>
                 )}
               </div>
-              <DialogFooter>
-                <Button variant="outline" type="button" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+              <div className="flex items-center gap-2 mt-6 justify-end">
+                <Button variant="outline" type="button" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                   Cancel
                 </Button>
                 <Button variant="blue" type="submit" className="shadow-none">
-                    {editingId ? 'Update' : 'Create'}
+                  {editingId ? 'Update' : 'Create'}
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
-          </DialogContent>
-          </Dialog>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4 w-full">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Invoice</CardTitle>
+            <CardDescription>Create and manage invoices for customers.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Invoice
+          </Button>
+          <Button
+            variant="blue"
+            size="sm"
+            className="shadow-none h-7 px-4"
+            title="Create"
+            onClick={() => {
+              setEditingId(null)
+              setCreateDialogOpen(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Invoice
+          </Button>
           </div>
         </CardHeader>
       </Card>
@@ -799,8 +1229,8 @@ export function InvoiceTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Select Customer</SelectItem>
-                  {mockCustomers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
                   ))}
@@ -837,6 +1267,40 @@ export function InvoiceTab() {
                 size="sm"
                 className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                 title="Apply"
+                onClick={async () => {
+                  const params = new URLSearchParams()
+                  if (dateFilter) params.set("date", dateFilter)
+                  if (statusFilter !== "all") params.set("status", statusFilter)
+                  if (customerFilter !== "all") params.set("customerId", customerFilter)
+                  const res = await fetch(`/api/invoices?${params.toString()}`).then(r => r.json()).catch(() => ({ success: false }))
+                  if (res?.success && Array.isArray(res.data)) {
+                    const loaded: InvoiceRow[] = res.data.map((e: any) => ({
+                      id: e.id,
+                      issueDate: e.issueDate,
+                      dueDate: e.dueDate,
+                      dueAmount: e.dueAmount,
+                      status: e.status,
+                      customer: e.customerId || '',
+                      category: e.categoryId || '',
+                      refNumber: '',
+                      description: e.description || '',
+                      items: (e.items || []).map((it: any) => ({
+                        id: it.id,
+                        item: it.item,
+                        quantity: it.quantity,
+                        price: it.price,
+                        discount: it.discount,
+                        tax: '',
+                        taxRate: it.taxRate,
+                        description: it.description || '',
+                        amount: it.amount || 0,
+                      })),
+                    }))
+                    setInvoices(loaded)
+                    setFilteredInvoices(loaded)
+                    setCurrentPage(1)
+                  }
+                }}
               >
                 <Search className="h-3 w-3" />
               </Button>
@@ -896,10 +1360,16 @@ export function InvoiceTab() {
                       </TableCell>
                       <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" title="View" asChild>
-                            <Link href={`/accounting/invoice/${invoice.id}`}>
-                              <Eye className="h-3 w-3" />
-                            </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                            title="View"
+                            onClick={() => {
+                              loadInvoiceDetail(invoice.id)
+                            }}
+                          >
+                            <Eye className="h-3 w-3" />
                           </Button>
                           {(invoice.status !== 3 && invoice.status !== 4) && (
                             <Button
@@ -907,9 +1377,11 @@ export function InvoiceTab() {
                               size="sm"
                               className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                               title="Edit"
-                              onClick={() => handleEdit(invoice)}
+                              asChild
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Link href={`/accounting/invoice/${invoice.id}/edit`}>
+                                <Pencil className="h-3 w-3" />
+                              </Link>
                             </Button>
                           )}
                           <Button

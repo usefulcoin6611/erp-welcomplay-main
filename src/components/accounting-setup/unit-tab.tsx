@@ -1,36 +1,66 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Unit = {
-  id: number
+  id: string
   name: string
 }
 
-const mockUnits: Unit[] = [
-  { id: 1, name: 'Piece' },
-  { id: 2, name: 'Kilogram' },
-  { id: 3, name: 'Liter' },
-  { id: 4, name: 'Meter' },
-]
-
 export function UnitTab() {
-  const [units, setUnits] = useState<Unit[]>(mockUnits)
+  const [units, setUnits] = useState<Unit[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingUnitId, setEditingUnitId] = useState<number | null>(null)
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingUnitId, setDeletingUnitId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [name, setName] = useState('')
+
+  const fetchUnits = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/units')
+      const result = await response.json()
+      if (result.success) {
+        setUnits(result.data)
+      } else {
+        toast.error(result.message || 'Gagal memuat data unit')
+      }
+    } catch (error) {
+      console.error('Error fetching units:', error)
+      toast.error('Terjadi kesalahan saat memuat data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchUnits()
+  }, [fetchUnits])
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return units
@@ -47,12 +77,30 @@ export function UnitTab() {
   const totalRecords = filteredData.length
   const isFormValid = name.trim().length > 0
 
-  const handleCreate = () => {
-    if (!isFormValid) return
-    const newUnit: Unit = { id: units.length + 1, name: name.trim() }
-    setUnits([...units, newUnit])
-    setName('')
-    setCreateDialogOpen(false)
+  const handleCreate = async () => {
+    if (!isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/units', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Unit berhasil dibuat')
+        setName('')
+        setCreateDialogOpen(false)
+        fetchUnits()
+      } else {
+        toast.error(result.message || 'Gagal membuat unit')
+      }
+    } catch (error) {
+      console.error('Error creating unit:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const startEdit = (unit: Unit) => {
@@ -61,19 +109,59 @@ export function UnitTab() {
     setEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (editingUnitId == null) return
-    if (!isFormValid) return
-    setUnits(units.map((u) => (u.id === editingUnitId ? { ...u, name: name.trim() } : u)))
-    setEditDialogOpen(false)
-    setEditingUnitId(null)
-    setName('')
+  const handleUpdate = async () => {
+    if (editingUnitId == null || !isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/units/${editingUnitId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Unit berhasil diperbarui')
+        setEditDialogOpen(false)
+        setEditingUnitId(null)
+        setName('')
+        fetchUnits()
+      } else {
+        toast.error(result.message || 'Gagal memperbarui unit')
+      }
+    } catch (error) {
+      console.error('Error updating unit:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setUnits(units.filter((u) => u.id !== id))
+  const handleDelete = async () => {
+    if (deletingUnitId == null) return
+    
+    try {
+      const response = await fetch(`/api/units/${deletingUnitId}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Unit berhasil dihapus')
+        fetchUnits()
+      } else {
+        toast.error(result.message || 'Gagal menghapus unit')
+      }
+    } catch (error) {
+      console.error('Error deleting unit:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeletingUnitId(null)
     }
+  }
+
+  const confirmDelete = (id: string) => {
+    setDeletingUnitId(id)
+    setDeleteDialogOpen(true)
   }
 
   return (
@@ -114,8 +202,15 @@ export function UnitTab() {
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
-                Create
+              <Button variant="blue" onClick={handleCreate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -167,7 +262,16 @@ export function UnitTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="px-6 text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading units...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.length > 0 ? (
                   paginatedData.map((unit) => (
                     <TableRow key={unit.id} className="font-style">
                       <TableCell className="px-6">{unit.name}</TableCell>
@@ -187,7 +291,7 @@ export function UnitTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
-                            onClick={() => handleDelete(unit.id)}
+                            onClick={() => confirmDelete(unit.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -253,12 +357,34 @@ export function UnitTab() {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid} className="shadow-none">
-              Update
+            <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are You Sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the unit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

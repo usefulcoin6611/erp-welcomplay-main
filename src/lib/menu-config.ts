@@ -277,7 +277,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             items: [
               { title: t("users"), url: "/users" },
               { title: "Roles", url: "/roles" },
-              { title: "Client", url: "/users/clients" },
+              { title: "Client", url: "/clients" },
             ],
           },
           {
@@ -432,7 +432,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             icon: IconUsersGroup,
             items: [
               { title: t("users"), url: "/users" },
-              { title: "Client", url: "/users/clients" },
+              { title: "Client", url: "/clients" },
             ],
           },
           {

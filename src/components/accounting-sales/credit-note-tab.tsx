@@ -50,57 +50,26 @@ import {
   Trash2,
 } from 'lucide-react'
 
-// Mock data
-const mockCreditNotes = [
-  {
-    id: 1,
-    creditId: 1,
-    invoice: 'INV-2025-001',
-    invoiceId: 1,
-    date: '2025-12-14',
-    amount: 2500000,
-    description: 'Service refund - partial completion',
-    status: 0, // 0: Pending, 1: Partially Used, 2: Fully Used
-  },
-  {
-    id: 2,
-    creditId: 2,
-    invoice: 'INV-2025-002',
-    invoiceId: 2,
-    date: '2025-12-12',
-    amount: 1200000,
-    description: 'Product return - quality issues',
-    status: 1,
-  },
-  {
-    id: 3,
-    creditId: 3,
-    invoice: 'INV-2025-003',
-    invoiceId: 3,
-    date: '2025-12-10',
-    amount: 500000,
-    description: 'Overpayment refund',
-    status: 0,
-  },
-  {
-    id: 4,
-    creditId: 4,
-    invoice: 'INV-2025-004',
-    invoiceId: 4,
-    date: '2025-12-08',
-    amount: 3000000,
-    description: 'Cancelled order',
-    status: 2,
-  },
-]
+type CreditNoteRow = {
+  id: string
+  creditId: number
+  invoice: string
+  invoiceId: string
+  date: string
+  amount: number
+  description: string
+  status: number
+}
 
-const mockInvoices = [
-  { id: 1, invoiceId: 'INV-2025-001' },
-  { id: 2, invoiceId: 'INV-2025-002' },
-  { id: 3, invoiceId: 'INV-2025-003' },
-  { id: 4, invoiceId: 'INV-2025-004' },
-  { id: 5, invoiceId: 'INV-2025-005' },
-]
+type InvoiceOption = {
+  id: string
+  invoiceId: string
+}
+
+type InvoiceItemOption = {
+  id: string
+  name: string
+}
 
 const statusLabels = ['Pending', 'Partially Used', 'Fully Used']
 
@@ -140,20 +109,71 @@ function getStatusBadge(status: number) {
 }
 
 export function CreditNoteTab() {
-  const [creditNotes, setCreditNotes] = useState(mockCreditNotes)
+  const [creditNotes, setCreditNotes] = useState<CreditNoteRow[]>([])
+  const [invoices, setInvoices] = useState<InvoiceOption[]>([])
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItemOption[]>([])
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [creditNoteToDelete, setCreditNoteToDelete] = useState<(typeof mockCreditNotes)[number] | null>(null)
+  const [creditNoteToDelete, setCreditNoteToDelete] = useState<CreditNoteRow | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
   const [formData, setFormData] = useState({
     invoice: '',
+    item: '',
     date: '',
+    amount: '',
     description: '',
   })
+
+  const fetchInvoiceItems = async (invoiceId: string) => {
+    if (!invoiceId) {
+      setInvoiceItems([])
+      return
+    }
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}`)
+      const json = await res.json()
+      if (json?.success && Array.isArray(json.data?.items)) {
+        setInvoiceItems(
+          json.data.items.map((it: any) => ({
+            id: it.id as string,
+            name: (it.itemName as string) || '',
+          })),
+        )
+      } else {
+        setInvoiceItems([])
+      }
+    } catch {
+      setInvoiceItems([])
+    }
+  }
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [cnRes, invRes] = await Promise.all([
+          fetch('/api/credit-notes').then((r) => r.json()).catch(() => ({ success: false })),
+          fetch('/api/invoices').then((r) => r.json()).catch(() => ({ success: false })),
+        ])
+        if (cnRes?.success && Array.isArray(cnRes.data)) {
+          setCreditNotes(cnRes.data as CreditNoteRow[])
+        }
+        if (invRes?.success && Array.isArray(invRes.data)) {
+          setInvoices(
+            invRes.data.map((e: any) => ({
+              id: e.id as string,
+              invoiceId: e.id as string,
+            })),
+          )
+        }
+      } catch {
+      }
+    }
+    loadData()
+  }, [])
 
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
@@ -161,75 +181,100 @@ export function CreditNoteTab() {
       setEditingId(null)
       setFormData({
         invoice: '',
+        item: '',
         date: '',
+        amount: '',
         description: '',
       })
+      setInvoiceItems([])
     }
   }
 
-  const handleEdit = (creditNote: (typeof mockCreditNotes)[number]) => {
+  const handleEdit = (creditNote: CreditNoteRow) => {
     setEditingId(creditNote.id)
     setFormData({
-      invoice: creditNote.invoiceId ? String(creditNote.invoiceId) : '',
+      invoice: creditNote.invoiceId || '',
+      item: '',
       date: creditNote.date,
+      amount: String(creditNote.amount || 0),
       description: creditNote.description === '-' ? '' : creditNote.description,
     })
+    fetchInvoiceItems(creditNote.invoiceId)
     setCreateDialogOpen(true)
   }
 
-  const handleDeleteClick = (creditNote: (typeof mockCreditNotes)[number]) => {
+  const handleDeleteClick = (creditNote: CreditNoteRow) => {
     setCreditNoteToDelete(creditNote)
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!creditNoteToDelete) return
-    setCreditNotes((prev) => prev.filter((cn) => cn.id !== creditNoteToDelete.id))
+    const res = await fetch(`/api/credit-notes/${creditNoteToDelete.id}`, { method: 'DELETE' })
+    const json = await res.json().catch(() => null)
+    if (!res.ok || json?.success === false) {
+      alert(json?.message || 'Gagal menghapus credit note')
+      return
+    }
+    const listRes = await fetch('/api/credit-notes').then((r) => r.json()).catch(() => ({ success: false }))
+    if (listRes?.success && Array.isArray(listRes.data)) {
+      setCreditNotes(listRes.data as CreditNoteRow[])
+    }
     setCreditNoteToDelete(null)
     setDeleteDialogOpen(false)
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const selectedInvoice = mockInvoices.find(inv => inv.id.toString() === formData.invoice)
+
+    const payload = {
+      invoiceId: formData.invoice,
+      date: formData.date,
+      amount: Number(formData.amount) || 0,
+      description: formData.description || '',
+    }
 
     if (editingId) {
-      setCreditNotes((prev) =>
-        prev.map((cn) =>
-          cn.id === editingId
-            ? {
-                ...cn,
-                invoice: selectedInvoice?.invoiceId || cn.invoice,
-                invoiceId: parseInt(formData.invoice) || cn.invoiceId,
-                date: formData.date,
-                description: formData.description || '-',
-              }
-            : cn,
-        ),
-      )
-    } else {
-      const newCreditId =
-        creditNotes.length > 0 ? Math.max(...creditNotes.map((cn) => cn.creditId)) + 1 : 1
-      const newCreditNote = {
-        id: creditNotes.length + 1,
-        creditId: newCreditId,
-        invoice: selectedInvoice?.invoiceId || '',
-        invoiceId: parseInt(formData.invoice) || 0,
-        date: formData.date,
-        amount: 0,
-        description: formData.description || '-',
-        status: 0,
+      const res = await fetch(`/api/credit-notes/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Gagal memperbarui credit note')
+        return
       }
-      setCreditNotes([...creditNotes, newCreditNote])
+    } else {
+      const res = await fetch('/api/credit-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Gagal membuat credit note')
+        return
+      }
     }
+
+    const listRes = await fetch('/api/credit-notes').then((r) => r.json()).catch(() => ({ success: false }))
+    if (listRes?.success && Array.isArray(listRes.data)) {
+      setCreditNotes(listRes.data as CreditNoteRow[])
+    }
+
     setCreateDialogOpen(false)
     setEditingId(null)
     setFormData({
       invoice: '',
+      item: '',
       date: '',
+      amount: '',
       description: '',
     })
   }
+
+  const editingNote = editingId ? creditNotes.find((cn) => cn.id === editingId) : null
 
   // Filter credit notes by search
   const filteredCreditNotes = useMemo(() => {
@@ -291,20 +336,68 @@ export function CreditNoteTab() {
                   </Label>
                   <Select
                     value={formData.invoice}
-                    onValueChange={(value) => setFormData({ ...formData, invoice: value })}
+                    onValueChange={(value) => {
+                      setFormData((prev) => ({ ...prev, invoice: value, item: '' }))
+                      fetchInvoiceItems(value)
+                    }}
                     required
                   >
                     <SelectTrigger id="invoice">
                       <SelectValue placeholder="Select Invoice" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockInvoices.map((inv) => (
-                        <SelectItem key={inv.id} value={inv.id.toString()}>
+                      {invoices.map((inv) => (
+                        <SelectItem key={inv.id} value={inv.invoiceId}>
                           {inv.invoiceId}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="item">
+                    Item <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.item}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, item: value }))}
+                    required
+                    disabled={invoiceItems.length === 0}
+                  >
+                    <SelectTrigger id="item">
+                      <SelectValue
+                        placeholder={
+                          invoiceItems.length ? 'Select Item' : 'Select invoice first'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {invoiceItems.map((it) => (
+                        <SelectItem key={it.id} value={it.id}>
+                          {it.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">
+                    Amount <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    required
+                  />
+                  {editingId && editingNote && (
+                    <p className="mt-1 text-xs text-red-500">
+                      Note: You can add maximum amount up to {formatPrice(editingNote.amount)}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date">
@@ -321,7 +414,7 @@ export function CreditNoteTab() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">
-                    Description <span className="text-red-500">*</span>
+                    Description
                   </Label>
                   <Textarea
                     id="description"
@@ -329,7 +422,6 @@ export function CreditNoteTab() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Enter Description"
                     rows={3}
-                    required
                   />
                 </div>
               </div>
@@ -403,7 +495,7 @@ export function CreditNoteTab() {
                       </TableCell>
                       <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">
-                          <Link href={`/accounting/invoice/${creditNote.invoiceId}`}>
+                          <Link href={`/accounting/sales?tab=invoice&invoiceId=${encodeURIComponent(creditNote.invoiceId)}`}>
                             {creditNote.invoice}
                           </Link>
                         </Button>
@@ -489,4 +581,3 @@ export function CreditNoteTab() {
     </div>
   )
 }
-

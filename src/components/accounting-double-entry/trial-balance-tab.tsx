@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,48 +11,24 @@ import {
   Filter,
   Search,
   RefreshCw,
+  Loader2,
 } from 'lucide-react'
 
-// Mock data based on reference structure
-const totalAccounts = {
-  Assets: [
-    {
-      account_name: 'Cash & Bank',
-      account_code: '1000',
-      totalDebit: 250_000_000,
-      totalCredit: 0,
-      account_id: 1,
-      account: '',
-    },
-    {
-      account_name: 'Accounts Receivable',
-      account_code: '1100',
-      totalDebit: 125_000_000,
-      totalCredit: 0,
-      account_id: 2,
-      account: '',
-    },
-  ],
-  Liabilities: [
-    {
-      account_name: 'Accounts Payable',
-      account_code: '2000',
-      totalDebit: 0,
-      totalCredit: 75_000_000,
-      account_id: 3,
-      account: '',
-    },
-  ],
-  Equity: [
-    {
-      account_name: 'Owner Equity',
-      account_code: '3000',
-      totalDebit: 0,
-      totalCredit: 300_000_000,
-      account_id: 4,
-      account: '',
-    },
-  ],
+interface TrialBalanceAccount {
+  account_id: string | number
+  account_code: string
+  account_name: string
+  totalDebit: number
+  totalCredit: number
+}
+
+interface TrialBalanceData {
+  Assets: TrialBalanceAccount[]
+  Liabilities: TrialBalanceAccount[]
+  Equity: TrialBalanceAccount[]
+  Income: TrialBalanceAccount[]
+  'Costs of Goods Sold': TrialBalanceAccount[]
+  Expenses: TrialBalanceAccount[]
 }
 
 function formatPrice(amount: number) {
@@ -66,125 +42,208 @@ function formatPrice(amount: number) {
 
 export function TrialBalanceTab() {
   const { user } = useAuth()
-  const [startDate, setStartDate] = useState('2025-01-01')
-  const [endDate, setEndDate] = useState('2025-12-31')
-  const [showFilter, setShowFilter] = useState(false)
+  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0])
+  const [loading, setLoading] = useState(false)
+  const [trialBalanceData, setTrialBalanceData] = useState<TrialBalanceData>({
+    Assets: [],
+    Liabilities: [],
+    Equity: [],
+    Income: [],
+    'Costs of Goods Sold': [],
+    Expenses: [],
+  })
 
-  const userName = user?.name || 'Company'
-  const startDateRange = startDate || '2025-01-01'
-  const endDateRange = endDate || '2025-12-31'
+  const fetchTrialBalance = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ startDate, endDate })
+      const response = await fetch(`/api/reports/trial-balance?${params.toString()}`)
+      const result = await response.json()
+      if (result.success) {
+        setTrialBalanceData(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching trial balance:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [startDate, endDate])
 
-  let totalDebit = 0
-  let totalCredit = 0
+  useEffect(() => {
+    fetchTrialBalance()
+  }, [fetchTrialBalance])
 
-  Object.values(totalAccounts).forEach((accounts) => {
-    accounts.forEach((record) => {
-      if (record.account !== 'parentTotal') {
-        totalDebit += record.totalDebit
-        totalCredit += record.totalCredit
+  const handleExport = () => {
+    const rows = [
+      ['Account Name', 'Account Code', 'Debit', 'Credit'],
+    ]
+
+    Object.entries(trialBalanceData).forEach(([type, accounts]) => {
+      if ((accounts as TrialBalanceAccount[]).length > 0) {
+        rows.push([type.toUpperCase(), '', '', ''])
+        ;(accounts as TrialBalanceAccount[]).forEach(record => {
+          rows.push([record.account_name, record.account_code, record.totalDebit.toString(), record.totalCredit.toString()])
+        })
       }
     })
-  })
+
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `trial_balance_${startDate}_to_${endDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const handlePrint = () => {
+    const printContents = document.getElementById('printableArea')?.innerHTML
+    if (printContents) {
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Trial Balance - ${user?.name || 'User'}</title>
+              <style>
+                body { font-family: sans-serif; padding: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
+                .text-end { text-align: right; }
+                .text-center { text-align: center; }
+                .font-bold { font-weight: bold; }
+                .bg-muted { background-color: #f4f4f5; }
+                .pl-4 { padding-left: 20px; }
+                .border-b { border-bottom: 1px solid #e5e7eb; }
+                .py-2 { padding-top: 8px; padding-bottom: 8px; }
+                .py-3 { padding-top: 12px; padding-bottom: 12px; }
+                .mt-4 { margin-top: 16px; }
+                .mb-2 { margin-bottom: 8px; }
+                .flex { display: flex; }
+                .justify-between { justify-content: space-between; }
+                .items-center { align-items: center; }
+                .w-full { width: 100%; }
+              </style>
+            </head>
+            <body>
+              ${printContents}
+            </body>
+          </html>
+        `)
+        printWindow.document.close()
+        printWindow.focus()
+        setTimeout(() => {
+          printWindow.print()
+          printWindow.close()
+        }, 250)
+      }
+    }
+  }
+
+  const { totalDebit, totalCredit } = useMemo(() => {
+    let debit = 0
+    let credit = 0
+
+    Object.values(trialBalanceData).forEach((accounts: TrialBalanceAccount[]) => {
+      accounts.forEach((record) => {
+        debit += record.totalDebit
+        credit += record.totalCredit
+      })
+    })
+
+    return { totalDebit: debit, totalCredit: credit }
+  }, [trialBalanceData])
 
   return (
     <div className="space-y-4">
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0 px-6 py-4">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 px-6 py-4">
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-lg font-semibold">Trial Balance</CardTitle>
             <CardDescription>Review balances for all accounts in a period.</CardDescription>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-          onClick={() => {
-            const printContents = document.getElementById('printableArea')?.innerHTML
-            if (printContents) {
-              const originalContents = document.body.innerHTML
-              document.body.innerHTML = printContents
-              window.print()
-              document.body.innerHTML = originalContents
-            }
-          }}
-          title="Print"
-        >
-          <Printer className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-          title="Export"
-        >
-          <FileDown className="mr-2 h-4 w-4" />
-          Export Trial Balance
-        </Button>
-        <Button
-          variant="blue"
-          size="sm"
-          className="shadow-none h-7"
-          onClick={() => setShowFilter(!showFilter)}
-          title="Filter"
-        >
-          <Filter className="h-3 w-3" />
-        </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Filters */}
-      {showFilter && (
-        <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-          <CardContent className="px-4 py-3">
+          
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Inline Filters */}
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                setShowFilter(false)
+                fetchTrialBalance()
               }}
-              className="flex flex-col gap-4 md:flex-row md:items-end"
+              className="flex items-center gap-3"
             >
-              <div className="w-full md:w-44 space-y-3">
-                <label className="block text-sm font-medium">Start Date</label>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-muted-foreground whitespace-nowrap uppercase tracking-wider">Start</label>
                 <Input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="startDate"
+                  className="h-8 w-36 px-2 text-xs"
                 />
               </div>
-              <div className="w-full md:w-44 space-y-3">
-                <label className="block text-sm font-medium">End Date</label>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-muted-foreground whitespace-nowrap uppercase tracking-wider">End</label>
                 <Input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="endDate"
+                  className="h-8 w-36 px-2 text-xs"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" variant="outline" size="sm" className="shadow-none h-9 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Apply">
-                  <Search className="h-3 w-3" />
+              <div className="flex items-center gap-1.5 ml-1">
+                <Button 
+                  type="submit" 
+                  variant="outline" 
+                  size="sm" 
+                  className="shadow-none h-8 w-8 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" 
+                  title="Apply"
+                >
+                  <Search className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="shadow-none h-9 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                  className="shadow-none h-8 w-8 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                   onClick={() => {
-                    setStartDate('2025-01-01')
-                    setEndDate('2025-12-31')
+                    setStartDate(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
+                    setEndDate(new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0])
                   }}
                   title="Reset"
                 >
-                  <RefreshCw className="h-3 w-3" />
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      )}
+
+            <div className="h-6 w-px bg-border mx-1" />
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-none h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                onClick={handlePrint}
+                title="Print"
+              >
+                <Printer className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                title="Export"
+                onClick={handleExport}
+              >
+                <FileDown className="mr-2 h-3.5 w-3.5" />
+                <span className="text-xs">Export</span>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Trial Balance */}
       <div id="printableArea">
@@ -193,11 +252,16 @@ export function TrialBalanceTab() {
             <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <div className="border-b border-border px-6 py-4">
                 <h5 className="text-lg font-semibold text-foreground">
-                  Trial Balance of {userName} as of {startDateRange} to {endDateRange}
+                  Trial Balance of {user?.name || 'User'} as of {startDate} to {endDate}
                 </h5>
               </div>
               <CardContent className="overflow-auto p-0">
-                <div className="px-6 py-5">
+                <div className="px-6 py-5 relative min-h-[200px]">
+                  {loading && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between gap-4 border-b border-border py-3 text-sm font-semibold">
                     <span className="min-w-0 flex-1">Account</span>
                     <span className="w-28 shrink-0 text-center">Account Code</span>
@@ -205,28 +269,30 @@ export function TrialBalanceTab() {
                     <span className="w-28 shrink-0 text-end">Credit</span>
                   </div>
 
-                  {Object.entries(totalAccounts).map(([type, accounts]) => (
-                    <div key={type} className="border-b border-border/60 py-3">
-                      <p className="mb-2 mt-1 text-sm font-bold text-foreground">{type}</p>
-                      {accounts.map((record) => (
-                        <div
-                          key={record.account_id}
-                          className="flex items-center justify-between gap-4 py-2.5 text-sm"
-                        >
-                          <span className="min-w-0 flex-1 pl-4">
-                            <a
-                              href={`/accounting/double-entry/ledger?account=${record.account_id}`}
-                              className="text-primary hover:underline"
-                            >
-                              {record.account_name}
-                            </a>
-                          </span>
-                          <span className="w-28 shrink-0 text-center">{record.account_code}</span>
-                          <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(record.totalDebit)}</span>
-                          <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(record.totalCredit)}</span>
-                        </div>
-                      ))}
-                    </div>
+                  {Object.entries(trialBalanceData).map(([type, accounts]) => (
+                    (accounts as TrialBalanceAccount[]).length > 0 && (
+                      <div key={type} className="border-b border-border/60 py-3">
+                        <p className="mb-2 mt-1 text-sm font-bold text-foreground">{type}</p>
+                        {(accounts as TrialBalanceAccount[]).map((record) => (
+                          <div
+                            key={record.account_id}
+                            className="flex items-center justify-between gap-4 py-2.5 text-sm"
+                          >
+                            <span className="min-w-0 flex-1 pl-4">
+                              <a
+                                href={`/accounting/double-entry/ledger?account=${record.account_id}`}
+                                className="text-primary hover:underline"
+                              >
+                                {record.account_name}
+                              </a>
+                            </span>
+                            <span className="w-28 shrink-0 text-center">{record.account_code}</span>
+                            <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(record.totalDebit)}</span>
+                            <span className="w-28 shrink-0 text-end tabular-nums">{formatPrice(record.totalCredit)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
                   ))}
 
                   <div className="flex items-center justify-between gap-4 border-t border-b border-border py-3 font-bold text-sm">

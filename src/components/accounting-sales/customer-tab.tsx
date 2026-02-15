@@ -36,90 +36,61 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { 
-  Plus, 
-  Pencil, 
-  Trash2,
-  Eye,
-  Search,
-  FileUp,
-  FileDown,
-  X
-} from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Search, FileUp, FileDown, X, Loader2, ArrowLeft } from 'lucide-react'
+import { toast } from 'sonner'
+import { CustomerDetail } from './customer-detail'
 
-// Mock data
-const customers = [
-  {
-    id: 1,
-    customerCode: 'CUST-001',
-    name: 'PT Teknologi Digital Indonesia',
-    email: 'admin@teknologidigital.co.id',
-    contact: 'Budi Santoso',
-    balance: 245000000,
-  },
-  {
-    id: 2,
-    customerCode: 'CUST-002',
-    name: 'CV Mitra Sejahtera',
-    email: 'info@mitrasejahtera.com',
-    contact: 'Sari Wijaya',
-    balance: 156000000,
-  },
-]
+type CustomerRow = {
+  id: string
+  customerCode: string
+  name: string
+  email: string
+  contact: string | null
+  balance: number
+  taxNumber: string | null
+  branchId: string | null
+  branch?: {
+    id: string
+    name: string
+  }
+  billingName: string | null
+  billingPhone: string | null
+  billingAddress: string | null
+  billingCity: string | null
+  billingState: string | null
+  billingCountry: string | null
+  billingZip: string | null
+  shippingName: string | null
+  shippingPhone: string | null
+  shippingAddress: string | null
+  shippingCity: string | null
+  shippingState: string | null
+  shippingCountry: string | null
+  shippingZip: string | null
+}
 
 export function CustomerTab() {
-  type CustomerRow = (typeof customers)[number] & {
-    taxNumber?: string
-    billingName?: string
-    billingPhone?: string
-    billingAddress?: string
-    billingCity?: string
-    billingState?: string
-    billingCountry?: string
-    billingZip?: string
-    shippingName?: string
-    shippingPhone?: string
-    shippingAddress?: string
-    shippingCity?: string
-    shippingState?: string
-    shippingCountry?: string
-    shippingZip?: string
-  }
-
-  const [rows, setRows] = useState<CustomerRow[]>(() =>
-    customers.map((c) => ({
-      ...c,
-      taxNumber: '',
-      billingName: '',
-      billingPhone: '',
-      billingAddress: '',
-      billingCity: '',
-      billingState: '',
-      billingCountry: '',
-      billingZip: '',
-      shippingName: '',
-      shippingPhone: '',
-      shippingAddress: '',
-      shippingCity: '',
-      shippingState: '',
-      shippingCountry: '',
-      shippingZip: '',
-    })),
-  )
+  const [rows, setRows] = useState<CustomerRow[]>([])
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewingCustomer, setViewingCustomer] = useState<CustomerRow | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [customerToDelete, setCustomerToDelete] = useState<CustomerRow | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({
+    customerCode: '',
     name: '',
     contact: '',
     email: '',
     taxNumber: '',
     balance: '',
+    branchId: '',
     billingName: '',
     billingPhone: '',
     billingAddress: '',
@@ -136,6 +107,41 @@ export function CustomerTab() {
     shippingZip: '',
   })
 
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch('/api/branches')
+      const result = await response.json()
+      if (result.success) {
+        setBranches(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error)
+    }
+  }
+
+  const fetchCustomers = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/customers')
+      const result = await response.json()
+      if (result.success) {
+        setRows(result.data)
+      } else {
+        toast.error(result.message || 'Gagal memuat data customer')
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      toast.error('Terjadi kesalahan saat memuat data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCustomers()
+    fetchBranches()
+  }, [])
+
   // Filter customers by search
   const filteredCustomers = rows.filter((customer) => {
     if (!search.trim()) return true
@@ -144,7 +150,7 @@ export function CustomerTab() {
       customer.name.toLowerCase().includes(q) ||
       customer.customerCode.toLowerCase().includes(q) ||
       customer.email.toLowerCase().includes(q) ||
-      customer.contact.toLowerCase().includes(q)
+      (customer.contact?.toLowerCase() || '').includes(q)
     )
   })
 
@@ -166,11 +172,13 @@ export function CustomerTab() {
     if (!open) {
       setEditingId(null)
       setFormData({
+        customerCode: '',
         name: '',
         contact: '',
         email: '',
         taxNumber: '',
         balance: '',
+        branchId: '',
         billingName: '',
         billingPhone: '',
         billingAddress: '',
@@ -202,78 +210,52 @@ export function CustomerTab() {
     })
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
 
-    if (editingId) {
-      setRows((prev) =>
-        prev.map((c) =>
-          c.id === editingId
-            ? {
-                ...c,
-                name: formData.name,
-                contact: formData.contact,
-                email: formData.email,
-                balance: Number(formData.balance) || 0,
-                taxNumber: formData.taxNumber,
-                billingName: formData.billingName,
-                billingPhone: formData.billingPhone,
-                billingAddress: formData.billingAddress,
-                billingCity: formData.billingCity,
-                billingState: formData.billingState,
-                billingCountry: formData.billingCountry,
-                billingZip: formData.billingZip,
-                shippingName: formData.shippingName,
-                shippingPhone: formData.shippingPhone,
-                shippingAddress: formData.shippingAddress,
-                shippingCity: formData.shippingCity,
-                shippingState: formData.shippingState,
-                shippingCountry: formData.shippingCountry,
-                shippingZip: formData.shippingZip,
-              }
-            : c,
-        ),
-      )
-    } else {
-      const nextId = rows.length > 0 ? Math.max(...rows.map((c) => c.id)) + 1 : 1
-      const nextCode = `CUST-${String(nextId).padStart(3, '0')}`
-      const newCustomer: CustomerRow = {
-        id: nextId,
-        customerCode: nextCode,
-        name: formData.name,
-        email: formData.email,
-        contact: formData.contact,
+    try {
+      const url = editingId ? `/api/customers/${editingId}` : '/api/customers'
+      const method = editingId ? 'PUT' : 'POST'
+      
+      const body = {
+        ...formData,
         balance: Number(formData.balance) || 0,
-        taxNumber: formData.taxNumber,
-        billingName: formData.billingName,
-        billingPhone: formData.billingPhone,
-        billingAddress: formData.billingAddress,
-        billingCity: formData.billingCity,
-        billingState: formData.billingState,
-        billingCountry: formData.billingCountry,
-        billingZip: formData.billingZip,
-        shippingName: formData.shippingName,
-        shippingPhone: formData.shippingPhone,
-        shippingAddress: formData.shippingAddress,
-        shippingCity: formData.shippingCity,
-        shippingState: formData.shippingState,
-        shippingCountry: formData.shippingCountry,
-        shippingZip: formData.shippingZip,
+        branchId: formData.branchId || null,
       }
-      setRows((prev) => [newCustomer, ...prev])
-    }
 
-    handleDialogOpenChange(false)
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast.success(editingId ? 'Customer berhasil diperbarui' : 'Customer berhasil dibuat')
+        handleDialogOpenChange(false)
+        fetchCustomers()
+      } else {
+        toast.error(result.message || 'Gagal menyimpan customer')
+      }
+    } catch (error) {
+      console.error('Error saving customer:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleEdit = (customer: CustomerRow) => {
     setEditingId(customer.id)
     setFormData({
+      customerCode: customer.customerCode,
       name: customer.name,
-      contact: customer.contact,
+      contact: customer.contact || '',
       email: customer.email,
       taxNumber: customer.taxNumber || '',
       balance: String(customer.balance ?? 0),
+      branchId: customer.branchId || '',
       billingName: customer.billingName || '',
       billingPhone: customer.billingPhone || '',
       billingAddress: customer.billingAddress || '',
@@ -297,11 +279,46 @@ export function CustomerTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!customerToDelete) return
-    setRows((prev) => prev.filter((c) => c.id !== customerToDelete.id))
-    setCustomerToDelete(null)
-    setDeleteDialogOpen(false)
+    setIsSubmitting(true)
+    
+    try {
+      const response = await fetch(`/api/customers/${customerToDelete.id}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Customer berhasil dihapus')
+        fetchCustomers()
+      } else {
+        toast.error(result.message || 'Gagal menghapus customer')
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+      setCustomerToDelete(null)
+      setDeleteDialogOpen(false)
+    }
+  }
+
+  if (viewingCustomer) {
+    return (
+      <CustomerDetail 
+        customer={viewingCustomer} 
+        onBack={() => setViewingCustomer(null)}
+        onEdit={(customer) => {
+          handleEdit(customer)
+          setViewingCustomer(null)
+        }}
+        onDelete={(customer) => {
+          handleDeleteClick(customer)
+          setViewingCustomer(null)
+        }}
+      />
+    )
   }
 
   return (
@@ -371,7 +388,7 @@ export function CustomerTab() {
                 Create Customer
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-[70vw] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[85vw] max-h-[90vh] overflow-y-auto sm:max-w-[1000px]">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Edit Customer' : 'Create Customer'}</DialogTitle>
             </DialogHeader>
@@ -381,6 +398,18 @@ export function CustomerTab() {
                 <div>
                   <h5 className="text-sm font-semibold mb-4">Basic Info</h5>
                   <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customerCode">
+                        Customer Code <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="customerCode"
+                        value={formData.customerCode}
+                        onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
+                        placeholder="CUST-001"
+                        required
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="name">
                         Name <span className="text-red-500">*</span>
@@ -437,6 +466,25 @@ export function CustomerTab() {
                         onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                         placeholder="Enter Balance"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="branch">Branch</Label>
+                      <Select
+                        value={formData.branchId || "none"}
+                        onValueChange={(value) => setFormData({ ...formData, branchId: value === "none" ? "" : value })}
+                      >
+                        <SelectTrigger id="branch">
+                          <SelectValue placeholder="Select Branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Branch</SelectItem>
+                          {branches.map((branch) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              {branch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -643,6 +691,7 @@ export function CustomerTab() {
               <TableRow>
                 <TableHead className="px-6">#</TableHead>
                 <TableHead className="px-6">Name</TableHead>
+                <TableHead className="px-6">Branch</TableHead>
                 <TableHead className="px-6">Contact</TableHead>
                 <TableHead className="px-6">Email</TableHead>
                 <TableHead className="px-6">Balance</TableHead>
@@ -662,6 +711,9 @@ export function CustomerTab() {
                       {customer.name}
                     </TableCell>
                     <TableCell className="px-6">
+                      {customer.branch?.name || '-'}
+                    </TableCell>
+                    <TableCell className="px-6">
                       {customer.contact}
                     </TableCell>
                     <TableCell className="px-6">
@@ -672,7 +724,12 @@ export function CustomerTab() {
                     </TableCell>
                     <TableCell className="px-6">
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                          onClick={() => setViewingCustomer(customer)}
+                        >
                           <Eye className="h-3 w-3" />
                         </Button>
                         <Button

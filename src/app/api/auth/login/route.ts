@@ -1,8 +1,9 @@
+import { auth } from "@/lib/auth-server";
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * POST /api/auth/login
- * Handle user login
+ * Handle user login using BetterAuth
  */
 export async function POST(request: NextRequest) {
   try {
@@ -16,79 +17,67 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Replace with actual database query
-    // For now, use mock authentication
-    const mockUsers = [
-      {
-        email: 'superadmin@example.com',
-        password: '1234',
-        user: {
-          id: 1,
-          email: 'superadmin@example.com',
-          name: 'Super Admin',
-          type: 'super admin' as const,
-        },
-      },
-      {
-        email: 'company@example.com',
-        password: '1234',
-        user: {
-          id: 2,
-          email: 'company@example.com',
-          name: 'Company',
-          type: 'company' as const,
-        },
-      },
-      {
-        email: 'client@example.com',
-        password: '1234',
-        user: {
-          id: 3,
-          email: 'client@example.com',
-          name: 'Client',
-          type: 'client' as const,
-        },
-      },
-      {
-        email: 'employee@example.com',
-        password: '1234',
-        user: {
-          id: 4,
-          email: 'employee@example.com',
-          name: 'Employee',
-          type: 'employee' as const,
-        },
-      },
-    ]
+    const formattedEmail = email.toLowerCase().trim();
 
-    // Find user
-    const userData = mockUsers.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    )
+    console.log(`[Login Attempt] Email: ${formattedEmail}`);
 
-    if (!userData) {
-      return NextResponse.json(
-        { success: false, message: 'Email atau password salah' },
-        { status: 401 }
-      )
+    // Attempt login via BetterAuth
+    try {
+      const result = await auth.api.signInEmail({
+        body: {
+          email: formattedEmail,
+          password,
+        },
+        asResponse: true, // Use asResponse to get headers/cookies
+      });
+
+      // result is a Response object when asResponse: true
+      const authData = await result.json();
+
+      if (!authData || !authData.user) {
+        return NextResponse.json(
+          { success: false, message: 'Email atau password salah' },
+          { status: 401 }
+        )
+      }
+
+      // Create response with user data
+      const response = NextResponse.json({
+        success: true,
+        message: 'Login berhasil',
+        data: {
+          token: 'session',
+          user: {
+            id: authData.user.id,
+            email: authData.user.email,
+            name: authData.user.name,
+            type: (authData.user as any).role || 'employee',
+          },
+        },
+      });
+
+      // Copy set-cookie headers from BetterAuth response to our response
+      const setCookie = result.headers.get('set-cookie');
+      if (setCookie) {
+        response.headers.set('set-cookie', setCookie);
+      }
+
+      return response;
+    } catch (authError: any) {
+      console.error('[BetterAuth Error]:', authError);
+      
+      if (authError.code === 'INVALID_EMAIL_OR_PASSWORD' || authError.status === 401) {
+        return NextResponse.json(
+          { success: false, message: 'Email atau password salah' },
+          { status: 401 }
+        )
+      }
+      throw authError;
     }
-
-    // Generate mock token (in production, use JWT)
-    const token = `mock_token_${Date.now()}_${userData.user.id}`
-
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      message: 'Login berhasil',
-      data: {
-        token,
-        user: userData.user,
-      },
-    })
-  } catch (error) {
-    console.error('Login error:', error)
+  } catch (error: any) {
+    console.error('Login route error:', error)
     return NextResponse.json(
-      { success: false, message: 'Terjadi kesalahan pada server' },
+      { success: false, message: error.message || 'Terjadi kesalahan pada server' },
       { status: 500 }
     )
   }

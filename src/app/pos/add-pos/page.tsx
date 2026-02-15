@@ -30,7 +30,7 @@ const MOCK_WAREHOUSES = [
  * lalu tombol Buka POS mengarah ke halaman kasir (/pos/sales).
  */
 export default function POSAddPOSPage() {
-  const [customerId, setCustomerId] = useState('1')
+  const [customerCode, setCustomerCode] = useState('1')
   const [warehouseId, setWarehouseId] = useState('1')
 
   return (
@@ -51,7 +51,7 @@ export default function POSAddPOSPage() {
                 <Label htmlFor="add-pos-customer" className="text-foreground">
                   Customer
                 </Label>
-                <Select value={customerId} onValueChange={setCustomerId}>
+                <Select value={customerCode} onValueChange={setCustomerCode}>
                   <SelectTrigger id="add-pos-customer" className="h-9">
                     <SelectValue placeholder="Select Customer" />
                   </SelectTrigger>

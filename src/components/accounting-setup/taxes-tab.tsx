@@ -1,37 +1,67 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Tax = {
-  id: number
+  id: string
   name: string
   rate: number
 }
 
-const mockTaxes: Tax[] = [
-  { id: 1, name: 'VAT', rate: 11 },
-  { id: 2, name: 'Income Tax', rate: 2.5 },
-  { id: 3, name: 'Sales Tax', rate: 10 },
-  { id: 4, name: 'Service Tax', rate: 5 },
-]
-
 export function TaxesTab() {
-  const [taxes, setTaxes] = useState<Tax[]>(mockTaxes)
+  const [taxes, setTaxes] = useState<Tax[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingTaxId, setEditingTaxId] = useState<number | null>(null)
+  const [editingTaxId, setEditingTaxId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingTaxId, setDeletingTaxId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({ name: '', rate: '' })
+
+  const fetchTaxes = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/taxes')
+      const result = await response.json()
+      if (result.success) {
+        setTaxes(result.data)
+      } else {
+        toast.error(result.message || 'Gagal memuat data tax')
+      }
+    } catch (error) {
+      console.error('Error fetching taxes:', error)
+      toast.error('Terjadi kesalahan saat memuat data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTaxes()
+  }, [fetchTaxes])
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return taxes
@@ -49,16 +79,33 @@ export function TaxesTab() {
 
   const isFormValid = formData.name.trim().length > 0 && formData.rate.trim().length > 0
 
-  const handleCreate = () => {
-    if (!isFormValid) return
-    const newTax: Tax = {
-      id: taxes.length + 1,
-      name: formData.name.trim(),
-      rate: parseFloat(formData.rate),
+  const handleCreate = async () => {
+    if (!isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/taxes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          rate: formData.rate,
+        }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Tax rate berhasil dibuat')
+        setFormData({ name: '', rate: '' })
+        setCreateDialogOpen(false)
+        fetchTaxes()
+      } else {
+        toast.error(result.message || 'Gagal membuat tax rate')
+      }
+    } catch (error) {
+      console.error('Error creating tax:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
     }
-    setTaxes([...taxes, newTax])
-    setFormData({ name: '', rate: '' })
-    setCreateDialogOpen(false)
   }
 
   const startEdit = (tax: Tax) => {
@@ -67,25 +114,62 @@ export function TaxesTab() {
     setEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (editingTaxId == null) return
-    if (!isFormValid) return
-    setTaxes(
-      taxes.map((t) =>
-        t.id === editingTaxId
-          ? { ...t, name: formData.name.trim(), rate: parseFloat(formData.rate) }
-          : t,
-      ),
-    )
-    setEditDialogOpen(false)
-    setEditingTaxId(null)
-    setFormData({ name: '', rate: '' })
+  const handleUpdate = async () => {
+    if (editingTaxId == null || !isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/taxes/${editingTaxId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          rate: formData.rate,
+        }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Tax rate berhasil diperbarui')
+        setEditDialogOpen(false)
+        setEditingTaxId(null)
+        setFormData({ name: '', rate: '' })
+        fetchTaxes()
+      } else {
+        toast.error(result.message || 'Gagal memperbarui tax rate')
+      }
+    } catch (error) {
+      console.error('Error updating tax:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setTaxes(taxes.filter((t) => t.id !== id))
+  const handleDelete = async () => {
+    if (deletingTaxId == null) return
+    
+    try {
+      const response = await fetch(`/api/taxes/${deletingTaxId}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Tax rate berhasil dihapus')
+        fetchTaxes()
+      } else {
+        toast.error(result.message || 'Gagal menghapus tax rate')
+      }
+    } catch (error) {
+      console.error('Error deleting tax:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeletingTaxId(null)
     }
+  }
+
+  const confirmDelete = (id: string) => {
+    setDeletingTaxId(id)
+    setDeleteDialogOpen(true)
   }
 
   return (
@@ -141,11 +225,69 @@ export function TaxesTab() {
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
-                Create
+              <Button variant="blue" onClick={handleCreate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
+          </Dialog>
+
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Tax Rate</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-tax-name">
+                      Tax Rate Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="edit-tax-name"
+                      placeholder="Enter Tax Rate Name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-tax-rate">
+                      Tax Rate % <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="edit-tax-rate"
+                      type="number"
+                      step="0.01"
+                      placeholder="Enter Rate"
+                      value={formData.rate}
+                      onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
           </Dialog>
           </div>
         </CardHeader>
@@ -195,7 +337,16 @@ export function TaxesTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="px-6 text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading taxes...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.length > 0 ? (
                   paginatedData.map((tax) => (
                     <TableRow key={tax.id} className="font-style">
                       <TableCell className="px-6">{tax.name}</TableCell>
@@ -216,7 +367,7 @@ export function TaxesTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
-                            onClick={() => handleDelete(tax.id)}
+                            onClick={() => confirmDelete(tax.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -303,6 +454,21 @@ export function TaxesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are You Sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the tax rate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

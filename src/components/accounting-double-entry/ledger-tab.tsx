@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,83 +20,100 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Download, Search, RefreshCw, X } from 'lucide-react'
+import { Download, Search, RefreshCw, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
+import { formatPrice } from '@/lib/utils'
+import Link from 'next/link'
 
-// Mock data based on reference structure
-const chart_accounts = [
-  {
-    id: 1,
-    account_name: 'Cash & Bank',
-  },
-]
+interface Account {
+  id: string
+  name: string
+  code: string
+}
 
-const accountArrays = [
-  [
-    {
-      account_name: 'Cash & Bank',
-      user_name: 'John Doe',
-      reference: 'Invoice #001',
-      date: '2025-01-15',
-      debit: 5_000_000,
-      credit: 0,
-    },
-    {
-      account_name: 'Cash & Bank',
-      user_name: 'Jane Smith',
-      reference: 'Payment #002',
-      date: '2025-01-20',
-      debit: 0,
-      credit: 2_500_000,
-    },
-    {
-      account_name: 'Cash & Bank',
-      user_name: 'Bob Johnson',
-      reference: 'Invoice #003',
-      date: '2025-01-25',
-      debit: 3_000_000,
-      credit: 0,
-    },
-  ],
-]
-
-const accounts = [
-  { id: 0, name: 'Select', code: '', parent: 0 },
-  { id: 1, name: 'Cash & Bank', code: '1000', parent: 0 },
-  { id: 2, name: 'Accounts Receivable', code: '1100', parent: 0 },
-]
-
-function formatPrice(amount: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
+interface LedgerLine {
+  id: string
+  date: string
+  reference: string
+  description: string
+  debit: number
+  credit: number
+  journalId: string
 }
 
 export function LedgerTab() {
-  const [startDate, setStartDate] = useState('2025-01-01')
-  const [endDate, setEndDate] = useState('2025-12-31')
-  const [selectedAccount, setSelectedAccount] = useState('1')
+  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0])
+  const [selectedAccount, setSelectedAccount] = useState<string>('')
   const [search, setSearch] = useState('')
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [ledgerData, setLedgerData] = useState<LedgerLine[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadingAccounts, setLoadingAccounts] = useState(true)
 
-  let balance = 0
-  let totalDebit = 0
-  let totalCredit = 0
-
-  accountArrays.forEach((accounts) => {
-    accounts.forEach((account) => {
-      totalDebit += account.debit
-      totalCredit += account.credit
-      const total = account.debit + account.credit
-      if (account.debit != 0) {
-        balance -= total
-      } else {
-        balance += total
+  const fetchAccounts = async () => {
+    try {
+      const response = await fetch('/api/chart-of-accounts')
+      const result = await response.json()
+      if (result.success) {
+        setAccounts(result.data)
       }
-    })
+    } catch (error) {
+      console.error('Error fetching accounts:', error)
+    } finally {
+      setLoadingAccounts(false)
+    }
+  }
+
+  const fetchLedger = useCallback(async () => {
+    if (!selectedAccount) return
+
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        accountId: selectedAccount,
+        startDate,
+        endDate,
+      })
+      const response = await fetch(`/api/ledger?${params.toString()}`)
+      const result = await response.json()
+      if (result.success) {
+        setLedgerData(result.data.lines)
+      }
+    } catch (error) {
+      console.error('Error fetching ledger:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedAccount, startDate, endDate])
+
+  useEffect(() => {
+    fetchAccounts()
+  }, [])
+
+  useEffect(() => {
+    if (selectedAccount) {
+      fetchLedger()
+    }
+  }, [selectedAccount, fetchLedger])
+
+  const handleReset = () => {
+    setStartDate(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
+    setEndDate(new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0])
+    setSelectedAccount('')
+    setSearch('')
+  }
+
+  const filteredLedger = ledgerData.filter((item) => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return (
+      item.reference.toLowerCase().includes(q) ||
+      item.description.toLowerCase().includes(q)
+    )
   })
+
+  let runningBalance = 0
 
   return (
     <div className="space-y-4">
@@ -135,9 +152,9 @@ export function LedgerTab() {
             onSubmit={(e) => {
               e.preventDefault()
             }}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_14rem_auto] md:justify-start"
+            className="flex flex-wrap items-end justify-end gap-4"
           >
-            <div className="space-y-2">
+            <div className="w-full sm:w-[14rem] space-y-2">
               <Label htmlFor="ledger-start-date" className="text-sm font-medium">
                 Start Date
               </Label>
@@ -150,7 +167,7 @@ export function LedgerTab() {
                 iconPlacement="right"
               />
             </div>
-            <div className="space-y-2">
+            <div className="w-full sm:w-[14rem] space-y-2">
               <Label htmlFor="ledger-end-date" className="text-sm font-medium">
                 End Date
               </Label>
@@ -163,31 +180,32 @@ export function LedgerTab() {
                 iconPlacement="right"
               />
             </div>
-            <div className="space-y-2">
+            <div className="w-full sm:w-[14rem] space-y-2 translate-y-[8px]">
               <Label className="text-sm font-medium">Account</Label>
               <Select value={selectedAccount} onValueChange={setSelectedAccount}>
                 <SelectTrigger
                   className={`w-full !h-9 ${
-                    selectedAccount === '0' ? 'text-muted-foreground' : ''
+                    !selectedAccount ? 'text-muted-foreground' : ''
                   } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
                 >
-                  <SelectValue placeholder="Select Account" />
+                  <SelectValue placeholder={loadingAccounts ? "Loading..." : "Select Account"} />
                 </SelectTrigger>
                 <SelectContent>
                   {accounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id.toString()}>
-                      {account.name}
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.code} - {account.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2 md:pt-6">
+            <div className="flex items-center gap-2">
               <Button
-                type="submit"
+                type="button"
                 variant="outline"
                 size="sm"
                 className="shadow-none h-9 w-9 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                onClick={fetchLedger}
                 title="Apply"
               >
                 <Search className="h-3 w-3" />
@@ -197,11 +215,7 @@ export function LedgerTab() {
                 variant="outline"
                 size="sm"
                 className="shadow-none h-9 w-9 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                onClick={() => {
-                  setStartDate('2025-01-01')
-                  setEndDate('2025-12-31')
-                  setSelectedAccount('1')
-                }}
+                onClick={handleReset}
                 title="Reset"
               >
                 <RefreshCw className="h-3 w-3" />
@@ -255,43 +269,54 @@ export function LedgerTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {accountArrays.map((accounts, idx) => {
-                    let runningBalance = 0
-                    const filteredAccounts = !search.trim()
-                      ? accounts
-                      : accounts.filter((a) => {
-                          const q = search.trim().toLowerCase()
-                          const hay = [
-                            a.account_name,
-                            a.user_name ?? '',
-                            a.reference,
-                            a.date,
-                          ]
-                            .join(' ')
-                            .toLowerCase()
-                          return hay.includes(q)
-                        })
-
-                    return filteredAccounts.map((account, accIdx) => {
-                      const total = account.debit + account.credit
-                      if (account.debit != 0) {
-                        runningBalance -= total
-                      } else {
-                        runningBalance += total
-                      }
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                        Loading ledger data...
+                      </TableCell>
+                    </TableRow>
+                  ) : !selectedAccount ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        Please select an account to view ledger details.
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredLedger.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        No transactions found for this account and date range.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredLedger.map((item, idx) => {
+                      // Note: We need to calculate running balance correctly
+                      // In a real app, you might need the starting balance before the range
+                      runningBalance += item.debit - item.credit
                       return (
-                        <TableRow key={`${idx}-${accIdx}`}>
-                          <TableCell className="px-6">{account.account_name}</TableCell>
-                          <TableCell className="px-6">{account.user_name || '-'}</TableCell>
-                          <TableCell className="px-6">{account.reference}</TableCell>
-                          <TableCell className="px-6">{account.date}</TableCell>
-                          <TableCell className="px-6">{formatPrice(account.debit)}</TableCell>
-                          <TableCell className="px-6">{formatPrice(account.credit)}</TableCell>
+                        <TableRow key={item.id}>
+                          <TableCell className="px-6">
+                            {accounts.find(a => a.id === selectedAccount)?.name}
+                          </TableCell>
+                          <TableCell className="px-6">{item.description || '-'}</TableCell>
+                          <TableCell className="px-6">
+                            <Link 
+                              href={`/accounting/journal-entry/${item.journalId}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {item.reference}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="px-6">
+                            {new Date(item.date).toLocaleDateString('id-ID')}
+                          </TableCell>
+                          <TableCell className="px-6">{formatPrice(item.debit)}</TableCell>
+                          <TableCell className="px-6">{formatPrice(item.credit)}</TableCell>
                           <TableCell className="px-6">{formatPrice(runningBalance)}</TableCell>
                         </TableRow>
                       )
                     })
-                  })}
+                  )}
                 </TableBody>
               </Table>
             </div>

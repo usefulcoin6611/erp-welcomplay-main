@@ -1,28 +1,33 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type CustomField = {
-  id: number
+  id: string
   name: string
   type: string
   module: string
 }
-
-const mockCustomFields: CustomField[] = [
-  { id: 1, name: 'Custom Field 1', type: 'Text', module: 'Invoice' },
-  { id: 2, name: 'Custom Field 2', type: 'Number', module: 'Bill' },
-  { id: 3, name: 'Custom Field 3', type: 'Date', module: 'Customer' },
-]
 
 const fieldTypes = [
   { value: 'Text', label: 'Text' },
@@ -40,14 +45,40 @@ const modules = [
 ]
 
 export function CustomFieldTab() {
-  const [customFields, setCustomFields] = useState<CustomField[]>(mockCustomFields)
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingFieldId, setEditingFieldId] = useState<number | null>(null)
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [formData, setFormData] = useState({ name: '', type: '', module: '' })
+
+  const fetchCustomFields = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/custom-fields')
+      const result = await response.json()
+      if (result.success) {
+        setCustomFields(result.data)
+      } else {
+        toast.error(result.message || 'Gagal memuat data custom field')
+      }
+    } catch (error) {
+      console.error('Error fetching custom fields:', error)
+      toast.error('Terjadi kesalahan saat memuat data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCustomFields()
+  }, [fetchCustomFields])
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return customFields
@@ -70,17 +101,30 @@ export function CustomFieldTab() {
   const isFormValid =
     formData.name.trim().length > 0 && formData.type.trim().length > 0 && formData.module.trim().length > 0
 
-  const handleCreate = () => {
-    if (!isFormValid) return
-    const newField: CustomField = {
-      id: customFields.length + 1,
-      name: formData.name.trim(),
-      type: formData.type,
-      module: formData.module,
+  const handleCreate = async () => {
+    if (!isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/custom-fields', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Custom field berhasil dibuat')
+        setFormData({ name: '', type: '', module: '' })
+        setCreateDialogOpen(false)
+        fetchCustomFields()
+      } else {
+        toast.error(result.message || 'Gagal membuat custom field')
+      }
+    } catch (error) {
+      console.error('Error creating custom field:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
     }
-    setCustomFields([...customFields, newField])
-    setFormData({ name: '', type: '', module: '' })
-    setCreateDialogOpen(false)
   }
 
   const startEdit = (field: CustomField) => {
@@ -89,25 +133,59 @@ export function CustomFieldTab() {
     setEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (editingFieldId == null) return
-    if (!isFormValid) return
-    setCustomFields(
-      customFields.map((f) =>
-        f.id === editingFieldId
-          ? { ...f, name: formData.name.trim(), type: formData.type, module: formData.module }
-          : f,
-      ),
-    )
-    setEditDialogOpen(false)
-    setEditingFieldId(null)
-    setFormData({ name: '', type: '', module: '' })
+  const handleUpdate = async () => {
+    if (editingFieldId == null || !isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/custom-fields/${editingFieldId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Custom field berhasil diperbarui')
+        setEditDialogOpen(false)
+        setEditingFieldId(null)
+        setFormData({ name: '', type: '', module: '' })
+        fetchCustomFields()
+      } else {
+        toast.error(result.message || 'Gagal memperbarui custom field')
+      }
+    } catch (error) {
+      console.error('Error updating custom field:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setCustomFields(customFields.filter((f) => f.id !== id))
+  const handleDelete = async () => {
+    if (deletingFieldId == null) return
+    
+    try {
+      const response = await fetch(`/api/custom-fields/${deletingFieldId}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Custom field berhasil dihapus')
+        fetchCustomFields()
+      } else {
+        toast.error(result.message || 'Gagal menghapus custom field')
+      }
+    } catch (error) {
+      console.error('Error deleting custom field:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeletingFieldId(null)
     }
+  }
+
+  const confirmDelete = (id: string) => {
+    setDeletingFieldId(id)
+    setDeleteDialogOpen(true)
   }
 
   return (
@@ -187,11 +265,93 @@ export function CustomFieldTab() {
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
-                Create
+              <Button variant="blue" onClick={handleCreate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
+          </Dialog>
+
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Custom Field</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-cf-name">
+                    Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit-cf-name"
+                    placeholder="Enter Name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-cf-type">
+                      Type <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                      <SelectTrigger id="edit-cf-type">
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fieldTypes.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-cf-module">
+                      Module <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.module}
+                      onValueChange={(value) => setFormData({ ...formData, module: value })}
+                    >
+                      <SelectTrigger id="edit-cf-module">
+                        <SelectValue placeholder="Select Module" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modules.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
           </Dialog>
           </div>
         </CardHeader>
@@ -242,7 +402,16 @@ export function CustomFieldTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="px-6 text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading custom fields...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.length > 0 ? (
                   paginatedData.map((f) => (
                     <TableRow key={f.id} className="font-style">
                       <TableCell className="px-6">{f.name}</TableCell>
@@ -264,7 +433,7 @@ export function CustomFieldTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
-                            onClick={() => handleDelete(f.id)}
+                            onClick={() => confirmDelete(f.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -366,12 +535,34 @@ export function CustomFieldTab() {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid} className="shadow-none">
-              Update
+            <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid || isSubmitting} className="shadow-none">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are You Sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the custom field.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,54 +1,120 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Category = {
-  id: number
+  id: string
   name: string
-  type: 'Product & Service' | 'Income' | 'Expense'
-  account: string
+  type:
+    | 'Product & Service'
+    | 'Income'
+    | 'Expense'
+    | 'Asset'
+    | 'Liability'
+    | 'Equity'
+    | 'Costs of Goods Sold'
+  account: string | null
+  color?: string | null
 }
 
-const mockCategories: Category[] = [
-  { id: 1, name: 'Product Category', type: 'Product & Service', account: '-' },
-  { id: 2, name: 'Income Category', type: 'Income', account: 'Sales Revenue' },
-  { id: 3, name: 'Expense Category', type: 'Expense', account: 'Operating Expenses' },
-]
+type ChartAccount = {
+  id: string
+  name: string
+  code: string
+  type: string
+}
 
 const categoryTypes = [
   { value: 'Product & Service', label: 'Product & Service' },
   { value: 'Income', label: 'Income' },
   { value: 'Expense', label: 'Expense' },
+  { value: 'Asset', label: 'Asset' },
+  { value: 'Liability', label: 'Liability' },
+  { value: 'Equity', label: 'Equity' },
+  { value: 'Costs of Goods Sold', label: 'Costs of Goods Sold' },
 ] as const
 
-const accounts = [
-  { id: 1, name: 'Sales Revenue' },
-  { id: 2, name: 'Operating Expenses' },
-  { id: 3, name: 'Cost of Goods Sold' },
-]
-
 export function CategoryTab() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([])
+  const [isAccountsLoading, setIsAccountsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [formData, setFormData] = useState<{ name: string; type: string; account: string }>({
+  const [formData, setFormData] = useState<{ name: string; type: string; account: string; color: string }>({
     name: '',
     type: '',
     account: '',
+    color: 'FFFFFF',
   })
+
+  const fetchCategories = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/categories')
+      const result = await response.json()
+      if (result.success) {
+        setCategories(result.data)
+      } else {
+        toast.error(result.message || 'Gagal memuat data category')
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      toast.error('Terjadi kesalahan saat memuat data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const fetchChartAccounts = useCallback(async () => {
+    setIsAccountsLoading(true)
+    try {
+      const response = await fetch('/api/chart-of-accounts')
+      const result = await response.json()
+      if (result.success) {
+        setChartAccounts(result.data)
+      } else {
+        toast.error(result.message || 'Gagal memuat Chart of Accounts')
+      }
+    } catch (error) {
+      console.error('Error fetching chart of accounts:', error)
+      toast.error('Terjadi kesalahan saat memuat akun')
+    } finally {
+      setIsAccountsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCategories()
+    fetchChartAccounts()
+  }, [fetchCategories, fetchChartAccounts])
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return categories
@@ -57,7 +123,7 @@ export function CategoryTab() {
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.type.toLowerCase().includes(q) ||
-        c.account.toLowerCase().includes(q),
+        (c.account && c.account.toLowerCase().includes(q)),
     )
   }, [categories, search])
 
@@ -69,63 +135,155 @@ export function CategoryTab() {
 
   const totalRecords = filteredData.length
 
-  const needsAccount = formData.type === 'Income' || formData.type === 'Expense'
+  const needsAccount = formData.type !== '' && formData.type !== 'Product & Service'
+
+  const availableAccounts = useMemo(() => {
+    if (!needsAccount) return []
+    if (!formData.type) return []
+
+    switch (formData.type) {
+      case 'Income':
+        return chartAccounts.filter((a) => a.type === 'Income')
+      case 'Expense':
+        return chartAccounts.filter((a) => a.type === 'Expenses')
+      case 'Asset':
+        return chartAccounts.filter((a) => a.type === 'Assets')
+      case 'Liability':
+        return chartAccounts.filter((a) => a.type === 'Liabilities')
+      case 'Equity':
+        return chartAccounts.filter((a) => a.type === 'Equity')
+      case 'Costs of Goods Sold':
+        return chartAccounts.filter((a) => a.type === 'Costs of Goods Sold')
+      default:
+        return []
+    }
+  }, [chartAccounts, formData.type, needsAccount])
+
   const isFormValid =
     formData.name.trim().length > 0 &&
     formData.type.trim().length > 0 &&
-    (!needsAccount || formData.account.trim().length > 0)
+    (!needsAccount || formData.account.trim().length > 0) &&
+    formData.color.trim().length > 0
 
-  const handleCreate = () => {
-    if (!isFormValid) return
-    const accountName =
-      needsAccount ? accounts.find((a) => String(a.id) === formData.account)?.name || '-' : '-'
-    const newCategory: Category = {
-      id: categories.length + 1,
-      name: formData.name.trim(),
-      type: formData.type as Category['type'],
-      account: accountName,
+  const handleCreate = async () => {
+    if (!isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const accountName =
+        needsAccount
+          ? availableAccounts.find((a) => a.id === formData.account)?.name || null
+          : null
+      
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          type: formData.type,
+          account: accountName,
+          color: formData.color,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success('Category berhasil dibuat')
+        fetchCategories()
+        setFormData({ name: '', type: '', account: '', color: 'FFFFFF' })
+        setCreateDialogOpen(false)
+      } else {
+        toast.error(result.message || 'Gagal membuat category')
+      }
+    } catch (error) {
+      console.error('Error creating category:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
     }
-    setCategories([...categories, newCategory])
-    setFormData({ name: '', type: '', account: '' })
-    setCreateDialogOpen(false)
   }
 
   const startEdit = (category: Category) => {
     setEditingCategoryId(category.id)
+    const matchedAccount = category.account
+      ? chartAccounts.find((a) => a.name === category.account)
+      : undefined
     setFormData({
       name: category.name,
       type: category.type,
-      account: category.account === '-' ? '' : String(accounts.find((a) => a.name === category.account)?.id || ''),
+      account: matchedAccount ? matchedAccount.id : '',
+      color: category.color || 'FFFFFF',
     })
     setEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (editingCategoryId == null) return
-    if (!isFormValid) return
-    const accountName =
-      needsAccount ? accounts.find((a) => String(a.id) === formData.account)?.name || '-' : '-'
-    setCategories(
-      categories.map((c) =>
-        c.id === editingCategoryId
-          ? {
-              ...c,
-              name: formData.name.trim(),
-              type: formData.type as Category['type'],
-              account: accountName,
-            }
-          : c,
-      ),
-    )
-    setEditDialogOpen(false)
-    setEditingCategoryId(null)
-    setFormData({ name: '', type: '', account: '' })
+  const handleUpdate = async () => {
+    if (editingCategoryId == null || !isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const accountName =
+        needsAccount
+          ? availableAccounts.find((a) => a.id === formData.account)?.name || null
+          : null
+      
+      const response = await fetch(`/api/categories/${editingCategoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          type: formData.type,
+          account: accountName,
+          color: formData.color,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success('Category diperbarui')
+        fetchCategories()
+        setEditDialogOpen(false)
+        setEditingCategoryId(null)
+        setFormData({ name: '', type: '', account: '', color: 'FFFFFF' })
+      } else {
+        toast.error(result.message || 'Gagal memperbarui category')
+      }
+    } catch (error) {
+      console.error('Error updating category:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setCategories(categories.filter((c) => c.id !== id))
+  const handleDelete = async () => {
+    if (deletingCategoryId == null) return
+    
+    try {
+      const response = await fetch(`/api/categories/${deletingCategoryId}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success('Category berhasil dihapus')
+        fetchCategories()
+      } else {
+        toast.error(result.message || 'Gagal menghapus category')
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setDeleteDialogOpen(false)
+      setDeletingCategoryId(null)
     }
+  }
+
+  const confirmDelete = (id: string) => {
+    setDeletingCategoryId(id)
+    setDeleteDialogOpen(true)
   }
 
   return (
@@ -151,20 +309,16 @@ export function CategoryTab() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="category-name">
-                  Name <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="category-name">Category Name<span className="text-red-500">*</span></Label>
                 <Input
                   id="category-name"
-                  placeholder="Enter Name"
+                  placeholder="Enter Category Name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category-type">
-                  Type <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="category-type">Category Type<span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value, account: '' })}
@@ -188,18 +342,30 @@ export function CategoryTab() {
                   </Label>
                   <Select value={formData.account} onValueChange={(value) => setFormData({ ...formData, account: value })}>
                     <SelectTrigger id="category-account">
-                      <SelectValue placeholder="Select Account" />
+                      <SelectValue placeholder={isAccountsLoading ? 'Loading accounts...' : 'Select Account'} />
                     </SelectTrigger>
                     <SelectContent>
-                      {accounts.map((a) => (
-                        <SelectItem key={a.id} value={String(a.id)}>
-                          {a.name}
+                      {availableAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.code} - {a.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
+              <div className="space-y-2">
+                <Label htmlFor="category-color">
+                  Category Color <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="category-color"
+                  placeholder="FFFFFF"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value.toUpperCase() })}
+                />
+                <p className="text-xs text-muted-foreground">For chart representation</p>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
@@ -282,7 +448,7 @@ export function CategoryTab() {
                             size="sm"
                             className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             title="Delete"
-                            onClick={() => handleDelete(c.id)}
+                            onClick={() => confirmDelete(c.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -323,7 +489,7 @@ export function CategoryTab() {
           setEditDialogOpen(open)
           if (!open) {
             setEditingCategoryId(null)
-            setFormData({ name: '', type: '', account: '' })
+            setFormData({ name: '', type: '', account: '', color: 'FFFFFF' })
           }
         }}
       >
@@ -334,18 +500,18 @@ export function CategoryTab() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-category-name">
-                Name <span className="text-red-500">*</span>
+                Category Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="edit-category-name"
-                placeholder="Enter Name"
+                placeholder="Enter Category Name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-category-type">
-                Type <span className="text-red-500">*</span>
+                Category Type <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.type}
@@ -370,18 +536,30 @@ export function CategoryTab() {
                 </Label>
                 <Select value={formData.account} onValueChange={(value) => setFormData({ ...formData, account: value })}>
                   <SelectTrigger id="edit-category-account">
-                    <SelectValue placeholder="Select Account" />
+                    <SelectValue placeholder={isAccountsLoading ? 'Loading accounts...' : 'Select Account'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={String(a.id)}>
-                        {a.name}
+                    {availableAccounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.code} - {a.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
+            <div className="space-y-2">
+              <Label htmlFor="edit-category-color">
+                Category Color <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-category-color"
+                placeholder="FFFFFF"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value.toUpperCase() })}
+              />
+              <p className="text-xs text-muted-foreground">For chart representation</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
@@ -393,8 +571,21 @@ export function CategoryTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are You Sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the category.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
-
-

@@ -1,0 +1,389 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  password      String?
+  role          String    @default("employee") // super admin, company, client, employee
+  branchId      String?
+  departmentId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  department    Department? @relation(fields: [departmentId], references: [id])
+  createdCustomers Customer[] @relation("CreatedBy")
+
+  @@map("user")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  departments      Department[]
+  categories       Category[]
+  chartOfAccounts  ChartOfAccount[]
+  journalEntries   JournalEntry[]
+  customers        Customer[]
+  products         Product[]
+
+  @@map("branch")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  branchId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  users        User[]
+  designations Designation[]
+
+  @@map("department")
+}
+
+model Designation {
+  id           String   @id @default(cuid())
+  name         String
+  departmentId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@map("designation")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // Product & Service, Income, Expense
+  account   String?
+  color     String?  @default("FFFFFF")
+  branchId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  products  Product[]
+
+  @@map("category")
+}
+
+model Tax {
+  id        String   @id @default(cuid())
+  name      String
+  rate      Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+
+  @@map("tax")
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+
+  @@map("unit")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  sku             String   @unique
+  salePrice       Float    @default(0)
+  purchasePrice   Float    @default(0)
+  taxId           String?
+  categoryId      String?
+  unitId          String?
+  quantity        Float    @default(0)
+  type            String
+  branchId        String?
+  saleAccountId   String?
+  expenseAccountId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  category        Category?       @relation(fields: [categoryId], references: [id])
+  unit            Unit?           @relation(fields: [unitId], references: [id])
+  tax             Tax?            @relation(fields: [taxId], references: [id])
+  branch          Branch?         @relation(fields: [branchId], references: [id])
+  saleAccount     ChartOfAccount? @relation("SaleAccount", fields: [saleAccountId], references: [id])
+  expenseAccount  ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
+
+  @@map("product")
+}
+
+model CustomField {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  module    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("custom_field")
+}
+
+model ChartOfAccount {
+  id            String   @id @default(cuid())
+  name          String
+  code          String   @unique
+  type          String   // Assets, Liabilities, Equity, Income, Expense
+  subType       String   // e.g., Current Assets, Fixed Assets, etc.
+  description   String?
+  isSubAccount  Boolean  @default(false)
+  parentId      String?
+  branchId      String?
+  balance       Float    @default(0)
+  status        String   @default("Active") // Active, Inactive
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branch        Branch?          @relation(fields: [branchId], references: [id])
+  parent        ChartOfAccount?  @relation("SubAccounts", fields: [parentId], references: [id])
+  subAccounts   ChartOfAccount[] @relation("SubAccounts")
+  journalLines  JournalLine[]
+  saleProducts  Product[]        @relation("SaleAccount")
+  expenseProducts Product[]      @relation("ExpenseAccount")
+
+  @@map("chart_of_account")
+}
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  journalId   String   @unique // e.g., JR-2025-001
+  date        DateTime
+  description String?
+  reference   String?
+  amount      Float
+  branchId    String?
+  customerId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  lines       JournalLine[]
+
+  @@map("journal_entry")
+}
+
+model JournalLine {
+  id             String   @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@map("journal_line")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("account")
+}
+
+model Customer {
+  id                String   @id @default(cuid())
+  customerCode      String   @unique
+  name              String
+  email             String   @unique
+  contact           String?
+  avatar            String?
+  isActive          Boolean  @default(true)
+  taxNumber         String?
+  billingName       String?
+  billingCountry    String?
+  billingState      String?
+  billingCity       String?
+  billingPhone      String?
+  billingZip        String?
+  billingAddress    String?
+  shippingName      String?
+  shippingCountry   String?
+  shippingState     String?
+  shippingCity      String?
+  shippingPhone     String?
+  shippingZip       String?
+  shippingAddress   String?
+  balance           Float    @default(0)
+  branchId          String?
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  branch            Branch?  @relation(fields: [branchId], references: [id])
+  createdBy         User?    @relation("CreatedBy", fields: [createdById], references: [id])
+  estimates         Estimate[]
+  invoices          Invoice[]
+  journalEntries    JournalEntry[]
+
+  @@map("customer")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+model Estimate {
+  id          String   @id @default(cuid())
+  estimateId  String   @unique
+  customerId  String
+  categoryId  String?
+  issueDate   DateTime
+  status      Int      @default(0)
+  total       Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+  items       EstimateItem[]
+
+  @@map("estimate")
+}
+
+model EstimateItem {
+  id          String   @id @default(cuid())
+  estimateId  String
+  itemName    String
+  quantity    Float    @default(0)
+  price       Float    @default(0)
+  discount    Float    @default(0)
+  taxRate     Float    @default(0)
+  amount      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@map("estimate_item")
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  invoiceId   String   @unique
+  customerId  String
+  categoryId  String?
+  issueDate   DateTime
+  dueDate     DateTime
+  status      Int      @default(0) // 0 Draft, 1 Sent, 2 Unpaid, 3 Partial, 4 Paid
+  dueAmount   Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+  items       InvoiceItem[]
+  creditNotes CreditNote[]
+
+  @@map("invoice")
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  itemName    String
+  quantity    Float    @default(0)
+  price       Float    @default(0)
+  discount    Float    @default(0)
+  taxRate     Float    @default(0)
+  amount      Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_item")
+}
+
+model CreditNote {
+  id          String   @id @default(cuid())
+  number      Int
+  invoiceId   String
+  date        DateTime
+  amount      Float    @default(0)
+  description String?
+  status      Int      @default(0) // 0 Pending, 1 Partially Used, 2 Fully Used
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [invoiceId])
+
+  @@map("credit_note")
+}

@@ -41,8 +41,7 @@ export default function SalesPage() {
   // Get active tab from URL or default to 'customer'
   const activeTab = searchParams.get('tab') || 'customer'
 
-  // Cache for tab content (to avoid Suspense fallback after first load)
-  const tabContentCache = useRef<{[key: string]: React.ReactNode}>({})
+  // Removed element cache to avoid hook order mismatches
 
   // Memoize sales tabs with lazy-loaded components wrapped in Suspense
   const salesTabs = useMemo(() => [
@@ -51,7 +50,7 @@ export default function SalesPage() {
       title: 'Customer',
       content: (
         <Suspense fallback={<TabLoadingSkeleton />}>
-          <TabContentWithCache tabId="customer" Component={CustomerTab} cache={tabContentCache.current} />
+          <TabContentWithCache Component={CustomerTab} />
         </Suspense>
       )
     },
@@ -60,7 +59,7 @@ export default function SalesPage() {
       title: 'Estimate',
       content: (
         <Suspense fallback={<TabLoadingSkeleton />}>
-          <TabContentWithCache tabId="estimate" Component={EstimateTab} cache={tabContentCache.current} />
+          <TabContentWithCache Component={EstimateTab} />
         </Suspense>
       )
     },
@@ -69,7 +68,7 @@ export default function SalesPage() {
       title: 'Invoice',
       content: (
         <Suspense fallback={<TabLoadingSkeleton />}>
-          <TabContentWithCache tabId="invoice" Component={InvoiceTab} cache={tabContentCache.current} />
+          <TabContentWithCache Component={InvoiceTab} />
         </Suspense>
       )
     },
@@ -78,7 +77,7 @@ export default function SalesPage() {
       title: 'Revenue',
       content: (
         <Suspense fallback={<TabLoadingSkeleton />}>
-          <TabContentWithCache tabId="revenue" Component={RevenueTab} cache={tabContentCache.current} />
+          <TabContentWithCache Component={RevenueTab} />
         </Suspense>
       )
     },
@@ -87,7 +86,7 @@ export default function SalesPage() {
       title: 'Credit Note',
       content: (
         <Suspense fallback={<TabLoadingSkeleton />}>
-          <TabContentWithCache tabId="credit-note" Component={CreditNoteTab} cache={tabContentCache.current} />
+          <TabContentWithCache Component={CreditNoteTab} />
         </Suspense>
       )
     },
@@ -100,14 +99,8 @@ export default function SalesPage() {
     }
   }
 
-  // TabContentWithCache component
-  function TabContentWithCache({ tabId, Component, cache }: { tabId: string, Component: React.ComponentType, cache: any }) {
-    const [mounted, setMounted] = useState(false)
-    if (cache[tabId]) return cache[tabId]
-    if (!mounted) {
-      setMounted(true)
-      cache[tabId] = <Component />
-    }
+  // Simplified content wrapper to maintain consistent hook ordering
+  function TabContentWithCache({ Component }: { Component: React.ComponentType }) {
     return <Component />
   }
 
@@ -143,4 +136,3 @@ export default function SalesPage() {
     </SidebarProvider>
   )
 }
-

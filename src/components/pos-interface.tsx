@@ -81,7 +81,7 @@ function formatPrice(n: number) {
 export function POSInterface() {
   const [searchProduct, setSearchProduct] = useState('')
   const [searchBarcode, setSearchBarcode] = useState('')
-  const [customerId, setCustomerId] = useState('1')
+  const [customerCode, setCustomerCode] = useState('1')
   const [warehouseId, setWarehouseId] = useState('1')
   const [discount, setDiscount] = useState(0)
   const [cart, setCart] = useState<CartItem[]>([])
@@ -92,7 +92,7 @@ export function POSInterface() {
   const subtotal = cart.reduce((sum, i) => sum + i.subtotal, 0)
   const total = subtotal - discount
 
-  const customerName = MOCK_CUSTOMERS.find((c) => c.id === customerId)?.name ?? ''
+  const customerName = MOCK_CUSTOMERS.find((c) => c.id === customerCode)?.name ?? ''
   const warehouseName = MOCK_WAREHOUSES.find((w) => w.id === warehouseId)?.name ?? ''
 
   const handleWarehouseChange = (value: string) => {
@@ -248,7 +248,7 @@ export function POSInterface() {
           <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white h-full flex flex-col">
             <CardHeader className="p-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Select value={customerId} onValueChange={setCustomerId}>
+                <Select value={customerCode} onValueChange={setCustomerCode}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Customer" />
                   </SelectTrigger>

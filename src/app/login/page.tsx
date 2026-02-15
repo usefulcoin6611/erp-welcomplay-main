@@ -114,9 +114,17 @@ export default function LoginPage() {
 
       // Call login API directly using authService
       const credentials: LoginCredentials = { email: email.toLowerCase().trim(), password }
-      const response = await authService.login(credentials)
+      
+      // ✅ FIX: Use direct fetch to our custom API route to ensure session is handled correctly
+      const fetchResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
 
-      if (response.success && response.data?.user && response.data?.token) {
+      const response = await fetchResponse.json();
+
+      if (response.success && response.data?.user) {
         // Update auth context (this will trigger AuthWrapper to handle redirect)
         try {
           await refreshUser()

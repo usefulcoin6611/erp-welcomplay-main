@@ -12,6 +12,8 @@ export interface User {
   name: string
   type: UserRole
   avatar?: string
+  branchId?: string
+  departmentId?: string
   created_at?: string
   updated_at?: string
 }

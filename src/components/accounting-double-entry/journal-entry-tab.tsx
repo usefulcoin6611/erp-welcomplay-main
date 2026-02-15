@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,10 @@ import {
   X,
   Pencil,
   Trash2,
+  Loader2,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { formatPrice } from '@/lib/utils'
 
 type JournalLine = {
   id: string
@@ -52,62 +55,34 @@ type JournalLine = {
   debit: number
   credit: number
   description: string
+  account?: {
+    id: string
+    name: string
+    code: string
+  }
 }
 
-const mockChartAccounts = [
-  { id: '1000', name: 'Cash & Bank' },
-  { id: '1100', name: 'Accounts Receivable' },
-  { id: '2000', name: 'Accounts Payable' },
-  { id: '4000', name: 'Sales Revenue' },
-  { id: '6000', name: 'Operating Expenses' },
-] as const
+type JournalEntryRow = {
+  id: string
+  journalId: string
+  date: string
+  description: string
+  reference: string
+  amount: number
+  lines: JournalLine[]
+}
 
-const journalEntries = [
-  {
-    id: 'JR-2025-001',
-    date: '2025-11-01',
-    description: 'Opening balances for all accounts',
-    amount: 500_000_000,
-  },
-  {
-    id: 'JR-2025-002',
-    date: '2025-11-03',
-    description: 'Reclassification of expense',
-    amount: 7_500_000,
-  },
-  {
-    id: 'JR-2025-003',
-    date: '2025-11-05',
-    description: 'Monthly accrual adjustments',
-    amount: 15_000_000,
-  },
-]
-
-function formatPrice(amount: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
+type ChartAccount = {
+  id: string
+  name: string
+  code: string
 }
 
 export function JournalEntryTab() {
-  type JournalEntryRow = (typeof journalEntries)[number] & {
-    reference: string
-    lines: JournalLine[]
-  }
-
-  const [rows, setRows] = useState<JournalEntryRow[]>(() =>
-    journalEntries.map((j) => ({
-      ...j,
-      reference: '',
-      lines: [
-        { id: 'row-1', accountId: '6000', debit: j.amount, credit: 0, description: '' },
-        { id: 'row-2', accountId: '1000', debit: 0, credit: j.amount, description: '' },
-      ],
-    })),
-  )
+  const [rows, setRows] = useState<JournalEntryRow[]>([])
+  const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -115,6 +90,7 @@ export function JournalEntryTab() {
   const [entryToDelete, setEntryToDelete] = useState<JournalEntryRow | null>(null)
 
   const [header, setHeader] = useState({
+    journalId: '',
     date: '',
     reference: '',
     description: '',
@@ -122,6 +98,7 @@ export function JournalEntryTab() {
 
   const [lines, setLines] = useState<JournalLine[]>([
     { id: 'row-1', accountId: '', debit: 0, credit: 0, description: '' },
+    { id: 'row-2', accountId: '', debit: 0, credit: 0, description: '' },
   ])
 
   const [search, setSearch] = useState('')
@@ -129,17 +106,53 @@ export function JournalEntryTab() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  const fetchJournals = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/journal-entries')
+      const result = await response.json()
+      if (result.success) {
+        setRows(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching journals:', error)
+      toast.error('Gagal mengambil data jurnal')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const fetchChartAccounts = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chart-of-accounts')
+      const result = await response.json()
+      if (result.success) {
+        setChartAccounts(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchJournals()
+    fetchChartAccounts()
+  }, [fetchJournals, fetchChartAccounts])
+
   // Filter data
   const filteredData = useMemo(() => {
     return rows.filter((entry) => {
       if (search.trim()) {
         const q = search.trim().toLowerCase()
         if (
-          !entry.id.toLowerCase().includes(q) &&
+          !entry.journalId.toLowerCase().includes(q) &&
           !entry.description.toLowerCase().includes(q)
         ) return false
       }
-      if (date && entry.date !== date) return false
+      if (date) {
+        const entryDate = new Date(entry.date).toISOString().split('T')[0]
+        if (entryDate !== date) return false
+      }
       return true
     })
   }, [search, date, rows])
@@ -160,18 +173,18 @@ export function JournalEntryTab() {
   const totals = useMemo(() => {
     const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0)
     const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0)
-    return { totalDebit, totalCredit, balanced: totalDebit === totalCredit }
+    return { totalDebit, totalCredit, balanced: Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0 }
   }, [lines])
 
   const addLine = () => {
     setLines((prev) => [
       ...prev,
-      { id: `row-${prev.length + 1}`, accountId: '', debit: 0, credit: 0, description: '' },
+      { id: `row-${Date.now()}`, accountId: '', debit: 0, credit: 0, description: '' },
     ])
   }
 
   const removeLine = (id: string) => {
-    setLines((prev) => (prev.length === 1 ? prev : prev.filter((l) => l.id !== id)))
+    setLines((prev) => (prev.length <= 2 ? prev : prev.filter((l) => l.id !== id)))
   }
 
   const updateLine = (id: string, patch: Partial<JournalLine>) => {
@@ -182,78 +195,122 @@ export function JournalEntryTab() {
     setDialogOpen(open)
     if (!open) {
       setEditingId(null)
-      setHeader({ date: '', reference: '', description: '' })
-      setLines([{ id: 'row-1', accountId: '', debit: 0, credit: 0, description: '' }])
+      setHeader({ journalId: '', date: '', reference: '', description: '' })
+      setLines([
+        { id: 'row-1', accountId: '', debit: 0, credit: 0, description: '' },
+        { id: 'row-2', accountId: '', debit: 0, credit: 0, description: '' },
+      ])
     }
   }
 
   const handleCreateClick = () => {
+    const nextNum = rows.length + 1
+    const journalId = `JR-${new Date().getFullYear()}-${String(nextNum).padStart(3, '0')}`
     setEditingId(null)
-    handleDialogOpenChange(true)
+    setHeader({
+      journalId,
+      date: new Date().toISOString().split('T')[0],
+      reference: '',
+      description: '',
+    })
+    setDialogOpen(true)
   }
 
   const handleEdit = (entry: JournalEntryRow) => {
     setEditingId(entry.id)
-    setHeader({ date: entry.date, reference: entry.reference, description: entry.description })
-    setLines(entry.lines.length ? entry.lines : [{ id: 'row-1', accountId: '', debit: 0, credit: 0, description: '' }])
+    setHeader({
+      journalId: entry.journalId,
+      date: new Date(entry.date).toISOString().split('T')[0],
+      reference: entry.reference || '',
+      description: entry.description || '',
+    })
+    setLines(entry.lines.map(l => ({
+      id: l.id,
+      accountId: l.accountId,
+      debit: l.debit,
+      credit: l.credit,
+      description: l.description || '',
+    })))
     setDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!totals.balanced) return
-
-    const amount = totals.totalDebit
-
-    if (editingId) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === editingId
-            ? {
-                ...r,
-                date: header.date,
-                reference: header.reference,
-                description: header.description,
-                amount,
-                lines,
-              }
-            : r,
-        ),
-      )
-      handleDialogOpenChange(false)
+    if (!totals.balanced) {
+      toast.error('Total Debit dan Credit harus seimbang dan lebih dari 0')
       return
     }
 
-    const nextId = `JR-${new Date().getFullYear()}-${String(rows.length + 1).padStart(3, '0')}`
-    const newRow: JournalEntryRow = {
-      id: nextId,
-      date: header.date,
-      description: header.description,
-      reference: header.reference,
-      amount,
-      lines,
+    try {
+      setSubmitting(true)
+      const payload = {
+        ...header,
+        amount: totals.totalDebit,
+        lines: lines.map(({ accountId, debit, credit, description }) => ({
+          accountId,
+          debit,
+          credit,
+          description,
+        })),
+      }
+
+      const url = editingId ? `/api/journal-entries/${editingId}` : '/api/journal-entries'
+      const method = editingId ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast.success(editingId ? 'Jurnal berhasil diperbarui' : 'Jurnal berhasil dibuat')
+        handleDialogOpenChange(false)
+        fetchJournals()
+      } else {
+        toast.error(result.message || 'Gagal menyimpan jurnal')
+      }
+    } catch (error) {
+      console.error('Error saving journal:', error)
+      toast.error('Terjadi kesalahan saat menyimpan jurnal')
+    } finally {
+      setSubmitting(false)
     }
-    setRows((prev) => [newRow, ...prev])
-    handleDialogOpenChange(false)
   }
 
-  const handleDeleteClick = (entry: (typeof journalEntries)[number]) => {
+  const handleDeleteClick = (entry: JournalEntryRow) => {
     setEntryToDelete(entry)
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!entryToDelete) return
-    setRows((prev) => prev.filter((r) => r.id !== entryToDelete.id))
-    setEntryToDelete(null)
-    setDeleteDialogOpen(false)
+    try {
+      const response = await fetch(`/api/journal-entries/${entryToDelete.id}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (result.success) {
+        toast.success('Jurnal berhasil dihapus')
+        fetchJournals()
+      } else {
+        toast.error(result.message || 'Gagal menghapus jurnal')
+      }
+    } catch (error) {
+      console.error('Error deleting journal:', error)
+      toast.error('Terjadi kesalahan saat menghapus jurnal')
+    } finally {
+      setEntryToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   return (
     <div className="space-y-4">
       {/* Title Tab */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-        <CardHeader className="px-6">
+        <CardHeader className="px-6 flex flex-row items-center justify-between">
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-lg font-semibold">Journal Entry</CardTitle>
             <CardDescription>Create and manage journal entries.</CardDescription>
@@ -358,7 +415,16 @@ export function JournalEntryTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.length > 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="px-6 text-center py-8">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading journal entries...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedData.length > 0 ? (
                   paginatedData.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="px-6">
@@ -369,11 +435,11 @@ export function JournalEntryTab() {
                           className="shadow-none"
                         >
                           <Link href={`/accounting/journal-entry/${entry.id}`}>
-                            {entry.id}
+                            {entry.journalId}
                           </Link>
                         </Button>
                       </TableCell>
-                      <TableCell className="px-6">{entry.date}</TableCell>
+                      <TableCell className="px-6">{new Date(entry.date).toLocaleDateString('id-ID')}</TableCell>
                       <TableCell className="px-6 font-medium">
                         {formatPrice(entry.amount)}
                       </TableCell>
@@ -433,9 +499,6 @@ export function JournalEntryTab() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogTrigger asChild>
-          <span />
-        </DialogTrigger>
         <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto" style={{ width: '95vw', maxWidth: '95vw' }}>
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Journal Entry' : 'Create Journal Entry'}</DialogTitle>
@@ -450,7 +513,7 @@ export function JournalEntryTab() {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                   <div className="md:col-span-4 space-y-2">
                     <Label>Journal Number</Label>
-                    <Input value={editingId ?? `JR-${new Date().getFullYear()}-${String(rows.length + 1).padStart(3, '0')}`} readOnly className="h-9 bg-gray-50" />
+                    <Input value={header.journalId} readOnly className="h-9 bg-gray-50" />
                   </div>
                   <div className="md:col-span-4 space-y-2">
                     <Label htmlFor="je-date2">
@@ -526,9 +589,9 @@ export function JournalEntryTab() {
                                   <SelectValue placeholder="Select Chart of Account" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {mockChartAccounts.map((a) => (
+                                  {chartAccounts.map((a) => (
                                     <SelectItem key={a.id} value={a.id}>
-                                      {a.id} - {a.name}
+                                      {a.code} - {a.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -570,66 +633,68 @@ export function JournalEntryTab() {
                             <TableCell className="px-4 py-3">
                               <Button
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                title="Delete"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => removeLine(line.id)}
+                                disabled={lines.length <= 2}
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
                         )
                       })}
                     </TableBody>
+                    <TableBody>
+                      <TableRow className="bg-gray-50/50 font-semibold">
+                        <TableCell className="px-4 py-3">Total</TableCell>
+                        <TableCell className={`px-4 py-3 ${!totals.balanced ? 'text-red-600' : 'text-green-600'}`}>
+                          {formatPrice(totals.totalDebit)}
+                        </TableCell>
+                        <TableCell className={`px-4 py-3 ${!totals.balanced ? 'text-red-600' : 'text-green-600'}`}>
+                          {formatPrice(totals.totalCredit)}
+                        </TableCell>
+                        <TableCell colSpan={3} className="px-4 py-3 text-right">
+                          {!totals.balanced && (
+                            <span className="text-xs text-red-600 mr-2">
+                              Debit and Credit must be equal
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
                   </Table>
-                </div>
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="flex items-center justify-end gap-8 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Total Debit</span>
-                      <span className="font-medium">{formatPrice(totals.totalDebit)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Total Credit</span>
-                      <span className="font-medium">{formatPrice(totals.totalCredit)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Status</span>
-                      <span className={totals.balanced ? 'text-green-700 font-medium' : 'text-red-700 font-medium'}>
-                        {totals.balanced ? 'Balanced' : 'Not Balanced'}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <DialogFooter>
-              <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => handleDialogOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleDialogOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="blue" size="sm" className="shadow-none h-7 px-4" disabled={!totals.balanced}>
-                {editingId ? 'Update Journal Entry' : 'Create Journal Entry'}
+              <Button type="submit" variant="blue" disabled={!totals.balanced || submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingId ? 'Update Journal' : 'Create Journal'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Journal Entry</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescriptionText>
-              Are you sure you want to delete this journal entry? This action cannot be undone.
+              This action cannot be undone. This will permanently delete the journal entry
+              {entryToDelete && <span className="font-semibold"> {entryToDelete.journalId}</span>}.
             </AlertDialogDescriptionText>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setEntryToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

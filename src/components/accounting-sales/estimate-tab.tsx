@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import * as React from 'react'
 import Link from "next/link"
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -55,117 +56,21 @@ import {
   Trash2,
   RefreshCw,
   Copy,
+  ArrowLeft,
   ArrowLeftRight
 } from "lucide-react"
+import * as QRCode from 'qrcode'
 
-// Mock proposal data
-const mockProposals = [
-  {
-    id: "PR-2025-001",
-    customer: "PT Teknologi Digital Indonesia",
-    category: "Income",
-    issueDate: "2025-12-01",
-    status: 0, // Draft
-    total: 12500000,
-  },
-  {
-    id: "PR-2025-002",
-    customer: "CV Mitra Sejahtera",
-    category: "Income",
-    issueDate: "2025-12-03",
-    status: 2, // Accepted
-    total: 9800000,
-  },
-  {
-    id: "PR-2025-003",
-    customer: "PT Maju Jaya",
-    category: "Income",
-    issueDate: "2025-12-05",
-    status: 1, // Sent
-    total: 15000000,
-  },
-  {
-    id: "PR-2025-004",
-    customer: "CV Sejahtera Abadi",
-    category: "Income",
-    issueDate: "2025-12-07",
-    status: 3, // Declined
-    total: 7500000,
-  },
-  {
-    id: "PR-2025-005",
-    customer: "PT Global Teknologi",
-    category: "Income",
-    issueDate: "2025-12-10",
-    status: 4, // Expired
-    total: 20000000,
-  },
-  {
-    id: "PR-2025-006",
-    customer: "PT Nusantara Sejahtera",
-    category: "Income",
-    issueDate: "2025-12-12",
-    status: 0, // Draft
-    total: 11000000,
-  },
-  {
-    id: "PR-2025-007",
-    customer: "CV Mandiri Jaya",
-    category: "Income",
-    issueDate: "2025-12-15",
-    status: 2, // Accepted
-    total: 13500000,
-  },
-  {
-    id: "PR-2025-008",
-    customer: "PT Indah Sejahtera",
-    category: "Income",
-    issueDate: "2025-12-18",
-    status: 1, // Sent
-    total: 16500000,
-  },
-  {
-    id: "PR-2025-009",
-    customer: "CV Makmur Abadi",
-    category: "Income",
-    issueDate: "2025-12-20",
-    status: 0, // Draft
-    total: 9500000,
-  },
-  {
-    id: "PR-2025-010",
-    customer: "PT Bersama Jaya",
-    category: "Income",
-    issueDate: "2025-12-22",
-    status: 2, // Accepted
-    total: 18000000,
-  },
-  {
-    id: "PR-2025-011",
-    customer: "CV Sukses Mandiri",
-    category: "Income",
-    issueDate: "2025-12-25",
-    status: 1, // Sent
-    total: 12000000,
-  },
-  {
-    id: "PR-2025-012",
-    customer: "PT Harmoni Sejahtera",
-    category: "Income",
-    issueDate: "2025-12-28",
-    status: 3, // Declined
-    total: 14000000,
-  },
-]
+// Data berasal dari API (seed/production)
 
 const statusMap: {
   [key: number]: { label: string }
 } = {
   0: { label: "Draft" },
-  1: { label: "Sent" },
+  1: { label: "Open" },
   2: { label: "Accepted" },
   3: { label: "Declined" },
-  4: { label: "Expired" },
+  4: { label: "Close" },
 }
 
 function getProposalStatusClasses(status: number) {
@@ -178,6 +83,14 @@ function getProposalStatusClasses(status: number) {
     default: return "bg-gray-100 text-gray-700 border-none"
   }
 }
+
+const ESTIMATE_STATUS_OPTIONS = [
+  { value: '0', label: statusMap[0].label },
+  { value: '1', label: statusMap[1].label },
+  { value: '2', label: statusMap[2].label },
+  { value: '3', label: statusMap[3].label },
+  { value: '4', label: statusMap[4].label },
+]
 
 export function EstimateTab() {
   type ProposalItem = {
@@ -192,35 +105,24 @@ export function EstimateTab() {
     amount: number
   }
 
-  type ProposalRow = (typeof mockProposals)[number] & {
-    customerId: string
-    categoryId: string
-    description: string
-    items: ProposalItem[]
+  type ProposalRow = {
+    id: string
+    customer: string
+    customerCode?: string
+    category: string
+    issueDate: string
+    status: number
+    total: number
+    description?: string
+    items?: ProposalItem[]
   }
 
-  const [proposals, setProposals] = useState<ProposalRow[]>(() =>
-    mockProposals.map((p) => ({
-      ...p,
-      customerId: '',
-      categoryId: '',
-      description: '',
-      items: [],
-    })),
-  )
-  const [filteredProposals, setFilteredProposals] = useState<ProposalRow[]>(() =>
-    mockProposals.map((p) => ({
-      ...p,
-      customerId: '',
-      categoryId: '',
-      description: '',
-      items: [],
-    })),
-  )
+  const [proposals, setProposals] = useState<ProposalRow[]>([])
+  const [filteredProposals, setFilteredProposals] = useState<ProposalRow[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [dateFilter, setDateFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -233,17 +135,11 @@ export function EstimateTab() {
   })
   const [items, setItems] = useState<ProposalItem[]>([])
 
-  // Mock customers and categories
-  const mockCustomers = [
-    { id: 1, name: 'PT Teknologi Digital Indonesia' },
-    { id: 2, name: 'CV Mitra Sejahtera' },
-    { id: 3, name: 'PT Maju Jaya' },
-  ]
-
-  const mockCategories = [
-    { id: 1, name: 'Income' },
-    { id: 2, name: 'Expense' },
-  ]
+  // Customers and categories from backend
+  const [customers, setCustomers] = useState<{ id: string; name: string; customerCode: string }[]>([])
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const mockProducts = [
     { id: 1, name: 'Product A', price: 100000, unit: 'pcs' },
@@ -295,24 +191,404 @@ export function EstimateTab() {
     return { subTotal, totalDiscount, totalTax, totalAmount }
   }
 
-  const handleEdit = (proposal: ProposalRow) => {
-    const customerId =
-      proposal.customerId ||
-      (mockCustomers.find((c) => c.name === proposal.customer)?.id.toString() ?? '')
-    const categoryId =
-      proposal.categoryId ||
-      (mockCategories.find((c) => c.name === proposal.category)?.id.toString() ?? '')
+  const router = useRouter()
 
-    setEditingId(proposal.id)
-    setFormData({
-      customer: customerId,
-      category: categoryId,
-      issueDate: proposal.issueDate,
-      description: proposal.description || '',
-    })
-    setItems(proposal.items || [])
-    setCreateDialogOpen(true)
+  const handleEdit = async (proposal: ProposalRow) => {
+    try {
+      const res = await fetch(`/api/estimates/${proposal.id}`)
+      const json = await res.json()
+      if (!json.success) return
+      const e = json.data as any
+      setEditingId(e.estimateId)
+      setFormData({
+        customer: e.customerId != null ? String(e.customerId) : '',
+        category: e.categoryId != null ? String(e.categoryId) : '',
+        issueDate: (e.issueDate ?? '').toString().slice(0, 10),
+        description: e.description ?? '',
+      })
+      const mappedItems = (e.items ?? []).map((it: any) => {
+        const mapped = {
+          id: `item-${it.id}`,
+          item: '',
+          quantity: String(it.quantity ?? '0'),
+          price: String(it.price ?? '0'),
+          discount: String(it.discount ?? '0'),
+          tax: '',
+          taxRate: String(it.taxRate ?? '0'),
+          description: it.description ?? '',
+          amount: 0,
+        }
+        mapped.amount = calculateItemAmount(mapped)
+        return mapped
+      })
+      setItems(mappedItems)
+      setCreateDialogOpen(true)
+    } catch (_) {}
   }
+
+  type EstimateDetail = {
+    estimateId: string
+    status: number
+    issueDate: string
+    total: number
+    description?: string
+    customerId?: string
+    categoryId?: string
+    customer: { name: string; customerCode: string }
+    items: {
+      id: string
+      itemName: string
+      quantity: number
+      price: number
+      discount: number
+      taxRate: number
+      amount: number
+      description?: string
+    }[]
+  }
+
+  const [selectedEstimate, setSelectedEstimate] = useState<EstimateDetail | null>(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+
+  const computeTotals = React.useMemo(() => {
+    if (!selectedEstimate) return { subTotal: 0, discount: 0, tax: 0, total: 0 }
+    const subTotal = selectedEstimate.items.reduce((sum, it) => sum + (it.quantity * it.price - it.discount), 0)
+    const tax = selectedEstimate.items.reduce((sum, it) => {
+      const base = it.quantity * it.price - it.discount
+      return sum + (it.taxRate / 100) * base
+    }, 0)
+    const total = selectedEstimate.items.reduce((sum, it) => sum + it.amount, 0) || subTotal + tax
+    const discount = selectedEstimate.items.reduce((sum, it) => sum + it.discount, 0)
+    return { subTotal, discount, tax, total }
+  }, [selectedEstimate])
+
+  // Load initial data from API
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const [estimatesRes, customersRes, categoriesRes] = await Promise.all([
+          fetch('/api/estimates'),
+          fetch('/api/customers'),
+          fetch('/api/categories')
+        ])
+        const estimatesJson = await estimatesRes.json()
+        const customersJson = await customersRes.json()
+        const categoriesJson = await categoriesRes.json()
+        if (estimatesJson.success) {
+          setProposals(estimatesJson.data)
+          setFilteredProposals(estimatesJson.data)
+        }
+        if (customersJson.success) {
+          setCustomers(customersJson.data.map((c: any) => ({ id: c.id, name: c.name, customerCode: c.customerCode })))
+        }
+        if (categoriesJson.success) {
+          setCategories(categoriesJson.data.map((c: any) => ({ id: c.id, name: c.name })))
+        }
+      } catch (err: any) {
+        setError('Gagal memuat data estimates')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
+  }, [])
+  
+  useEffect(() => {
+    if (!selectedEstimate) {
+      setQrDataUrl(null)
+      return
+    }
+    const text = selectedEstimate.estimateId ? String(selectedEstimate.estimateId) : ''
+    QRCode.toDataURL(text, {
+      errorCorrectionLevel: 'M',
+      width: 100,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    })
+      .then((url: string) => setQrDataUrl(url))
+      .catch(() => setQrDataUrl(null))
+  }, [selectedEstimate])
+  
+  // Filter proposals
+  useEffect(() => {
+    let filtered = [...proposals]
+    
+    if (dateFilter) {
+      filtered = filtered.filter(p => p.issueDate === dateFilter)
+    }
+    
+    if (statusFilter !== '') {
+      filtered = filtered.filter(p => p.status === parseInt(statusFilter))
+    }
+    
+    setFilteredProposals(filtered)
+    setCurrentPage(1)
+  }, [dateFilter, statusFilter, proposals])
+
+  if (selectedEstimate) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+          <CardHeader className="px-6">
+            <div className="flex items-center gap-4 w-full">
+              <div className="min-w-0 space-y-1 flex-1">
+                <CardTitle className="text-base font-normal truncate">Proposal Detail</CardTitle>
+                <p className="text-sm text-muted-foreground truncate">{selectedEstimate.estimateId}</p>
+              </div>
+              <div className="ml-auto flex items-center gap-2 justify-end">
+                <Button variant="outline" size="sm" className="shadow-none h-8 px-3 bg-green-50 text-green-700 hover:bg-green-100 border-green-100">
+                  Convert Invoice
+                </Button>
+                <Button variant="outline" size="sm" className="shadow-none h-8 px-3 bg-red-50 text-red-700 hover:bg-red-100 border-red-100" onClick={() => {
+                  fetch(`/api/estimates/${selectedEstimate.estimateId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 3 }) }).then(() => {
+                    setSelectedEstimate({ ...selectedEstimate, status: 3 })
+                  })
+                }}>
+                  Reject Proposal
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-8 px-3 bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-100"
+                  onClick={() => {
+                    setEditingId(selectedEstimate.estimateId)
+                    setFormData({
+                      customer: selectedEstimate.customerId != null ? String(selectedEstimate.customerId) : '',
+                      category: selectedEstimate.categoryId != null ? String(selectedEstimate.categoryId) : '',
+                      issueDate: new Date(selectedEstimate.issueDate).toISOString().slice(0, 10),
+                      description: selectedEstimate.description ?? '',
+                    })
+                    const mappedItems = (selectedEstimate.items ?? []).map((it: any) => {
+                      const mapped = {
+                        id: `item-${it.id}`,
+                        item: '',
+                        quantity: String(it.quantity ?? '0'),
+                        price: String(it.price ?? '0'),
+                        discount: String(it.discount ?? '0'),
+                        tax: '',
+                        taxRate: String(it.taxRate ?? '0'),
+                        description: it.description ?? '',
+                        amount: 0,
+                      }
+                      mapped.amount = calculateItemAmount(mapped)
+                      return mapped
+                    })
+                    setItems(mappedItems)
+                    setSelectedEstimate(null)
+                    setCreateDialogOpen(true)
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" className="shadow-none h-8 w-8 p-0" onClick={() => setSelectedEstimate(null)}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border rounded-md p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Create Proposal</div>
+                    <div className="text-muted-foreground">{new Date(selectedEstimate.issueDate).toLocaleDateString('id-ID')}</div>
+                  </div>
+                  <Badge className={getProposalStatusClasses(0)}>{statusMap[0].label}</Badge>
+                </div>
+              </div>
+              <div className="border rounded-md p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Send Proposal</div>
+                    <div className="text-muted-foreground">{new Date(selectedEstimate.issueDate).toLocaleDateString('id-ID')}</div>
+                  </div>
+                  <Badge className={getProposalStatusClasses(Math.max(1, selectedEstimate.status))}>{statusMap[Math.max(1, selectedEstimate.status)].label}</Badge>
+                </div>
+              </div>
+              <div className="border rounded-md p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Proposal Status</div>
+                    <div className="text-muted-foreground">Status</div>
+                  </div>
+                  <Select value={String(selectedEstimate.status)} onValueChange={(v) => {
+                    const n = parseInt(v, 10)
+                    fetch(`/api/estimates/${selectedEstimate.estimateId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: n }) }).then(() => {
+                      setSelectedEstimate({ ...selectedEstimate, status: n })
+                    })
+                  }}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder={statusMap[selectedEstimate.status].label} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTIMATE_STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+          <CardHeader className="px-6">
+            <div className="w-full flex items-center justify-between">
+              <CardTitle className="text-base font-normal">Proposal</CardTitle>
+              <span className="text-base font-semibold">#{selectedEstimate.estimateId}</span>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6 space-y-6">
+            <div className="flex justify-end">
+              <div className="flex items-center gap-6">
+                <div>
+                  <div className="text-xs text-muted-foreground">Issue Date :</div>
+                  <div className="text-sm font-medium">{new Date(selectedEstimate.issueDate).toLocaleDateString('id-ID')}</div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-1 text-sm">
+                <div className="font-medium">Billed To :</div>
+                <div>{selectedEstimate.customer.name}</div>
+                <div className="text-muted-foreground">{selectedEstimate.customer.customerCode}</div>
+                <div className="text-muted-foreground">Tax Number : 001</div>
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="font-medium">Shipped To :</div>
+                <div>{selectedEstimate.customer.name}</div>
+                <div className="text-muted-foreground">{selectedEstimate.customer.customerCode}</div>
+              </div>
+              <div className="flex items-start justify-end">
+                <div className="flex flex-col items-end gap-3">
+                  {qrDataUrl ? (
+                    <img src={qrDataUrl} alt="QR" className="w-[100px] h-[100px] rounded-lg border border-border bg-white p-1" />
+                  ) : (
+                    <div className="w-[100px] h-[100px] rounded-lg bg-white p-2 border border-border" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-sm">
+              <span className="text-muted-foreground">Status :</span>{' '}
+              <Badge className={getProposalStatusClasses(selectedEstimate.status)}>
+                {statusMap[selectedEstimate.status].label}
+              </Badge>
+            </div>
+
+            <div>
+              <div className="text-sm font-medium">Product Summary</div>
+              <div className="text-xs text-muted-foreground">All items here cannot be deleted.</div>
+            </div>
+
+            {loadingDetail ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : detailError ? (
+              <div className="text-sm text-red-600">Error: {detailError}</div>
+            ) : (
+              <div className="overflow-x-auto w-full">
+                <Table className="w-full min-w-full table-auto">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-6">#</TableHead>
+                      <TableHead className="px-6">Product</TableHead>
+                      <TableHead className="px-6">Quantity</TableHead>
+                      <TableHead className="px-6">Rate</TableHead>
+                      <TableHead className="px-6">Discount</TableHead>
+                      <TableHead className="px-6">Tax</TableHead>
+                      <TableHead className="px-6">Description</TableHead>
+                      <TableHead className="px-6 text-right">Price</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedEstimate.items.map((it, idx) => {
+                      const qty = it.quantity
+                      const rate = it.price
+                      const base = qty * rate - it.discount
+                      const taxAmount = (it.taxRate / 100) * base
+                      const total = base + taxAmount
+                      return (
+                        <TableRow key={it.id}>
+                          <TableCell className="px-6">{idx + 1}</TableCell>
+                          <TableCell className="px-6">{it.itemName}</TableCell>
+                          <TableCell className="px-6">{qty} <span className="text-muted-foreground text-xs">Piece</span></TableCell>
+                          <TableCell className="px-6">Rp {rate.toLocaleString('id-ID')}</TableCell>
+                          <TableCell className="px-6">Rp {it.discount.toLocaleString('id-ID')}</TableCell>
+                          <TableCell className="px-6">
+                            <div>Tax ({it.taxRate}%)</div>
+                            <div className="text-muted-foreground">Rp {taxAmount.toLocaleString('id-ID')}</div>
+                          </TableCell>
+                          <TableCell className="px-6">{it.description || '-'}</TableCell>
+                          <TableCell className="px-6 text-right">
+                            <div>Rp {total.toLocaleString('id-ID')}</div>
+                            <div className="text-[10px] text-pink-600">after tax & discount</div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-start-4 md:col-span-1 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Sub Total</span><span>Rp {computeTotals.subTotal.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span>Rp {computeTotals.discount.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>Rp {computeTotals.tax.toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between font-medium border-t pt-2"><span>Total</span><span>Rp {computeTotals.total.toLocaleString('id-ID')}</span></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const handleView = async (proposal: ProposalRow) => {
+    setLoadingDetail(true)
+    setDetailError(null)
+    try {
+      const res = await fetch(`/api/estimates/${proposal.id}`)
+      const json = await res.json()
+      if (!json.success) throw new Error(json.message || 'Failed to fetch estimate detail')
+      const e = json.data as any
+      const detail: EstimateDetail = {
+        estimateId: e.estimateId,
+        status: e.status,
+        issueDate: e.issueDate,
+        total: e.total,
+        description: e.description ?? '',
+        customerId: e.customerId ?? '',
+        categoryId: e.categoryId ?? '',
+        customer: { name: e.customer?.name ?? '', customerCode: e.customer?.customerCode ?? '' },
+        items: (e.items ?? []).map((it: any) => ({
+          id: it.id,
+          itemName: it.itemName,
+          quantity: it.quantity,
+          price: it.price,
+          discount: it.discount,
+          taxRate: it.taxRate,
+          amount: it.amount,
+          description: it.description ?? '',
+        })),
+      }
+      setSelectedEstimate(detail)
+    } catch (err: any) {
+      setDetailError(err.message || 'Gagal memuat detail')
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
+
+  
 
   const handleDeleteClick = (proposal: ProposalRow) => {
     setProposalToDelete(proposal)
@@ -321,9 +597,18 @@ export function EstimateTab() {
 
   const handleConfirmDelete = () => {
     if (!proposalToDelete) return
-    setProposals((prev) => prev.filter((p) => p.id !== proposalToDelete.id))
-    setProposalToDelete(null)
-    setDeleteDialogOpen(false)
+    const del = async () => {
+      await fetch(`/api/estimates/${proposalToDelete.id}`, { method: 'DELETE' })
+      const res = await fetch('/api/estimates')
+      const json = await res.json()
+      if (json.success) {
+        setProposals(json.data)
+        setFilteredProposals(json.data)
+      }
+      setProposalToDelete(null)
+      setDeleteDialogOpen(false)
+    }
+    del()
   }
 
   const addItem = () => {
@@ -374,50 +659,51 @@ export function EstimateTab() {
     e.preventDefault()
     const { totalAmount } = calculateTotals()
 
-    if (editingId) {
-      setProposals((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                customerId: formData.customer,
-                categoryId: formData.category,
-                customer: mockCustomers.find((c) => c.id.toString() === formData.customer)?.name || p.customer,
-                category: mockCategories.find((c) => c.id.toString() === formData.category)?.name || p.category,
-                issueDate: formData.issueDate,
-                description: formData.description,
-                items,
-                total: totalAmount,
-              }
-            : p,
-        ),
-      )
-    } else {
-      // Generate new proposal ID
-      const newId = `PR-2025-${String(proposals.length + 1).padStart(3, '0')}`
-      const newProposal: ProposalRow = {
-        id: newId,
-        customerId: formData.customer,
-        categoryId: formData.category,
-        customer: mockCustomers.find((c) => c.id.toString() === formData.customer)?.name || '',
-        category: mockCategories.find((c) => c.id.toString() === formData.category)?.name || '',
-        issueDate: formData.issueDate,
-        status: 0, // Draft
-        total: totalAmount,
-        description: formData.description,
-        items,
+    const submit = async () => {
+      if (editingId) {
+        await fetch(`/api/estimates/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerId: formData.customer,
+            categoryId: formData.category,
+            issueDate: formData.issueDate,
+            description: formData.description,
+            total: totalAmount,
+          })
+        })
+      } else {
+        await fetch('/api/estimates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerId: formData.customer,
+            categoryId: formData.category,
+            issueDate: formData.issueDate,
+            description: formData.description,
+            status: 0,
+            total: totalAmount,
+            items,
+          })
+        })
       }
-      setProposals((prev) => [...prev, newProposal])
+      const res = await fetch('/api/estimates')
+      const json = await res.json()
+      if (json.success) {
+        setProposals(json.data)
+        setFilteredProposals(json.data)
+      }
+      setCreateDialogOpen(false)
+      setEditingId(null)
+      setFormData({
+        customer: '',
+        category: '',
+        issueDate: '',
+        description: '',
+      })
+      setItems([])
     }
-    setCreateDialogOpen(false)
-    setEditingId(null)
-    setFormData({
-      customer: '',
-      category: '',
-      issueDate: '',
-      description: '',
-    })
-    setItems([])
+    submit()
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -434,21 +720,7 @@ export function EstimateTab() {
     }
   }
 
-  // Filter proposals
-  useEffect(() => {
-    let filtered = [...proposals]
-    
-    if (dateFilter) {
-      filtered = filtered.filter(p => p.issueDate === dateFilter)
-    }
-    
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(p => p.status === parseInt(statusFilter))
-    }
-    
-    setFilteredProposals(filtered)
-    setCurrentPage(1)
-  }, [dateFilter, statusFilter, proposals])
+  
 
   // Paginated proposals
   const paginatedProposals = filteredProposals.slice(
@@ -460,51 +732,36 @@ export function EstimateTab() {
 
   const handleReset = () => {
     setDateFilter('')
-    setStatusFilter('all')
+    setStatusFilter('')
   }
 
-  return (
-    <div className="space-y-4 w-full">
-      {/* Title Tab */}
-      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
-        <CardHeader className="px-6">
-          <div className="min-w-0 space-y-1">
-            <CardTitle className="text-lg font-semibold">Estimate</CardTitle>
-            <CardDescription>Create and manage estimates for customers.</CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-            title="Export"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export Estimate
-          </Button>
-          <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
-            <DialogTrigger asChild>
+  if (createDialogOpen) {
+    return (
+      <div className="space-y-6 w-full">
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+          <CardHeader className="px-6">
+            <div className="min-w-0 space-y-1">
+              <CardTitle className="text-lg font-semibold">{editingId ? 'Edit Proposal' : 'Create Proposal'}</CardTitle>
+              <CardDescription>{editingId ? 'Update proposal information.' : 'Create a new proposal. Fill in the required information.'}</CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="blue"
+                variant="outline"
                 size="sm"
-                className="shadow-none h-7 px-4"
-                title="Create"
-                onClick={() => setEditingId(null)}
+                className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                onClick={() => handleDialogOpenChange(false)}
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Estimate
+                Cancel
               </Button>
-            </DialogTrigger>
-          <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto" style={{ width: '95vw', maxWidth: '95vw' }}>
-            <DialogHeader>
-                <DialogTitle>{editingId ? 'Edit Proposal' : 'Create Proposal'}</DialogTitle>
-              <DialogDescription>
-                  {editingId ? 'Update proposal information.' : 'Create a new proposal. Fill in the required information.'}
-              </DialogDescription>
-            </DialogHeader>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+          <CardContent className="px-6">
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="customer">
                       Customer <span className="text-red-500">*</span>
@@ -514,11 +771,11 @@ export function EstimateTab() {
                       onValueChange={(value) => setFormData({ ...formData, customer: value })}
                       required
                     >
-                      <SelectTrigger id="customer">
+                      <SelectTrigger id="customer" className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3">
                         <SelectValue placeholder="Select Customer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockCustomers.map((customer) => (
+                        {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
                             {customer.name}
                           </SelectItem>
@@ -530,6 +787,36 @@ export function EstimateTab() {
                     </p>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="issueDate">
+                      Issue Date <span className="text-red-500">*</span>
+                    </Label>
+                    <DatePicker
+                      id="issueDate"
+                      value={formData.issueDate}
+                      onValueChange={(v) => setFormData({ ...formData, issueDate: v })}
+                      placeholder="Set a date"
+                      className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                      iconPlacement="right"
+                    />
+                    <input
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                      required
+                      value={formData.issueDate}
+                      onChange={() => {}}
+                    />
+                    <div className="space-y-2 mt-3">
+                      <Label htmlFor="proposalNumber">Proposal Number</Label>
+                      <Input
+                        id="proposalNumber"
+                        value={editingId ? `#${editingId}` : `#PROP${String(proposals.length + 1).padStart(5, '0')}`}
+                        disabled
+                        className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="category">
                       Category <span className="text-red-500">*</span>
                     </Label>
@@ -538,11 +825,11 @@ export function EstimateTab() {
                       onValueChange={(value) => setFormData({ ...formData, category: value })}
                       required
                     >
-                      <SelectTrigger id="category">
+                      <SelectTrigger id="category" className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3">
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockCategories.map((category) => (
+                        {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id.toString()}>
                             {category.name}
                           </SelectItem>
@@ -550,31 +837,9 @@ export function EstimateTab() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Create category here. <span className="font-medium text-primary cursor-pointer">Create category</span>
+                      Create category here. <Link href="/accounting/setup/custom-field?tab=category" className="font-medium text-primary">Create category</Link>
                     </p>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="issueDate">
-                    Issue Date <span className="text-red-500">*</span>
-                  </Label>
-                  <DatePicker
-                    id="issueDate"
-                    value={formData.issueDate}
-                    onValueChange={(v) => setFormData({ ...formData, issueDate: v })}
-                    placeholder="Set a date"
-                    className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
-                iconPlacement="right"
-                  />
-                  {/* Keep native required validation without showing a browser date input */}
-                  <input
-                    tabIndex={-1}
-                    aria-hidden="true"
-                    className="sr-only"
-                    required
-                    value={formData.issueDate}
-                    onChange={() => {}}
-                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
@@ -588,7 +853,6 @@ export function EstimateTab() {
                 </div>
               </div>
 
-              {/* Product & Services Section */}
               <div className="mt-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h5 className="text-lg font-semibold">Product & Services</h5>
@@ -614,130 +878,90 @@ export function EstimateTab() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {items.map((item, index) => (
-                            <React.Fragment key={item.id}>
-                              <TableRow>
-                                <TableCell className="px-4 py-3">
-                                  <Select
-                                    value={item.item}
-                                    onValueChange={(value) => updateItem(item.id, 'item', value)}
+                          {items.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="px-4 py-3">
+                                <Select
+                                  value={item.item}
+                                  onValueChange={(value) => updateItem(item.id, 'item', value)}
+                                  required
+                                >
+                                  <SelectTrigger className="min-w-[180px]">
+                                    <SelectValue placeholder="Select Item" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {mockProducts.map((product) => (
+                                      <SelectItem key={product.id} value={product.id.toString()}>
+                                        {product.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
+                                    className="w-24"
+                                    placeholder="Qty"
                                     required
-                                  >
-                                    <SelectTrigger className="min-w-[180px]">
-                                      <SelectValue placeholder="Select Item" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {mockProducts.map((product) => (
-                                        <SelectItem key={product.id} value={product.id.toString()}>
-                                          {product.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell className="px-4 py-3">
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={item.quantity}
-                                      onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
-                                      className="w-24"
-                                      placeholder="Qty"
-                                      required
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                    {item.item && (
-                                      <span className="text-xs text-muted-foreground">
-                                        {mockProducts.find(p => p.id.toString() === item.item)?.unit || ''}
-                                      </span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-4 py-3">
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={item.price}
-                                      onChange={(e) => updateItem(item.id, 'price', e.target.value)}
-                                      className="w-32"
-                                      placeholder="Price"
-                                      required
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                    <span className="text-xs text-muted-foreground">Rp</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-4 py-3">
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={item.discount}
-                                      onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
-                                      className="w-28"
-                                      placeholder="Discount"
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                    <span className="text-xs text-muted-foreground">Rp</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-4 py-3">
-                                  <Select
-                                    value={item.tax || "none"}
-                                    onValueChange={(value) => {
-                                      if (value === "none") {
-                                        updateItem(item.id, 'tax', '')
-                                        updateItem(item.id, 'taxRate', '0')
-                                      } else {
-                                        const tax = mockTaxes.find(t => t.id.toString() === value)
-                                        updateItem(item.id, 'tax', value)
-                                        updateItem(item.id, 'taxRate', tax?.rate.toString() || '0')
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger className="w-40">
-                                      <SelectValue placeholder="Select Tax" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">No Tax</SelectItem>
-                                      {mockTaxes.map((tax) => (
-                                        <SelectItem key={tax.id} value={tax.id.toString()}>
-                                          {tax.name} ({tax.rate}%)
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell className="px-4 py-3 text-right font-medium">
-                                  Rp {item.amount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </TableCell>
-                                <TableCell className="px-4 py-3">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                    onClick={() => removeItem(item.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell colSpan={2} className="px-4 py-3">
-                                  <Textarea
-                                    value={item.description}
-                                    onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                                    placeholder="Description"
-                                    rows={1}
-                                    className="min-h-[60px]"
+                                    min="0"
+                                    step="0.01"
                                   />
-                                </TableCell>
-                                <TableCell colSpan={5}></TableCell>
-                              </TableRow>
-                            </React.Fragment>
+                                  {item.item && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {mockProducts.find(p => p.id.toString() === item.item)?.unit || ''}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    value={item.price}
+                                    onChange={(e) => updateItem(item.id, 'price', e.target.value)}
+                                    className="w-32"
+                                    placeholder="Price"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                  />
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
+                                <Input
+                                  type="number"
+                                  value={item.discount}
+                                  onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
+                                  className="w-28"
+                                  placeholder="Discount"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
+                                <Input
+                                  type="number"
+                                  value={item.taxRate}
+                                  onChange={(e) => updateItem(item.id, 'taxRate', e.target.value)}
+                                  className="w-28"
+                                  placeholder="Tax %"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </TableCell>
+                              <TableCell className="px-4 py-3 text-right">
+                                Rp {calculateItemAmount(item).toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
+                                <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(item.id)}>
+                                  Remove
+                                </Button>
+                              </TableCell>
+                            </TableRow>
                           ))}
                         </TableBody>
                       </Table>
@@ -749,7 +973,6 @@ export function EstimateTab() {
                   </div>
                 )}
 
-                {/* Totals Section */}
                 {items.length > 0 && (
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <div className="flex justify-end">
@@ -783,17 +1006,53 @@ export function EstimateTab() {
                   </div>
                 )}
               </div>
-              <DialogFooter>
-                <Button variant="outline" type="button" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+              <div className="flex items-center gap-2 mt-6 justify-end">
+                <Button variant="outline" type="button" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                   Cancel
                 </Button>
                 <Button variant="blue" type="submit" className="shadow-none">
                   {editingId ? 'Update' : 'Create'}
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
-          </DialogContent>
-          </Dialog>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4 w-full">
+      {/* Title Tab */}
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
+        <CardHeader className="px-6">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg font-semibold">Estimate</CardTitle>
+            <CardDescription>Create and manage estimates for customers.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            title="Export"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Estimate
+          </Button>
+          <Button
+            variant="blue"
+            size="sm"
+            className="shadow-none h-7 px-4"
+            title="Create"
+            onClick={() => {
+              setEditingId(null)
+              setCreateDialogOpen(true)
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Estimate
+          </Button>
           </div>
         </CardHeader>
       </Card>
@@ -827,16 +1086,18 @@ export function EstimateTab() {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger
                   className={`w-full !h-9 border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground ${
-                    statusFilter === 'all' ? 'text-muted-foreground' : ''
+                    statusFilter === '' ? 'text-muted-foreground' : ''
                   }`}
                 >
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Select Status</SelectItem>
-                  {Object.entries(statusMap).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>
-                      {value.label}
+                  <SelectItem value="__header" disabled>
+                    Select Status
+                  </SelectItem>
+                  {ESTIMATE_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -868,6 +1129,8 @@ export function EstimateTab() {
           </form>
         </CardContent>
       </Card>
+
+      
 
       {/* Proposal list table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
@@ -915,10 +1178,10 @@ export function EstimateTab() {
                           <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Duplicate">
                             <Copy className="h-3 w-3" />
                           </Button>
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" title="View" asChild>
-                            <Link href={`/accounting/proposal/${proposal.id}`}>
+                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" title="View">
+                            <span onClick={() => handleView(proposal)}>
                               <Eye className="h-3 w-3" />
-                            </Link>
+                            </span>
                           </Button>
                           <Button
                             variant="outline"
@@ -991,4 +1254,3 @@ export function EstimateTab() {
     </div>
   )
 }
-

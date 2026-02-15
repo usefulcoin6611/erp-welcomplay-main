@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
@@ -22,21 +22,9 @@ interface ProductStock {
   quantity: number
 }
 
-// Mock data - only products (not services)
-const mockProductStocks: ProductStock[] = [
-  { id: '1', name: 'Lisensi ERP Cloud', sku: 'ERP-CLD-001', quantity: 120 },
-  { id: '4', name: 'Laptop Dell XPS 13', sku: 'LAP-DELL-004', quantity: 45 },
-  { id: '6', name: 'Monitor Samsung 24"', sku: 'MON-SAM-006', quantity: 32 },
-  { id: '8', name: 'Desk Lamp LED', sku: 'FUR-LAMP-008', quantity: 25 },
-  { id: '10', name: 'Whiteboard Marker', sku: 'OFF-MAR-010', quantity: 18 },
-  { id: '2', name: 'Office Chair Ergonomic', sku: 'FUR-CHAIR-002', quantity: 8 },
-  { id: '5', name: 'USB Flash Drive 32GB', sku: 'ACC-USB-005', quantity: 7 },
-  { id: '9', name: 'Paper A4 80gsm', sku: 'OFF-PAP-009', quantity: 5 },
-  { id: '3', name: 'Printer HP LaserJet', sku: 'PRT-HP-003', quantity: 0 },
-  { id: '7', name: 'Keyboard Mechanical', sku: 'ACC-KEY-007', quantity: 0 },
-]
-
 export default function ProductStockPage() {
+  const [products, setProducts] = useState<ProductStock[]>([])
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -46,17 +34,50 @@ export default function ProductStockPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductStock | null>(null)
   const [quantity, setQuantity] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadProducts = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/products?type=product')
+      const json = await res.json()
+      if (json?.success && Array.isArray(json.data)) {
+        setProducts(
+          json.data.map((p: any) => ({
+            id: p.id as string,
+            name: p.name as string,
+            sku: p.sku as string,
+            quantity: Number(p.quantity) || 0,
+          })),
+        )
+      } else {
+        setProducts([])
+      }
+    } catch (e) {
+      setError('Gagal memuat data produk')
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
 
   // Filtered data
   const filteredData = useMemo(() => {
-    if (!search.trim()) return mockProductStocks
+    if (!search.trim()) return products
     const q = search.trim().toLowerCase()
-    return mockProductStocks.filter(
+    return products.filter(
       (item) =>
         item.name.toLowerCase().includes(q) ||
         item.sku.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, products])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -72,17 +93,46 @@ export default function ProductStockPage() {
     setDialogOpen(true)
   }
 
-  const handleSaveQuantity = (e: React.FormEvent) => {
+  const handleSaveQuantity = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedProduct) return
-    
-    // Handle save logic here
-    console.log('Update quantity:', selectedProduct.id, quantity)
-    
-    // Close dialog and reset
-    setDialogOpen(false)
-    setSelectedProduct(null)
-    setQuantity('')
+
+    const parsedQuantity = Number(quantity)
+    if (Number.isNaN(parsedQuantity)) {
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/products/${selectedProduct.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quantity: parsedQuantity }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.success === false) {
+        setError(json?.message || 'Gagal menyimpan data')
+        return
+      }
+
+      const updatedQuantity = Number(json.data?.quantity ?? parsedQuantity)
+      setProducts(prev =>
+        prev.map(p =>
+          p.id === selectedProduct.id ? { ...p, quantity: updatedQuantity } : p,
+        ),
+      )
+
+      setDialogOpen(false)
+      setSelectedProduct(null)
+      setQuantity('')
+    } catch (err) {
+      setError('Gagal menyimpan data')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -147,7 +197,13 @@ export default function ProductStockPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedData.length === 0 ? (
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="px-6 text-center py-8 text-muted-foreground">
+                            Loading...
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedData.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="px-6 text-center py-8 text-muted-foreground">
                             No products found
@@ -238,6 +294,11 @@ export default function ProductStockPage() {
                         required
                       />
                     </div>
+                    {error && (
+                      <div className="text-sm text-red-600">
+                        {error}
+                      </div>
+                    )}
                     <DialogFooter>
                       <Button
                         type="button"
@@ -250,8 +311,9 @@ export default function ProductStockPage() {
                         type="submit"
                         variant="blue"
                         className="shadow-none"
+                        disabled={saving}
                       >
-                        Save
+                        {saving ? 'Saving...' : 'Save'}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -264,7 +326,6 @@ export default function ProductStockPage() {
     </SidebarProvider>
   )
 }
-
 
 
 

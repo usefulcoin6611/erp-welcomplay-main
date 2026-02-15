@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -27,7 +27,6 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-// Types
 interface ProductService {
   id: string
   name: string
@@ -39,66 +38,28 @@ interface ProductService {
   unit: string
   quantity?: number
   type: 'product' | 'service'
+  sale_account_id?: string | null
+  expense_account_id?: string | null
 }
 
-// Mock data
-const mockProducts: ProductService[] = [
-  {
-    id: '1',
-    name: 'Lisensi ERP Cloud',
-    sku: 'ERP-CLD-001',
-    sale_price: 25000000,
-    purchase_price: 15000000,
-    tax: 'PPN 11%',
-    category: 'Software',
-    unit: 'Paket',
-    quantity: 120,
-    type: 'product',
-  },
-  {
-    id: '2',
-    name: 'Implementasi Onsite',
-    sku: 'IMP-ONS-002',
-    sale_price: 15000000,
-    purchase_price: 8000000,
-    tax: 'PPN 11%',
-    category: 'Jasa',
-    unit: 'Hari',
-    quantity: 0,
-    type: 'service',
-  },
-  {
-    id: '3',
-    name: 'Maintenance Service',
-    sku: 'MAINT-003',
-    sale_price: 5000000,
-    purchase_price: 0,
-    tax: 'PPN 11%',
-    category: 'Jasa',
-    unit: '-',
-    quantity: 0,
-    type: 'service',
-  },
-  {
-    id: '4',
-    name: 'Laptop Dell XPS 13',
-    sku: 'LAP-DELL-004',
-    sale_price: 18000000,
-    purchase_price: 12000000,
-    tax: 'PPN 11%',
-    category: 'Electronics',
-    unit: 'Pcs',
-    quantity: 45,
-    type: 'product',
-  },
-]
+interface ProductCategory {
+  id: string
+  name: string
+  type: string
+}
 
-const categories = ['All Categories', 'Software', 'Jasa', 'Electronics', 'Accessories']
-const formCategories = ['Software', 'Jasa', 'Electronics', 'Accessories']
-const units = ['Paket', 'Hari', 'Pcs', 'Box', '-']
-const taxes = ['PPN 11%', 'PPN 10%', 'No Tax']
-const incomeAccounts = ['Sales', 'Service Revenue', 'Other Income']
-const expenseAccounts = ['Cost of Goods Sold', 'Operational Expense', 'Other Expense']
+interface ChartAccount {
+  id: string
+  name: string
+  code: string
+  type: string
+  subType: string
+}
+
+const EXCLUDED_SUB_TYPES = ['Accounts Receivable', 'Accounts Payable']
+
+const units = ['Piece', 'Box', 'Pack', 'Kg', 'Litre', 'Meter', 'Hour', 'Day']
+const taxes = ['PPN 11%', 'PPN 0% (Zero Rated)', 'PPh 21 5%', 'PPh 23 2%', 'No Tax']
 
 // Format currency to Rupiah
 function formatRupiah(amount: number): string {
@@ -126,6 +87,13 @@ export default function ProductServicesPage() {
   const [viewItem, setViewItem] = useState<ProductService | null>(null)
   const [deleteItem, setDeleteItem] = useState<ProductService | null>(null)
   const [type, setType] = useState<'product' | 'service'>('product')
+  const [products, setProducts] = useState<ProductService[]>([])
+  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -142,26 +110,221 @@ export default function ProductServicesPage() {
   })
   const [imagePreview, setImagePreview] = useState('')
 
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        setLoadingAccounts(true)
+
+        const [productRes, serviceRes, categoryRes, chartRes] = await Promise.all([
+          fetch('/api/products?type=product'),
+          fetch('/api/products?type=service'),
+          fetch('/api/categories'),
+          fetch('/api/chart-of-accounts'),
+        ])
+
+        const productJson = await productRes.json().catch(() => null)
+        const serviceJson = await serviceRes.json().catch(() => null)
+        const categoryJson = await categoryRes.json().catch(() => null)
+        const chartJson = await chartRes.json().catch(() => null)
+
+        if (
+          productRes.status === 401 ||
+          serviceRes.status === 401 ||
+          categoryRes.status === 401 ||
+          chartRes.status === 401
+        ) {
+          setProducts([])
+          setCategories([])
+          setChartAccounts([])
+          return
+        }
+
+        const items: ProductService[] = []
+
+        if (productJson?.success && Array.isArray(productJson.data)) {
+          for (const p of productJson.data as any[]) {
+            items.push({
+              id: p.id as string,
+              name: p.name as string,
+              sku: p.sku as string,
+              sale_price: Number(p.salePrice) || 0,
+              purchase_price: Number(p.purchasePrice) || 0,
+              tax: (p.tax as string) || '',
+              category: (p.category as string) || '',
+              unit: (p.unit as string) || '',
+              quantity: typeof p.quantity === 'number' ? p.quantity : undefined,
+              type: (p.type as 'product' | 'service') || 'product',
+              sale_account_id: (p.saleAccountId as string) ?? null,
+              expense_account_id: (p.expenseAccountId as string) ?? null,
+            })
+          }
+        }
+
+        if (serviceJson?.success && Array.isArray(serviceJson.data)) {
+          for (const p of serviceJson.data as any[]) {
+            items.push({
+              id: p.id as string,
+              name: p.name as string,
+              sku: p.sku as string,
+              sale_price: Number(p.salePrice) || 0,
+              purchase_price: Number(p.purchasePrice) || 0,
+              tax: (p.tax as string) || '',
+              category: (p.category as string) || '',
+              unit: (p.unit as string) || '',
+              quantity: typeof p.quantity === 'number' ? p.quantity : undefined,
+              type: (p.type as 'product' | 'service') || 'product',
+              sale_account_id: (p.saleAccountId as string) ?? null,
+              expense_account_id: (p.expenseAccountId as string) ?? null,
+            })
+          }
+        }
+
+        setProducts(items)
+        if (categoryJson?.success && Array.isArray(categoryJson.data)) {
+          const filtered = (categoryJson.data as any[]).filter(
+            (c) => c.type === 'Product & Service',
+          )
+          setCategories(
+            filtered.map((c) => ({
+              id: c.id as string,
+              name: c.name as string,
+              type: c.type as string,
+            })),
+          )
+        } else {
+          setCategories([])
+        }
+
+        if (chartJson?.success && Array.isArray(chartJson.data)) {
+          setChartAccounts(
+            (chartJson.data as any[]).map((a) => ({
+              id: a.id as string,
+              name: a.name as string,
+              code: a.code as string,
+              type: a.type as string,
+              subType: a.subType as string,
+            })),
+          )
+        } else {
+          setChartAccounts([])
+        }
+      } catch {
+        setError('Gagal memuat data product & services')
+        setProducts([])
+        setCategories([])
+        setChartAccounts([])
+      } finally {
+        setLoading(false)
+        setLoadingAccounts(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const incomeAccountGroups = useMemo(() => {
+    const allowedTypes = ['Assets', 'Liabilities', 'Income']
+
+    const filteredAccounts = chartAccounts.filter(
+      (a) =>
+        allowedTypes.includes(a.type) &&
+        !EXCLUDED_SUB_TYPES.includes(a.subType),
+    )
+
+    const groupedByType = filteredAccounts.reduce<Record<string, ChartAccount[]>>((acc, account) => {
+      if (!acc[account.type]) acc[account.type] = []
+      acc[account.type].push(account)
+      return acc
+    }, {})
+
+    return allowedTypes
+      .filter((type) => groupedByType[type]?.length)
+      .map((type) => {
+        const accountsForType = groupedByType[type]
+        const bySubType = accountsForType.reduce<Record<string, ChartAccount[]>>((acc, account) => {
+          const key = account.subType || 'Other'
+          if (!acc[key]) acc[key] = []
+          acc[key].push(account)
+          return acc
+        }, {})
+
+        const subTypes = Object.entries(bySubType)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([subType, accounts]) => ({
+            subType,
+            accounts: accounts.sort((a, b) => a.code.localeCompare(b.code)),
+          }))
+
+        return {
+          type,
+          subTypes,
+        }
+      })
+  }, [chartAccounts])
+
+  const expenseAccountGroups = useMemo(() => {
+    const allowedTypes = ['Assets', 'Liabilities', 'Expenses', 'Costs of Goods Sold']
+
+    const filteredAccounts = chartAccounts.filter(
+      (a) =>
+        allowedTypes.includes(a.type) &&
+        !EXCLUDED_SUB_TYPES.includes(a.subType),
+    )
+
+    const groupedByType = filteredAccounts.reduce<Record<string, ChartAccount[]>>((acc, account) => {
+      if (!acc[account.type]) acc[account.type] = []
+      acc[account.type].push(account)
+      return acc
+    }, {})
+
+    return allowedTypes
+      .filter((type) => groupedByType[type]?.length)
+      .map((type) => {
+        const accountsForType = groupedByType[type]
+        const bySubType = accountsForType.reduce<Record<string, ChartAccount[]>>((acc, account) => {
+          const key = account.subType || 'Other'
+          if (!acc[key]) acc[key] = []
+          acc[key].push(account)
+          return acc
+        }, {})
+
+        const subTypes = Object.entries(bySubType)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([subType, accounts]) => ({
+            subType,
+            accounts: accounts.sort((a, b) => a.code.localeCompare(b.code)),
+          }))
+
+        return {
+          type,
+          subTypes,
+        }
+      })
+  }, [chartAccounts])
+
   // Filtered data
   const filteredData = useMemo(() => {
-    let result = mockProducts
+    let result = products
 
     // Category filter
     if (selectedCategory !== 'All Categories') {
-      result = result.filter(p => p.category === selectedCategory)
+      result = result.filter((p) => p.category === selectedCategory)
     }
 
     // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase()
-      result = result.filter((p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q)
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q),
       )
     }
 
     return result
-  }, [selectedCategory, search])
+  }, [selectedCategory, search, products])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -182,14 +345,29 @@ export default function ProductServicesPage() {
   }
 
   const handleDelete = (id: string) => {
-    const target = mockProducts.find((p) => p.id === id) ?? null
+    const target = products.find((p) => p.id === id) ?? null
     setDeleteItem(target)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteItem) return
-    console.log('Delete:', deleteItem.id)
-    setDeleteItem(null)
+    try {
+      const res = await fetch(`/api/products/${deleteItem.id}`, {
+        method: 'DELETE',
+      })
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || json?.success === false) {
+        setError(json?.message || 'Gagal menghapus data product & services')
+        return
+      }
+
+      setProducts((prev) => prev.filter((item) => item.id !== deleteItem.id))
+      setDeleteItem(null)
+    } catch {
+      setError('Gagal menghapus data product & services')
+    }
   }
 
   const handleOpenView = (item: ProductService) => {
@@ -204,9 +382,9 @@ export default function ProductServicesPage() {
       name: item.name,
       sku: item.sku,
       sale_price: String(item.sale_price),
-      sale_account: incomeAccounts[0],
+      sale_account: item.sale_account_id ?? '',
       purchase_price: String(item.purchase_price),
-      expense_account: expenseAccounts[0],
+      expense_account: item.expense_account_id ?? '',
       tax: item.tax ?? '',
       category: item.category,
       unit: item.unit,
@@ -223,29 +401,105 @@ export default function ProductServicesPage() {
     setFormData({ ...formData, sku: `SKU-${random}` })
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form data:', { ...formData, type, editingId })
-    // Reset form and close dialog
-    setFormData({
-      name: '',
-      sku: '',
-      sale_price: '',
-      sale_account: '',
-      purchase_price: '',
-      expense_account: '',
-      tax: '',
-      category: '',
-      unit: '',
-      quantity: '',
-      image: null,
-      description: '',
-    })
-    setType('product')
-    setDialogOpen(false)
-    setEditingId(null)
-    setImagePreview('')
-    // Optionally refresh the list or add the new item
+
+    const salePrice = Number(formData.sale_price || 0)
+    const purchasePrice = Number(formData.purchase_price || 0)
+    const quantity =
+      type === 'product' ? Number(formData.quantity || 0) || 0 : 0
+
+    setSaving(true)
+    setError(null)
+
+    const payload = {
+      name: formData.name,
+      sku: formData.sku,
+      salePrice,
+      purchasePrice,
+      quantity,
+      type,
+      taxName: formData.tax || null,
+      categoryName: formData.category || null,
+      unitName: formData.unit || null,
+      saleAccountId: formData.sale_account || null,
+      expenseAccountId: formData.expense_account || null,
+    }
+
+    try {
+      let res: Response
+      if (editingId) {
+        res = await fetch(`/api/products/${editingId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+      } else {
+        res = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+      }
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || json?.success === false) {
+        setError(json?.message || 'Gagal menyimpan data product & services')
+        return
+      }
+
+      const p = json.data
+      const mapped: ProductService = {
+        id: p.id as string,
+        name: p.name as string,
+        sku: p.sku as string,
+        sale_price: Number(p.salePrice) || 0,
+        purchase_price: Number(p.purchasePrice) || 0,
+        tax: (p.tax as string) || '',
+        category: (p.category as string) || '',
+        unit: (p.unit as string) || '',
+        quantity: typeof p.quantity === 'number' ? p.quantity : undefined,
+        type: (p.type as 'product' | 'service') || 'product',
+        sale_account_id: (p.saleAccountId as string) ?? null,
+        expense_account_id: (p.expenseAccountId as string) ?? null,
+      }
+
+      if (editingId) {
+        setProducts((prev) =>
+          prev.map((item) => (item.id === editingId ? mapped : item)),
+        )
+      } else {
+        setProducts((prev) => [mapped, ...prev])
+      }
+
+      setFormData({
+        name: '',
+        sku: '',
+        sale_price: '',
+        sale_account: '',
+        purchase_price: '',
+        expense_account: '',
+        tax: '',
+        category: '',
+        unit: '',
+        quantity: '',
+        image: null,
+        description: '',
+      })
+      setType('product')
+      setDialogOpen(false)
+      setEditingId(null)
+      setImagePreview('')
+    } catch {
+      setError('Gagal menyimpan data product & services')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -269,8 +523,16 @@ export default function ProductServicesPage() {
       setType('product')
       setEditingId(null)
       setImagePreview('')
+      setError(null)
     }
   }
+
+  const categoryOptions = useMemo(() => {
+    if (!categories.length) {
+      return ['All Categories']
+    }
+    return ['All Categories', ...categories.map((c) => c.name)]
+  }, [categories])
 
   // Pagination calculations
   const totalRecords = filteredData.length
@@ -377,19 +639,40 @@ export default function ProductServicesPage() {
                             onValueChange={(value) => setFormData({ ...formData, sale_account: value })}
                           >
                             <SelectTrigger id="sale_account">
-                              <SelectValue placeholder="Select Chart of Account" />
+                              <SelectValue placeholder={loadingAccounts ? 'Loading accounts...' : 'Select Chart of Account'} />
                             </SelectTrigger>
-                            <SelectContent>
-                              {incomeAccounts.map((acc) => (
-                                <SelectItem key={acc} value={acc}>
-                                  {acc}
-                                </SelectItem>
+                            <SelectContent className="max-h-[320px]">
+                              {incomeAccountGroups.map((group) => (
+                                <div key={group.type}>
+                                  <div className="px-3 pt-2 pb-1 text-xs font-bold text-slate-900">
+                                    {group.type}
+                                  </div>
+                                  {group.subTypes.map((sub) => (
+                                    <div key={sub.subType}>
+                                      <div className="px-4 py-1 text-xs font-semibold text-slate-700">
+                                        {sub.subType}
+                                      </div>
+                                      {sub.accounts.map((acc) => (
+                                        <SelectItem
+                                          key={acc.id}
+                                          value={acc.id}
+                                          className="pl-8"
+                                        >
+                                          {acc.name}
+                                        </SelectItem>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
                               ))}
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
                             Create account here.{' '}
-                            <Link href="/accounting/chart-of-account" className="text-primary underline">
+                            <Link
+                              href="/accounting/double-entry?tab=chart-of-account"
+                              className="text-primary underline"
+                            >
                               Create account
                             </Link>
                           </p>
@@ -417,19 +700,40 @@ export default function ProductServicesPage() {
                             onValueChange={(value) => setFormData({ ...formData, expense_account: value })}
                           >
                             <SelectTrigger id="expense_account">
-                              <SelectValue placeholder="Select Chart of Account" />
+                              <SelectValue placeholder={loadingAccounts ? 'Loading accounts...' : 'Select Chart of Account'} />
                             </SelectTrigger>
-                            <SelectContent>
-                              {expenseAccounts.map((acc) => (
-                                <SelectItem key={acc} value={acc}>
-                                  {acc}
-                                </SelectItem>
+                            <SelectContent className="max-h-[320px]">
+                              {expenseAccountGroups.map((group) => (
+                                <div key={group.type}>
+                                  <div className="px-3 pt-2 pb-1 text-xs font-bold text-slate-900">
+                                    {group.type}
+                                  </div>
+                                  {group.subTypes.map((sub) => (
+                                    <div key={sub.subType}>
+                                      <div className="px-4 py-1 text-xs font-semibold text-slate-700">
+                                        {sub.subType}
+                                      </div>
+                                      {sub.accounts.map((acc) => (
+                                        <SelectItem
+                                          key={acc.id}
+                                          value={acc.id}
+                                          className="pl-8"
+                                        >
+                                          {acc.name}
+                                        </SelectItem>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
                               ))}
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
                             Create account here.{' '}
-                            <Link href="/accounting/chart-of-account" className="text-primary underline">
+                            <Link
+                              href="/accounting/double-entry?tab=chart-of-account"
+                              className="text-primary underline"
+                            >
                               Create account
                             </Link>
                           </p>
@@ -462,8 +766,8 @@ export default function ProductServicesPage() {
                         {/* Category */}
                         <div className="space-y-2">
                           <Label htmlFor="category">Category <span className="text-red-500">*</span></Label>
-                          <Select 
-                            value={formData.category} 
+                          <Select
+                            value={formData.category}
                             onValueChange={(value) => setFormData({ ...formData, category: value })}
                             required
                           >
@@ -471,9 +775,9 @@ export default function ProductServicesPage() {
                               <SelectValue placeholder="Select Category" />
                             </SelectTrigger>
                             <SelectContent>
-                              {formCategories.map((cat) => (
-                                <SelectItem key={cat} value={cat}>
-                                  {cat}
+                              {categories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.name}>
+                                  {cat.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -601,8 +905,9 @@ export default function ProductServicesPage() {
                           type="submit"
                           variant="blue"
                           className="shadow-none"
+                          disabled={saving}
                         >
-                          {editingId ? 'Update' : 'Create'}
+                          {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -636,7 +941,7 @@ export default function ProductServicesPage() {
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((cat) => (
+                        {categoryOptions.map((cat) => (
                           <SelectItem key={cat} value={cat}>
                             {cat}
                           </SelectItem>
@@ -689,7 +994,14 @@ export default function ProductServicesPage() {
 
             <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
               <CardHeader className="px-6">
-                <CardTitle>All Product & Services</CardTitle>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle>All Product & Services</CardTitle>
+                  {error && (
+                    <span className="text-xs text-red-600">
+                      {error}
+                    </span>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -709,7 +1021,13 @@ export default function ProductServicesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedData.length === 0 ? (
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={10} className="px-6 text-center py-8 text-muted-foreground">
+                            Loading...
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedData.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={10} className="px-6 text-center py-8 text-muted-foreground">
                             No product & services found
@@ -839,4 +1157,3 @@ export default function ProductServicesPage() {
     </SidebarProvider>
   )
 }
-

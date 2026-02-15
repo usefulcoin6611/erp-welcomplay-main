@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { useState, useMemo, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,16 +38,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Plus, Pencil, Trash2, X, ArrowUpDown } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, X, ArrowUpDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Branch {
-  id: number;
+  id: string;
   name: string;
 }
 
 const defaultFormData = { name: '' };
 
-/** reference-erp branch/index: no search, Create in row above card (mb-4 d-flex justify-content-end), card only table */
 type BranchTabVariant = 'tab' | 'page';
 
 export type BranchTabRef = { openCreate: () => void };
@@ -58,23 +58,42 @@ const BranchTabInner = function BranchTabInner(
 ) {
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(defaultFormData);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null);
 
-  const [branches, setBranches] = useState<Branch[]>([
-    { id: 1, name: 'Head Office' },
-    { id: 2, name: 'Jakarta Branch' },
-    { id: 3, name: 'Surabaya Branch' },
-    { id: 4, name: 'Bandung Branch' },
-    { id: 5, name: 'Bali Branch' },
-  ]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   const isPageMode = variant === 'page';
+
+  // Fetch branches on mount
+  const fetchBranches = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/branches');
+      const result = await response.json();
+      if (result.success) {
+        setBranches(result.data);
+      } else {
+        toast.error(result.message || 'Gagal memuat data branch');
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      toast.error('Terjadi kesalahan saat memuat data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
 
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open);
@@ -92,21 +111,36 @@ const BranchTabInner = function BranchTabInner(
 
   useImperativeHandle(ref, () => ({ openCreate: handleAdd }), []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
-    if (editingId !== null) {
-      setBranches(
-        branches.map((b) => (b.id === editingId ? { ...b, name: formData.name.trim() } : b))
-      );
-    } else {
-      const newBranch: Branch = {
-        id: Math.max(0, ...branches.map((b) => b.id)) + 1,
-        name: formData.name.trim(),
-      };
-      setBranches([...branches, newBranch]);
+
+    setIsSubmitting(true);
+    try {
+      const url = editingId ? `/api/branches/${editingId}` : '/api/branches';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message);
+        fetchBranches();
+        handleDialogOpenChange(false);
+      } else {
+        toast.error(result.message || 'Gagal menyimpan data');
+      }
+    } catch (error) {
+      console.error('Error saving branch:', error);
+      toast.error('Terjadi kesalahan pada server');
+    } finally {
+      setIsSubmitting(false);
     }
-    handleDialogOpenChange(false);
   };
 
   const handleEdit = (branch: Branch) => {
@@ -120,12 +154,31 @@ const BranchTabInner = function BranchTabInner(
     setDeleteAlertOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (branchToDelete) {
-      setBranches(branches.filter((b) => b.id !== branchToDelete.id));
+  const handleConfirmDelete = async () => {
+    if (!branchToDelete) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/branches/${branchToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message);
+        fetchBranches();
+      } else {
+        toast.error(result.message || 'Gagal menghapus data');
+      }
+    } catch (error) {
+      console.error('Error deleting branch:', error);
+      toast.error('Terjadi kesalahan pada server');
+    } finally {
+      setIsSubmitting(false);
+      setDeleteAlertOpen(false);
       setBranchToDelete(null);
     }
-    setDeleteAlertOpen(false);
   };
 
   const filteredBranches = useMemo(
@@ -148,7 +201,6 @@ const BranchTabInner = function BranchTabInner(
 
   return (
     <>
-      {/* Page mode: satu card dengan pagination (kiri) + Search (kanan) di dalam card, lalu tabel */}
       <Card className={CARD_STYLE}>
         {isPageMode && (
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 px-6 py-3">
@@ -253,7 +305,16 @@ const BranchTabInner = function BranchTabInner(
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {displayBranches.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="px-4 py-8 text-center">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Memuat data...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : displayBranches.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={2}
@@ -299,7 +360,6 @@ const BranchTabInner = function BranchTabInner(
         </CardContent>
       </Card>
 
-      {/* reference-erp branch/create & edit: Name* (Enter Branch Name), Cancel, Create / Update */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -324,14 +384,21 @@ const BranchTabInner = function BranchTabInner(
                   onChange={(e) => setFormData({ name: e.target.value })}
                   placeholder="Enter Branch Name"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleDialogOpenChange(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => handleDialogOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit" variant="blue" className="shadow-none">
+              <Button type="submit" variant="blue" className="shadow-none" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingId !== null ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
@@ -339,8 +406,7 @@ const BranchTabInner = function BranchTabInner(
         </DialogContent>
       </Dialog>
 
-      {/* Konfirmasi hapus - style project: AlertDialog seperti support */}
-      <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setBranchToDelete(null); }}>
+      <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { if (!isSubmitting) { setDeleteAlertOpen(open); if (!open) setBranchToDelete(null); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Branch?</AlertDialogTitle>
@@ -349,11 +415,16 @@ const BranchTabInner = function BranchTabInner(
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirmDelete}
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
               className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={isSubmitting}
             >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>

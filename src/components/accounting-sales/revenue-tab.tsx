@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,61 +51,10 @@ import {
   Eye,
 } from 'lucide-react'
 
-// Mock data
-const revenueData = [
-  {
-    id: 1,
-    date: '2024-01-15',
-    amount: 15000000,
-    account: 'Bank BCA - Operating Account',
-    customer: 'PT Teknologi Digital Indonesia',
-    category: 'Web Development',
-    reference: 'INV-001',
-    description: 'Monthly web development services',
-    paymentReceipt: 'receipt_001.pdf',
-  },
-  {
-    id: 2,
-    date: '2024-01-14',
-    amount: 5000000,
-    account: 'Bank Mandiri - Petty Cash',
-    customer: 'CV Mitra Sejahtera',
-    category: 'Consulting',
-    reference: 'INV-002',
-    description: 'Technical consultation services',
-    paymentReceipt: null,
-  },
-  {
-    id: 3,
-    date: '2024-01-12',
-    amount: 12000000,
-    account: 'Bank BCA - Operating Account',
-    customer: 'PT Global Solution',
-    category: 'Cloud Services',
-    reference: 'INV-003',
-    description: 'Cloud infrastructure setup',
-    paymentReceipt: 'receipt_003.pdf',
-  },
-]
+const initialRevenueData: any[] = []
 
-const accounts = [
-  { id: '1', name: 'Bank BCA - Operating Account' },
-  { id: '2', name: 'Bank Mandiri - Petty Cash' },
-  { id: '3', name: 'Bank BRI - Savings Account' },
-]
-
-const customers = [
-  { id: '1', name: 'PT Teknologi Digital Indonesia' },
-  { id: '2', name: 'CV Mitra Sejahtera' },
-  { id: '3', name: 'PT Global Solution' },
-]
-
-const categories = [
-  { id: '1', name: 'Web Development' },
-  { id: '2', name: 'Consulting' },
-  { id: '3', name: 'Cloud Services' },
-  { id: '4', name: 'Software License' },
-]
+type Option = { id: string; name: string }
+const emptyOptions: Option[] = []
 
 function formatDate(dateString: string) {
   const date = new Date(dateString)
@@ -126,15 +75,28 @@ function formatPrice(amount: number) {
 }
 
 export function RevenueTab() {
-  type RevenueRow = (typeof revenueData)[number]
+  type RevenueRow = (typeof initialRevenueData)[number] & {
+    id: string | number
+    date: string
+    amount: number
+    account: string
+    customer?: string | null
+    category?: string | null
+    reference?: string | null
+    description?: string | null
+    paymentReceipt?: string | null
+  }
 
-  const [rows, setRows] = useState<RevenueRow[]>(revenueData)
+  const [rows, setRows] = useState<RevenueRow[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [revenueToDelete, setRevenueToDelete] = useState<RevenueRow | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [accounts, setAccounts] = useState<Option[]>(emptyOptions)
+  const [customers, setCustomers] = useState<Option[]>(emptyOptions)
+  const [categories, setCategories] = useState<Option[]>(emptyOptions)
   const [formData, setFormData] = useState({
     date: '',
     amount: '',
@@ -153,13 +115,56 @@ export function RevenueTab() {
     category: '',
   })
 
+  const loadRevenue = async (params?: { date?: string; categoryId?: string }) => {
+    const search = new URLSearchParams()
+    if (params?.date) {
+      search.set('startDate', params.date)
+      search.set('endDate', params.date)
+    }
+    if (params?.categoryId) {
+      search.set('accountId', params.categoryId)
+    }
+    const url = `/api/revenue${search.toString() ? `?${search.toString()}` : ''}`
+    const res = await fetch(url)
+    const json = await res.json()
+    if (json?.success && Array.isArray(json.data)) {
+      setRows(json.data)
+    }
+  }
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const res = await fetch('/api/chart-of-accounts')
+        const json = await res.json()
+        if (json?.success && Array.isArray(json.data)) {
+          const cash = json.data.filter((a: any) => a.type === 'Assets').map((a: any) => ({ id: a.id, name: a.name }))
+          const income = json.data.filter((a: any) => a.type === 'Income').map((a: any) => ({ id: a.id, name: a.name }))
+          setAccounts(cash)
+          setCategories(income)
+        }
+      } catch {}
+      try {
+        const resCust = await fetch('/api/customers')
+        const jsonCust = await resCust.json()
+        if (jsonCust?.success && Array.isArray(jsonCust.data)) {
+          setCustomers(jsonCust.data.map((c: any) => ({ id: c.id, name: c.name })))
+        }
+      } catch {}
+    }
+    loadOptions()
+    loadRevenue()
+  }, [])
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleApply = () => {
-    // Apply filters logic here
-    console.log('Apply filters:', filters)
+  const handleApply = async () => {
+    await loadRevenue({
+      date: filters.date || undefined,
+      categoryId: filters.category || undefined,
+    })
     setCurrentPage(1)
   }
 
@@ -195,9 +200,9 @@ export function RevenueTab() {
     setFormData({
       date: revenue.date,
       amount: String(revenue.amount),
-      account: accounts.find((a) => a.name === revenue.account)?.id ?? '',
-      customer: customers.find((c) => c.name === revenue.customer)?.id ?? '',
-      category: categories.find((c) => c.name === revenue.category)?.id ?? '',
+      account: (revenue as any).cashAccountId ?? '',
+      customer: (revenue as any).customerId ?? '',
+      category: (revenue as any).incomeAccountId ?? '',
       reference: revenue.reference || '',
       description: revenue.description || '',
       paymentReceipt: revenue.paymentReceipt || '',
@@ -210,53 +215,55 @@ export function RevenueTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!revenueToDelete) return
-    setRows((prev) => prev.filter((r) => r.id !== revenueToDelete.id))
+    const res = await fetch(`/api/revenue/${revenueToDelete.id}`, { method: 'DELETE' })
+    const json = await res.json().catch(() => null)
+    if (!res.ok || json?.success === false) {
+      alert(json?.message || 'Gagal menghapus revenue')
+      return
+    }
+    await loadRevenue()
     setRevenueToDelete(null)
     setDeleteDialogOpen(false)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const accountName = accounts.find((a) => a.id === formData.account)?.name ?? ''
-    const customerName = customers.find((c) => c.id === formData.customer)?.name ?? ''
-    const categoryName = categories.find((c) => c.id === formData.category)?.name ?? ''
-
-    if (editingId) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === editingId
-            ? {
-                ...r,
-                date: formData.date,
-                amount: Number(formData.amount) || 0,
-                account: accountName,
-                customer: customerName,
-                category: categoryName,
-                reference: formData.reference,
-                description: formData.description,
-                paymentReceipt: formData.paymentReceipt || null,
-              }
-            : r,
-        ),
-      )
-    } else {
-      const nextId = rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1
-      const newRow: RevenueRow = {
-        id: nextId,
-        date: formData.date,
-        amount: Number(formData.amount) || 0,
-        account: accountName,
-        customer: customerName,
-        category: categoryName,
-        reference: formData.reference,
-        description: formData.description,
-        paymentReceipt: formData.paymentReceipt || null,
-      }
-      setRows((prev) => [newRow, ...prev])
+    const payload = {
+      date: formData.date,
+      amount: Number(formData.amount) || 0,
+      cashAccountId: formData.account,
+      incomeAccountId: formData.category,
+      customerId: formData.customer || null,
+      reference: formData.reference,
+      description: formData.description,
+      paymentReceipt: formData.paymentReceipt || null,
     }
-
+    if (editingId) {
+      const res = await fetch(`/api/revenue/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Gagal memperbarui revenue')
+        return
+      }
+    } else {
+      const res = await fetch('/api/revenue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Gagal membuat revenue')
+        return
+      }
+    }
+    await loadRevenue()
     handleDialogOpenChange(false)
   }
 
@@ -268,8 +275,7 @@ export function RevenueTab() {
         if (accountName && revenue.account !== accountName) return false
       }
       if (filters.customer) {
-        const customerName = customers.find((c) => c.id === filters.customer)?.name
-        if (customerName && revenue.customer !== customerName) return false
+        if ((revenue as any).customerId !== filters.customer) return false
       }
       if (filters.category) {
         const categoryName = categories.find((c) => c.id === filters.category)?.name
@@ -625,7 +631,7 @@ export function RevenueTab() {
                         {revenue.account}
                       </TableCell>
                       <TableCell className="px-6">
-                        {revenue.customer || '-'}
+                        {customers.find((c) => c.id === (revenue as any).customerId)?.name || '-'}
                       </TableCell>
                       <TableCell className="px-6">
                         {revenue.category || '-'}
@@ -739,4 +745,3 @@ export function RevenueTab() {
     </div>
   )
 }
-

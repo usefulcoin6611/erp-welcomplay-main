@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   IconCreditCard,
   IconDotsVertical,
@@ -8,6 +8,7 @@ import {
   IconNotification,
   IconUserCircle,
   IconShield,
+  IconBuildingStore,
 } from "@tabler/icons-react"
 
 import {
@@ -48,11 +49,30 @@ export function NavUser({
     name: string
     email: string
     avatar: string
+    branchId?: string
   }
 }) {
   const { isMobile } = useSidebar()
   const { user: authUser, logout } = useAuth()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [branchName, setBranchName] = useState<string>("")
+
+  useEffect(() => {
+    async function fetchBranchName() {
+      if (authUser?.branchId) {
+        try {
+          const response = await fetch(`/api/branches/${authUser.branchId}`)
+          const result = await response.json()
+          if (result.success && result.data) {
+            setBranchName(result.data.name)
+          }
+        } catch (error) {
+          console.error("Failed to fetch branch name:", error)
+        }
+      }
+    }
+    fetchBranchName()
+  }, [authUser?.branchId])
 
   const handleLogout = async () => {
     // Close dialog
@@ -96,10 +116,18 @@ export function NavUser({
       'employee': 'text-purple-600 bg-purple-50',
     }
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${roleColors[authUser.type] || 'text-gray-600 bg-gray-50'}`}>
-        <IconShield className="h-3 w-3" />
-        {authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}
-      </span>
+      <div className="flex flex-col gap-1.5">
+        <span className={`inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${roleColors[authUser.type] || 'text-gray-600 bg-gray-50'}`}>
+          <IconShield className="h-3 w-3" />
+          {authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}
+        </span>
+        {branchName && (
+          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-amber-600 bg-amber-50">
+            <IconBuildingStore className="h-3 w-3" />
+            {branchName}
+          </span>
+        )}
+      </div>
     )
   }
 
@@ -119,7 +147,7 @@ export function NavUser({
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium text-sidebar-foreground">{user.name}</span>
               <span className="truncate text-xs text-sidebar-foreground/70">
-                {user.email}
+                {branchName ? `${branchName} • ${user.email}` : user.email}
               </span>
             </div>
             <IconDotsVertical className="ml-auto size-4 text-sidebar-foreground" />
