@@ -1337,13 +1337,20 @@ export function InvoiceTab() {
                   <TableHead className="px-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+                  <TableBody>
                 {paginatedInvoices.length > 0 ? (
                   paginatedInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell className="px-6">
-                        <Button asChild variant="outline" size="sm" className="shadow-none">
-                          <Link href={`/accounting/invoice/${invoice.id}`}>{invoice.id}</Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none"
+                          onClick={() => {
+                            loadInvoiceDetail(invoice.id)
+                          }}
+                        >
+                          {invoice.id}
                         </Button>
                       </TableCell>
                       <TableCell className="px-6">{formatDate(invoice.issueDate)}</TableCell>

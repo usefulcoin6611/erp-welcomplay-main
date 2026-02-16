@@ -701,9 +701,14 @@ export function CustomerTab() {
             <TableBody>
               {paginatedCustomers.length > 0 ? (
                 paginatedCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
+                    <TableRow key={customer.id}>
                     <TableCell className="px-6">
-                      <Button variant="outline" size="sm" className="shadow-none">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shadow-none"
+                        onClick={() => setViewingCustomer(customer)}
+                      >
                         {customer.customerCode}
                       </Button>
                     </TableCell>
@@ -802,4 +807,3 @@ export function CustomerTab() {
     </div>
   )
 }
-

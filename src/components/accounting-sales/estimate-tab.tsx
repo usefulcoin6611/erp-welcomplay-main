@@ -1154,8 +1154,13 @@ export function EstimateTab() {
                   paginatedProposals.map((proposal) => (
                     <TableRow key={proposal.id}>
                       <TableCell className="px-6">
-                        <Button asChild variant="outline" size="sm" className="shadow-none">
-                          <Link href={`/accounting/proposal/${proposal.id}`}>{proposal.id}</Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none"
+                          onClick={() => handleView(proposal)}
+                        >
+                          {proposal.id}
                         </Button>
                       </TableCell>
                       <TableCell className="px-6">{proposal.category}</TableCell>

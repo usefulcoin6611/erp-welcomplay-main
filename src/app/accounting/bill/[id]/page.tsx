@@ -4,17 +4,11 @@ import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { IconArrowLeft, IconCalendar, IconDownload, IconPrinter } from '@tabler/icons-react'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-server'
 import { headers } from 'next/headers'
@@ -66,8 +60,37 @@ function getBillStatusClasses(status: string) {
   }
 }
 
+function getBillStatusBarClasses(status: string) {
+  const s = status.toLowerCase()
+  switch (s) {
+    case 'draft':
+      return 'bg-gray-300'
+    case 'sent':
+      return 'bg-blue-500'
+    case 'partial':
+    case 'unpaid':
+      return 'bg-amber-500'
+    case 'paid':
+      return 'bg-green-500'
+    default:
+      return 'bg-slate-400'
+  }
+}
+
 export default async function BillDetailPage({ params }: BillDetailPageProps) {
   const bill = await getBill(params.id)
+
+  const items = bill?.items ?? []
+  const subTotal = items.reduce(
+    (sum: number, it: any) => sum + Math.max(0, (it.price || 0) * (it.quantity || 0) - (it.discount || 0)),
+    0,
+  )
+  const discountTotal = items.reduce((sum: number, it: any) => sum + (it.discount || 0), 0)
+  const taxTotal = items.reduce((sum: number, it: any) => {
+    const base = Math.max(0, (it.price || 0) * (it.quantity || 0) - (it.discount || 0))
+    return sum + ((it.taxRate || 0) / 100) * base
+  }, 0)
+  const grandTotal = bill?.total ?? subTotal + taxTotal
 
   return (
     <SidebarProvider
@@ -81,244 +104,415 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col bg-gray-100">
+        <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-              <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Bill</h1>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    <span className="font-medium text-gray-900">
-                      {bill?.billId || params.id}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 space-y-1">
+                <h1 className="text-2xl font-semibold">Bill Detail</h1>
+                {bill && (
+                  <p className="text-sm text-muted-foreground truncate">
+                    {bill.billId}
+                  </p>
+                )}
+              </div>
+              {bill && (
+                <div className="flex items-center gap-2">
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="shadow-none h-8 px-3"
+                    className="shadow-none h-8 px-3 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                   >
-                    <Link href="/accounting/purchases?tab=bill">
-                      <IconArrowLeft className="mr-2 h-4 w-4" />
-                      Back
+                    <Link href={`/accounting/bill/create/${bill.billId}`}>
+                      Edit
                     </Link>
                   </Button>
-                  {bill && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shadow-none h-8 w-40 px-3"
+                  >
+                    Change Status
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="shadow-none h-8 w-8 p-0"
+                  >
+                    <Link href="/accounting/purchases?tab=bill">
+                      <IconArrowLeft className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {!bill && (
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+                <CardContent className="px-6 py-10">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <p className="text-sm font-medium">Bill tidak ditemukan</p>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Pastikan Anda membuka bill dari daftar yang benar atau memiliki akses ke cabang tersebut.
+                    </p>
                     <Button
                       asChild
                       variant="outline"
                       size="sm"
-                      className="shadow-none h-8 px-3 bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
+                      className="shadow-none h-8 px-3 mt-1"
                     >
-                      <Link href={`/accounting/bill/create/${bill.billId}`}>
-                        Edit
-                      </Link>
+                      <Link href="/accounting/purchases?tab=bill">Kembali ke daftar bill</Link>
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm" className="shadow-none h-8 px-3">
-                    <IconDownload className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                  <Button variant="outline" size="sm" className="shadow-none h-8 px-3">
-                    <IconPrinter className="mr-2 h-4 w-4" />
-                    Print
-                  </Button>
-                </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {bill && (
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+                <CardHeader className="px-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border rounded-md p-4 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <div className="font-medium">Create Bill</div>
+                          <div className="text-muted-foreground">
+                            {bill.billDate
+                              ? new Date(bill.billDate).toLocaleDateString('id-ID')
+                              : '-'}
+                          </div>
+                        </div>
+                        <Badge className={getBillStatusClasses('draft')}>
+                          Draft
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="border rounded-md p-4 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <div className="font-medium">Send Bill</div>
+                          <div className="text-muted-foreground">
+                            {bill.billDate
+                              ? new Date(bill.billDate).toLocaleDateString('id-ID')
+                              : '-'}
+                          </div>
+                        </div>
+                        <Badge className={getBillStatusClasses(bill.status || 'sent')}>
+                          {bill.status || 'Sent'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="border rounded-md p-4 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <div className="font-medium">Make Payment</div>
+                          <div className="text-muted-foreground">
+                            Awaiting payment
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none h-8 px-3"
+                        >
+                          Add Payment
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            )}
+
+            {bill && bill.status !== 'draft' && (
+              <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
+                {bill.status !== 'paid' && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      Apply Debit Note
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      Bill Reminder
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Resend Bill
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Download
+                </Button>
               </div>
+            )}
 
-              <div className="px-6 py-5 space-y-6">
-                <div className="flex flex-wrap justify-between gap-6">
-                  <div className="space-y-2 text-sm">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Billed To
-                    </div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {bill?.vendor?.name || '-'}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {bill?.vendor?.email || '-'}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {bill?.vendor?.billingAddress ||
-                        bill?.vendor?.shippingAddress ||
-                        '-'}
+            {bill && (
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+                <CardHeader className="px-6">
+                  <div className="w-full flex items-center justify-between">
+                    <CardTitle className="text-base font-normal">Bill</CardTitle>
+                    <span className="text-base font-semibold">
+                      #{bill.billId}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-6 space-y-6">
+                  <div className="flex justify-end">
+                    <div className="flex items-center gap-6">
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Bill Date :
+                        </div>
+                        <div className="text-sm font-medium">
+                          {bill.billDate
+                            ? new Date(bill.billDate).toLocaleDateString('id-ID')
+                            : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Due Date :
+                        </div>
+                        <div className="text-sm font-medium">
+                          {bill.dueDate
+                            ? new Date(bill.dueDate).toLocaleDateString('id-ID')
+                            : '-'}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2 text-sm text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Bill Date
-                      </span>
-                      <span className="flex items-center gap-1 text-sm text-gray-900">
-                        <IconCalendar className="h-3 w-3" />
-                        {bill?.billDate
-                          ? new Date(bill.billDate).toLocaleDateString('id-ID')
-                          : '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Due Date
-                      </span>
-                      <span className="flex items-center gap-1 text-sm text-gray-900">
-                        <IconCalendar className="h-3 w-3" />
-                        {bill?.dueDate
-                          ? new Date(bill.dueDate).toLocaleDateString('id-ID')
-                          : '-'}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-end gap-2">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Status
-                      </span>
-                      <Badge className={getBillStatusClasses(bill?.status || 'draft')}>
-                        {bill?.status || 'Draft'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
 
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">
-                    Product Summary
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-1 text-sm">
+                      <div className="font-medium">Vendor :</div>
+                      <div>{bill.vendor?.name || '-'}</div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.vendorCode || bill.vendor?.email || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.billingAddress ||
+                          bill.vendor?.shippingAddress ||
+                          '-'}
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="font-medium">Billing Address :</div>
+                      <div>{bill.vendor?.billingName || bill.vendor?.name || '-'}</div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.billingAddress || '-'}
+                      </div>
+                    </div>
+                    <div className="flex items-start justify-end">
+                      <div className="text-sm text-right space-y-1">
+                        <div>
+                          <span className="text-muted-foreground">Status :</span>{' '}
+                          <Badge className={getBillStatusClasses(bill.status || 'draft')}>
+                            {bill.status || 'Draft'}
+                          </Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Total :</span>{' '}
+                          <span className="font-semibold">
+                            Rp {grandTotal.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    All items here cannot be deleted.
-                  </div>
-                  <div className="mt-3 border border-gray-100 rounded-md overflow-hidden">
-                    <Table>
+
+                  <div className="overflow-x-auto w-full">
+                    <Table className="w-full min-w-full table-auto">
                       <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="w-10 text-gray-600">#</TableHead>
-                          <TableHead className="text-gray-600">Product</TableHead>
-                          <TableHead className="text-gray-600 text-right">
-                            Quantity
-                          </TableHead>
-                          <TableHead className="text-gray-600 text-right">
-                            Rate
-                          </TableHead>
-                          <TableHead className="text-gray-600 text-right">
-                            Tax
-                          </TableHead>
-                          <TableHead className="text-gray-600 text-right">
-                            Discount
-                          </TableHead>
-                          <TableHead className="text-gray-600">
-                            Description
-                          </TableHead>
-                          <TableHead className="text-right text-gray-600">
-                            Price
-                          </TableHead>
+                        <TableRow>
+                          <TableHead className="px-6">#</TableHead>
+                          <TableHead className="px-6">Product</TableHead>
+                          <TableHead className="px-6">Quantity</TableHead>
+                          <TableHead className="px-6">Rate</TableHead>
+                          <TableHead className="px-6">Discount</TableHead>
+                          <TableHead className="px-6">Tax</TableHead>
+                          <TableHead className="px-6">Description</TableHead>
+                          <TableHead className="px-6 text-right">Price</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {bill?.items?.map((item: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell className="text-xs text-gray-500">
-                              {index + 1}
-                            </TableCell>
-                            <TableCell className="text-sm font-medium text-gray-900">
-                              {item.itemName}
-                            </TableCell>
-                            <TableCell className="text-right text-sm">
-                              {item.quantity}
-                            </TableCell>
-                            <TableCell className="text-right text-sm">
-                              Rp {item.price.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right text-sm">
-                              {item.taxRate}%
-                            </TableCell>
-                            <TableCell className="text-right text-sm">
-                              Rp {item.discount.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {item.description || '-'}
-                            </TableCell>
-                            <TableCell className="text-right text-sm font-semibold">
-                              Rp {item.amount.toLocaleString()}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {items.map((item: any, index: number) => {
+                          const qty = item.quantity || 0
+                          const rate = item.price || 0
+                          const base = Math.max(0, qty * rate - (item.discount || 0))
+                          const taxAmount = ((item.taxRate || 0) / 100) * base
+                          const total = base + taxAmount
+                          return (
+                            <TableRow key={item.id || index}>
+                              <TableCell className="px-6">{index + 1}</TableCell>
+                              <TableCell className="px-6">{item.itemName}</TableCell>
+                              <TableCell className="px-6">
+                                {qty}{' '}
+                                <span className="text-muted-foreground text-xs">
+                                  Unit
+                                </span>
+                              </TableCell>
+                              <TableCell className="px-6">
+                                Rp {rate.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                Rp {(item.discount || 0).toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <div>Tax ({item.taxRate || 0}%)</div>
+                                <div className="text-muted-foreground">
+                                  Rp {taxAmount.toLocaleString('id-ID')}
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-6">
+                                {item.description || '-'}
+                              </TableCell>
+                              <TableCell className="px-6 text-right">
+                                <div>Rp {total.toLocaleString('id-ID')}</div>
+                                <div className="text-[10px] text-pink-600">
+                                  after tax & discount
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
                       </TableBody>
                     </Table>
                   </div>
-                </div>
 
-                <div className="flex justify-end">
-                  <div className="w-full max-w-sm">
-                    <div className="border border-gray-100 rounded-md">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <div className="text-sm font-semibold text-gray-900">
-                          Summary
-                        </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-start-4 md:col-span-1 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sub Total</span>
+                        <span>
+                          Rp {subTotal.toLocaleString('id-ID')}
+                        </span>
                       </div>
-                      <div className="px-4 py-3 space-y-1.5 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Sub Total</span>
-                          <span className="font-medium">
-                            Rp{' '}
-                            {bill
-                              ? bill.items
-                                  .reduce(
-                                    (sum: number, it: any) =>
-                                      sum +
-                                      ((it.price || 0) * (it.quantity || 0) || 0),
-                                    0,
-                                  )
-                                  .toLocaleString()
-                              : '0'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Discount</span>
-                          <span className="font-medium">
-                            Rp{' '}
-                            {bill
-                              ? bill.items
-                                  .reduce(
-                                    (sum: number, it: any) => sum + (it.discount || 0),
-                                    0,
-                                  )
-                                  .toLocaleString()
-                              : '0'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Tax</span>
-                          <span className="font-medium">
-                            Rp{' '}
-                            {bill
-                              ? bill.items
-                                  .reduce(
-                                    (sum: number, it: any) =>
-                                      sum +
-                                      ((it.taxRate || 0) / 100) *
-                                        Math.max(
-                                          0,
-                                          (it.price || 0) * (it.quantity || 0) -
-                                            (it.discount || 0),
-                                        ),
-                                    0,
-                                  )
-                                  .toLocaleString()
-                              : '0'}
-                          </span>
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-sm font-semibold">
-                          <span className="text-gray-900">Total</span>
-                          <span className="text-base text-gray-900">
-                            Rp {bill?.total.toLocaleString() || '0'}
-                          </span>
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Discount</span>
+                        <span>
+                          Rp {discountTotal.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Tax</span>
+                        <span>
+                          Rp {taxTotal.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-medium border-t pt-2">
+                        <span>Total</span>
+                        <span>
+                          Rp {grandTotal.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Paid</span>
+                        <span>Rp {0..toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Debit Note Applied</span>
+                        <span>Rp {0..toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Debit Note Issued</span>
+                        <span>Rp {0..toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Due</span>
+                        <span>
+                          Rp {grandTotal.toLocaleString('id-ID')}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+
+                  <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+                    <CardHeader className="px-6">
+                      <CardTitle className="text-base font-normal">
+                        Payment Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-6">
+                      <div className="overflow-x-auto w-full">
+                        <Table className="w-full min-w-full table-auto">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="px-6">Payment</TableHead>
+                              <TableHead className="px-6">Date</TableHead>
+                              <TableHead className="px-6">Amount</TableHead>
+                              <TableHead className="px-6">Payment Type</TableHead>
+                              <TableHead className="px-6">Account</TableHead>
+                              <TableHead className="px-6">Reference</TableHead>
+                              <TableHead className="px-6">Description</TableHead>
+                              <TableHead className="px-6">Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell
+                                colSpan={8}
+                                className="text-center py-8 text-muted-foreground"
+                              >
+                                No payments found
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
+                    <CardHeader className="px-6">
+                      <CardTitle className="text-base font-normal">
+                        Debit Note Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-6">
+                      <div className="overflow-x-auto w-full">
+                        <Table className="w-full min-w-full table-auto">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="px-6">Debit Note</TableHead>
+                              <TableHead className="px-6">Date</TableHead>
+                              <TableHead className="px-6">Amount</TableHead>
+                              <TableHead className="px-6">Description</TableHead>
+                              <TableHead className="px-6">Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell
+                                colSpan={5}
+                                className="text-center py-8 text-muted-foreground"
+                              >
+                                No Data Found
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </SidebarInset>
