@@ -65,11 +65,7 @@ export function AccountTab() {
     bankAddress: '',
   })
 
-  const chartOfAccounts = [
-    { value: '1010', label: '1010 - Cash in Bank' },
-    { value: '1011', label: '1011 - Cash' },
-    { value: '1020', label: '1020 - Virtual Account' },
-  ]
+  const [chartOfAccounts, setChartOfAccounts] = useState<{ value: string; label: string }[]>([])
 
   const paymentGateways = [
     { value: 'Cash', label: 'Cash' },
@@ -124,99 +120,62 @@ export function AccountTab() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Mock submit (create/update) to reflect changes in table like reference
-    setAccounts((prev) => {
-      if (editingId) {
-        return prev.map((a) => {
-          if (a.id !== editingId) return a
-          const nextBalance =
-            formData.openingBalance.trim().length > 0
-              ? formatRupiah(Number(formData.openingBalance))
-              : a.currentBalance
+    const payload = {
+      chartCode: formData.chartOfAccount,
+      holderName: formData.holderName,
+      bank: formData.bank,
+      accountNumber: formData.accountNumber,
+      openingBalance: formData.openingBalance ? Number(formData.openingBalance) : 0,
+      contactNumber: formData.contactNumber || null,
+      bankAddress: formData.bankAddress || null,
+      paymentGateway: formData.paymentGateway,
+    }
 
-          return {
-            ...a,
-            chartOfAccount: coaLabelFromValue(formData.chartOfAccount),
-            name: formData.holderName,
-            bank: formData.bank,
-            accountNumber: formData.accountNumber,
-            contactNumber: formData.contactNumber,
-            paymentGateway: formData.paymentGateway,
-            currentBalance: nextBalance,
-          }
-        })
-      }
-
-      const newId = `${Date.now()}`
-      const opening = formData.openingBalance.trim().length > 0 ? Number(formData.openingBalance) : 0
-      const newRow: BankAccountRow = {
-        id: newId,
-        chartOfAccount: coaLabelFromValue(formData.chartOfAccount),
-        name: formData.holderName,
-        bank: formData.bank,
-        accountNumber: formData.accountNumber,
-        currentBalance: formatRupiah(opening),
-        contactNumber: formData.contactNumber,
-        paymentGateway: formData.paymentGateway,
-      }
-      return [newRow, ...prev]
+    fetch('/api/bank-accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     })
+      .then(async (res) => {
+        if (!res.ok) return
+        await loadAccounts()
+        handleDialogOpenChange(false)
+      })
+      .catch(() => {})
 
-    handleDialogOpenChange(false)
   }
 
-  const [accounts, setAccounts] = useState<BankAccountRow[]>(() => [
-    {
-      id: '1',
-      chartOfAccount: '1010 - Cash in Bank',
-      name: 'Operating Account',
-      bank: 'Bank BCA',
-      accountNumber: '1234 5678 9012',
-      currentBalance: 'Rp 150,000,000',
-      contactNumber: '+62 812-1111-2222',
-      paymentGateway: 'Cash',
-    },
-    {
-      id: '2',
-      chartOfAccount: '1011 - Cash',
-      name: 'Petty Cash',
-      bank: 'Bank Mandiri',
-      accountNumber: '9988 7766 5544',
-      currentBalance: 'Rp 12,500,000',
-      contactNumber: '+62 812-3333-4444',
-      paymentGateway: 'Cash',
-    },
-    {
-      id: '3',
-      chartOfAccount: '1020 - Virtual Account',
-      name: 'Midtrans VA',
-      bank: 'Bank Mandiri',
-      accountNumber: 'VA 8877-1234-9999',
-      currentBalance: 'Rp 28,750,000',
-      contactNumber: '+62 812-8888-0000',
-      paymentGateway: 'Midtrans',
-    },
-    {
-      id: '4',
-      chartOfAccount: '1010 - Cash in Bank',
-      name: 'Savings Account',
-      bank: 'Bank BNI',
-      accountNumber: '5555 6666 7777',
-      currentBalance: 'Rp 75,000,000',
-      contactNumber: '+62 812-9999-0000',
-      paymentGateway: 'Cash',
-    },
-    {
-      id: '5',
-      chartOfAccount: '1020 - Virtual Account',
-      name: 'Xendit VA',
-      bank: 'Bank BCA',
-      accountNumber: 'VA 1234-5678-9999',
-      currentBalance: 'Rp 45,000,000',
-      contactNumber: '+62 812-7777-8888',
-      paymentGateway: 'Xendit',
-    },
-  ])
+  const [accounts, setAccounts] = useState<BankAccountRow[]>([])
+
+  const loadAccounts = async () => {
+    try {
+      const res = await fetch('/api/bank-accounts', { cache: 'no-store' })
+      if (!res.ok) return
+      const json = await res.json()
+      if (!json?.success || !Array.isArray(json.data)) return
+      setAccounts(json.data as BankAccountRow[])
+    } catch {}
+  }
+
+  const loadCOA = async () => {
+    try {
+      const res = await fetch('/api/chart-of-accounts', { cache: 'no-store' })
+      if (!res.ok) return
+      const json = await res.json()
+      const list = Array.isArray(json?.data) ? (json.data as any[]) : []
+      const assets = list.filter((a) => a.type === 'Assets')
+      const options = assets.map((a) => ({
+        value: String(a.code),
+        label: `${a.code} - ${a.name}`,
+      }))
+      setChartOfAccounts(options)
+    } catch {}
+  }
+
+  useEffect(() => {
+    loadAccounts()
+    loadCOA()
+  }, [])
 
   const handleEdit = (row: BankAccountRow) => {
     setEditingId(row.id)

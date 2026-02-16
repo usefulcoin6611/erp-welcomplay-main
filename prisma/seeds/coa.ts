@@ -14,6 +14,9 @@ export async function seedCOA(prisma: PrismaClient) {
 
   // Seed Chart of Accounts (Assets)
   const assetAccounts = [
+    { code: "1010", name: "Cash in Bank", type: "Assets", subType: "Current Asset", branchId },
+    { code: "1011", name: "Cash", type: "Assets", subType: "Current Asset", branchId },
+    { code: "1020", name: "Virtual Account", type: "Assets", subType: "Current Asset", branchId },
     { code: "1050", name: "Accounts Receivable", type: "Assets", subType: "Accounts Receivable", branchId },
     { code: "1060", name: "Checking Account", type: "Assets", subType: "Current Asset", branchId },
     { code: "1065", name: "Petty Cash", type: "Assets", subType: "Current Asset", branchId },

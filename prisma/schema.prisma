@@ -52,6 +52,7 @@ model Branch {
   products         Product[]
   expenses         Expense[]
   payments         Payment[]
+  bankAccounts     BankAccount[]
 
   @@map("branch")
 }
@@ -180,6 +181,7 @@ model ChartOfAccount {
   journalLines  JournalLine[]
   saleProducts  Product[]        @relation("SaleAccount")
   expenseProducts Product[]      @relation("ExpenseAccount")
+  bankAccounts   BankAccount[]
 
   @@map("chart_of_account")
 }
@@ -507,4 +509,25 @@ model Payment {
   branch      Branch?  @relation(fields: [branchId], references: [id])
 
   @@map("payment")
+}
+
+model BankAccount {
+  id              String   @id @default(cuid())
+  branchId        String?
+  chartAccountId  String
+  holderName      String
+  bank            String
+  accountNumber   String
+  openingBalance  Float    @default(0)
+  contactNumber   String?
+  bankAddress     String?
+  paymentGateway  String
+  status          String   @default("Active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  branch          Branch?        @relation(fields: [branchId], references: [id])
+  chartAccount    ChartOfAccount @relation(fields: [chartAccountId], references: [id])
+
+  @@map("bank_account")
 }

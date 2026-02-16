@@ -17,6 +17,7 @@ import { seedProducts } from "./seeds/products";
 import { seedInvoices } from "./seeds/invoices";
 import { seedBills } from "./seeds/bills";
 import { seedCreditNotes } from "./seeds/credit-notes";
+import { seedBankAccounts } from "./seeds/bank-accounts";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ async function main() {
     await seedInvoices(prisma);
     await seedBills(prisma);
     await seedCreditNotes(prisma);
+    await seedBankAccounts(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);
