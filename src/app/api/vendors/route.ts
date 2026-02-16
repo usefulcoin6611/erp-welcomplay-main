@@ -13,7 +13,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const branchId = (session.user as any).branchId as string | null
+
+    const where: any = {}
+    if (branchId) {
+      where.branchId = branchId
+    }
+
     const vendors = await prisma.vendor.findMany({
+      where,
       include: {
         branch: true,
       },
@@ -88,4 +96,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

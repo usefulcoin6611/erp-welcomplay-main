@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { Pencil, Plus, RefreshCw, Trash2, Search, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -65,14 +66,82 @@ export function AccountTab() {
     bankAddress: '',
   })
 
-  const [chartOfAccounts, setChartOfAccounts] = useState<{ value: string; label: string }[]>([])
+  type CoaOption = {
+    code: string
+    name: string
+    type: string
+    subType: string
+  }
 
-  const paymentGateways = [
-    { value: 'Cash', label: 'Cash' },
-    { value: 'Midtrans', label: 'Midtrans' },
-    { value: 'Xendit', label: 'Xendit' },
-    { value: 'PayPal', label: 'PayPal' },
-  ]
+  type CoaGroup = {
+    type: string
+    subTypes: {
+      subType: string
+      accounts: CoaOption[]
+    }[]
+  }
+
+  const [chartOfAccountGroups, setChartOfAccountGroups] = useState<CoaGroup[]>([])
+  const [accountSearch, setAccountSearch] = useState('')
+  const [paymentGatewayOptions, setPaymentGatewayOptions] = useState<
+    { value: string; label: string }[]
+  >([
+    { value: 'none', label: 'Tidak menggunakan gateway' },
+    { value: 'cash', label: 'Cash' },
+    { value: 'bank_transfer', label: 'Bank Transfer' },
+    { value: 'midtrans', label: 'Midtrans' },
+    { value: 'xendit', label: 'Xendit' },
+  ])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadGateways = async () => {
+      try {
+        const res = await fetch('/api/settings/payment-gateways')
+        if (!res.ok || cancelled) return
+        const json = await res.json()
+        const data = json?.data as {
+          cash_enabled?: boolean
+          bank_transfer_enabled?: boolean
+          midtrans_enabled?: boolean
+          xendit_enabled?: boolean
+          paypal_enabled?: boolean
+          custom?: { code: string; label: string }[]
+        }
+        if (!data) return
+
+        const options: { value: string; label: string }[] = [
+          { value: 'none', label: 'Tidak menggunakan gateway' },
+        ]
+        if (data.cash_enabled) options.push({ value: 'cash', label: 'Cash' })
+        if (data.bank_transfer_enabled)
+          options.push({ value: 'bank_transfer', label: 'Bank Transfer' })
+        if (data.midtrans_enabled) options.push({ value: 'midtrans', label: 'Midtrans' })
+        if (data.xendit_enabled) options.push({ value: 'xendit', label: 'Xendit' })
+        if (data.paypal_enabled) options.push({ value: 'paypal', label: 'PayPal' })
+        if (data.custom && Array.isArray(data.custom)) {
+          data.custom.forEach((g) => {
+            if (g.code && g.label) {
+              options.push({ value: g.code, label: g.label })
+            }
+          })
+        }
+
+        if (!cancelled && options.length > 0) {
+          setPaymentGatewayOptions(options)
+        }
+      } catch {
+        return
+      }
+    }
+
+    loadGateways()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   type BankAccountRow = {
     id: string
@@ -93,11 +162,48 @@ export function AccountTab() {
     return digits ? Number(digits) : 0
   }
 
-  const coaLabelFromValue = (value: string) => chartOfAccounts.find((c) => c.value === value)?.label ?? value
+  const flattenAccounts = useMemo(
+    () =>
+      chartOfAccountGroups.flatMap((group) =>
+        group.subTypes.flatMap((sub) => sub.accounts),
+      ),
+    [chartOfAccountGroups],
+  )
+
+  const filteredAccountGroups = useMemo(() => {
+    const query = accountSearch.trim().toLowerCase()
+    if (!query) return chartOfAccountGroups
+    return chartOfAccountGroups
+      .map((group) => {
+        const subTypes = group.subTypes
+          .map((sub) => {
+            const accounts = sub.accounts.filter((acc) => {
+              const code = acc.code.toLowerCase()
+              const name = acc.name.toLowerCase()
+              return (
+                code.includes(query) ||
+                name.includes(query)
+              )
+            })
+            return { ...sub, accounts }
+          })
+          .filter((sub) => sub.accounts.length > 0)
+        return { ...group, subTypes }
+      })
+      .filter((group) => group.subTypes.length > 0)
+  }, [chartOfAccountGroups, accountSearch])
+
+  const coaLabelFromValue = (value: string) => {
+    const found =
+      flattenAccounts.find((c) => String(c.code) === String(value)) ?? null
+    return found ? `${found.code} - ${found.name}` : value
+  }
 
   const coaValueFromLabel = (label: string) => {
     const code = label.split(' - ')[0]?.trim()
-    return chartOfAccounts.find((c) => c.value === code)?.value ?? ''
+    const found =
+      flattenAccounts.find((c) => String(c.code) === String(code)) ?? null
+    return found ? String(found.code) : ''
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -117,7 +223,7 @@ export function AccountTab() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const payload = {
@@ -131,18 +237,31 @@ export function AccountTab() {
       paymentGateway: formData.paymentGateway,
     }
 
-    fetch('/api/bank-accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-      .then(async (res) => {
-        if (!res.ok) return
-        await loadAccounts()
-        handleDialogOpenChange(false)
-      })
-      .catch(() => {})
+    const isEdit = Boolean(editingId)
 
+    try {
+      const res = await fetch(
+        isEdit ? `/api/bank-accounts/${editingId}` : '/api/bank-accounts',
+        {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      )
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || (isEdit ? 'Gagal memperbarui akun bank' : 'Gagal membuat akun bank'))
+        return
+      }
+
+      toast.success(isEdit ? 'Akun bank berhasil diperbarui' : 'Akun bank berhasil dibuat')
+      await loadAccounts()
+      handleDialogOpenChange(false)
+    } catch {
+      toast.error('Terjadi kesalahan sistem')
+    }
   }
 
   const [accounts, setAccounts] = useState<BankAccountRow[]>([])
@@ -163,12 +282,80 @@ export function AccountTab() {
       if (!res.ok) return
       const json = await res.json()
       const list = Array.isArray(json?.data) ? (json.data as any[]) : []
-      const assets = list.filter((a) => a.type === 'Assets')
-      const options = assets.map((a) => ({
-        value: String(a.code),
-        label: `${a.code} - ${a.name}`,
-      }))
-      setChartOfAccounts(options)
+
+      const filtered = list
+        .filter((a) => a.status === 'Active')
+        .map((a) => ({
+          code: String(a.code),
+          name: String(a.name),
+          type: String(a.type),
+          subType: String(a.subType),
+        }))
+
+      const groupedByType = filtered.reduce<Record<string, CoaOption[]>>(
+        (acc, account) => {
+          if (!acc[account.type]) acc[account.type] = []
+          acc[account.type].push(account)
+          return acc
+        },
+        {},
+      )
+
+      const typeOrder = [
+        'Assets',
+        'Liabilities',
+        'Equity',
+        'Income',
+        'Costs of Goods Sold',
+        'Expenses',
+      ]
+
+      const groups: CoaGroup[] = typeOrder
+        .filter((type) => groupedByType[type]?.length)
+        .map((type) => {
+          const accountsForType = groupedByType[type]
+          const bySubType = accountsForType.reduce<
+            Record<string, CoaOption[]>
+          >((acc, account) => {
+            const key = account.subType || 'Other'
+            if (!acc[key]) acc[key] = []
+            acc[key].push(account)
+            return acc
+          }, {})
+
+          const entries = Object.entries(bySubType)
+
+          if (type === 'Expenses') {
+            const subTypeOrder = [
+              'Payroll Expenses',
+              'General and Administrative expenses',
+            ]
+            entries.sort(([a], [b]) => {
+              const ia = subTypeOrder.indexOf(a)
+              const ib = subTypeOrder.indexOf(b)
+              if (ia !== -1 || ib !== -1) {
+                if (ia === -1) return 1
+                if (ib === -1) return -1
+                return ia - ib
+              }
+              return a.localeCompare(b)
+            })
+          } else {
+            entries.sort(([a], [b]) => a.localeCompare(b))
+          }
+
+          const subTypes = entries.map(([subType, accounts]) => ({
+            subType,
+            accounts: accounts.sort((a, b) => a.code.localeCompare(b.code)),
+          }))
+
+          return {
+            type,
+            subTypes,
+          }
+        })
+
+      setChartOfAccountGroups(groups)
     } catch {}
   }
 
@@ -198,11 +385,29 @@ export function AccountTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!accountToDelete) return
-    setAccounts((prev) => prev.filter((a) => a.id !== accountToDelete.id))
-    setAccountToDelete(null)
-    setDeleteDialogOpen(false)
+
+    try {
+      const res = await fetch(`/api/bank-accounts/${accountToDelete.id}`, {
+        method: 'DELETE',
+      })
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal menghapus akun bank')
+        return
+      }
+
+      toast.success('Akun bank berhasil dihapus')
+      await loadAccounts()
+    } catch {
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setAccountToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   // Filtered data
@@ -279,17 +484,45 @@ export function AccountTab() {
                       </Label>
                       <Select
                         value={formData.chartOfAccount}
-                        onValueChange={(value) => setFormData({ ...formData, chartOfAccount: value })}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, chartOfAccount: value })
+                        }
                         required
                       >
                         <SelectTrigger id="chartOfAccount" className="w-full">
                           <SelectValue placeholder="Select Chart of Account" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {chartOfAccounts.map((coa) => (
-                            <SelectItem key={coa.value} value={coa.value}>
-                              {coa.label}
-                            </SelectItem>
+                        <SelectContent className="max-h-[320px]">
+                          <div className="px-2 pb-1">
+                            <input
+                              className="w-full rounded-sm border border-input bg-background px-2 py-1 text-xs outline-none focus-visible:ring-[2px] focus-visible:ring-ring/40"
+                              placeholder="Cari akun..."
+                              value={accountSearch}
+                              onChange={(e) => setAccountSearch(e.target.value)}
+                            />
+                          </div>
+                          {filteredAccountGroups.map((group) => (
+                            <div key={group.type}>
+                              <div className="px-3 pt-2 pb-1 text-xs font-bold text-slate-900">
+                                {group.type}
+                              </div>
+                              {group.subTypes.map((sub) => (
+                                <div key={sub.subType}>
+                                  <div className="px-4 py-1 text-xs font-semibold text-slate-700">
+                                    {sub.subType}
+                                  </div>
+                                  {sub.accounts.map((acc) => (
+                                    <SelectItem
+                                      key={acc.code}
+                                      value={acc.code}
+                                      className="pl-8"
+                                    >
+                                      {acc.code} - {acc.name}
+                                    </SelectItem>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
                           ))}
                         </SelectContent>
                       </Select>
@@ -310,7 +543,7 @@ export function AccountTab() {
                           <SelectValue placeholder="Select Type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {paymentGateways.map((gateway) => (
+                          {paymentGatewayOptions.map((gateway) => (
                             <SelectItem key={gateway.value} value={gateway.value}>
                               {gateway.label}
                             </SelectItem>
@@ -554,6 +787,31 @@ export function AccountTab() {
 }
 
 export function TransferTab() {
+  type AccountOption = {
+    id: string
+    label: string
+    bankName: string
+    holderName: string
+  }
+
+  type TransferRow = {
+    id: string
+    date: string
+    amount: number
+    reference: string
+    description: string
+    fromAccount: {
+      id: string
+      bankName: string
+      holderName: string
+    }
+    toAccount: {
+      id: string
+      bankName: string
+      holderName: string
+    }
+  }
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -565,76 +823,64 @@ export function TransferTab() {
     reference: '',
     description: '',
   })
-
-  // Mock data sesuai referensi Laravel
-  const transfers = [
-    {
-      id: '1',
-      date: '2025-11-10',
-      fromAccount: {
-        bankName: 'Bank BCA',
-        holderName: 'Operating Account',
-      },
-      toAccount: {
-        bankName: 'Bank Mandiri',
-        holderName: 'Payroll',
-      },
-      amount: 5000000,
-      reference: 'TRF-2025-001',
-      description: 'Payroll funding',
-    },
-    {
-      id: '2',
-      date: '2025-11-15',
-      fromAccount: {
-        bankName: 'Bank Mandiri',
-        holderName: 'Payroll',
-      },
-      toAccount: {
-        bankName: 'Bank BCA',
-        holderName: 'Operating Account',
-      },
-      amount: 2500000,
-      reference: 'TRF-2025-002',
-      description: 'Return unused payroll',
-    },
-    {
-      id: '3',
-      date: '2025-11-20',
-      fromAccount: {
-        bankName: 'Bank BCA',
-        holderName: 'Operating Account',
-      },
-      toAccount: {
-        bankName: 'Bank Mandiri',
-        holderName: 'Virtual Account',
-      },
-      amount: 10000000,
-      reference: 'TRF-2025-003',
-      description: 'Monthly payment transfer',
-    },
-  ]
-
-  const accountOptions = [
-    { id: '1', label: 'Bank BCA - Operating Account', bankName: 'Bank BCA', holderName: 'Operating Account' },
-    { id: '2', label: 'Bank Mandiri - Payroll', bankName: 'Bank Mandiri', holderName: 'Payroll' },
-    { id: '3', label: 'Bank Mandiri - Virtual Account', bankName: 'Bank Mandiri', holderName: 'Virtual Account' },
-  ]
-
+  const [accountOptions, setAccountOptions] = useState<AccountOption[]>([])
+  const [transfers, setTransfers] = useState<TransferRow[]>([])
   const [filters, setFilters] = useState({
     date: '',
     fromAccount: '',
     toAccount: '',
   })
 
+  const loadAccounts = async () => {
+    try {
+      const res = await fetch('/api/bank-accounts')
+      const json = await res.json()
+      if (!res.ok || !json?.success) {
+        const message = json?.message || json?.error || 'Gagal memuat bank accounts'
+        toast.error(message)
+        return
+      }
+      const rows = (json.data || []) as any[]
+      const options: AccountOption[] = rows.map((row) => ({
+        id: row.id,
+        label: `${row.bank} - ${row.name}`,
+        bankName: row.bank,
+        holderName: row.name,
+      }))
+      setAccountOptions(options)
+    } catch (error) {
+      console.error('Error loading bank accounts:', error)
+      toast.error('Gagal memuat daftar bank account')
+    }
+  }
+
+  const loadTransfers = async () => {
+    try {
+      const res = await fetch('/api/bank-transfers')
+      const json = await res.json()
+      if (!res.ok || !json?.success) {
+        const message = json?.message || json?.error || 'Gagal memuat bank transfer'
+        toast.error(message)
+        return
+      }
+      setTransfers(json.data || [])
+    } catch (error) {
+      console.error('Error loading bank transfers:', error)
+      toast.error('Gagal memuat daftar bank transfer')
+    }
+  }
+
+  useEffect(() => {
+    loadAccounts()
+    loadTransfers()
+  }, [])
+
   const filteredTransfers = useMemo(
     () =>
       transfers.filter((transfer) => {
         const matchDate = !filters.date || transfer.date === filters.date
-        const matchFrom = !filters.fromAccount || 
-          `${transfer.fromAccount.bankName} ${transfer.fromAccount.holderName}` === filters.fromAccount
-        const matchTo = !filters.toAccount || 
-          `${transfer.toAccount.bankName} ${transfer.toAccount.holderName}` === filters.toAccount
+        const matchFrom = !filters.fromAccount || transfer.fromAccount.id === filters.fromAccount
+        const matchTo = !filters.toAccount || transfer.toAccount.id === filters.toAccount
         return matchDate && matchFrom && matchTo
       }),
     [filters, transfers],
@@ -668,11 +914,43 @@ export function TransferTab() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log('Form data:', formData)
-    handleDialogOpenChange(false)
+    const amountNumber = Number(formData.amount)
+    if (!formData.date || !formData.fromAccount || !formData.toAccount || !formData.description || !amountNumber) {
+      toast.error('Lengkapi semua field wajib')
+      return
+    }
+    if (formData.fromAccount === formData.toAccount) {
+      toast.error('From Account dan To Account harus berbeda')
+      return
+    }
+    try {
+      const res = await fetch('/api/bank-transfers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: formData.date,
+          fromAccountId: formData.fromAccount,
+          toAccountId: formData.toAccount,
+          amount: amountNumber,
+          reference: formData.reference || null,
+          description: formData.description,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Gagal membuat bank transfer')
+      }
+      toast.success('Bank transfer berhasil dibuat')
+      handleDialogOpenChange(false)
+      await loadTransfers()
+    } catch (error) {
+      console.error('Error creating bank transfer:', error)
+      toast.error('Gagal membuat bank transfer')
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -735,7 +1013,7 @@ export function TransferTab() {
                       </SelectTrigger>
                       <SelectContent>
                         {accountOptions.map((option) => (
-                          <SelectItem key={option.id} value={option.label}>
+                          <SelectItem key={option.id} value={option.id}>
                             {option.label}
                           </SelectItem>
                         ))}
@@ -759,7 +1037,7 @@ export function TransferTab() {
                       </SelectTrigger>
                       <SelectContent>
                         {accountOptions.map((option) => (
-                          <SelectItem key={option.id} value={option.label}>
+                          <SelectItem key={option.id} value={option.id}>
                             {option.label}
                           </SelectItem>
                         ))}
@@ -884,7 +1162,7 @@ export function TransferTab() {
                 </SelectTrigger>
                 <SelectContent>
                   {accountOptions.map((option) => (
-                    <SelectItem key={option.id} value={option.label}>
+                    <SelectItem key={option.id} value={option.id}>
                       {option.label}
                     </SelectItem>
                   ))}
@@ -902,7 +1180,7 @@ export function TransferTab() {
                 </SelectTrigger>
                 <SelectContent>
                   {accountOptions.map((option) => (
-                    <SelectItem key={option.id} value={option.label}>
+                    <SelectItem key={option.id} value={option.id}>
                       {option.label}
                     </SelectItem>
                   ))}

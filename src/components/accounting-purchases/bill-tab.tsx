@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import {
   Search,
   RefreshCw,
@@ -97,7 +98,9 @@ export function BillTab() {
         const res = await fetch('/api/bills', { cache: 'no-store' })
         const json = await res.json().catch(() => null)
         if (!res.ok || !json?.success || !Array.isArray(json.data)) {
-          setError(json?.message || 'Gagal memuat data bill')
+          const message = json?.message || 'Gagal memuat data bill'
+          setError(message)
+          toast.error(message)
           return
         }
         const mapped: BillRow[] = json.data.map((b: any) => ({
@@ -113,7 +116,9 @@ export function BillTab() {
         }))
         setRows(mapped)
       } catch (e: any) {
-        setError(e?.message || 'Gagal memuat data bill')
+        const message = e?.message || 'Gagal memuat data bill'
+        setError(message)
+        toast.error(message)
       } finally {
         setLoading(false)
       }
@@ -164,12 +169,26 @@ export function BillTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!billToDelete) return
-    // Optimistic UI update; actual deletion should be done on detail page/API when implemented
-    setRows((prev) => prev.filter((b) => b.id !== billToDelete.id))
-    setBillToDelete(null)
-    setDeleteDialogOpen(false)
+    try {
+      const res = await fetch(`/api/bills/${billToDelete.id}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal menghapus bill')
+        return
+      }
+      setRows((prev) => prev.filter((b) => b.id !== billToDelete.id))
+      toast.success('Bill berhasil dihapus')
+    } catch (error) {
+      console.error('Error deleting bill:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setBillToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   useEffect(() => {
@@ -337,7 +356,7 @@ export function BillTab() {
                           className="shadow-none"
                         >
                           <Link href={`/accounting/bill/${bill.id}`}>
-                            {bill.id}
+                            {bill.billNumber}
                           </Link>
                         </Button>
                       </TableCell>

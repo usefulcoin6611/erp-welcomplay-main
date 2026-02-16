@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedCategories(prisma: PrismaClient) {
+export async function seedCategories(prisma: any) {
   console.log("Seeding Categories (Indonesia)...");
 
   const defaultBranch = await prisma.branch.findFirst({
@@ -23,6 +21,11 @@ export async function seedCategories(prisma: PrismaClient) {
     { name: "Meals & Entertainment", type: "Expense", account: "Operating Expenses", color: "EC4899", branchId },
     { name: "Office Supplies", type: "Expense", account: "Operating Expenses", color: "F59E0B", branchId },
     { name: "Cost of Goods Sold", type: "Expense", account: "Cost of Goods Sold", color: "4B5563", branchId },
+
+    // Additional expense categories commonly used by Bills
+    { name: "Logistics", type: "Expense", account: "Operating Expenses", color: "0EA5E9", branchId },
+    { name: "IT Services", type: "Expense", account: "Operating Expenses", color: "2563EB", branchId },
+    { name: "Utility", type: "Expense", account: "Operating Expenses", color: "22C55E", branchId },
   ];
 
   for (const category of categories) {

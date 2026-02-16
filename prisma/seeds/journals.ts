@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-
 // This function seeds the journal entries using the Prisma client
-export async function seedJournals(prisma: PrismaClient) {
+export async function seedJournals(prisma: any) {
   console.log("Seeding Journal Entries...");
 
   // Get a branch to associate with journal entries

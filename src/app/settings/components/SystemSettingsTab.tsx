@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, Suspense, type ReactNode } from 'react'
+import { useState, useEffect, Suspense, type ReactNode } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -719,11 +721,14 @@ function EmailSettingsContent() {
 
 // Payment Settings Component
 function PaymentSettingsContent() {
-  const [formData, setFormData] = useState({
-    currency: 'USD',
-    currency_symbol: '$',
+  const { user } = useAuth()
+  const isSuperAdmin = user?.type === 'super admin'
+
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    currency: 'IDR',
+    currency_symbol: 'Rp',
     manually_enabled: false,
-    bank_transfer_enabled: false,
+    bank_transfer_enabled: true,
     bank_details: '',
     stripe_enabled: false,
     stripe_key: '',
@@ -734,33 +739,125 @@ function PaymentSettingsContent() {
     paypal_secret: '',
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [companyGateways, setCompanyGateways] = useState({
+    cash_enabled: true,
+    bank_transfer_enabled: true,
+    midtrans_enabled: true,
+    xendit_enabled: true,
+    paypal_enabled: false,
+    custom: [] as { code: string; label: string }[],
+  })
+
+  const [loadingCompanyGateways, setLoadingCompanyGateways] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadSettings = async () => {
+      try {
+        if (isSuperAdmin) {
+          const subscriptionRes = await fetch('/api/settings/subscription-payment')
+          if (!cancelled && subscriptionRes.ok) {
+            const json = await subscriptionRes.json()
+            if (json?.data) {
+              setSubscriptionForm((prev) => ({ ...prev, ...json.data }))
+            }
+          }
+        }
+
+        const gatewaysRes = await fetch('/api/settings/payment-gateways')
+        if (!cancelled && gatewaysRes.ok) {
+          const json = await gatewaysRes.json()
+          if (json?.data) {
+            const data = json.data as {
+              cash_enabled?: boolean
+              bank_transfer_enabled?: boolean
+              midtrans_enabled?: boolean
+              xendit_enabled?: boolean
+              paypal_enabled?: boolean
+              custom?: { code: string; label: string }[]
+            }
+            setCompanyGateways((prev) => ({
+              ...prev,
+              ...data,
+              custom: data.custom ?? [],
+            }))
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCompanyGateways(false)
+        }
+      }
+    }
+
+    loadSettings()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isSuperAdmin])
+
+  const handleSubmitSubscription = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Payment settings:', formData)
-    alert('Payment settings saved!')
+    try {
+      const res = await fetch('/api/settings/subscription-payment', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscriptionForm),
+      })
+      const json = await res.json().catch(() => null)
+      if (res.ok && json?.success) {
+        toast.success('Subscription payment settings saved')
+      } else {
+        toast.error(json?.message || 'Failed to save subscription payment settings')
+      }
+    } catch {
+      toast.error('Failed to save subscription payment settings')
+    }
+  }
+
+  const handleSubmitCompanyGateways = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const res = await fetch('/api/settings/payment-gateways', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(companyGateways),
+      })
+      const json = await res.json().catch(() => null)
+      if (res.ok && json?.success) {
+        toast.success('Company payment gateway settings saved')
+      } else {
+        toast.error(json?.message || 'Failed to save company payment gateway settings')
+      }
+    } catch {
+      toast.error('Failed to save company payment gateway settings')
+    }
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-      <CardHeader className="px-6 py-4 rounded-t-lg">
-        <CardTitle className="text-base font-medium leading-none">Payment Settings</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          These details will be used to collect subscription plan payments. Each subscription plan
-          will have a payment button based on the below configuration.
-        </p>
-      </CardHeader>
-      <CardContent className="px-6 py-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-6">
+      {isSuperAdmin && (
+        <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+          <CardHeader className="px-6 py-4 rounded-t-lg">
+            <CardTitle className="text-base font-medium leading-none">Subscription Payment Settings</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              These details will be used to collect subscription plan payments from companies using this system.
+            </p>
+          </CardHeader>
+          <CardContent className="px-6 py-4">
+            <form onSubmit={handleSubmitSubscription} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency" className="text-sm font-medium text-gray-700 dark:text-gray-300">Currency</Label>
               <Input
                 id="currency"
-                value={formData.currency}
+                value={subscriptionForm.currency}
                 placeholder="Enter Currency"
                 className={modernInputClass}
                 onChange={(e) =>
-                  setFormData({ ...formData, currency: e.target.value })
+                  setSubscriptionForm({ ...subscriptionForm, currency: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
@@ -774,11 +871,11 @@ function PaymentSettingsContent() {
               <Label htmlFor="currency_symbol" className="text-sm font-medium text-gray-700 dark:text-gray-300">Currency Symbol</Label>
               <Input
                 id="currency_symbol"
-                value={formData.currency_symbol}
+                value={subscriptionForm.currency_symbol}
                 placeholder="Enter Currency Symbol"
                 className={modernInputClass}
                 onChange={(e) =>
-                  setFormData({ ...formData, currency_symbol: e.target.value })
+                  setSubscriptionForm({ ...subscriptionForm, currency_symbol: e.target.value })
                 }
               />
             </div>
@@ -794,9 +891,9 @@ function PaymentSettingsContent() {
                 </AccordionTrigger>
                 <div className="px-4" onClick={(e) => e.stopPropagation()}>
                   <Switch
-                    checked={formData.manually_enabled}
+                    checked={subscriptionForm.manually_enabled}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, manually_enabled: checked })
+                      setSubscriptionForm({ ...subscriptionForm, manually_enabled: checked })
                     }
                     className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                   />
@@ -819,9 +916,9 @@ function PaymentSettingsContent() {
                 </AccordionTrigger>
                 <div className="px-4" onClick={(e) => e.stopPropagation()}>
                   <Switch
-                    checked={formData.bank_transfer_enabled}
+                    checked={subscriptionForm.bank_transfer_enabled}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, bank_transfer_enabled: checked })
+                      setSubscriptionForm({ ...subscriptionForm, bank_transfer_enabled: checked })
                     }
                     className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                   />
@@ -833,12 +930,12 @@ function PaymentSettingsContent() {
                       <Label htmlFor="bank_details" className="text-sm font-medium text-gray-700 dark:text-gray-300">Bank Details</Label>
                       <Textarea
                         id="bank_details"
-                        value={formData.bank_details}
+                        value={subscriptionForm.bank_details}
                         placeholder="Enter Your Bank Details"
                         rows={4}
                         className={modernTextareaClass}
                         onChange={(e) =>
-                          setFormData({ ...formData, bank_details: e.target.value })
+                          setSubscriptionForm({ ...subscriptionForm, bank_details: e.target.value })
                         }
                       />
                       <p className="text-xs text-muted-foreground">
@@ -857,9 +954,9 @@ function PaymentSettingsContent() {
                 </AccordionTrigger>
                 <div className="px-4" onClick={(e) => e.stopPropagation()}>
                   <Switch
-                    checked={formData.stripe_enabled}
+                    checked={subscriptionForm.stripe_enabled}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, stripe_enabled: checked })
+                      setSubscriptionForm({ ...subscriptionForm, stripe_enabled: checked })
                     }
                     className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                   />
@@ -871,11 +968,11 @@ function PaymentSettingsContent() {
                     <Label htmlFor="stripe_key" className="text-sm font-medium text-gray-700 dark:text-gray-300">Stripe Key</Label>
                     <Input
                       id="stripe_key"
-                      value={formData.stripe_key}
+                      value={subscriptionForm.stripe_key}
                       placeholder="Enter Stripe Key"
                       className={modernInputClass}
                       onChange={(e) =>
-                        setFormData({ ...formData, stripe_key: e.target.value })
+                        setSubscriptionForm({ ...subscriptionForm, stripe_key: e.target.value })
                       }
                     />
                   </div>
@@ -884,11 +981,11 @@ function PaymentSettingsContent() {
                     <Input
                       id="stripe_secret"
                       type="password"
-                      value={formData.stripe_secret}
+                      value={subscriptionForm.stripe_secret}
                       placeholder="Enter Stripe Secret"
                       className={modernInputClass}
                       onChange={(e) =>
-                        setFormData({ ...formData, stripe_secret: e.target.value })
+                        setSubscriptionForm({ ...subscriptionForm, stripe_secret: e.target.value })
                       }
                     />
                   </div>
@@ -904,9 +1001,9 @@ function PaymentSettingsContent() {
                 </AccordionTrigger>
                 <div className="px-4" onClick={(e) => e.stopPropagation()}>
                   <Switch
-                    checked={formData.paypal_enabled}
+                    checked={subscriptionForm.paypal_enabled}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, paypal_enabled: checked })
+                      setSubscriptionForm({ ...subscriptionForm, paypal_enabled: checked })
                     }
                     className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                   />
@@ -917,9 +1014,9 @@ function PaymentSettingsContent() {
                   <div className="space-y-2">
                     <Label htmlFor="paypal_mode">PayPal Mode</Label>
                     <Select
-                      value={formData.paypal_mode}
+                      value={subscriptionForm.paypal_mode}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, paypal_mode: value })
+                        setSubscriptionForm({ ...subscriptionForm, paypal_mode: value })
                       }
                     >
                       <SelectTrigger id="paypal_mode" className={modernSelectTriggerClass}>
@@ -935,11 +1032,11 @@ function PaymentSettingsContent() {
                     <Label htmlFor="paypal_client_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">PayPal Client ID</Label>
                     <Input
                       id="paypal_client_id"
-                      value={formData.paypal_client_id}
+                      value={subscriptionForm.paypal_client_id}
                       placeholder="Enter PayPal Client ID"
                       className={modernInputClass}
                       onChange={(e) =>
-                        setFormData({ ...formData, paypal_client_id: e.target.value })
+                        setSubscriptionForm({ ...subscriptionForm, paypal_client_id: e.target.value })
                       }
                     />
                   </div>
@@ -948,11 +1045,11 @@ function PaymentSettingsContent() {
                     <Input
                       id="paypal_secret"
                       type="password"
-                      value={formData.paypal_secret}
+                      value={subscriptionForm.paypal_secret}
                       placeholder="Enter PayPal Secret"
                       className={modernInputClass}
                       onChange={(e) =>
-                        setFormData({ ...formData, paypal_secret: e.target.value })
+                        setSubscriptionForm({ ...subscriptionForm, paypal_secret: e.target.value })
                       }
                     />
                   </div>
@@ -961,14 +1058,184 @@ function PaymentSettingsContent() {
             </AccordionItem>
           </Accordion>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button type="submit" variant="blue" className="shadow-none">
-              <Save className="mr-2 h-4 w-4" /> Save Changes
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+              <div className="flex justify-end pt-4 border-t">
+                <Button type="submit" variant="blue" className="shadow-none">
+                  <Save className="mr-2 h-4 w-4" /> Save Subscription Settings
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )
+      }
+
+      <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6 py-4 rounded-t-lg">
+          <CardTitle className="text-base font-medium leading-none">Company Payment Gateway Settings</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Control which gateways are available on the Bank Account form for internal accounting flows.
+          </p>
+        </CardHeader>
+        <CardContent className="px-6 py-4">
+          <form onSubmit={handleSubmitCompanyGateways} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">Cash</p>
+                  <p className="text-xs text-muted-foreground">Enable Cash as a payment option.</p>
+                </div>
+                <Switch
+                  checked={companyGateways.cash_enabled}
+                  onCheckedChange={(checked) =>
+                    setCompanyGateways((prev) => ({ ...prev, cash_enabled: checked }))
+                  }
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+              <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">Bank Transfer</p>
+                  <p className="text-xs text-muted-foreground">Enable manual bank transfer accounts.</p>
+                </div>
+                <Switch
+                  checked={companyGateways.bank_transfer_enabled}
+                  onCheckedChange={(checked) =>
+                    setCompanyGateways((prev) => ({ ...prev, bank_transfer_enabled: checked }))
+                  }
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+              <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">Midtrans</p>
+                  <p className="text-xs text-muted-foreground">Virtual account and payment gateway for Indonesia.</p>
+                </div>
+                <Switch
+                  checked={companyGateways.midtrans_enabled}
+                  onCheckedChange={(checked) =>
+                    setCompanyGateways((prev) => ({ ...prev, midtrans_enabled: checked }))
+                  }
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+              <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">Xendit</p>
+                  <p className="text-xs text-muted-foreground">Virtual account and e-wallet gateway.</p>
+                </div>
+                <Switch
+                  checked={companyGateways.xendit_enabled}
+                  onCheckedChange={(checked) =>
+                    setCompanyGateways((prev) => ({ ...prev, xendit_enabled: checked }))
+                  }
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+              <div className="flex items-center justify-between border rounded-md px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">PayPal</p>
+                  <p className="text-xs text-muted-foreground">Optional for international payments.</p>
+                </div>
+                <Switch
+                  checked={companyGateways.paypal_enabled}
+                  onCheckedChange={(checked) =>
+                    setCompanyGateways((prev) => ({ ...prev, paypal_enabled: checked }))
+                  }
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Custom Payment Gateway</p>
+              <p className="text-xs text-muted-foreground">
+                Tambahkan gateway lain untuk kebutuhan internal, misalnya agregator tertentu. Kode akan dipakai sebagai nilai tersimpan.
+              </p>
+              <div className="space-y-2">
+                {companyGateways.custom.map((gateway, index) => (
+                  <div key={`custom-gateway-${index}`} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-4">
+                      <Input
+                        value={gateway.code}
+                        placeholder="kode (mis. shopeepay)"
+                        className={modernInputClass}
+                        onChange={(e) =>
+                          setCompanyGateways((prev) => ({
+                            ...prev,
+                            custom: prev.custom.map((g, i) =>
+                              i === index
+                                ? {
+                                    ...g,
+                                    code: e.target.value
+                                      .toLowerCase()
+                                      .replace(/\s+/g, '_')
+                                      .replace(/[^a-z0-9_]/g, ''),
+                                  }
+                                : g,
+                            ),
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="col-span-6">
+                      <Input
+                        value={gateway.label}
+                        placeholder="Nama tampilan (mis. ShopeePay)"
+                        className={modernInputClass}
+                        onChange={(e) =>
+                          setCompanyGateways((prev) => ({
+                            ...prev,
+                            custom: prev.custom.map((g, i) =>
+                              i === index ? { ...g, label: e.target.value } : g,
+                            ),
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shadow-none"
+                        onClick={() =>
+                          setCompanyGateways((prev) => ({
+                            ...prev,
+                            custom: prev.custom.filter((_, i) => i !== index),
+                          }))
+                        }
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none"
+                  onClick={() =>
+                    setCompanyGateways((prev) => ({
+                      ...prev,
+                      custom: [...prev.custom, { code: '', label: '' }],
+                    }))
+                  }
+                >
+                  Tambah Gateway
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-end pt-4 border-t">
+              <Button type="submit" variant="blue" className="shadow-none" disabled={loadingCompanyGateways}>
+                <Save className="mr-2 h-4 w-4" /> Save Company Gateway Settings
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type VendorOption = { id: string; name: string }
 type CategoryOption = { id: string; name: string }
@@ -76,6 +77,7 @@ export default function BillCreatePage() {
     categoryId: '',
     orderNumber: '',
     notes: '',
+    status: 'draft',
   })
 
   const [items, setItems] = useState<BillItem[]>([
@@ -110,14 +112,14 @@ export default function BillCreatePage() {
         if (categoriesRes?.success) {
           setCategories(categoriesRes.data.map((c: any) => ({ id: c.id as string, name: c.name as string })))
         }
+        let productOptions: ProductOption[] = []
         if (productsRes?.success) {
-          setProducts(
-            productsRes.data.map((p: any) => ({
-              id: p.id as string,
-              name: p.name as string,
-              purchasePrice: Number(p.purchasePrice) || 0,
-            })),
-          )
+          productOptions = productsRes.data.map((p: any) => ({
+            id: p.id as string,
+            name: p.name as string,
+            purchasePrice: Number(p.purchasePrice) || 0,
+          }))
+          setProducts(productOptions)
         }
         if (taxesRes?.success) {
           setTaxes(
@@ -136,20 +138,26 @@ export default function BillCreatePage() {
             vendorId: b.vendorId as string,
             billDate: b.billDate?.slice(0, 10) ?? '',
             dueDate: b.dueDate?.slice(0, 10) ?? '',
-            categoryId: '',
+            categoryId: (b as any).categoryId ?? '',
             orderNumber: b.reference ?? '',
             notes: b.description ?? '',
+            status: (b as any).status ?? 'draft',
           })
           if (Array.isArray(b.items) && b.items.length > 0) {
+            const productNameToId = new Map(productOptions.map((p) => [p.name, p.id] as const))
             setItems(
-              b.items.map((it: any, idx: number) => ({
-                id: `row-${idx + 1}`,
-                productId: it.productId ?? '',
-                quantity: Number(it.quantity) || 1,
-                price: Number(it.price) || 0,
-                discount: Number(it.discount) || 0,
-                taxRate: Number(it.taxRate) || 0,
-              })),
+              b.items.map((it: any, idx: number) => {
+                const name = typeof it.itemName === 'string' ? it.itemName : ''
+                const matchedProductId = name ? productNameToId.get(name) ?? '' : ''
+                return {
+                  id: `row-${idx + 1}`,
+                  productId: it.productId ?? matchedProductId,
+                  quantity: Number(it.quantity) || 1,
+                  price: Number(it.price) || 0,
+                  discount: Number(it.discount) || 0,
+                  taxRate: Number(it.taxRate) || 0,
+                }
+              }),
             )
           }
         } else {
@@ -159,7 +167,9 @@ export default function BillCreatePage() {
           setBillNumber(generated)
         }
       } catch (e: any) {
-        setError(e?.message || 'Gagal memuat data bill')
+        const message = e?.message || 'Gagal memuat data bill'
+        setError(message)
+        toast.error(message)
       } finally {
         setLoading(false)
       }
@@ -207,7 +217,7 @@ export default function BillCreatePage() {
         vendorId: formData.vendorId,
         billDate: formData.billDate,
         dueDate: formData.dueDate,
-        category: formData.categoryId,
+        categoryId: formData.categoryId,
         reference: formData.orderNumber,
         description: formData.notes,
         total: totals.totalAmount,
@@ -221,6 +231,7 @@ export default function BillCreatePage() {
           discount: it.discount,
           taxRate: it.taxRate,
         })),
+        status: formData.status,
       }
 
       const res = await fetch(isEdit ? `/api/bills/${routeId}` : '/api/bills', {
@@ -230,13 +241,18 @@ export default function BillCreatePage() {
       })
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.success) {
-        setError(json?.message || 'Gagal menyimpan bill')
+        const message = json?.message || 'Gagal menyimpan bill'
+        setError(message)
+        toast.error(message)
         setSaving(false)
         return
       }
+      toast.success(isEdit ? 'Bill berhasil diperbarui' : 'Bill berhasil dibuat')
       window.location.href = `/accounting/bill/${json.data?.billId || billNumber}`
     } catch (e: any) {
-      setError(e?.message || 'Gagal menyimpan bill')
+      const message = e?.message || 'Gagal menyimpan bill'
+      setError(message)
+      toast.error(message)
       setSaving(false)
     }
   }
@@ -380,6 +396,25 @@ export default function BillCreatePage() {
                           placeholder="Enter Order Number"
                           className="h-9"
                         />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select
+                          value={formData.status}
+                          onValueChange={(value) => setFormData({ ...formData, status: value })}
+                        >
+                          <SelectTrigger id="status" className="h-9">
+                            <SelectValue placeholder="Select Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="sent">Sent</SelectItem>
+                            <SelectItem value="unpaid">Unpaid</SelectItem>
+                            <SelectItem value="partial">Partial</SelectItem>
+                            <SelectItem value="paid">Paid</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>

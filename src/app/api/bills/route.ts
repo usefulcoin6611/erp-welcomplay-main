@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         vendor: true,
+        category: true,
       },
       orderBy: {
         billDate: "desc",
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
           b.dueDate instanceof Date ? b.dueDate.toISOString().slice(0, 10) : "",
         vendorId: b.vendorId ?? null,
         vendorName: b.vendor?.name ?? "",
-        category: b.category ?? "",
+        category: b.category?.name ?? "",
         total: Number(b.total) || 0,
         status: s.value,
         statusLabel: s.label,
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       vendorId,
       billDate,
       dueDate,
-      category,
+      categoryId,
       reference,
       description,
       status,
@@ -146,7 +147,10 @@ export async function POST(request: NextRequest) {
         branchId: s.branchId,
         billDate: new Date(billDate),
         dueDate: new Date(dueDate),
-        category: category ?? null,
+        categoryId:
+          typeof categoryId === "string" && categoryId
+            ? categoryId
+            : null,
         reference: reference ?? null,
         description: description ?? null,
         status: status ?? "draft",

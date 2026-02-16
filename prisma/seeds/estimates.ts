@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedEstimates(prisma: PrismaClient) {
+export async function seedEstimates(prisma: any) {
   console.log("Seeding estimates...");
 
   const cust1 = await prisma.customer.findUnique({ where: { customerCode: "CUST-001" } });

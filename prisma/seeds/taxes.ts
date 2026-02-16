@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedTaxes(prisma: PrismaClient) {
+export async function seedTaxes(prisma: any) {
   console.log("Seeding Taxes (Indonesia)...");
 
   const taxes = [

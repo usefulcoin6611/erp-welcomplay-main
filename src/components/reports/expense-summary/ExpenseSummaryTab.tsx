@@ -10,7 +10,6 @@ import { useExpenseSummaryData } from './hooks/useExpenseSummaryData'
 
 function ExpenseSummaryTabComponent() {
   const {
-    // Filter states
     period,
     setPeriod,
     year,
@@ -20,16 +19,19 @@ function ExpenseSummaryTabComponent() {
     vendor,
     setVendor,
 
-    // Data
+    categoryOptions,
+    vendorOptions,
+
     paymentData,
     billData,
     totalExpense,
     monthLabels,
 
-    // Handlers
     handleApplyFilters,
     handleReset,
     formatDateRange,
+    loading,
+    error,
   } = useExpenseSummaryData()
 
   return (
@@ -44,6 +46,8 @@ function ExpenseSummaryTabComponent() {
         setCategory={setCategory}
         vendor={vendor}
         setVendor={setVendor}
+        categoryOptions={categoryOptions}
+        vendorOptions={vendorOptions}
         onApply={handleApplyFilters}
         onReset={handleReset}
       />

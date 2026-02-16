@@ -53,6 +53,7 @@ model Branch {
   expenses         Expense[]
   payments         Payment[]
   bankAccounts     BankAccount[]
+  bankTransfers    BankTransfer[]
 
   @@map("branch")
 }
@@ -95,6 +96,7 @@ model Category {
 
   branch    Branch?  @relation(fields: [branchId], references: [id])
   products  Product[]
+  bills     Bill[]
 
   @@map("category")
 }
@@ -145,6 +147,7 @@ model Product {
   branch          Branch?         @relation(fields: [branchId], references: [id])
   saleAccount     ChartOfAccount? @relation("SaleAccount", fields: [saleAccountId], references: [id])
   expenseAccount  ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
+  billItems       BillItem[]
 
   @@map("product")
 }
@@ -436,7 +439,7 @@ model Bill {
   billId      String   @unique
   vendorId    String
   branchId    String?
-  category    String?
+  categoryId  String?
   billDate    DateTime
   dueDate     DateTime
   status      String   @default("draft")
@@ -446,8 +449,9 @@ model Bill {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
-  branch      Branch?  @relation(fields: [branchId], references: [id])
+  vendor      Vendor    @relation(fields: [vendorId], references: [id])
+  branch      Branch?   @relation(fields: [branchId], references: [id])
+  category    Category? @relation(fields: [categoryId], references: [id])
   items       BillItem[]
 
   @@map("bill")
@@ -456,6 +460,7 @@ model Bill {
 model BillItem {
   id          String   @id @default(cuid())
   billId      String
+  productId   String?
   itemName    String
   quantity    Float    @default(0)
   price       Float    @default(0)
@@ -467,6 +472,7 @@ model BillItem {
   updatedAt   DateTime @updatedAt
 
   bill        Bill     @relation(fields: [billId], references: [billId], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id])
 
   @@map("bill_item")
 }
@@ -511,6 +517,35 @@ model Payment {
   @@map("payment")
 }
 
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("setting")
+}
+
+model BankTransfer {
+  id            String   @id @default(cuid())
+  branchId      String?
+  fromAccountId String
+  toAccountId   String
+  date          DateTime
+  amount        Float    @default(0)
+  reference     String?
+  description   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branch      Branch?     @relation(fields: [branchId], references: [id])
+  fromAccount BankAccount @relation("BankTransferFrom", fields: [fromAccountId], references: [id])
+  toAccount   BankAccount @relation("BankTransferTo", fields: [toAccountId], references: [id])
+
+  @@map("bank_transfer")
+}
+
 model BankAccount {
   id              String   @id @default(cuid())
   branchId        String?
@@ -528,6 +563,8 @@ model BankAccount {
 
   branch          Branch?        @relation(fields: [branchId], references: [id])
   chartAccount    ChartOfAccount @relation(fields: [chartAccountId], references: [id])
+  transfersFrom   BankTransfer[] @relation("BankTransferFrom")
+  transfersTo     BankTransfer[] @relation("BankTransferTo")
 
   @@map("bank_account")
 }

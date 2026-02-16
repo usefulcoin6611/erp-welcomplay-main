@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedInvoices(prisma: PrismaClient) {
+export async function seedInvoices(prisma: any) {
   console.log("Seeding Invoices...");
 
   const customers = await prisma.customer.findMany({ orderBy: { createdAt: "asc" } });

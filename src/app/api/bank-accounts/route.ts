@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const data = bankAccounts.map((b) => ({
+    const data = bankAccounts.map((b: (typeof bankAccounts)[number]) => ({
       id: b.id,
       chartOfAccount: `${b.chartAccount.code} - ${b.chartAccount.name}`,
       name: b.holderName,

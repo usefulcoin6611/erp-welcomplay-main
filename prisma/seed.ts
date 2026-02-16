@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import * as dotenv from "dotenv";
@@ -18,11 +18,13 @@ import { seedInvoices } from "./seeds/invoices";
 import { seedBills } from "./seeds/bills";
 import { seedCreditNotes } from "./seeds/credit-notes";
 import { seedBankAccounts } from "./seeds/bank-accounts";
+import { seedBankTransfers } from "./seeds/bank-transfers";
 
 dotenv.config();
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
+const { PrismaClient } = pkg as any;
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
@@ -43,6 +45,7 @@ async function main() {
     await seedBills(prisma);
     await seedCreditNotes(prisma);
     await seedBankAccounts(prisma);
+    await seedBankTransfers(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedCOA(prisma: PrismaClient) {
+export async function seedCOA(prisma: any) {
   console.log("Seeding Chart of Accounts...");
   // Get a branch to associate with COA
   const branch = await prisma.branch.findFirst();

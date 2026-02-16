@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedVendors(prisma: PrismaClient) {
+export async function seedVendors(prisma: any) {
   console.log("Seeding vendors...");
 
   const user = await prisma.user.findFirst({

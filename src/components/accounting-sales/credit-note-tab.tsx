@@ -487,11 +487,9 @@ export function CreditNoteTab() {
                   paginatedCreditNotes.map((creditNote) => (
                     <TableRow key={creditNote.id}>
                       <TableCell className="px-6">
-                        <Button asChild variant="outline" size="sm" className="shadow-none">
-                          <Link href={`/accounting/credit-note/${creditNote.id}`}>
-                            {formatCreditNoteId(creditNote.creditId)}
-                          </Link>
-                        </Button>
+                        <Badge variant="outline">
+                          {formatCreditNoteId(creditNote.creditId)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="px-6">
                         <Button asChild variant="outline" size="sm" className="shadow-none">

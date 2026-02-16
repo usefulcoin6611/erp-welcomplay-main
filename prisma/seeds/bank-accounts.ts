@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedBankAccounts(prisma: PrismaClient) {
+export async function seedBankAccounts(prisma: any) {
   const branch = await prisma.branch.findFirst({ orderBy: { createdAt: "asc" } });
   const branchId = branch?.id ?? null;
 

@@ -10,22 +10,13 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-server'
-import { headers } from 'next/headers'
 
 type BillDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 async function getBill(id: string | undefined) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-  if (!session) {
-    return null
-  }
-  const branchId = (session.user as any).branchId as string | null
-  if (!branchId || !id) {
+  if (!id) {
     return null
   }
 
@@ -36,9 +27,7 @@ async function getBill(id: string | undefined) {
       items: true,
     },
   })
-  if (!bill || bill.branchId !== branchId) {
-    return null
-  }
+
   return bill
 }
 
@@ -77,8 +66,27 @@ function getBillStatusBarClasses(status: string) {
   }
 }
 
+function mapBillStatus(status: string | null | undefined): { value: string; label: string } {
+  const s = (status || '').toLowerCase()
+  switch (s) {
+    case 'draft':
+      return { value: 'draft', label: 'Draft' }
+    case 'sent':
+      return { value: 'sent', label: 'Sent' }
+    case 'partial':
+      return { value: 'partial', label: 'Partial' }
+    case 'unpaid':
+      return { value: 'unpaid', label: 'Unpaid' }
+    case 'paid':
+      return { value: 'paid', label: 'Paid' }
+    default:
+      return { value: 'draft', label: 'Draft' }
+  }
+}
+
 export default async function BillDetailPage({ params }: BillDetailPageProps) {
-  const bill = await getBill(params.id)
+  const { id } = await params
+  const bill = await getBill(id)
 
   const items = bill?.items ?? []
   const subTotal = items.reduce(
@@ -91,6 +99,7 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
     return sum + ((it.taxRate || 0) / 100) * base
   }, 0)
   const grandTotal = bill?.total ?? subTotal + taxTotal
+  const billStatus = mapBillStatus((bill as any)?.status)
 
   return (
     <SidebarProvider
@@ -104,7 +113,7 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0 space-y-1">
@@ -128,11 +137,14 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
                     </Link>
                   </Button>
                   <Button
+                    asChild
                     size="sm"
                     variant="outline"
                     className="shadow-none h-8 w-40 px-3"
                   >
-                    Change Status
+                    <Link href={`/accounting/bill/create/${bill.billId}`}>
+                      Change Status
+                    </Link>
                   </Button>
                   <Button
                     asChild
@@ -277,7 +289,7 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
                     <div className="flex items-center gap-6">
                       <div>
                         <div className="text-xs text-muted-foreground">
-                          Bill Date :
+                          Issue Date :
                         </div>
                         <div className="text-sm font-medium">
                           {bill.billDate
@@ -300,30 +312,58 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-1 text-sm">
-                      <div className="font-medium">Vendor :</div>
-                      <div>{bill.vendor?.name || '-'}</div>
-                      <div className="text-muted-foreground">
-                        {bill.vendor?.vendorCode || bill.vendor?.email || '-'}
-                      </div>
-                      <div className="text-muted-foreground">
-                        {bill.vendor?.billingAddress ||
-                          bill.vendor?.shippingAddress ||
-                          '-'}
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="font-medium">Billing Address :</div>
+                      <div className="font-medium">Billed To :</div>
                       <div>{bill.vendor?.billingName || bill.vendor?.name || '-'}</div>
                       <div className="text-muted-foreground">
                         {bill.vendor?.billingAddress || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {[
+                          bill.vendor?.billingCity,
+                          bill.vendor?.billingState,
+                          bill.vendor?.billingZip,
+                        ]
+                          .filter(Boolean)
+                          .join(', ') || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.billingCountry || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.billingPhone || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        Tax Number: {bill.vendor?.taxNumber || '-'}
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="font-medium">Shipped To :</div>
+                      <div>{bill.vendor?.shippingName || bill.vendor?.name || '-'}</div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.shippingAddress || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {[
+                          bill.vendor?.shippingCity,
+                          bill.vendor?.shippingState,
+                          bill.vendor?.shippingZip,
+                        ]
+                          .filter(Boolean)
+                          .join(', ') || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.shippingCountry || '-'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {bill.vendor?.shippingPhone || '-'}
                       </div>
                     </div>
                     <div className="flex items-start justify-end">
                       <div className="text-sm text-right space-y-1">
                         <div>
                           <span className="text-muted-foreground">Status :</span>{' '}
-                          <Badge className={getBillStatusClasses(bill.status || 'draft')}>
-                            {bill.status || 'Draft'}
+                          <Badge className={getBillStatusClasses(billStatus.value)}>
+                            {billStatus.label}
                           </Badge>
                         </div>
                         <div>

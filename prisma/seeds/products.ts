@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedProducts(prisma: PrismaClient) {
+export async function seedProducts(prisma: any) {
   console.log("Seeding Products (for Product Stock)...");
 
   const branch = await prisma.branch.findFirst({
@@ -179,4 +177,3 @@ export async function seedProducts(prisma: PrismaClient) {
 
   console.log("Products seeding completed.");
 }
-

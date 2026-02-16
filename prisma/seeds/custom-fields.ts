@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedCustomFields(prisma: PrismaClient) {
+export async function seedCustomFields(prisma: any) {
   console.log("Seeding Custom Fields (Indonesia)...");
 
   const fields = [

@@ -7,6 +7,15 @@ export async function seedBills(prisma: any) {
   });
   const branchId = branch?.id ?? null;
 
+  const categories = await db.category.findMany({
+    where: {
+      branchId,
+    },
+  });
+
+  const getCategoryId = (name: string) =>
+    categories.find((c: any) => c.name === name)?.id ?? null;
+
   const vendor1 = await db.vendor.findUnique({
     where: { vendorCode: "VDR-001" },
   });
@@ -25,7 +34,7 @@ export async function seedBills(prisma: any) {
       billId: "BILL-2026-001",
       vendorId: vendor1.id,
       branchId,
-      category: "Office Supplies",
+      categoryId: getCategoryId("Office Supplies"),
       billDate: new Date("2026-02-10"),
       dueDate: new Date("2026-02-28"),
       status: "draft",
@@ -75,7 +84,7 @@ export async function seedBills(prisma: any) {
       billId: "BILL-2026-002",
       vendorId: vendor2.id,
       branchId,
-      category: "Logistics",
+      categoryId: getCategoryId("Logistics"),
       billDate: new Date("2026-02-12"),
       dueDate: new Date("2026-03-12"),
       status: "sent",
@@ -117,7 +126,7 @@ export async function seedBills(prisma: any) {
       billId: "BILL-2026-003",
       vendorId: vendor1.id,
       branchId,
-      category: "IT Services",
+      categoryId: getCategoryId("IT Services"),
       billDate: new Date("2026-02-15"),
       dueDate: new Date("2026-03-01"),
       status: "partial",
@@ -159,7 +168,7 @@ export async function seedBills(prisma: any) {
       billId: "BILL-2026-004",
       vendorId: vendor2.id,
       branchId,
-      category: "Utility",
+      categoryId: getCategoryId("Utility"),
       billDate: new Date("2026-01-25"),
       dueDate: new Date("2026-02-05"),
       status: "paid",
@@ -199,14 +208,6 @@ export async function seedBills(prisma: any) {
   ];
 
   for (const b of bills) {
-    const existing = await db.bill.findUnique({
-      where: { billId: b.billId },
-    });
-
-    if (existing) {
-      continue;
-    }
-
     const itemsTotal = b.items.reduce(
       (sum: number, it: any) => sum + Number(it.amount || 0),
       0,
@@ -217,7 +218,7 @@ export async function seedBills(prisma: any) {
         billId: b.billId,
         vendorId: b.vendorId,
         branchId: b.branchId,
-        category: b.category,
+        categoryId: b.categoryId,
         billDate: b.billDate,
         dueDate: b.dueDate,
         status: b.status,

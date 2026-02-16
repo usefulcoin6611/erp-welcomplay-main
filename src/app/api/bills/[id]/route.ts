@@ -19,16 +19,17 @@ async function getSessionBranch() {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params
     const s = await getSessionBranch()
     if (s.error || !s.branchId) {
       return NextResponse.json({ success: false, message: s.error }, { status: s.status })
     }
 
     const bill = await prisma.bill.findUnique({
-      where: { billId: params.id },
+      where: { billId: id },
       include: {
         vendor: true,
         items: true,
@@ -51,9 +52,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params
     const s = await getSessionBranch()
     if (s.error || !s.branchId) {
       return NextResponse.json({ success: false, message: s.error }, { status: s.status })
@@ -64,7 +66,7 @@ export async function PUT(
       vendorId,
       billDate,
       dueDate,
-      category,
+      categoryId,
       reference,
       description,
       status,
@@ -73,7 +75,7 @@ export async function PUT(
     } = body || {}
 
     const bill = await prisma.bill.findUnique({
-      where: { billId: params.id },
+      where: { billId: id },
       include: { items: true },
     })
 
@@ -82,12 +84,15 @@ export async function PUT(
     }
 
     const updated = await prisma.bill.update({
-      where: { billId: params.id },
+      where: { billId: id },
       data: {
         vendorId: vendorId ?? bill.vendorId,
         billDate: billDate ? new Date(billDate) : bill.billDate,
         dueDate: dueDate ? new Date(dueDate) : bill.dueDate,
-        category: category ?? bill.category,
+        categoryId:
+          typeof categoryId === "string" && categoryId
+            ? categoryId
+            : bill.categoryId,
         reference: reference ?? bill.reference,
         description: description ?? bill.description,
         status: status ?? bill.status,
@@ -123,16 +128,17 @@ export async function PUT(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params
     const s = await getSessionBranch()
     if (s.error || !s.branchId) {
       return NextResponse.json({ success: false, message: s.error }, { status: s.status })
     }
 
     const bill = await prisma.bill.findUnique({
-      where: { billId: params.id },
+      where: { billId: id },
     })
 
     if (!bill || bill.branchId !== s.branchId) {
@@ -140,7 +146,7 @@ export async function DELETE(
     }
 
     await prisma.bill.delete({
-      where: { billId: params.id },
+      where: { billId: id },
     })
 
     return NextResponse.json({ success: true })
@@ -152,4 +158,3 @@ export async function DELETE(
     )
   }
 }
-

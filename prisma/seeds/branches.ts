@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedBranches(prisma: PrismaClient) {
+export async function seedBranches(prisma: any) {
   console.log("Seeding Branches...");
   
   const branches = [

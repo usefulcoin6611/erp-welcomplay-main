@@ -66,6 +66,11 @@ type ExpenseRow = {
   receipt: string | null
 }
 
+type CategoryOption = {
+  id: string
+  name: string
+}
+
 function getExpenseStatusClasses(status: string) {
   switch (status) {
     case 'Paid': return 'bg-green-100 text-green-700 border-green-200'
@@ -78,21 +83,22 @@ export function ExpenseTab() {
   const [rows, setRows] = useState<ExpenseRow[]>([])
   const [search, setSearch] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [expenseToDelete, setExpenseToDelete] = useState<(typeof expenses)[number] | null>(null)
+  const [expenseToDelete, setExpenseToDelete] = useState<ExpenseRow | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     date: '',
-    category: '',
+    categoryId: '',
     amount: '',
     reference: '',
     description: '',
     receiptName: '',
   })
   const [paymentDate, setPaymentDate] = useState('')
-  const [category, setCategory] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [categories, setCategories] = useState<CategoryOption[]>([])
 
   useEffect(() => {
     const loadExpenses = async () => {
@@ -117,7 +123,25 @@ export function ExpenseTab() {
       }
     }
 
+    const loadCategories = async () => {
+      try {
+        const res = await fetch('/api/categories', { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json?.success || !Array.isArray(json.data)) return
+        const mapped: CategoryOption[] = json.data
+          .filter((c: any) => c.type === 'Expense')
+          .map((c: any) => ({
+            id: c.id as string,
+            name: c.name as string,
+          }))
+        setCategories(mapped)
+      } catch {
+      }
+    }
+
     loadExpenses()
+    loadCategories()
   }, [])
 
   // Filter data based on filters
@@ -138,12 +162,10 @@ export function ExpenseTab() {
         if (!hay.includes(q)) return false
       }
       if (paymentDate && exp.date !== paymentDate) return false
-          if (category !== 'all' && exp.category !== category) {
-            return false
-          }
+      if (categoryFilter !== 'all' && exp.category !== categoryFilter) return false
       return true
     })
-  }, [paymentDate, category, rows, search])
+  }, [paymentDate, categoryFilter, rows, search])
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -156,7 +178,7 @@ export function ExpenseTab() {
 
   const handleReset = () => {
     setPaymentDate('')
-    setCategory('all')
+    setCategoryFilter('all')
     setCurrentPage(1)
   }
 
@@ -181,7 +203,7 @@ export function ExpenseTab() {
       setEditingId(null)
       setFormData({
         date: '',
-        category: '',
+        categoryId: '',
         amount: '',
         reference: '',
         description: '',
@@ -192,14 +214,15 @@ export function ExpenseTab() {
 
   const handleEdit = (exp: ExpenseRow) => {
     setEditingId(exp.id)
+    const categoryOption = categories.find((c) => c.name === exp.category)
     setFormData({
-        date: exp.date,
-        category: exp.category,
-        amount: String(exp.amount ?? ''),
-        reference: exp.reference ?? '',
-        description: exp.description ?? '',
-        receiptName: exp.receipt ?? '',
-      })
+      date: exp.date,
+      categoryId: categoryOption?.id ?? '',
+      amount: String(exp.amount ?? ''),
+      reference: exp.reference ?? '',
+      description: exp.description ?? '',
+      receiptName: exp.receipt ?? '',
+    })
     setDialogOpen(true)
   }
 
@@ -207,11 +230,14 @@ export function ExpenseTab() {
     e.preventDefault()
     const nextAmount = Number(formData.amount) || 0
 
+    const selectedCategory = categories.find((c) => c.id === formData.categoryId)
+    const categoryName = selectedCategory?.name ?? ''
+
     const payload = {
       date: formData.date,
       type: 'Vendor',
       party: 'Manual',
-      category: formData.category,
+      category: categoryName,
       total: nextAmount,
       reference: formData.reference || null,
       description: formData.description || null,
@@ -261,7 +287,7 @@ export function ExpenseTab() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [paymentDate, category, search])
+  }, [paymentDate, categoryFilter, search])
 
   return (
     <div className="space-y-4">
@@ -435,12 +461,22 @@ export function ExpenseTab() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">Category</Label>
-              <Input
-                value={category === 'all' ? '' : category}
-                onChange={(e) => setCategory(e.target.value || 'all')}
-                className="h-9"
-                placeholder="Filter category"
-              />
+              <Select
+                value={categoryFilter}
+                onValueChange={(value) => setCategoryFilter(value)}
+              >
+                <SelectTrigger id="expense-filter-category" className="h-9 w-full">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Actions */}
@@ -541,7 +577,7 @@ export function ExpenseTab() {
                             title="View"
                             asChild
                           >
-                            <Link href={`/accounting/expense/${exp.id}`}>
+                            <Link href={`/accounting/expense/${exp.expenseId}`}>
                               <Eye className="h-3 w-3" />
                             </Link>
                           </Button>

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Search, RotateCcw, FileDown } from 'lucide-react'
-import { periods, yearList, categories, vendors } from './constants'
+import { periods, yearList } from './constants'
 
 interface ExpenseSummaryFiltersProps {
   period: string
@@ -23,6 +23,8 @@ interface ExpenseSummaryFiltersProps {
   setCategory: (value: string) => void
   vendor: string
   setVendor: (value: string) => void
+  categoryOptions: string[]
+  vendorOptions: string[]
   onApply: () => void
   onReset: () => void
 }
@@ -36,6 +38,8 @@ function ExpenseSummaryFiltersComponent({
   setCategory,
   vendor,
   setVendor,
+  categoryOptions,
+  vendorOptions,
   onApply,
   onReset,
 }: ExpenseSummaryFiltersProps) {
@@ -93,7 +97,7 @@ function ExpenseSummaryFiltersComponent({
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <SelectItem key={cat} value={cat} className="text-sm">
                     {cat}
                   </SelectItem>
@@ -112,7 +116,7 @@ function ExpenseSummaryFiltersComponent({
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
               <SelectContent>
-                {vendors.map((ven) => (
+                {vendorOptions.map((ven) => (
                   <SelectItem key={ven} value={ven} className="text-sm">
                     {ven}
                   </SelectItem>

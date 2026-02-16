@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedUnits(prisma: PrismaClient) {
+export async function seedUnits(prisma: any) {
   console.log("Seeding Units (Indonesia)...");
 
   const units = [

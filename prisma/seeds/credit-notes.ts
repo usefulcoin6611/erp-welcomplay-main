@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-export async function seedCreditNotes(prisma: PrismaClient) {
+export async function seedCreditNotes(prisma: any) {
   console.log("Seeding Credit Notes...");
 
   const inv1 = await prisma.invoice.findUnique({ where: { invoiceId: "INV-2026-001" } });
@@ -118,4 +116,3 @@ export async function seedCreditNotes(prisma: PrismaClient) {
 
   console.log("Credit Notes seeding completed.");
 }
-

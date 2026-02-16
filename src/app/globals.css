@@ -1,12 +1,11 @@
 /* Sidebar custom scrollbar - very thin */
 [data-slot="sidebar-content"] {
-  /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: var(--sidebar-accent) transparent;
 }
 [data-slot="sidebar-content"]::-webkit-scrollbar {
   width: 2px;
-  height: 2px; /* horizontal */
+  height: 2px;
   background: transparent;
 }
 [data-slot="sidebar-content"]::-webkit-scrollbar-thumb {
@@ -18,7 +17,6 @@
   background: var(--sidebar-accent-foreground);
 }
 
-/* Auto-hide effect: hide thumb when not hovering (WebKit) */
 [data-slot="sidebar-content"]:not(:hover)::-webkit-scrollbar-thumb {
   background: transparent;
 }
@@ -26,9 +24,25 @@
   background: transparent;
 }
 
-/* Optional: slightly fade in on hover */
 [data-slot="sidebar-content"]:hover::-webkit-scrollbar-thumb {
   background: var(--sidebar-accent);
+}
+
+[data-slot="select-content"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-accent) transparent;
+}
+[data-slot="select-content"]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+[data-slot="select-content"]::-webkit-scrollbar-thumb {
+  background: var(--sidebar-accent);
+  border-radius: 999px;
+}
+[data-slot="select-content"]::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-accent-foreground);
 }
 @import 'tailwindcss';
 @import 'tw-animate-css';
