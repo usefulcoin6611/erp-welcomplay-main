@@ -45,36 +45,17 @@ import {
   X,
 } from 'lucide-react'
 
-// Mock bills
-const bills = [
-  {
-    id: 'BILL-2025-001',
-    vendor: 'PT Supply Berkah',
-    billDate: '2025-11-01',
-    dueDate: '2025-11-30',
-    category: 'Office Supplies',
-    total: 16095000,
-    status: 'Draft',
-  },
-  {
-    id: 'BILL-2025-002',
-    vendor: 'CV Logistik Nusantara',
-    billDate: '2025-11-03',
-    dueDate: '2025-12-03',
-    category: 'Logistics',
-    total: 9800000,
-    status: 'Sent',
-  },
-  {
-    id: 'BILL-2025-003',
-    vendor: 'PT Teknologi Digital',
-    billDate: '2025-11-05',
-    dueDate: '2025-11-20',
-    category: 'Services',
-    total: 12300000,
-    status: 'Partial',
-  },
-]
+type BillRow = {
+  id: string
+  billNumber: string
+  vendor: string
+  vendorId: string | null
+  billDate: string
+  dueDate: string
+  category: string
+  total: number
+  status: string
+}
 
 function getBillStatusClasses(status: string) {
   switch (status) {
@@ -97,14 +78,48 @@ function formatPrice(amount: number) {
 }
 
 export function BillTab() {
-  const [rows, setRows] = useState<typeof bills>(bills)
+  const [rows, setRows] = useState<BillRow[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [billToDelete, setBillToDelete] = useState<(typeof bills)[number] | null>(null)
+  const [billToDelete, setBillToDelete] = useState<BillRow | null>(null)
   const [billDate, setBillDate] = useState('')
   const [status, setStatus] = useState('all')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch('/api/bills', { cache: 'no-store' })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.success || !Array.isArray(json.data)) {
+          setError(json?.message || 'Gagal memuat data bill')
+          return
+        }
+        const mapped: BillRow[] = json.data.map((b: any) => ({
+          id: b.id as string,
+          billNumber: (b.billNumber as string) ?? (b.billId as string) ?? '',
+          vendor: (b.vendorName as string) ?? '',
+          vendorId: (b.vendorId as string) ?? null,
+          billDate: (b.billDate as string) ?? '',
+          dueDate: (b.dueDate as string) ?? '',
+          category: (b.category as string) ?? '',
+          total: Number(b.total) || 0,
+          status: (b.statusLabel as string) ?? (b.status as string) ?? '',
+        }))
+        setRows(mapped)
+      } catch (e: any) {
+        setError(e?.message || 'Gagal memuat data bill')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   // Filter data based on filters
   const filteredData = useMemo(() => {
@@ -144,13 +159,14 @@ export function BillTab() {
     setCurrentPage(1)
   }
 
-  const handleDeleteClick = (bill: (typeof bills)[number]) => {
+  const handleDeleteClick = (bill: BillRow) => {
     setBillToDelete(bill)
     setDeleteDialogOpen(true)
   }
 
   const handleConfirmDelete = () => {
     if (!billToDelete) return
+    // Optimistic UI update; actual deletion should be done on detail page/API when implemented
     setRows((prev) => prev.filter((b) => b.id !== billToDelete.id))
     setBillToDelete(null)
     setDeleteDialogOpen(false)
@@ -183,7 +199,7 @@ export function BillTab() {
             </Link>
           </Button>
           <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create" asChild>
-            <Link href="/accounting/bill/create/0">
+            <Link href="/accounting/bill/create/new">
               <Plus className="mr-2 h-4 w-4" />
               Create Bill
             </Link>
@@ -195,6 +211,11 @@ export function BillTab() {
       {/* Filters */}
       <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
         <CardContent className="px-6 py-4">
+          {error && (
+            <div className="mb-3 rounded border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {error}
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -414,4 +435,3 @@ export function BillTab() {
     </div>
   )
 }
-

@@ -1,7 +1,9 @@
-'use client'
+"use client"
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -23,13 +25,11 @@ type JournalLine = {
   description: string
 }
 
-const mockChartAccounts = [
-  { id: '1000', name: 'Cash & Bank' },
-  { id: '1100', name: 'Accounts Receivable' },
-  { id: '2000', name: 'Accounts Payable' },
-  { id: '4000', name: 'Sales Revenue' },
-  { id: '6000', name: 'Operating Expenses' },
-]
+type ChartAccount = {
+  id: string
+  name: string
+  code: string
+}
 
 function formatPrice(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -41,7 +41,9 @@ function formatPrice(amount: number) {
 }
 
 export default function JournalEntryCreatePage() {
-  const journalNumber = useMemo(() => `JR-${new Date().getFullYear()}-001`, [])
+  const router = useRouter()
+
+  const [journalNumber, setJournalNumber] = useState(() => `JR-${new Date().getFullYear()}-001`)
 
   const [header, setHeader] = useState({
     date: '',
@@ -51,12 +53,58 @@ export default function JournalEntryCreatePage() {
 
   const [lines, setLines] = useState<JournalLine[]>([
     { id: 'row-1', accountId: '', debit: 0, credit: 0, description: '' },
+    { id: 'row-2', accountId: '', debit: 0, credit: 0, description: '' },
   ])
+
+  const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    const init = async () => {
+      setLoadingAccounts(true)
+      try {
+        const [accountsRes, journalsRes] = await Promise.all([
+          fetch('/api/chart-of-accounts'),
+          fetch('/api/journal-entries'),
+        ])
+
+        const accountsJson = await accountsRes.json().catch(() => null)
+        if (accountsJson?.success && Array.isArray(accountsJson.data)) {
+          setChartAccounts(
+            accountsJson.data.map((a: any) => ({
+              id: a.id as string,
+              name: a.name as string,
+              code: a.code as string,
+            })),
+          )
+        }
+
+        const journalsJson = await journalsRes.json().catch(() => null)
+        if (journalsJson?.success && Array.isArray(journalsJson.data)) {
+          const nextNum = journalsJson.data.length + 1
+          setJournalNumber(
+            `JR-${new Date().getFullYear()}-${String(nextNum).padStart(3, '0')}`,
+          )
+        }
+      } catch (error) {
+        console.error('Error initializing journal entry create page:', error)
+      } finally {
+        setLoadingAccounts(false)
+      }
+    }
+
+    init()
+  }, [])
 
   const totals = useMemo(() => {
     const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0)
     const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0)
-    return { totalDebit, totalCredit, balanced: totalDebit === totalCredit }
+    return {
+      totalDebit,
+      totalCredit,
+      balanced: Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0,
+    }
   }, [lines])
 
   const addLine = () => {
@@ -67,16 +115,58 @@ export default function JournalEntryCreatePage() {
   }
 
   const removeLine = (id: string) => {
-    setLines((prev) => (prev.length === 1 ? prev : prev.filter((l) => l.id !== id)))
+    setLines((prev) => (prev.length <= 2 ? prev : prev.filter((l) => l.id !== id)))
   }
 
   const updateLine = (id: string, patch: Partial<JournalLine>) => {
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Create Journal Entry:', { header, lines })
+    if (!totals.balanced) {
+      toast.error('Total Debit dan Credit harus seimbang dan lebih dari 0')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const payload = {
+        journalId: journalNumber,
+        date: header.date,
+        reference: header.reference || null,
+        description: header.description || null,
+        amount: totals.totalDebit,
+        lines: lines.map((line) => ({
+          accountId: line.accountId,
+          debit: Number(line.debit) || 0,
+          credit: Number(line.credit) || 0,
+          description: line.description || null,
+        })),
+      }
+
+      const res = await fetch('/api/journal-entries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Gagal membuat Journal Entry')
+        return
+      }
+
+      toast.success('Journal Entry berhasil dibuat')
+      router.push('/accounting/double-entry?tab=journal-entry')
+    } catch (error) {
+      console.error('Error creating journal entry:', error)
+      toast.error('Terjadi kesalahan saat membuat Journal Entry')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -180,12 +270,12 @@ export default function JournalEntryCreatePage() {
                                   required
                                 >
                                   <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Select Chart of Account" />
+                                    <SelectValue placeholder={loadingAccounts ? 'Loading accounts...' : 'Select Chart of Account'} />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {mockChartAccounts.map((a) => (
+                                    {chartAccounts.map((a) => (
                                       <SelectItem key={a.id} value={a.id}>
-                                        {a.id} - {a.name}
+                                        {a.code} - {a.name}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -266,7 +356,13 @@ export default function JournalEntryCreatePage() {
                 <Button asChild type="button" variant="outline" size="sm" className="shadow-none h-7">
                   <Link href="/accounting/double-entry?tab=journal-entry">Cancel</Link>
                 </Button>
-                <Button type="submit" variant="blue" size="sm" className="shadow-none h-7" disabled={!totals.balanced}>
+                <Button
+                  type="submit"
+                  variant="blue"
+                  size="sm"
+                  className="shadow-none h-7"
+                  disabled={!totals.balanced || submitting}
+                >
                   Create
                 </Button>
               </div>
@@ -277,6 +373,5 @@ export default function JournalEntryCreatePage() {
     </SidebarProvider>
   )
 }
-
 
 

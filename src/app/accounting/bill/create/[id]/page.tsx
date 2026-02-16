@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useParams } from 'next/navigation'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -15,9 +16,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Trash2 } from 'lucide-react'
 
-type BillCreatePageProps = {
-  params: { id: string }
-}
+type VendorOption = { id: string; name: string }
+type CategoryOption = { id: string; name: string }
+type ProductOption = { id: string; name: string; purchasePrice: number }
+type TaxOption = { id: string; name: string; rate: number }
 
 type BillItem = {
   id: string
@@ -27,29 +29,6 @@ type BillItem = {
   discount: number
   taxRate: number
 }
-
-const mockVendors = [
-  { id: '1', name: 'PT Supply Berkah' },
-  { id: '2', name: 'CV Logistik Nusantara' },
-  { id: '3', name: 'PT Teknologi Digital' },
-]
-
-const mockCategories = [
-  { id: 'office', name: 'Office Supplies' },
-  { id: 'logistics', name: 'Logistics' },
-  { id: 'services', name: 'Services' },
-]
-
-const mockProducts = [
-  { id: 'p1', name: 'Printer Paper A4', purchasePrice: 65000 },
-  { id: 'p2', name: 'Courier Service', purchasePrice: 250000 },
-  { id: 'p3', name: 'IT Maintenance', purchasePrice: 1200000 },
-]
-
-const mockTaxes = [
-  { id: 'none', name: 'No Tax', rate: 0 },
-  { id: 'ppn11', name: 'PPN', rate: 11 },
-]
 
 function formatPrice(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -71,11 +50,24 @@ function calcItemAmount(item: BillItem) {
   return base + tax
 }
 
-export default function BillCreatePage({ params }: BillCreatePageProps) {
-  const billNumber = useMemo(() => {
-    // mimic Laravel `$bill_number` read-only field
-    return `BILL-${new Date().getFullYear()}-001`
-  }, [])
+export default function BillCreatePage() {
+  const pathname = usePathname()
+  const params = useParams<{ id: string }>()
+  const routeId = useMemo(() => {
+    const segments = pathname.split('/').filter(Boolean)
+    const last = segments[segments.length - 1]
+    return last || (params?.id as string)
+  }, [pathname, params])
+  const isEdit = routeId !== 'new'
+
+  const [billNumber, setBillNumber] = useState<string>('')
+  const [vendors, setVendors] = useState<VendorOption[]>([])
+  const [categories, setCategories] = useState<CategoryOption[]>([])
+  const [products, setProducts] = useState<ProductOption[]>([])
+  const [taxes, setTaxes] = useState<TaxOption[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     vendorId: '',
@@ -96,6 +88,84 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
       taxRate: 0,
     },
   ])
+
+  useEffect(() => {
+    const loadBase = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const [vendorsRes, categoriesRes, productsRes, taxesRes, billRes] = await Promise.all([
+          fetch('/api/vendors').then((r) => r.json()).catch(() => ({ success: false })),
+          fetch('/api/categories').then((r) => r.json()).catch(() => ({ success: false })),
+          fetch('/api/products').then((r) => r.json()).catch(() => ({ success: false })),
+          fetch('/api/taxes').then((r) => r.json()).catch(() => ({ success: false })),
+          isEdit
+            ? fetch(`/api/bills/${routeId}`).then((r) => r.json()).catch(() => ({ success: false }))
+            : Promise.resolve({ success: false }),
+        ])
+
+        if (vendorsRes?.success) {
+          setVendors(vendorsRes.data.map((v: any) => ({ id: v.id as string, name: v.name as string })))
+        }
+        if (categoriesRes?.success) {
+          setCategories(categoriesRes.data.map((c: any) => ({ id: c.id as string, name: c.name as string })))
+        }
+        if (productsRes?.success) {
+          setProducts(
+            productsRes.data.map((p: any) => ({
+              id: p.id as string,
+              name: p.name as string,
+              purchasePrice: Number(p.purchasePrice) || 0,
+            })),
+          )
+        }
+        if (taxesRes?.success) {
+          setTaxes(
+            taxesRes.data.map((t: any) => ({
+              id: t.id as string,
+              name: t.name as string,
+              rate: Number(t.rate) || 0,
+            })),
+          )
+        }
+
+        if (isEdit && billRes?.success && billRes.data) {
+          const b = billRes.data
+          setBillNumber(b.billId as string)
+          setFormData({
+            vendorId: b.vendorId as string,
+            billDate: b.billDate?.slice(0, 10) ?? '',
+            dueDate: b.dueDate?.slice(0, 10) ?? '',
+            categoryId: '',
+            orderNumber: b.reference ?? '',
+            notes: b.description ?? '',
+          })
+          if (Array.isArray(b.items) && b.items.length > 0) {
+            setItems(
+              b.items.map((it: any, idx: number) => ({
+                id: `row-${idx + 1}`,
+                productId: it.productId ?? '',
+                quantity: Number(it.quantity) || 1,
+                price: Number(it.price) || 0,
+                discount: Number(it.discount) || 0,
+                taxRate: Number(it.taxRate) || 0,
+              })),
+            )
+          }
+        } else {
+          const generated = `BILL-${new Date().getFullYear()}-${String(
+            Math.floor(Math.random() * 999) + 1,
+          ).padStart(3, '0')}`
+          setBillNumber(generated)
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Gagal memuat data bill')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBase()
+  }, [isEdit, routeId])
 
   const totals = useMemo(() => {
     const subTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
@@ -127,10 +197,48 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: connect to API
-    console.log('Create Bill:', { params, formData, billNumber, items })
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = {
+        billId: billNumber,
+        vendorId: formData.vendorId,
+        billDate: formData.billDate,
+        dueDate: formData.dueDate,
+        category: formData.categoryId,
+        reference: formData.orderNumber,
+        description: formData.notes,
+        total: totals.totalAmount,
+        items: items.map((it) => ({
+          productId: it.productId || null,
+          itemName:
+            products.find((p) => p.id === it.productId)?.name ||
+            `Item ${it.id}`,
+          quantity: it.quantity,
+          price: it.price,
+          discount: it.discount,
+          taxRate: it.taxRate,
+        })),
+      }
+
+      const res = await fetch(isEdit ? `/api/bills/${routeId}` : '/api/bills', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        setError(json?.message || 'Gagal menyimpan bill')
+        setSaving(false)
+        return
+      }
+      window.location.href = `/accounting/bill/${json.data?.billId || billNumber}`
+    } catch (e: any) {
+      setError(e?.message || 'Gagal menyimpan bill')
+      setSaving(false)
+    }
   }
 
   return (
@@ -145,20 +253,34 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Bill Create</h1>
+                <h1 className="text-2xl font-semibold">
+                  {isEdit ? 'Edit Bill' : 'Create Bill'}
+                </h1>
               </div>
               <Button asChild variant="outline" size="sm" className="shadow-none h-7">
                 <Link href="/accounting/purchases?tab=bill">Back</Link>
               </Button>
             </div>
 
+            {error && (
+              <div className="text-sm text-red-600 border border-red-100 bg-red-50 rounded-md px-3 py-2">
+                {error}
+              </div>
+            )}
+
+            {loading && (
+              <div className="text-xs text-muted-foreground">
+                Loading bill data...
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Header form card (Vendor / Dates / Bill Number / Category / Order Number) */}
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <Card className="border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -174,7 +296,7 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                           <SelectValue placeholder="Select Vendor" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockVendors.map((v) => (
+                          {vendors.map((v) => (
                             <SelectItem key={v.id} value={v.id}>
                               {v.name}
                             </SelectItem>
@@ -230,11 +352,11 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                           onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                           required
                         >
-                          <SelectTrigger id="category" className="h-9">
+                        <SelectTrigger id="category" className="h-9">
                             <SelectValue placeholder="Select Category" />
                           </SelectTrigger>
                           <SelectContent>
-                            {mockCategories.map((c) => (
+                          {categories.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
                                 {c.name}
                               </SelectItem>
@@ -272,7 +394,7 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                 </Button>
               </div>
 
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <Card className="border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto w-full">
                     <Table className="w-full min-w-full table-auto">
@@ -298,7 +420,7 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                               <Select
                                 value={item.productId}
                                 onValueChange={(value) => {
-                                  const p = mockProducts.find((x) => x.id === value)
+                                  const p = products.find((x) => x.id === value)
                                   updateItem(item.id, {
                                     productId: value,
                                     price: p?.purchasePrice ?? 0,
@@ -310,7 +432,7 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                                   <SelectValue placeholder="Select Item" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {mockProducts.map((p) => (
+                                  {products.map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
                                       {p.name}
                                     </SelectItem>
@@ -361,7 +483,7 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                                   <SelectValue placeholder="Tax" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {mockTaxes.map((t) => (
+                                  {taxes.map((t) => (
                                     <SelectItem key={t.id} value={String(t.rate)}>
                                       {t.name} ({t.rate}%)
                                     </SelectItem>
@@ -413,7 +535,7 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                 </CardContent>
               </Card>
 
-              <Card className="border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <Card className="border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <Label htmlFor="notes">Notes</Label>
@@ -432,8 +554,14 @@ export default function BillCreatePage({ params }: BillCreatePageProps) {
                 <Button asChild type="button" variant="outline" size="sm" className="shadow-none h-7">
                   <Link href="/accounting/purchases?tab=bill">Cancel</Link>
                 </Button>
-                <Button type="submit" variant="blue" size="sm" className="shadow-none h-7">
-                  Create
+                <Button
+                  type="submit"
+                  variant="blue"
+                  size="sm"
+                  className="shadow-none h-7"
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : isEdit ? 'Update Bill' : 'Create Bill'}
                 </Button>
               </div>
             </form>

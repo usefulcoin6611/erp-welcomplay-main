@@ -7,6 +7,7 @@ import { seedUsers } from "./seeds/users";
 import { seedJournals } from "./seeds/journals";
 import { seedBranches } from "./seeds/branches";
 import { seedCustomers } from "./seeds/customers";
+import { seedVendors } from "./seeds/vendors";
 import { seedEstimates } from "./seeds/estimates";
 import { seedTaxes } from "./seeds/taxes";
 import { seedUnits } from "./seeds/units";
@@ -14,6 +15,7 @@ import { seedCategories } from "./seeds/categories";
 import { seedCustomFields } from "./seeds/custom-fields";
 import { seedProducts } from "./seeds/products";
 import { seedInvoices } from "./seeds/invoices";
+import { seedBills } from "./seeds/bills";
 import { seedCreditNotes } from "./seeds/credit-notes";
 
 dotenv.config();
@@ -29,6 +31,7 @@ async function main() {
     await seedUsers(prisma);
     await seedJournals(prisma);
     await seedCustomers(prisma);
+    await seedVendors(prisma);
     await seedEstimates(prisma);
     await seedTaxes(prisma);
     await seedUnits(prisma);
@@ -36,6 +39,7 @@ async function main() {
     await seedCustomFields(prisma);
     await seedProducts(prisma);
     await seedInvoices(prisma);
+    await seedBills(prisma);
     await seedCreditNotes(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {

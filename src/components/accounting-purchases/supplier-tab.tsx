@@ -34,44 +34,8 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import {
-  Plus,
-  Search,
-  X,
-  Eye,
-  Pencil,
-  Trash2,
-  FileUp,
-  FileDown,
-} from 'lucide-react'
-
-// Mock suppliers (vendors)
-const vendors = [
-  {
-    id: 'VDR-001',
-    name: 'PT Supply Berkah',
-    email: 'vendor@supplyberkah.id',
-    phone: '+62 21 5555 8888',
-    contact: 'Budi Santoso',
-    balance: 150000000,
-  },
-  {
-    id: 'VDR-002',
-    name: 'CV Logistik Nusantara',
-    email: 'info@logistiknusantara.co.id',
-    phone: '+62 31 7777 8888',
-    contact: 'Sari Wijaya',
-    balance: 85000000,
-  },
-  {
-    id: 'VDR-003',
-    name: 'PT Teknologi Digital',
-    email: 'contact@teknologidigital.id',
-    phone: '+62 22 6666 9999',
-    contact: 'Ahmad Fauzi',
-    balance: 120000000,
-  },
-]
+import { Plus, Search, X, Eye, Pencil, Trash2, FileUp, FileDown } from 'lucide-react'
+import { toast } from 'sonner'
 
 function formatPrice(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -83,7 +47,14 @@ function formatPrice(amount: number) {
 }
 
 export function SupplierTab() {
-  type SupplierRow = (typeof vendors)[number] & {
+  type SupplierRow = {
+    id: string
+    code: string
+    name: string
+    email: string
+    phone: string
+    contact: string
+    balance: number
     taxNumber?: string
     billingName?: string
     billingPhone?: string
@@ -101,26 +72,7 @@ export function SupplierTab() {
     shippingZip?: string
   }
 
-  const [rows, setRows] = useState<SupplierRow[]>(() =>
-    vendors.map((v) => ({
-      ...v,
-      taxNumber: '',
-      billingName: '',
-      billingPhone: '',
-      billingAddress: '',
-      billingCity: '',
-      billingState: '',
-      billingCountry: '',
-      billingZip: '',
-      shippingName: '',
-      shippingPhone: '',
-      shippingAddress: '',
-      shippingCity: '',
-      shippingState: '',
-      shippingCountry: '',
-      shippingZip: '',
-    })),
-  )
+  const [rows, setRows] = useState<SupplierRow[]>([])
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -149,6 +101,56 @@ export function SupplierTab() {
     shippingCountry: '',
     shippingZip: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const mapCustomerToSupplier = (v: any): SupplierRow => ({
+      id: v.id as string,
+      code: (v.vendorCode as string) ?? '',
+      name: (v.name as string) ?? '',
+      email: (v.email as string) ?? '',
+      phone: (v.billingPhone as string) ?? (v.shippingPhone as string) ?? '',
+      contact: (v.contact as string) ?? '',
+      balance: Number(v.balance) || 0,
+      taxNumber: v.taxNumber ?? '',
+      billingName: v.billingName ?? '',
+      billingPhone: v.billingPhone ?? '',
+      billingAddress: v.billingAddress ?? '',
+      billingCity: v.billingCity ?? '',
+      billingState: v.billingState ?? '',
+      billingCountry: v.billingCountry ?? '',
+      billingZip: v.billingZip ?? '',
+      shippingName: v.shippingName ?? '',
+      shippingPhone: v.shippingPhone ?? '',
+      shippingAddress: v.shippingAddress ?? '',
+      shippingCity: v.shippingCity ?? '',
+      shippingState: v.shippingState ?? '',
+      shippingCountry: v.shippingCountry ?? '',
+      shippingZip: v.shippingZip ?? '',
+    })
+
+    const loadSuppliers = async () => {
+      try {
+        const res = await fetch('/api/vendors', { cache: 'no-store' })
+        if (!res.ok) {
+          toast.error('Gagal memuat data vendor')
+          return
+        }
+        const json = await res.json().catch(() => null)
+        if (!json?.success || !Array.isArray(json.data)) {
+          toast.error(json?.message || 'Gagal memuat data vendor')
+          return
+        }
+        const mapped: SupplierRow[] = json.data.map(mapCustomerToSupplier)
+        setRows(mapped)
+      } catch (error) {
+        console.error('Error fetching suppliers:', error)
+        toast.error('Terjadi kesalahan saat memuat data vendor')
+      }
+    }
+
+    loadSuppliers()
+  }, [])
 
   const handleDialogOpenChange = (open: boolean) => {
     setCreateDialogOpen(open)
@@ -191,67 +193,104 @@ export function SupplierTab() {
     })
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (editingId) {
-      setRows((prev) =>
-        prev.map((v) =>
-          v.id === editingId
-            ? {
-                ...v,
-                name: formData.name,
-                contact: formData.contact,
-                email: formData.email,
-                taxNumber: formData.taxNumber,
-                balance: Number(formData.balance) || 0,
-                billingName: formData.billingName,
-                billingPhone: formData.billingPhone,
-                billingAddress: formData.billingAddress,
-                billingCity: formData.billingCity,
-                billingState: formData.billingState,
-                billingCountry: formData.billingCountry,
-                billingZip: formData.billingZip,
-                shippingName: formData.shippingName,
-                shippingPhone: formData.shippingPhone,
-                shippingAddress: formData.shippingAddress,
-                shippingCity: formData.shippingCity,
-                shippingState: formData.shippingState,
-                shippingCountry: formData.shippingCountry,
-                shippingZip: formData.shippingZip,
-              }
-            : v,
-        ),
-      )
-    } else {
-      const nextIdNum = rows.length + 1
-      const newId = `VDR-${String(nextIdNum).padStart(3, '0')}`
-      const newRow: SupplierRow = {
-        id: newId,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.billingPhone || '',
-        contact: formData.contact,
-        balance: Number(formData.balance) || 0,
-        taxNumber: formData.taxNumber,
-        billingName: formData.billingName,
-        billingPhone: formData.billingPhone,
-        billingAddress: formData.billingAddress,
-        billingCity: formData.billingCity,
-        billingState: formData.billingState,
-        billingCountry: formData.billingCountry,
-        billingZip: formData.billingZip,
-        shippingName: formData.shippingName,
-        shippingPhone: formData.shippingPhone,
-        shippingAddress: formData.shippingAddress,
-        shippingCity: formData.shippingCity,
-        shippingState: formData.shippingState,
-        shippingCountry: formData.shippingCountry,
-        shippingZip: formData.shippingZip,
-      }
-      setRows((prev) => [newRow, ...prev])
+
+    if (isSubmitting) return
+    setIsSubmitting(true)
+
+    const payload: any = {
+      name: formData.name,
+      email: formData.email,
+      contact: formData.contact,
+      taxNumber: formData.taxNumber || null,
+      balance: Number(formData.balance) || 0,
+      billingName: formData.billingName || null,
+      billingPhone: formData.billingPhone || null,
+      billingAddress: formData.billingAddress || null,
+      billingCity: formData.billingCity || null,
+      billingState: formData.billingState || null,
+      billingCountry: formData.billingCountry || null,
+      billingZip: formData.billingZip || null,
+      shippingName: formData.shippingName || null,
+      shippingPhone: formData.shippingPhone || null,
+      shippingAddress: formData.shippingAddress || null,
+      shippingCity: formData.shippingCity || null,
+      shippingState: formData.shippingState || null,
+      shippingCountry: formData.shippingCountry || null,
+      shippingZip: formData.shippingZip || null,
     }
 
-    handleDialogOpenChange(false)
+    const isEdit = Boolean(editingId)
+
+    if (!isEdit) {
+      const random = Math.floor(Math.random() * 1_000_000)
+      const vendorCode = `VDR-${String(random).padStart(6, '0')}`
+      payload.vendorCode = vendorCode
+    }
+
+    const url = isEdit ? `/api/vendors/${editingId}` : '/api/vendors'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => null)
+
+      if (!res) {
+        toast.error('Terjadi kesalahan sistem')
+        return
+      }
+
+      const json = await res.json().catch(() => null)
+      if (!json?.success || !json.data) {
+        toast.error(json?.message || 'Gagal menyimpan vendor')
+        return
+      }
+
+      const c = json.data as any
+      const updatedRow: SupplierRow = {
+        id: c.id as string,
+        code: (c.vendorCode as string) ?? '',
+        name: (c.name as string) ?? '',
+        email: (c.email as string) ?? '',
+        phone: (c.billingPhone as string) ?? (c.shippingPhone as string) ?? '',
+        contact: (c.contact as string) ?? '',
+        balance: Number(c.balance) || 0,
+        taxNumber: c.taxNumber ?? '',
+        billingName: c.billingName ?? '',
+        billingPhone: c.billingPhone ?? '',
+        billingAddress: c.billingAddress ?? '',
+        billingCity: c.billingCity ?? '',
+        billingState: c.billingState ?? '',
+        billingCountry: c.billingCountry ?? '',
+        billingZip: c.billingZip ?? '',
+        shippingName: c.shippingName ?? '',
+        shippingPhone: c.shippingPhone ?? '',
+        shippingAddress: c.shippingAddress ?? '',
+        shippingCity: c.shippingCity ?? '',
+        shippingState: c.shippingState ?? '',
+        shippingCountry: c.shippingCountry ?? '',
+        shippingZip: c.shippingZip ?? '',
+      }
+
+      if (isEdit) {
+        setRows((prev) => prev.map((v) => (v.id === editingId ? updatedRow : v)))
+        toast.success('Vendor berhasil diperbarui')
+      } else {
+        setRows((prev) => [updatedRow, ...prev])
+        toast.success('Vendor berhasil dibuat')
+      }
+
+      handleDialogOpenChange(false)
+    } catch (error) {
+      console.error('Error saving supplier:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Filter data based on search
@@ -312,11 +351,26 @@ export function SupplierTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!supplierToDelete) return
-    setRows((prev) => prev.filter((v) => v.id !== supplierToDelete.id))
-    setSupplierToDelete(null)
-    setDeleteDialogOpen(false)
+    try {
+      const res = await fetch(`/api/vendors/${supplierToDelete.id}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json().catch(() => null)
+      if (res.ok && json?.success) {
+        setRows((prev) => prev.filter((v) => v.id !== supplierToDelete.id))
+        toast.success('Vendor berhasil dihapus')
+      } else {
+        toast.error(json?.message || 'Gagal menghapus vendor')
+      }
+    } catch (error) {
+      console.error('Error deleting supplier:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setSupplierToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   return (
@@ -325,8 +379,8 @@ export function SupplierTab() {
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardHeader className="px-6">
           <div className="min-w-0 space-y-1">
-            <CardTitle className="text-lg font-semibold">Supplier</CardTitle>
-            <CardDescription>Manage suppliers and vendor contacts.</CardDescription>
+            <CardTitle className="text-lg font-semibold">Vendor</CardTitle>
+            <CardDescription>Manage vendors and purchase contacts.</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -336,7 +390,7 @@ export function SupplierTab() {
             title="Import"
           >
             <FileUp className="mr-2 h-4 w-4" />
-            Import Supplier
+            Import Vendor
           </Button>
           <Button
             variant="outline"
@@ -345,7 +399,7 @@ export function SupplierTab() {
             title="Export"
           >
             <FileDown className="mr-2 h-4 w-4" />
-            Export Supplier
+            Export Vendor
           </Button>
           <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
@@ -357,12 +411,12 @@ export function SupplierTab() {
                 onClick={() => setEditingId(null)}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Create Supplier
+                Create Vendor
               </Button>
             </DialogTrigger>
           <DialogContent className="sm:max-w-[70vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Supplier' : 'Create New Vendor'}</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Vendor' : 'Create New Vendor'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-6 py-4">
@@ -586,7 +640,7 @@ export function SupplierTab() {
                 <Button type="button" variant="outline" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="blue" className="shadow-none">
+                <Button type="submit" variant="blue" className="shadow-none" disabled={isSubmitting}>
                   {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
@@ -597,15 +651,15 @@ export function SupplierTab() {
         </CardHeader>
       </Card>
 
-      {/* Suppliers Table */}
+      {/* Vendors Table */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
-          <CardTitle>Supplier List</CardTitle>
+          <CardTitle>Vendor List</CardTitle>
           <div className="flex w-full max-w-md items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
               <Input
-                placeholder="Search suppliers..."
+                placeholder="Search vendors..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value)
@@ -656,7 +710,7 @@ export function SupplierTab() {
                           className="shadow-none"
                         >
                           <Link href={`/accounting/vender/${vendor.id}`}>
-                            {vendor.id}
+                            {vendor.code || vendor.id}
                           </Link>
                         </Button>
                       </TableCell>
@@ -704,7 +758,7 @@ export function SupplierTab() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
-                      No suppliers found
+                      No vendors found
                     </TableCell>
                   </TableRow>
                 )}
@@ -734,9 +788,9 @@ export function SupplierTab() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Supplier</AlertDialogTitle>
+            <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this supplier? This action cannot be undone.
+              Are you sure you want to delete this vendor? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -750,4 +804,3 @@ export function SupplierTab() {
     </div>
   )
 }
-

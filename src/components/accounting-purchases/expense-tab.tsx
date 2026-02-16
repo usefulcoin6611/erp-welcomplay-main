@@ -54,42 +54,17 @@ import {
   X,
 } from 'lucide-react'
 
-// Mock expenses
-const expenses = [
-  {
-    id: 'EXP-2025-001',
-    category: 'Office Supplies',
-    categoryId: '1',
-    date: '2025-11-05',
-    status: 'Paid',
-    amount: 1250000,
-    reference: 'REF-EXP-001',
-    description: 'Office supplies purchase',
-    receipt: 'receipt_exp_001.pdf',
-  },
-  {
-    id: 'EXP-2025-002',
-    category: 'Travel',
-    categoryId: '2',
-    date: '2025-11-04',
-    status: 'Pending',
-    amount: 875000,
-    reference: 'REF-EXP-002',
-    description: 'Travel reimbursement',
-    receipt: '',
-  },
-  {
-    id: 'EXP-2025-003',
-    category: 'Utilities',
-    categoryId: '3',
-    date: '2025-11-03',
-    status: 'Paid',
-    amount: 540000,
-    reference: 'REF-EXP-003',
-    description: 'Monthly utilities',
-    receipt: '',
-  },
-]
+type ExpenseRow = {
+  id: string
+  expenseId: string
+  category: string
+  date: string
+  status: string
+  amount: number
+  reference: string | null
+  description: string | null
+  receipt: string | null
+}
 
 function getExpenseStatusClasses(status: string) {
   switch (status) {
@@ -99,15 +74,8 @@ function getExpenseStatusClasses(status: string) {
   }
 }
 
-const categories = [
-  { id: '1', name: 'Office Supplies' },
-  { id: '2', name: 'Travel' },
-  { id: '3', name: 'Utilities' },
-  { id: '4', name: 'Marketing' },
-]
-
 export function ExpenseTab() {
-  const [rows, setRows] = useState<typeof expenses>(expenses)
+  const [rows, setRows] = useState<ExpenseRow[]>([])
   const [search, setSearch] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState<(typeof expenses)[number] | null>(null)
@@ -115,7 +83,7 @@ export function ExpenseTab() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     date: '',
-    categoryId: '',
+    category: '',
     amount: '',
     reference: '',
     description: '',
@@ -125,6 +93,32 @@ export function ExpenseTab() {
   const [category, setCategory] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => {
+    const loadExpenses = async () => {
+      try {
+        const res = await fetch('/api/expenses', { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json?.success || !Array.isArray(json.data)) return
+        const mapped: ExpenseRow[] = json.data.map((e: any) => ({
+          id: e.id as string,
+          expenseId: e.expenseId as string,
+          category: e.category as string,
+          date: new Date(e.date).toISOString().slice(0, 10),
+          status: e.status as string,
+          amount: Number(e.total) || 0,
+          reference: e.reference ?? null,
+          description: e.description ?? null,
+          receipt: null,
+        }))
+        setRows(mapped)
+      } catch {
+      }
+    }
+
+    loadExpenses()
+  }, [])
 
   // Filter data based on filters
   const filteredData = useMemo(() => {
@@ -144,10 +138,9 @@ export function ExpenseTab() {
         if (!hay.includes(q)) return false
       }
       if (paymentDate && exp.date !== paymentDate) return false
-      if (category !== 'all') {
-        const cat = categories.find(c => c.id === category)
-        if (cat && exp.category !== cat.name) return false
-      }
+          if (category !== 'all' && exp.category !== category) {
+            return false
+          }
       return true
     })
   }, [paymentDate, category, rows, search])
@@ -167,13 +160,16 @@ export function ExpenseTab() {
     setCurrentPage(1)
   }
 
-  const handleDeleteClick = (exp: (typeof expenses)[number]) => {
+  const handleDeleteClick = (exp: ExpenseRow) => {
     setExpenseToDelete(exp)
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!expenseToDelete) return
+    await fetch(`/api/expenses/${expenseToDelete.expenseId}`, {
+      method: 'DELETE',
+    }).catch(() => null)
     setRows((prev) => prev.filter((e) => e.id !== expenseToDelete.id))
     setExpenseToDelete(null)
     setDeleteDialogOpen(false)
@@ -185,7 +181,7 @@ export function ExpenseTab() {
       setEditingId(null)
       setFormData({
         date: '',
-        categoryId: '',
+        category: '',
         amount: '',
         reference: '',
         description: '',
@@ -194,56 +190,70 @@ export function ExpenseTab() {
     }
   }
 
-  const handleEdit = (exp: (typeof expenses)[number]) => {
+  const handleEdit = (exp: ExpenseRow) => {
     setEditingId(exp.id)
     setFormData({
-      date: exp.date,
-      categoryId: exp.categoryId,
-      amount: String(exp.amount ?? ''),
-      reference: exp.reference ?? '',
-      description: exp.description ?? '',
-      receiptName: exp.receipt ?? '',
-    })
+        date: exp.date,
+        category: exp.category,
+        amount: String(exp.amount ?? ''),
+        reference: exp.reference ?? '',
+        description: exp.description ?? '',
+        receiptName: exp.receipt ?? '',
+      })
     setDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const categoryName = categories.find((c) => c.id === formData.categoryId)?.name ?? ''
     const nextAmount = Number(formData.amount) || 0
 
-    if (editingId) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === editingId
-            ? {
-                ...r,
-                date: formData.date,
-                categoryId: formData.categoryId,
-                category: categoryName || r.category,
-                amount: nextAmount,
-                reference: formData.reference,
-                description: formData.description,
-                receipt: formData.receiptName,
-              }
-            : r,
-        ),
-      )
+    const payload = {
+      date: formData.date,
+      type: 'Vendor',
+      party: 'Manual',
+      category: formData.category,
+      total: nextAmount,
+      reference: formData.reference || null,
+      description: formData.description || null,
+      status: 'Paid',
+    }
+
+    const target = rows.find((r) => r.id === editingId)
+    const url = editingId && target ? `/api/expenses/${target.expenseId}` : '/api/expenses'
+    const method = editingId && target ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => null)
+
+    if (!res || !res.ok) {
+      return
+    }
+
+    const json = await res.json().catch(() => null)
+    if (!json?.success || !json.data) {
+      return
+    }
+
+    const saved: any = json.data
+    const mapped: ExpenseRow = {
+      id: saved.id as string,
+      expenseId: saved.expenseId as string,
+      category: saved.category as string,
+      date: new Date(saved.date).toISOString().slice(0, 10),
+      status: saved.status as string,
+      amount: Number(saved.total) || 0,
+      reference: saved.reference ?? null,
+      description: saved.description ?? null,
+      receipt: null,
+    }
+
+    if (editingId && target) {
+      setRows((prev) => prev.map((r) => (r.id === editingId ? mapped : r)))
     } else {
-      const nextSeq = rows.length + 1
-      const newId = `EXP-2025-${String(nextSeq).padStart(3, '0')}`
-      const newRow = {
-        id: newId,
-        category: categoryName,
-        categoryId: formData.categoryId,
-        date: formData.date,
-        status: 'Pending',
-        amount: nextAmount,
-        reference: formData.reference,
-        description: formData.description,
-        receipt: formData.receiptName,
-      }
-      setRows((prev) => [newRow, ...prev])
+      setRows((prev) => [mapped, ...prev])
     }
 
     handleDialogOpenChange(false)
@@ -425,23 +435,12 @@ export function ExpenseTab() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger
-                  className={`w-full !h-9 ${
-                    category === 'all' ? 'text-muted-foreground' : ''
-                  } border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground`}
-                >
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Select Category</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                value={category === 'all' ? '' : category}
+                onChange={(e) => setCategory(e.target.value || 'all')}
+                className="h-9"
+                placeholder="Filter category"
+              />
             </div>
 
             {/* Actions */}
@@ -521,8 +520,8 @@ export function ExpenseTab() {
                           size="sm"
                           className="shadow-none"
                         >
-                          <Link href={`/accounting/expense/${exp.id}`}>
-                            {exp.id}
+                          <Link href={`/accounting/expense/${exp.expenseId}`}>
+                            {exp.expenseId}
                           </Link>
                         </Button>
                       </TableCell>
@@ -615,4 +614,3 @@ export function ExpenseTab() {
     </div>
   )
 }
-

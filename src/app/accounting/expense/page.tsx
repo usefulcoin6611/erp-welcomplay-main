@@ -1,62 +1,25 @@
 import Link from 'next/link'
-
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  IconCalendar,
-  IconSearch,
-} from '@tabler/icons-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { IconCalendar, IconSearch } from '@tabler/icons-react'
 
-// Mock expenses similar to ExpenseController::index
-const expenses = [
-  {
-    id: 'EXP-2025-001',
-    type: 'Vendor',
-    party: 'PT Supply Berkah',
-    date: '2025-11-05',
-    category: 'Office Supplies',
-    total: 2221250,
-    status: 'Paid',
-  },
-  {
-    id: 'EXP-2025-002',
-    type: 'Employee',
-    party: 'Budi Santoso',
-    date: '2025-11-04',
-    category: 'Travel',
-    total: 1750000,
-    status: 'Pending',
-  },
-] as const
+type ExpenseDto = {
+  id: string
+  expenseId: string
+  type: string
+  party: string
+  date: string
+  category: string
+  total: number
+  status: string
+}
 
 function getExpenseStatusClasses(status: string) {
   switch (status) {
@@ -69,7 +32,35 @@ function getExpenseStatusClasses(status: string) {
   }
 }
 
-export default function ExpensePage() {
+async function fetchExpenses(): Promise<ExpenseDto[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/expenses`, {
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    return []
+  }
+
+  const json = await res.json()
+
+  if (!json?.success || !Array.isArray(json.data)) {
+    return []
+  }
+
+  return json.data.map((e: any) => ({
+    id: e.id as string,
+    expenseId: e.expenseId as string,
+    type: e.type as string,
+    party: e.party as string,
+    date: new Date(e.date).toISOString().slice(0, 10),
+    category: e.category as string,
+    total: Number(e.total) || 0,
+    status: e.status as string,
+  }))
+}
+
+export default async function ExpensePage() {
+  const expenses = await fetchExpenses()
   const totalExpenses = expenses.length
   const totalAmount = expenses.reduce((sum, e) => sum + e.total, 0)
 
@@ -204,8 +195,8 @@ export default function ExpensePage() {
                             variant="link"
                             className="h-auto p-0 text-sm font-semibold"
                           >
-                            <Link href={`/accounting/expense/${exp.id}`}>
-                              {exp.id}
+                            <Link href={`/accounting/expense/${exp.expenseId}`}>
+                              {exp.expenseId}
                             </Link>
                           </Button>
                         </TableCell>

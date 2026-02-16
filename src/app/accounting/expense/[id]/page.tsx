@@ -1,67 +1,47 @@
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IconCalendar } from '@tabler/icons-react'
 
 type ExpenseDetailPageProps = {
   params: Promise<{ id: string }>
 }
 
-// Mock expense detail based on ExpenseController::show / expense()
-const mockExpense = {
-  number: 'EXP-2025-001',
-  type: 'Vendor',
-  userName: 'PT Supply Berkah',
-  date: '2025-11-05',
-  status: 'Paid',
-  items: [
-    {
-      name: 'Office Supplies',
-      description: 'General office stationery',
-      quantity: 5,
-      price: 250000,
-      discount: 0,
-      taxLabel: 'PPN 11%',
-      total: 1387500,
-    },
-    {
-      name: 'Internet Subscription',
-      description: 'Monthly broadband subscription',
-      quantity: 1,
-      price: 750000,
-      discount: 0,
-      taxLabel: 'PPN 11%',
-      total: 832500,
-    },
-  ],
-  subtotal: 2000000,
-  discountTotal: 0,
-  taxTotal: 221250,
-  grandTotal: 2221250,
+async function fetchExpenseDetail(expenseId: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/expenses/${expenseId}`,
+    { cache: 'no-store' },
+  )
+
+  if (!res.ok) {
+    return null
+  }
+
+  const json = await res.json()
+
+  if (!json?.success || !json.data) {
+    return null
+  }
+
+  return json.data as {
+    expenseId: string
+    type: string
+    party: string
+    date: string
+    category: string
+    total: number
+    status: string
+    reference: string | null
+    description: string | null
+  }
 }
 
 export default async function ExpenseDetailPage({ params }: ExpenseDetailPageProps) {
   const { id } = await params
-  const expense = mockExpense
+  const expense = await fetchExpenseDetail(id)
 
   return (
     <SidebarProvider
@@ -83,13 +63,14 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
                 <h1 className="text-3xl font-bold">Expense Detail</h1>
                 <p className="text-muted-foreground">
                   Detail for expense{' '}
-                  <span className="font-semibold">{expense.number}</span>{' '}
-                  (mock data, id: {id})
+                  <span className="font-semibold">{expense?.expenseId ?? id}</span>
                 </p>
               </div>
-              <Badge className="bg-green-100 text-green-700 border-none">
-                {expense.status}
-              </Badge>
+              {expense ? (
+                <Badge className="bg-green-100 text-green-700 border-none">
+                  {expense.status}
+                </Badge>
+              ) : null}
             </div>
 
             {/* Info cards */}
@@ -102,9 +83,9 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <div className="font-medium">{expense.userName}</div>
+                  <div className="font-medium">{expense?.party ?? '-'}</div>
                   <div className="text-muted-foreground">
-                    Type: {expense.type}
+                    Type: {expense?.type ?? '-'}
                   </div>
                 </CardContent>
               </Card>
@@ -116,69 +97,20 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
                 <CardContent className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Expense No.</span>
-                    <span className="font-medium">{expense.number}</span>
+                    <span className="font-medium">{expense?.expenseId ?? id}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Payment Date</span>
                     <span className="flex items-center gap-1">
                       <IconCalendar className="h-3 w-3" />
-                      {expense.date}
+                      {expense ? new Date(expense.date).toISOString().slice(0, 10) : '-'}
                     </span>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Items */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Expense Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Tax</TableHead>
-                      <TableHead className="text-right">Discount</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {expense.items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">
-                          {item.name}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {item.description}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.quantity}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          Rp {item.price.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {item.taxLabel}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          Rp {item.discount.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          Rp {item.total.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Totals */}
+            {/* Summary */}
             <div className="flex justify-end">
               <Card className="w-full max-w-md">
                 <CardHeader>
@@ -186,21 +118,21 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>Rp {expense.subtotal.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Category</span>
+                    <span>{expense?.category ?? '-'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Discount</span>
-                    <span>Rp {expense.discountTotal.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Reference</span>
+                    <span>{expense?.reference ?? '-'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>Rp {expense.taxTotal.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Description</span>
+                    <span>{expense?.description ?? '-'}</span>
                   </div>
                   <div className="border-t pt-2 mt-2 flex items-center justify-between font-semibold">
                     <span>Total</span>
                     <span className="text-lg">
-                      Rp {expense.grandTotal.toLocaleString()}
+                      Rp {expense ? Number(expense.total ?? 0).toLocaleString() : '0'}
                     </span>
                   </div>
                 </CardContent>
@@ -212,4 +144,3 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
     </SidebarProvider>
   )
 }
-

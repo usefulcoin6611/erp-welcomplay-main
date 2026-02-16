@@ -30,6 +30,7 @@ model User {
   branch        Branch?     @relation(fields: [branchId], references: [id])
   department    Department? @relation(fields: [departmentId], references: [id])
   createdCustomers Customer[] @relation("CreatedBy")
+  createdVendors   Vendor[]
 
   @@map("user")
 }
@@ -46,7 +47,11 @@ model Branch {
   chartOfAccounts  ChartOfAccount[]
   journalEntries   JournalEntry[]
   customers        Customer[]
+  vendors          Vendor[]
+  bills            Bill[]
   products         Product[]
+  expenses         Expense[]
+  payments         Payment[]
 
   @@map("branch")
 }
@@ -288,6 +293,42 @@ model Customer {
   @@map("customer")
 }
 
+model Vendor {
+  id                String   @id @default(cuid())
+  vendorCode        String   @unique
+  name              String
+  email             String   @unique
+  contact           String?
+  avatar            String?
+  isActive          Boolean  @default(true)
+  taxNumber         String?
+  billingName       String?
+  billingCountry    String?
+  billingState      String?
+  billingCity       String?
+  billingPhone      String?
+  billingZip        String?
+  billingAddress    String?
+  shippingName      String?
+  shippingCountry   String?
+  shippingState     String?
+  shippingCity      String?
+  shippingPhone     String?
+  shippingZip       String?
+  shippingAddress   String?
+  balance           Float    @default(0)
+  branchId          String?
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  branch            Branch?  @relation(fields: [branchId], references: [id])
+  createdBy         User?    @relation(fields: [createdById], references: [id])
+  bills             Bill[]
+
+  @@map("vendor")
+}
+
 model Verification {
   id         String    @id @default(cuid())
   identifier String
@@ -386,4 +427,84 @@ model CreditNote {
   invoice     Invoice  @relation(fields: [invoiceId], references: [invoiceId])
 
   @@map("credit_note")
+}
+
+model Bill {
+  id          String   @id @default(cuid())
+  billId      String   @unique
+  vendorId    String
+  branchId    String?
+  category    String?
+  billDate    DateTime
+  dueDate     DateTime
+  status      String   @default("draft")
+  total       Float    @default(0)
+  reference   String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  items       BillItem[]
+
+  @@map("bill")
+}
+
+model BillItem {
+  id          String   @id @default(cuid())
+  billId      String
+  itemName    String
+  quantity    Float    @default(0)
+  price       Float    @default(0)
+  discount    Float    @default(0)
+  taxRate     Float    @default(0)
+  amount      Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bill        Bill     @relation(fields: [billId], references: [billId], onDelete: Cascade)
+
+  @@map("bill_item")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  expenseId   String   @unique
+  type        String
+  party       String
+  date        DateTime
+  category    String
+  total       Float    @default(0)
+  status      String   @default("Pending")
+  reference   String?
+  description String?
+  branchId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("expense")
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  paymentId   String   @unique
+  date        DateTime
+  vendor      String
+  account     String
+  category    String
+  amount      Float    @default(0)
+  status      String   @default("Completed")
+  reference   String?
+  description String?
+  branchId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("payment")
 }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 
 export default function BillCreateIndexPage() {
-  redirect('/accounting/bill/create/0')
+  redirect('/accounting/bill/create/new')
 }
 
 

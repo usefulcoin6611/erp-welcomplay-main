@@ -1,9 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -12,13 +11,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from 'sonner'
+
+type ExpenseFormState = {
+  date: string
+  type: string
+  party: string
+  category: string
+  amount: string
+  reference: string
+  description: string
+  receiptName: string
+}
 
 export default function ExpenseCreatePage() {
   const params = useParams<{ id: string }>()
@@ -26,42 +31,12 @@ export default function ExpenseCreatePage() {
   const id = params?.id ?? ''
   const isEdit = id && id !== '0'
 
-  const categories = [
-    { id: '1', name: 'Office Supplies' },
-    { id: '2', name: 'Travel' },
-    { id: '3', name: 'Utilities' },
-    { id: '4', name: 'Marketing' },
-  ]
-
-  const mockExpenses = [
-    {
-      id: 'EXP-2025-001',
-      date: '2025-11-05',
-      categoryId: '1',
-      amount: 1250000,
-      reference: 'REF-EXP-001',
-      description: 'Office supplies purchase',
-      receipt: 'receipt_exp_001.pdf',
-    },
-    {
-      id: 'EXP-2025-002',
-      date: '2025-11-04',
-      categoryId: '2',
-      amount: 875000,
-      reference: 'REF-EXP-002',
-      description: 'Travel reimbursement',
-      receipt: '',
-    },
-  ]
-
-  const initial = useMemo(() => {
-    if (!isEdit) return null
-    return mockExpenses.find((e) => e.id === id) ?? null
-  }, [id, isEdit])
-
-  const [form, setForm] = useState({
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState<ExpenseFormState>({
     date: '',
-    categoryId: '',
+    type: 'Vendor',
+    party: '',
+    category: '',
     amount: '',
     reference: '',
     description: '',
@@ -69,26 +44,43 @@ export default function ExpenseCreatePage() {
   })
 
   useEffect(() => {
-    if (isEdit && initial) {
+    if (!isEdit) {
       setForm({
-        date: initial.date,
-        categoryId: initial.categoryId,
-        amount: String(initial.amount),
-        reference: initial.reference,
-        description: initial.description,
-        receiptName: initial.receipt,
+        date: '',
+        type: 'Vendor',
+        party: '',
+        category: '',
+        amount: '',
+        reference: '',
+        description: '',
+        receiptName: '',
       })
       return
     }
-    setForm({
-      date: '',
-      categoryId: '',
-      amount: '',
-      reference: '',
-      description: '',
-      receiptName: '',
-    })
-  }, [isEdit, initial])
+
+    const loadExpense = async () => {
+      try {
+        const res = await fetch(`/api/expenses/${id}`, { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json?.success || !json.data) return
+        const e = json.data as any
+        setForm({
+          date: new Date(e.date).toISOString().slice(0, 10),
+          type: e.type ?? 'Vendor',
+          party: e.party ?? '',
+          category: e.category ?? '',
+          amount: String(e.total ?? ''),
+          reference: e.reference ?? '',
+          description: e.description ?? '',
+          receiptName: '',
+        })
+      } catch {
+      }
+    }
+
+    loadExpense()
+  }, [id, isEdit])
 
   return (
     <SidebarProvider
@@ -131,10 +123,48 @@ export default function ExpenseCreatePage() {
 
                 <form
                   className="grid gap-4"
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault()
-                    console.log('Submit expense:', { id, ...form })
-                    router.push('/accounting/purchases?tab=expense')
+                    if (!form.date || !form.party || !form.category || !form.amount) {
+                      toast.error('Tanggal, Payer, Category, dan Amount wajib diisi')
+                      return
+                    }
+
+                    const payload = {
+                      date: form.date,
+                      type: form.type,
+                      party: form.party,
+                      category: form.category,
+                      total: Number(form.amount) || 0,
+                      reference: form.reference || null,
+                      description: form.description || null,
+                      status: 'Paid',
+                    }
+
+                    try {
+                      setLoading(true)
+                      const res = await fetch(isEdit ? `/api/expenses/${id}` : '/api/expenses', {
+                        method: isEdit ? 'PUT' : 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                      })
+
+                      const json = await res.json().catch(() => null)
+
+                      if (!res.ok || !json?.success) {
+                        toast.error(json?.message || 'Gagal menyimpan expense')
+                        return
+                      }
+
+                      toast.success(isEdit ? 'Expense berhasil diupdate' : 'Expense berhasil dibuat')
+                      router.push('/accounting/purchases?tab=expense')
+                    } catch {
+                      toast.error('Terjadi kesalahan saat menyimpan expense')
+                    } finally {
+                      setLoading(false)
+                    }
                   }}
                 >
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -153,25 +183,50 @@ export default function ExpenseCreatePage() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="type">
+                        Type <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={form.type}
+                        onValueChange={(value) => setForm({ ...form, type: value })}
+                      >
+                        <SelectTrigger id="type" className="h-9 w-full">
+                          <SelectValue placeholder="Select Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Vendor">Vendor</SelectItem>
+                          <SelectItem value="Employee">Employee</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="party">
+                        Payer / Vendor <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="party"
+                        className="h-9"
+                        placeholder="Masukkan nama payer / vendor"
+                        value={form.party}
+                        onChange={(e) => setForm({ ...form, party: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="category">
                         Category <span className="text-red-500">*</span>
                       </Label>
-                      <Select
-                        value={form.categoryId}
-                        onValueChange={(value) => setForm({ ...form, categoryId: value })}
+                      <Input
+                        id="category"
+                        className="h-9"
+                        placeholder="Masukkan kategori"
+                        value={form.category}
+                        onChange={(e) => setForm({ ...form, category: e.target.value })}
                         required
-                      >
-                        <SelectTrigger id="category" className="h-9 w-full">
-                          <SelectValue placeholder="Select Category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -238,7 +293,13 @@ export default function ExpenseCreatePage() {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" variant="blue" size="sm" className="shadow-none h-7 px-4">
+                    <Button
+                      type="submit"
+                      variant="blue"
+                      size="sm"
+                      className="shadow-none h-7 px-4"
+                      disabled={loading}
+                    >
                       {isEdit ? 'Update Expense' : 'Create Expense'}
                     </Button>
                   </div>

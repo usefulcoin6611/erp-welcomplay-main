@@ -1,65 +1,54 @@
 import Link from 'next/link'
-
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  IconCalendar,
-  IconCreditCard,
-  IconSearch,
-} from '@tabler/icons-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { IconCalendar, IconCreditCard, IconSearch } from '@tabler/icons-react'
 
-// Mock payments similar to PaymentController::index
-const payments = [
-  {
-    id: 'PAY-2025-001',
-    date: '2025-11-07',
-    vendor: 'PT Supply Berkah',
-    account: 'BCA - Main Operating',
-    category: 'Expense',
-    amount: 5000000,
-    status: 'Completed',
-  },
-  {
-    id: 'PAY-2025-002',
-    date: '2025-11-08',
-    vendor: 'CV Logistik Nusantara',
-    account: 'Mandiri - Purchases',
-    category: 'Logistics',
-    amount: 3200000,
-    status: 'Completed',
-  },
-] as const
+type PaymentDto = {
+  id: string
+  paymentId: string
+  date: string
+  vendor: string
+  account: string
+  category: string
+  amount: number
+  status: string
+}
 
-export default function PaymentPage() {
+async function fetchPayments(): Promise<PaymentDto[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/payments`, {
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    return []
+  }
+
+  const json = await res.json()
+  if (!json?.success || !Array.isArray(json.data)) {
+    return []
+  }
+
+  return json.data.map((p: any) => ({
+    id: p.id as string,
+    paymentId: p.paymentId as string,
+    date: new Date(p.date).toISOString().slice(0, 10),
+    vendor: p.vendor as string,
+    account: p.account as string,
+    category: p.category as string,
+    amount: Number(p.amount) || 0,
+    status: p.status as string,
+  }))
+}
+
+export default async function PaymentPage() {
+  const payments = await fetchPayments()
   const totalPayments = payments.length
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0)
 
@@ -82,8 +71,8 @@ export default function PaymentPage() {
               <div>
                 <h1 className="text-3xl font-bold">Payments</h1>
               </div>
-              <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                Create Payment
+              <Button asChild className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
+                <Link href="/accounting/purchases?tab=payment">Create Payment</Link>
               </Button>
             </div>
 
@@ -193,8 +182,8 @@ export default function PaymentPage() {
                             variant="link"
                             className="h-auto p-0 text-sm font-semibold"
                           >
-                            <Link href={`/accounting/payment/${payment.id}`}>
-                              {payment.id}
+                            <Link href={`/accounting/payment/${payment.paymentId}`}>
+                              {payment.paymentId}
                             </Link>
                           </Button>
                         </TableCell>

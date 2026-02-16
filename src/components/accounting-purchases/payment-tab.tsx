@@ -54,31 +54,18 @@ import {
   X,
 } from 'lucide-react'
 
-// Mock payments
-const payments = [
-  {
-    id: 'PAY-2025-001',
-    date: '2025-11-07',
-    amount: 5000000,
-    account: 'BCA - Main Operating',
-    vendor: 'PT Supply Berkah',
-    category: 'Expense',
-    reference: 'REF-001',
-    description: 'Payment for office supplies',
-    paymentReceipt: 'receipt_001.pdf',
-  },
-  {
-    id: 'PAY-2025-002',
-    date: '2025-11-08',
-    amount: 3200000,
-    account: 'Mandiri - Purchases',
-    vendor: 'CV Logistik Nusantara',
-    category: 'Logistics',
-    reference: 'REF-002',
-    description: 'Payment for logistics services',
-    paymentReceipt: null,
-  },
-]
+type PaymentRow = {
+  id: string
+  paymentId: string
+  date: string
+  amount: number
+  account: string
+  vendor: string
+  category: string
+  reference: string | null
+  description: string | null
+  paymentReceipt: string | null
+}
 
 const accounts = [
   { id: '1', name: 'BCA - Main Operating' },
@@ -117,9 +104,7 @@ function formatPrice(amount: number) {
 }
 
 export function PaymentTab() {
-  type PaymentRow = (typeof payments)[number]
-
-  const [rows, setRows] = useState<PaymentRow[]>(payments)
+  const [rows, setRows] = useState<PaymentRow[]>([])
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -143,6 +128,33 @@ export function PaymentTab() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+
+  useEffect(() => {
+    const loadPayments = async () => {
+      try {
+        const res = await fetch('/api/payments', { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json?.success || !Array.isArray(json.data)) return
+        const mapped: PaymentRow[] = json.data.map((p: any) => ({
+          id: p.id as string,
+          paymentId: p.paymentId as string,
+          date: new Date(p.date).toISOString().slice(0, 10),
+          amount: Number(p.amount) || 0,
+          account: p.account as string,
+          vendor: p.vendor as string,
+          category: p.category as string,
+          reference: p.reference ?? null,
+          description: p.description ?? null,
+          paymentReceipt: null,
+        }))
+        setRows(mapped)
+      } catch {
+      }
+    }
+
+    loadPayments()
+  }, [])
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -201,50 +213,73 @@ export function PaymentTab() {
 
   const handleConfirmDelete = () => {
     if (!paymentToDelete) return
+    fetch(`/api/payments/${paymentToDelete.paymentId}`, {
+      method: 'DELETE',
+    }).catch(() => null)
     setRows((prev) => prev.filter((p) => p.id !== paymentToDelete.id))
     setPaymentToDelete(null)
     setDeleteDialogOpen(false)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const vendorName = vendors.find((v) => v.id === formData.vendor)?.name ?? ''
     const categoryName = categories.find((c) => c.id === formData.category)?.name ?? ''
     const accountName = accounts.find((a) => a.id === formData.account)?.name ?? ''
     const nextAmount = Number(formData.amount) || 0
 
-    if (editingId) {
+    const payload = {
+      date: formData.date,
+      vendor: vendorName,
+      account: accountName,
+      category: categoryName,
+      amount: nextAmount,
+      status: 'Completed',
+      reference: formData.reference || null,
+      description: formData.description || null,
+    }
+
+    const target = rows.find((p) => p.id === editingId)
+    const url = editingId && target ? `/api/payments/${target.paymentId}` : '/api/payments'
+    const method = editingId && target ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => null)
+
+    if (!res || !res.ok) {
+      return
+    }
+
+    const json = await res.json().catch(() => null)
+    if (!json?.success || !json.data) {
+      return
+    }
+
+    const saved: any = json.data
+    const mapped: PaymentRow = {
+      id: saved.id as string,
+      paymentId: saved.paymentId as string,
+      date: new Date(saved.date).toISOString().slice(0, 10),
+      amount: Number(saved.amount) || 0,
+      account: saved.account as string,
+      vendor: saved.vendor as string,
+      category: saved.category as string,
+      reference: saved.reference ?? null,
+      description: saved.description ?? null,
+      paymentReceipt: null,
+    }
+
+    if (editingId && target) {
       setRows((prev) =>
         prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                vendor: vendorName,
-                date: formData.date,
-                amount: nextAmount,
-                category: categoryName,
-                account: accountName,
-                reference: formData.reference,
-                description: formData.description,
-                paymentReceipt: formData.paymentReceipt || null,
-              }
-            : p,
+          p.id === editingId ? mapped : p,
         ),
       )
     } else {
-      const newId = `PAY-${new Date().getFullYear()}-${String(rows.length + 1).padStart(3, '0')}`
-      const newRow: PaymentRow = {
-        id: newId,
-        vendor: vendorName,
-        date: formData.date,
-        amount: nextAmount,
-        category: categoryName,
-        account: accountName,
-        reference: formData.reference,
-        description: formData.description,
-        paymentReceipt: formData.paymentReceipt || null,
-      }
-      setRows((prev) => [newRow, ...prev])
+      setRows((prev) => [mapped, ...prev])
     }
 
     handleDialogOpenChange(false)
@@ -307,8 +342,8 @@ export function PaymentTab() {
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardHeader className="px-6">
           <div className="min-w-0 space-y-1">
-            <CardTitle className="text-lg font-semibold">Payment</CardTitle>
-            <CardDescription>Manage payments to vendors and suppliers.</CardDescription>
+            <CardTitle className="text-lg font-semibold">Payments</CardTitle>
+            <CardDescription>Manage payments to vendors.</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
           <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
@@ -720,4 +755,3 @@ export function PaymentTab() {
     </div>
   )
 }
-
