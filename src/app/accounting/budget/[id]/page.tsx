@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { useParams } from 'next/navigation'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -26,37 +26,47 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ArrowLeft, Pencil } from 'lucide-react'
-import { useMemo } from 'react'
 
 const CARD_STYLE = 'shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white'
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
+const PERIOD_LABELS: Record<string, string[]> = {
+  Monthly: MONTHS,
+  Quarterly: ['Q1', 'Q2', 'Q3', 'Q4'],
+  'Half Yearly': ['H1', 'H2'],
+  Yearly: ['Year'],
+}
+
 type CategoryRow = { name: string; budget: number[]; actual: number[] }
+
+type StoredCategoryRow = { name: string; budget: (number | string)[]; actual: (number | string)[] }
+
+type BudgetDetails = {
+  incomeCategories?: StoredCategoryRow[]
+  expenseCategories?: StoredCategoryRow[]
+}
 
 function sumArr(values: number[]): number {
   return values.reduce((s, v) => s + v, 0)
 }
 
-const INCOME_CATEGORIES: CategoryRow[] = [
-  { name: 'Maintenance Sales', budget: [15000, 0, 0, 8500, 0, 0, 0, 45000, 0, 0, 0, 1000], actual: [14000, 0, 0, 8000, 0, 0, 0, 46000, 0, 0, 0, 1200] },
-  { name: 'Product Sales', budget: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], actual: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { name: 'income', budget: [0, 0, 8000, 0, 0, 0, 0, 0, 0, 0, 0, 0], actual: [0, 0, 7500, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-]
-
-const EXPENSE_CATEGORIES: CategoryRow[] = [
-  { name: 'Rent Or Lease', budget: [0, 15000, 0, 0, 100, 0, 4506, 0, 0, 0, 25040, 0], actual: [0, 15000, 0, 0, 150, 0, 4506, 0, 0, 0, 24800, 0] },
-  { name: 'Travel', budget: [0, 0, 0, 8500, 0, 0, 0, 0, 2000, 0, 5000, 0], actual: [0, 0, 0, 9000, 0, 0, 0, 0, 1800, 0, 5200, 0] },
-]
-
-const BUDGET_INFO: Record<string, { name: string; from: string; budgetPeriod: string }> = {
-  '1': { name: 'Monthly Budget Plan', from: '2025', budgetPeriod: 'Monthly' },
-  '2': { name: 'Quarterly Budget Plan', from: '2025', budgetPeriod: 'Quarterly' },
-  '3': { name: 'Half-Yearly Budget Plan', from: '2025', budgetPeriod: 'Half Yearly' },
-  '4': { name: 'Yearly Budget Plan', from: '2025', budgetPeriod: 'Yearly' },
+function getLabelsForPeriod(period: string | undefined | null): string[] {
+  if (!period) return PERIOD_LABELS.Monthly
+  return PERIOD_LABELS[period] ?? PERIOD_LABELS.Monthly
 }
 
 function formatNum(n: number) {
@@ -65,23 +75,105 @@ function formatNum(n: number) {
 
 export default function BudgetDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const id = typeof params?.id === 'string' ? params.id : ''
-  const budgetInfo = id ? BUDGET_INFO[id] : null
 
-  const incomeTotals = useMemo(() => ({
-    budgetByMonth: MONTHS.map((_, i) => INCOME_CATEGORIES.reduce((s, r) => s + (r.budget[i] ?? 0), 0)),
-    actualByMonth: MONTHS.map((_, i) => INCOME_CATEGORIES.reduce((s, r) => s + (r.actual[i] ?? 0), 0)),
-    budgetTotal: INCOME_CATEGORIES.reduce((s, r) => s + sumArr(r.budget), 0),
-    actualTotal: INCOME_CATEGORIES.reduce((s, r) => s + sumArr(r.actual), 0),
-  }), [])
-  const expenseTotals = useMemo(() => ({
-    budgetByMonth: MONTHS.map((_, i) => EXPENSE_CATEGORIES.reduce((s, r) => s + (r.budget[i] ?? 0), 0)),
-    actualByMonth: MONTHS.map((_, i) => EXPENSE_CATEGORIES.reduce((s, r) => s + (r.actual[i] ?? 0), 0)),
-    budgetTotal: EXPENSE_CATEGORIES.reduce((s, r) => s + sumArr(r.budget), 0),
-    actualTotal: EXPENSE_CATEGORIES.reduce((s, r) => s + sumArr(r.actual), 0),
-  }), [])
+  const [budgetInfo, setBudgetInfo] = useState<{ name: string; from: string; budgetPeriod: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [incomeCategories, setIncomeCategories] = useState<CategoryRow[]>([])
+  const [expenseCategories, setExpenseCategories] = useState<CategoryRow[]>([])
 
-  if (!id || !budgetInfo) {
+  useEffect(() => {
+    if (!id) {
+      setLoadError(true)
+      return
+    }
+
+    const loadBudget = async () => {
+      try {
+        setIsLoading(true)
+        setLoadError(false)
+        const res = await fetch(`/api/budgets?id=${encodeURIComponent(id)}`)
+        const json = await res.json().catch(() => null)
+
+        if (!res.ok || !json?.success || !json.data) {
+          setLoadError(true)
+          setBudgetInfo(null)
+          return
+        }
+
+        setBudgetInfo({
+          name: json.data.name,
+          from: json.data.from,
+          budgetPeriod: json.data.budgetPeriod,
+        })
+
+        const details: BudgetDetails | null = json.data.details ?? null
+        if (details) {
+          if (Array.isArray(details.incomeCategories)) {
+            setIncomeCategories(
+              details.incomeCategories.map((r) => ({
+                name: r.name,
+                budget: (r.budget || []).map((v) => (typeof v === 'number' ? v : Number(v) || 0)),
+                actual: (r.actual || []).map((v) => (typeof v === 'number' ? v : Number(v) || 0)),
+              }))
+            )
+          }
+          if (Array.isArray(details.expenseCategories)) {
+            setExpenseCategories(
+              details.expenseCategories.map((r) => ({
+                name: r.name,
+                budget: (r.budget || []).map((v) => (typeof v === 'number' ? v : Number(v) || 0)),
+                actual: (r.actual || []).map((v) => (typeof v === 'number' ? v : Number(v) || 0)),
+              }))
+            )
+          }
+        }
+      } catch {
+        setLoadError(true)
+        setBudgetInfo(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadBudget()
+  }, [id])
+
+  const periodLabels = useMemo(
+    () => getLabelsForPeriod(budgetInfo?.budgetPeriod),
+    [budgetInfo?.budgetPeriod]
+  )
+
+  const incomeTotals = useMemo(
+    () => ({
+      budgetByMonth: periodLabels.map((_, i) =>
+        incomeCategories.reduce((s, r) => s + (r.budget[i] ?? 0), 0)
+      ),
+      actualByMonth: periodLabels.map((_, i) =>
+        incomeCategories.reduce((s, r) => s + (r.actual[i] ?? 0), 0)
+      ),
+      budgetTotal: incomeCategories.reduce((s, r) => s + sumArr(r.budget), 0),
+      actualTotal: incomeCategories.reduce((s, r) => s + sumArr(r.actual), 0),
+    }),
+    [incomeCategories, periodLabels]
+  )
+  const expenseTotals = useMemo(
+    () => ({
+      budgetByMonth: periodLabels.map((_, i) =>
+        expenseCategories.reduce((s, r) => s + (r.budget[i] ?? 0), 0)
+      ),
+      actualByMonth: periodLabels.map((_, i) =>
+        expenseCategories.reduce((s, r) => s + (r.actual[i] ?? 0), 0)
+      ),
+      budgetTotal: expenseCategories.reduce((s, r) => s + sumArr(r.budget), 0),
+      actualTotal: expenseCategories.reduce((s, r) => s + sumArr(r.actual), 0),
+    }),
+    [expenseCategories, periodLabels]
+  )
+
+  if (!id || loadError || (!isLoading && !budgetInfo)) {
     return (
       <SidebarProvider
         style={
@@ -146,19 +238,15 @@ export default function BudgetDetailPage() {
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
-                          <BreadcrumbPage>{budgetInfo.name}</BreadcrumbPage>
+                          <BreadcrumbPage>{budgetInfo?.name || 'Budget Plan'}</BreadcrumbPage>
                         </BreadcrumbItem>
                       </BreadcrumbList>
                     </Breadcrumb>
-                    <h4 className="mt-2 text-xl font-semibold">{budgetInfo.name}</h4>
+                    <h4 className="mt-2 text-xl font-semibold">
+                      {budgetInfo?.name || 'Budget Plan'}
+                    </h4>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="shadow-none h-7" asChild>
-                      <Link href="/accounting/budget">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back
-                      </Link>
-                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -169,6 +257,15 @@ export default function BudgetDetailPage() {
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shadow-none h-7"
+                      onClick={() => router.push('/accounting/budget')}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back
                     </Button>
                   </div>
                 </div>
@@ -183,15 +280,15 @@ export default function BudgetDetailPage() {
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="text-sm font-medium">{budgetInfo.name}</p>
+                    <p className="text-sm font-medium">{budgetInfo?.name ?? '-'}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">From (Year)</p>
-                    <p className="text-sm font-medium">{budgetInfo.from}</p>
+                    <p className="text-sm font-medium">{budgetInfo?.from ?? '-'}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Budget Period</p>
-                    <p className="text-sm font-medium">{budgetInfo.budgetPeriod}</p>
+                    <p className="text-sm font-medium">{budgetInfo?.budgetPeriod ?? '-'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -209,7 +306,7 @@ export default function BudgetDetailPage() {
                         <TableHead className="min-w-[140px] px-3 py-2 font-semibold bg-muted/50 sticky left-0 z-10">
                           CATEGORY
                         </TableHead>
-                        {MONTHS.map((m) => (
+                        {periodLabels.map((m) => (
                           <TableHead key={m} colSpan={3} className="px-0 py-2 font-medium text-center text-xs whitespace-nowrap bg-muted/50">
                             {m}
                           </TableHead>
@@ -220,16 +317,16 @@ export default function BudgetDetailPage() {
                       </TableRow>
                       <TableRow>
                         <TableHead className="sticky left-0 bg-muted/50 z-10" />
-                        {MONTHS.map((m) => (
+                        {periodLabels.map((m) => (
                           <React.Fragment key={m}>
-                            <TableHead className="min-w-[64px] px-1 py-1.5 font-normal text-center text-xs">Budget</TableHead>
-                            <TableHead className="min-w-[64px] px-1 py-1.5 font-normal text-center text-xs">Actual</TableHead>
-                            <TableHead className="min-w-[56px] px-1 py-1.5 font-normal text-center text-xs">Over Budget</TableHead>
+                            <TableHead className="min-w-[112px] px-1 py-1.5 font-normal text-center text-xs">Budget</TableHead>
+                            <TableHead className="min-w-[112px] px-1 py-1.5 font-normal text-center text-xs">Actual</TableHead>
+                            <TableHead className="min-w-[96px] px-1 py-1.5 font-normal text-center text-xs">Over Budget</TableHead>
                           </React.Fragment>
                         ))}
-                        <TableHead className="min-w-[64px] px-1 py-1.5 font-normal text-center text-xs">Budget</TableHead>
-                        <TableHead className="min-w-[64px] px-1 py-1.5 font-normal text-center text-xs">Actual</TableHead>
-                        <TableHead className="min-w-[56px] px-1 py-1.5 font-normal text-center text-xs">Over Budget</TableHead>
+                        <TableHead className="min-w-[112px] px-1 py-1.5 font-normal text-center text-xs">Budget</TableHead>
+                        <TableHead className="min-w-[112px] px-1 py-1.5 font-normal text-center text-xs">Actual</TableHead>
+                        <TableHead className="min-w-[96px] px-1 py-1.5 font-normal text-center text-xs">Over Budget</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -238,50 +335,50 @@ export default function BudgetDetailPage() {
                           Income:
                         </TableCell>
                       </TableRow>
-                      {INCOME_CATEGORIES.map((row) => (
+                      {incomeCategories.map((row) => (
                         <TableRow key={row.name}>
                           <TableCell className="px-3 py-1.5 font-medium text-sm whitespace-nowrap sticky left-0 bg-background">
                             {row.name}
                           </TableCell>
-                          {MONTHS.map((_, colIndex) => {
+                          {periodLabels.map((_, colIndex) => {
                             const b = row.budget[colIndex] ?? 0
                             const a = row.actual[colIndex] ?? 0
                             const over = a - b
                             return (
                               <TableCell key={colIndex} className="p-0">
                                 <div className="flex border-b border-r last:border-r-0">
-                                  <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(b)}</div>
-                                  <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(a)}</div>
-                                  <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(over)}</div>
+                                  <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(b)}</div>
+                                  <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(a)}</div>
+                                  <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(over)}</div>
                                 </div>
                               </TableCell>
                             )
                           })}
                           <TableCell className="p-0 align-top">
                             <div className="flex border-b">
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-medium">{formatNum(sumArr(row.budget))}</div>
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l">{formatNum(sumArr(row.actual))}</div>
-                              <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l bg-muted/30">{formatNum(sumArr(row.actual) - sumArr(row.budget))}</div>
+                            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-medium">{formatNum(sumArr(row.budget))}</div>
+                            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l">{formatNum(sumArr(row.actual))}</div>
+                            <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l bg-muted/30">{formatNum(sumArr(row.actual) - sumArr(row.budget))}</div>
                             </div>
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/40 font-medium">
                         <TableCell className="px-3 py-2 sticky left-0 bg-muted/40">Total :</TableCell>
-                        {MONTHS.map((_, i) => (
+                        {periodLabels.map((_, i) => (
                           <TableCell key={i} colSpan={3} className="p-0">
                             <div className="flex border-b">
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(incomeTotals.budgetByMonth[i])}</div>
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(incomeTotals.actualByMonth[i])}</div>
-                              <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(incomeTotals.actualByMonth[i] - incomeTotals.budgetByMonth[i])}</div>
+                              <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(incomeTotals.budgetByMonth[i])}</div>
+                              <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(incomeTotals.actualByMonth[i])}</div>
+                              <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(incomeTotals.actualByMonth[i] - incomeTotals.budgetByMonth[i])}</div>
                             </div>
                           </TableCell>
                         ))}
                         <TableCell colSpan={3} className="p-0">
                           <div className="flex">
-                            <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold">{formatNum(incomeTotals.budgetTotal)}</div>
-                            <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l">{formatNum(incomeTotals.actualTotal)}</div>
-                            <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l bg-muted/30">{formatNum(incomeTotals.actualTotal - incomeTotals.budgetTotal)}</div>
+                            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold">{formatNum(incomeTotals.budgetTotal)}</div>
+                            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l">{formatNum(incomeTotals.actualTotal)}</div>
+                            <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l bg-muted/30">{formatNum(incomeTotals.actualTotal - incomeTotals.budgetTotal)}</div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -291,50 +388,50 @@ export default function BudgetDetailPage() {
                           Expense :
                         </TableCell>
                       </TableRow>
-                      {EXPENSE_CATEGORIES.map((row) => (
+                      {expenseCategories.map((row) => (
                         <TableRow key={row.name}>
                           <TableCell className="px-3 py-1.5 font-medium text-sm whitespace-nowrap sticky left-0 bg-background">
                             {row.name}
                           </TableCell>
-                          {MONTHS.map((_, colIndex) => {
+                          {periodLabels.map((_, colIndex) => {
                             const b = row.budget[colIndex] ?? 0
                             const a = row.actual[colIndex] ?? 0
                             const over = a - b
                             return (
                               <TableCell key={colIndex} className="p-0">
                                 <div className="flex border-b border-r last:border-r-0">
-                                  <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(b)}</div>
-                                  <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(a)}</div>
-                                  <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(over)}</div>
+                                  <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(b)}</div>
+                                  <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(a)}</div>
+                                  <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(over)}</div>
                                 </div>
                               </TableCell>
                             )
                           })}
                           <TableCell className="p-0 align-top">
                             <div className="flex border-b">
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-medium">{formatNum(sumArr(row.budget))}</div>
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l">{formatNum(sumArr(row.actual))}</div>
-                              <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l bg-muted/30">{formatNum(sumArr(row.actual) - sumArr(row.budget))}</div>
+                              <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-medium">{formatNum(sumArr(row.budget))}</div>
+                              <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l">{formatNum(sumArr(row.actual))}</div>
+                              <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l bg-muted/30">{formatNum(sumArr(row.actual) - sumArr(row.budget))}</div>
                             </div>
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/40 font-medium">
                         <TableCell className="px-3 py-2 sticky left-0 bg-muted/40">Total :</TableCell>
-                        {MONTHS.map((_, i) => (
+                        {periodLabels.map((_, i) => (
                           <TableCell key={i} colSpan={3} className="p-0">
                             <div className="flex border-b">
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(expenseTotals.budgetByMonth[i])}</div>
-                              <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(expenseTotals.actualByMonth[i])}</div>
-                              <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(expenseTotals.actualByMonth[i] - expenseTotals.budgetByMonth[i])}</div>
+                              <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums">{formatNum(expenseTotals.budgetByMonth[i])}</div>
+                              <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums border-l">{formatNum(expenseTotals.actualByMonth[i])}</div>
+                              <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">{formatNum(expenseTotals.actualByMonth[i] - expenseTotals.budgetByMonth[i])}</div>
                             </div>
                           </TableCell>
                         ))}
                         <TableCell colSpan={3} className="p-0">
                           <div className="flex">
-                            <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold">{formatNum(expenseTotals.budgetTotal)}</div>
-                            <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l">{formatNum(expenseTotals.actualTotal)}</div>
-                            <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l bg-muted/30">{formatNum(expenseTotals.actualTotal - expenseTotals.budgetTotal)}</div>
+                            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold">{formatNum(expenseTotals.budgetTotal)}</div>
+                            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l">{formatNum(expenseTotals.actualTotal)}</div>
+                            <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums font-semibold border-l bg-muted/30">{formatNum(expenseTotals.actualTotal - expenseTotals.budgetTotal)}</div>
                           </div>
                         </TableCell>
                       </TableRow>

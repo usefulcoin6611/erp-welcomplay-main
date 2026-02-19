@@ -10,10 +10,14 @@ type PaymentDetailPageProps = {
 }
 
 async function fetchPaymentDetail(paymentId: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/payments/${paymentId}`,
-    { cache: 'no-store' },
-  )
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const baseUrl =
+    appUrl && (appUrl.startsWith('http://') || appUrl.startsWith('https://'))
+      ? appUrl
+      : appUrl
+        ? `https://${appUrl}`
+        : 'http://localhost:3000'
+  const res = await fetch(`${baseUrl}/api/payments/${paymentId}`, { cache: 'no-store' })
 
   if (!res.ok) {
     return null

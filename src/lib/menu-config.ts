@@ -212,7 +212,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               },
               { title: "Budget Planner", url: "/accounting/budget" },
               { title: "Financial Goal", url: "/accounting/goal" },
-              { title: "Accounting Setup", url: "/accounting/setup" },
+              { title: "Accounting Setup", url: "/accounting/setup/custom-field?tab=taxes" },
               { title: "Print Settings", url: "/accounting/print-settings" },
             ],
           },

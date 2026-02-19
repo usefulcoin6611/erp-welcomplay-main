@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,7 +53,14 @@ import {
   Pencil,
   Trash2,
   X,
+  Loader2,
+  Upload,
+  Image as ImageIcon,
+  FileText,
 } from 'lucide-react'
+import { useCallback } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { toast } from 'sonner'
 
 type PaymentRow = {
   id: string
@@ -67,23 +75,10 @@ type PaymentRow = {
   paymentReceipt: string | null
 }
 
-const accounts = [
-  { id: '1', name: 'BCA - Main Operating' },
-  { id: '2', name: 'Mandiri - Purchases' },
-  { id: '3', name: 'BRI - Savings Account' },
-]
-
-const vendors = [
-  { id: '1', name: 'PT Supply Berkah' },
-  { id: '2', name: 'CV Logistik Nusantara' },
-  { id: '3', name: 'PT Teknologi Digital' },
-]
-
-const categories = [
-  { id: '1', name: 'Expense' },
-  { id: '2', name: 'Logistics' },
-  { id: '3', name: 'Services' },
-]
+type Option = {
+  id: string
+  name: string
+}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString)
@@ -109,7 +104,23 @@ export function PaymentTab() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentRow | null>(null)
-  const [formData, setFormData] = useState({
+  
+  // Data Master States
+  const [vendors, setVendors] = useState<Option[]>([])
+  const [accounts, setAccounts] = useState<Option[]>([])
+  const [categories, setCategories] = useState<Option[]>([])
+  const [loadingData, setLoadingData] = useState(false)
+  
+  const [formData, setFormData] = useState<{
+    vendor: string
+    date: string
+    amount: string
+    category: string
+    account: string
+    reference: string
+    description: string
+    paymentReceipt: File | { name: string, url: string } | null
+  }>({
     vendor: '',
     date: '',
     amount: '',
@@ -117,8 +128,11 @@ export function PaymentTab() {
     account: '',
     reference: '',
     description: '',
-    paymentReceipt: '',
+    paymentReceipt: null,
   })
+  
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
   const [filters, setFilters] = useState({
     date: '',
     account: '',
@@ -128,6 +142,47 @@ export function PaymentTab() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Load Data Master (Vendors, Accounts, Categories)
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingData(true)
+      try {
+        const [resVendors, resAccounts, resCategories] = await Promise.all([
+          fetch('/api/vendors'),
+          fetch('/api/bank-accounts'),
+          fetch('/api/categories')
+        ])
+        
+        const jsonVendors = await resVendors.json()
+        if (jsonVendors.success) {
+          setVendors(jsonVendors.data.map((v: any) => ({ id: v.id, name: v.name })))
+        }
+
+        const jsonAccounts = await resAccounts.json()
+        if (jsonAccounts.success) {
+          setAccounts(jsonAccounts.data.map((a: any) => ({ 
+            id: a.id, 
+            name: `${a.bank} - ${a.name}` 
+          })))
+        }
+
+        const jsonCategories = await resCategories.json()
+        if (jsonCategories.success) {
+          // Filter only Expense categories as per reference-erp
+          const expenseCats = jsonCategories.data.filter((c: any) => c.type === 'Expense')
+          setCategories(expenseCats.map((c: any) => ({ id: c.id, name: c.name })))
+        }
+      } catch (error) {
+        console.error('Failed to load master data', error)
+        toast.error('Gagal memuat data master')
+      } finally {
+        setLoadingData(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   useEffect(() => {
     const loadPayments = async () => {
@@ -146,10 +201,11 @@ export function PaymentTab() {
           category: p.category as string,
           reference: p.reference ?? null,
           description: p.description ?? null,
-          paymentReceipt: null,
+          paymentReceipt: p.paymentReceipt ?? null,
         }))
         setRows(mapped)
       } catch {
+        toast.error('Gagal memuat daftar pembayaran')
       }
     }
 
@@ -186,23 +242,38 @@ export function PaymentTab() {
         account: '',
         reference: '',
         description: '',
-        paymentReceipt: '',
+        paymentReceipt: null,
       })
+      setPreviewUrl(null)
+      setIsSubmitting(false)
     }
   }
 
   const handleEdit = (payment: PaymentRow) => {
     setEditingId(payment.id)
+    
+    // Find ID based on Name (since API returns Names)
+    const vendorId = vendors.find((v) => v.name === payment.vendor)?.id ?? ''
+    const accountId = accounts.find((a) => a.name === payment.account)?.id ?? ''
+    const categoryId = categories.find((c) => c.name === payment.category)?.id ?? ''
+
     setFormData({
-      vendor: vendors.find((v) => v.name === payment.vendor)?.id ?? '',
+      vendor: vendorId,
       date: payment.date,
       amount: String(payment.amount),
-      category: categories.find((c) => c.name === payment.category)?.id ?? '',
-      account: accounts.find((a) => a.name === payment.account)?.id ?? '',
+      category: categoryId,
+      account: accountId,
       reference: payment.reference || '',
       description: payment.description || '',
-      paymentReceipt: payment.paymentReceipt || '',
+      paymentReceipt: payment.paymentReceipt ? { name: payment.paymentReceipt.split('/').pop() || 'Existing Receipt', url: payment.paymentReceipt } : null,
     })
+    
+    if (payment.paymentReceipt) {
+      setPreviewUrl(payment.paymentReceipt)
+    } else {
+      setPreviewUrl(null)
+    }
+    
     setCreateDialogOpen(true)
   }
 
@@ -211,78 +282,129 @@ export function PaymentTab() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!paymentToDelete) return
-    fetch(`/api/payments/${paymentToDelete.paymentId}`, {
-      method: 'DELETE',
-    }).catch(() => null)
-    setRows((prev) => prev.filter((p) => p.id !== paymentToDelete.id))
+    try {
+      const res = await fetch(`/api/payments/${paymentToDelete.id}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        setRows((prev) => prev.filter((p) => p.id !== paymentToDelete.id))
+        toast.success('Pembayaran berhasil dihapus')
+      } else {
+        toast.error('Gagal menghapus pembayaran')
+      }
+    } catch {
+      toast.error('Terjadi kesalahan saat menghapus')
+    }
     setPaymentToDelete(null)
     setDeleteDialogOpen(false)
   }
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0]
+    if (file) {
+      setFormData((prev) => ({ ...prev, paymentReceipt: file }))
+      const objectUrl = URL.createObjectURL(file)
+      setPreviewUrl(objectUrl)
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg'],
+      'application/pdf': ['.pdf'],
+    },
+    maxFiles: 1,
+    multiple: false,
+  })
+
+  const handleRemoveReceipt = () => {
+    setFormData((prev) => ({ ...prev, paymentReceipt: null }))
+    setPreviewUrl(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+
+    // Map IDs back to Names for API
     const vendorName = vendors.find((v) => v.id === formData.vendor)?.name ?? ''
     const categoryName = categories.find((c) => c.id === formData.category)?.name ?? ''
     const accountName = accounts.find((a) => a.id === formData.account)?.name ?? ''
     const nextAmount = Number(formData.amount) || 0
 
-    const payload = {
-      date: formData.date,
-      vendor: vendorName,
-      account: accountName,
-      category: categoryName,
-      amount: nextAmount,
-      status: 'Completed',
-      reference: formData.reference || null,
-      description: formData.description || null,
+    const submitData = new FormData()
+    submitData.append('date', formData.date)
+    submitData.append('vendor', vendorName)
+    submitData.append('account', accountName)
+    submitData.append('category', categoryName)
+    submitData.append('amount', String(nextAmount))
+    submitData.append('status', 'Completed')
+    if (formData.reference) submitData.append('reference', formData.reference)
+    if (formData.description) submitData.append('description', formData.description)
+    if (formData.paymentReceipt instanceof File) {
+      submitData.append('paymentReceipt', formData.paymentReceipt)
     }
 
     const target = rows.find((p) => p.id === editingId)
-    const url = editingId && target ? `/api/payments/${target.paymentId}` : '/api/payments'
+    const url = editingId && target ? `/api/payments/${target.id}` : '/api/payments'
     const method = editingId && target ? 'PUT' : 'POST'
 
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => null)
+    try {
+      const res = await fetch(url, {
+        method,
+        body: submitData,
+      })
 
-    if (!res || !res.ok) {
-      return
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        toast.error(json?.message || 'Gagal menyimpan pembayaran')
+        setIsSubmitting(false)
+        return
+      }
+
+      const json = await res.json()
+      if (!json?.success || !json.data) {
+        toast.error('Respon server tidak valid')
+        setIsSubmitting(false)
+        return
+      }
+
+      const saved: any = json.data
+      const mapped: PaymentRow = {
+        id: saved.id as string,
+        paymentId: saved.paymentId as string,
+        date: new Date(saved.date).toISOString().slice(0, 10),
+        amount: Number(saved.amount) || 0,
+        account: saved.account as string,
+        vendor: saved.vendor as string,
+        category: saved.category as string,
+        reference: saved.reference ?? null,
+        description: saved.description ?? null,
+        paymentReceipt: saved.paymentReceipt ?? null,
+      }
+
+      if (editingId && target) {
+        setRows((prev) =>
+          prev.map((p) =>
+            p.id === editingId ? mapped : p,
+          ),
+        )
+        toast.success('Pembayaran berhasil diperbarui')
+      } else {
+        setRows((prev) => [mapped, ...prev])
+        toast.success('Pembayaran berhasil dibuat')
+      }
+
+      handleDialogOpenChange(false)
+    } catch (error) {
+      console.error('Submit error:', error)
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    const json = await res.json().catch(() => null)
-    if (!json?.success || !json.data) {
-      return
-    }
-
-    const saved: any = json.data
-    const mapped: PaymentRow = {
-      id: saved.id as string,
-      paymentId: saved.paymentId as string,
-      date: new Date(saved.date).toISOString().slice(0, 10),
-      amount: Number(saved.amount) || 0,
-      account: saved.account as string,
-      vendor: saved.vendor as string,
-      category: saved.category as string,
-      reference: saved.reference ?? null,
-      description: saved.description ?? null,
-      paymentReceipt: null,
-    }
-
-    if (editingId && target) {
-      setRows((prev) =>
-        prev.map((p) =>
-          p.id === editingId ? mapped : p,
-        ),
-      )
-    } else {
-      setRows((prev) => [mapped, ...prev])
-    }
-
-    handleDialogOpenChange(false)
   }
 
   // Filter data based on filters
@@ -359,7 +481,7 @@ export function PaymentTab() {
                 Create Payment
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Edit Payment' : 'Create New Payment'}</DialogTitle>
             </DialogHeader>
@@ -458,11 +580,85 @@ export function PaymentTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="create-receipt">Payment Receipt</Label>
-                  <Input id="create-receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setFormData({ ...formData, paymentReceipt: e.target.files?.[0]?.name ?? '' })} />
-                  {formData.paymentReceipt ? (
-                    <p className="text-xs text-muted-foreground">Selected: {formData.paymentReceipt}</p>
-                  ) : null}
+                  <Label>Payment Receipt</Label>
+                  {!previewUrl ? (
+                    <div
+                      {...getRootProps()}
+                      className={`
+                        border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+                        ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}
+                      `}
+                    >
+                      <input {...getInputProps()} />
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Upload className="h-8 w-8" />
+                        <p className="text-sm font-medium">
+                          {isDragActive ? 'Drop the file here' : 'Drag & drop file here, or click to select'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Supports: PNG, JPG, JPEG, PDF (Max 5MB)
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative w-full border rounded-lg overflow-hidden bg-gray-50 p-2">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 shrink-0 bg-white rounded-md border flex items-center justify-center">
+                          {previewUrl.endsWith('.pdf') ? (
+                            <FileText className="h-5 w-5 text-red-500" />
+                          ) : (
+                            <ImageIcon className="h-5 w-5 text-blue-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {formData.paymentReceipt instanceof File 
+                              ? formData.paymentReceipt.name 
+                              : (formData.paymentReceipt as any)?.name || 'Receipt'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formData.paymentReceipt instanceof File 
+                              ? `${(formData.paymentReceipt.size / 1024).toFixed(1)} KB` 
+                              : 'Existing File'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => window.open(previewUrl, '_blank')}
+                            title="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={handleRemoveReceipt}
+                            title="Remove"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Image Preview Area (Only for images) */}
+                      {!previewUrl.endsWith('.pdf') && (
+                        <div className="mt-2 relative w-full h-40 bg-gray-100 rounded-md overflow-hidden border">
+                          <Image 
+                            src={previewUrl} 
+                            alt="Preview" 
+                            fill 
+                            className="object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -475,7 +671,8 @@ export function PaymentTab() {
               <Button variant="secondary" type="button" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                 Cancel
               </Button>
-              <Button variant="blue" type="submit" className="shadow-none">
+              <Button variant="blue" type="submit" className="shadow-none" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingId ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
@@ -666,16 +863,22 @@ export function PaymentTab() {
                               variant="outline"
                               className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                               title="Download"
-                              onClick={() => console.log('Download:', payment.paymentReceipt)}
+                              asChild
                             >
-                              <Download className="h-3 w-3" />
+                              <a href={payment.paymentReceipt} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-3 w-3" />
+                              </a>
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                               title="Preview"
-                              onClick={() => console.log('Preview:', payment.paymentReceipt)}
+                              onClick={() => {
+                                if (payment.paymentReceipt) {
+                                  window.open(payment.paymentReceipt, '_blank')
+                                }
+                              }}
                             >
                               <Eye className="h-3 w-3" />
                             </Button>

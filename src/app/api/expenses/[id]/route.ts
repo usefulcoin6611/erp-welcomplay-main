@@ -4,6 +4,17 @@ import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
 
+const expenseItemUpdateSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.number().nonnegative(),
+  price: z.number().nonnegative(),
+  discount: z.number().nonnegative(),
+  taxRate: z.number().nonnegative(),
+  description: z.string().optional().nullable(),
+});
+
+type ExpenseItemUpdateInput = z.infer<typeof expenseItemUpdateSchema>;
+
 const expenseUpdateSchema = z.object({
   type: z.string().min(1).optional(),
   party: z.string().min(1).optional(),
@@ -13,7 +24,14 @@ const expenseUpdateSchema = z.object({
   status: z.string().optional(),
   reference: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
+  items: z.array(expenseItemUpdateSchema).optional(),
 });
+
+function calcExpenseItemAmountUpdate(item: ExpenseItemUpdateInput) {
+  const base = Math.max(0, item.price * item.quantity - item.discount);
+  const tax = (item.taxRate / 100) * base;
+  return base + tax;
+}
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -49,6 +67,13 @@ export async function GET(
       where: {
         expenseId: id,
         branchId,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
@@ -123,6 +148,10 @@ export async function PUT(
       );
     }
 
+    const itemsInput: ExpenseItemUpdateInput[] = Array.isArray(data.items)
+      ? data.items
+      : [];
+
     const updated = await db.expense.update({
       where: { id: existing.id },
       data: {
@@ -141,6 +170,24 @@ export async function PUT(
           data.description === undefined
             ? existing.description
             : data.description ?? null,
+        items: itemsInput.length
+          ? {
+              deleteMany: { expenseId: existing.expenseId },
+              create: itemsInput.map((it) => ({
+                productId: it.productId,
+                itemName: "",
+                quantity: it.quantity,
+                price: it.price,
+                discount: it.discount,
+                taxRate: it.taxRate,
+                amount: calcExpenseItemAmountUpdate(it),
+                description: it.description ?? null,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        items: true,
       },
     });
 

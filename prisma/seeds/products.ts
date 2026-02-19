@@ -27,6 +27,12 @@ export async function seedProducts(prisma: any) {
     taxByName[t.name] = t.id;
   }
 
+  await prisma.product.deleteMany({
+    where: {
+      sku: { in: ["EXP-SRV-TAXI", "EXP-SRV-MEAL", "EXP-SRV-UTILITY", "EXP-SRV-RENT", "EXP-OFF-STATION"] },
+    },
+  });
+
   const products = [
     {
       name: "Lisensi ERP Cloud",

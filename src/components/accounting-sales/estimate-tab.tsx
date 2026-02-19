@@ -251,6 +251,12 @@ export function EstimateTab() {
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [proposalPrintSetting, setProposalPrintSetting] = useState<{
+    template: string
+    qrDisplay: boolean
+    color: string
+    logoDataUrl?: string | null
+  } | null>(null)
 
   const computeTotals = React.useMemo(() => {
     if (!selectedEstimate) return { subTotal: 0, discount: 0, tax: 0, total: 0 }
@@ -296,7 +302,37 @@ export function EstimateTab() {
     }
     load()
   }, [])
-  
+
+  useEffect(() => {
+    const loadPrintSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/accounting-print')
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.success || !json.data) return
+        const data = json.data as {
+          proposal?: { template?: string; qrDisplay?: boolean; color?: string; logoDataUrl?: string | null }
+        }
+        if (data.proposal) {
+          setProposalPrintSetting({
+            template: data.proposal.template || 'new-york',
+            qrDisplay: typeof data.proposal.qrDisplay === 'boolean' ? data.proposal.qrDisplay : true,
+            color: data.proposal.color || '#1e40af',
+            logoDataUrl: data.proposal.logoDataUrl ?? null,
+          })
+        } else {
+          setProposalPrintSetting({
+            template: 'new-york',
+            qrDisplay: true,
+            color: '#1e40af',
+            logoDataUrl: null,
+          })
+        }
+      } catch {
+      }
+    }
+    loadPrintSettings()
+  }, [])
+
   useEffect(() => {
     if (!selectedEstimate) {
       setQrDataUrl(null)
@@ -440,8 +476,22 @@ export function EstimateTab() {
         <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
           <CardHeader className="px-6">
             <div className="w-full flex items-center justify-between">
-              <CardTitle className="text-base font-normal">Proposal</CardTitle>
-              <span className="text-base font-semibold">#{selectedEstimate.estimateId}</span>
+              <div className="flex items-center gap-3 min-w-0">
+                {proposalPrintSetting?.logoDataUrl && (
+                  <div className="w-10 h-10 rounded border border-border bg-white flex items-center justify-center overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={proposalPrintSetting.logoDataUrl}
+                      alt="Logo"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <CardTitle className="text-base font-normal">Proposal</CardTitle>
+                  <span className="text-base font-semibold block truncate">#{selectedEstimate.estimateId}</span>
+                </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-6 space-y-6">
@@ -467,10 +517,20 @@ export function EstimateTab() {
               </div>
               <div className="flex items-start justify-end">
                 <div className="flex flex-col items-end gap-3">
-                  {qrDataUrl ? (
-                    <img src={qrDataUrl} alt="QR" className="w-[100px] h-[100px] rounded-lg border border-border bg-white p-1" />
-                  ) : (
-                    <div className="w-[100px] h-[100px] rounded-lg bg-white p-2 border border-border" />
+                  {proposalPrintSetting?.qrDisplay !== false && (
+                    qrDataUrl ? (
+                      <img
+                        src={qrDataUrl}
+                        alt="QR"
+                        className="w-[100px] h-[100px] rounded-lg border bg-white p-1"
+                        style={{ borderColor: proposalPrintSetting?.color || 'hsl(var(--border))' }}
+                      />
+                    ) : (
+                      <div
+                        className="w-[100px] h-[100px] rounded-lg bg-white p-2 border"
+                        style={{ borderColor: proposalPrintSetting?.color || 'hsl(var(--border))' }}
+                      />
+                    )
                   )}
                 </div>
               </div>

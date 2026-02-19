@@ -213,8 +213,10 @@ export async function seedBills(prisma: any) {
       0,
     );
 
-    await db.bill.create({
-      data: {
+    await db.bill.upsert({
+      where: { billId: b.billId },
+      update: {},
+      create: {
         billId: b.billId,
         vendorId: b.vendorId,
         branchId: b.branchId,

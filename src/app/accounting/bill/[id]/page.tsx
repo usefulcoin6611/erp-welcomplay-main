@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import * as QRCode from 'qrcode'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { prisma } from '@/lib/prisma'
+import { BillActionsBar } from '@/components/accounting/bill-actions-bar'
 
 type BillDetailPageProps = {
   params: Promise<{ id: string }>
@@ -27,6 +29,18 @@ async function getBill(id: string | undefined) {
       items: true,
     },
   })
+
+  // If not found by billId (e.g. BILL-2026-001), try finding by internal UUID
+  if (!bill) {
+    const billById = await prisma.bill.findUnique({
+      where: { id: id },
+      include: {
+        vendor: true,
+        items: true,
+      },
+    })
+    return billById
+  }
 
   return bill
 }
@@ -84,6 +98,8 @@ function mapBillStatus(status: string | null | undefined): { value: string; labe
   }
 }
 
+import { BillPaymentModal } from '@/components/accounting/bill-payment-modal'
+
 export default async function BillDetailPage({ params }: BillDetailPageProps) {
   const { id } = await params
   const bill = await getBill(id)
@@ -99,7 +115,58 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
     return sum + ((it.taxRate || 0) / 100) * base
   }, 0)
   const grandTotal = bill?.total ?? subTotal + taxTotal
-  const billStatus = mapBillStatus((bill as any)?.status)
+  const billStatus = mapBillStatus(bill?.status)
+
+  let billPrintSetting: {
+    template: string
+    qrDisplay: boolean
+    color: string
+    logoDataUrl?: string | null
+  } | null = null
+  try {
+    const setting = await prisma.setting.findUnique({
+      where: { key: 'accounting_print_settings' },
+    })
+    if (setting?.value) {
+      const parsed = JSON.parse(setting.value) as {
+        bill?: { template?: string; qrDisplay?: boolean; color?: string; logoDataUrl?: string | null }
+      }
+      if (parsed.bill) {
+        billPrintSetting = {
+          template: parsed.bill.template || 'new-york',
+          qrDisplay:
+            typeof parsed.bill.qrDisplay === 'boolean' ? parsed.bill.qrDisplay : true,
+          color: parsed.bill.color || '#1e40af',
+          logoDataUrl: parsed.bill.logoDataUrl ?? null,
+        }
+      }
+    }
+  } catch {
+    billPrintSetting = null
+  }
+
+  let billQrDataUrl: string | null = null
+  if (bill?.billId) {
+    try {
+      billQrDataUrl = await new Promise<string | null>((resolve) => {
+        QRCode.toDataURL(
+          String(bill.billId),
+          {
+            errorCorrectionLevel: 'M',
+            width: 100,
+            margin: 1,
+            color: { dark: '#000000', light: '#ffffff' },
+          },
+          (err, url) => {
+            if (err || !url) resolve(null)
+            else resolve(url)
+          },
+        )
+      })
+    } catch {
+      billQrDataUrl = null
+    }
+  }
 
   return (
     <SidebarProvider
@@ -132,7 +199,7 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
                     size="sm"
                     className="shadow-none h-8 px-3 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                   >
-                    <Link href={`/accounting/bill/create/${bill.billId}`}>
+                    <Link href={`/accounting/bill/edit/${bill.billId}`}>
                       Edit
                     </Link>
                   </Button>
@@ -142,7 +209,7 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
                     variant="outline"
                     className="shadow-none h-8 w-40 px-3"
                   >
-                    <Link href={`/accounting/bill/create/${bill.billId}`}>
+                    <Link href={`/accounting/bill/edit/${bill.billId}?action=status`}>
                       Change Status
                     </Link>
                   </Button>
@@ -223,13 +290,16 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
                             Awaiting payment
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shadow-none h-8 px-3"
-                        >
-                          Add Payment
-                        </Button>
+                        <BillPaymentModal 
+                          bill={{
+                            id: bill.id,
+                            billId: bill.billId,
+                            vendorId: bill.vendorId ?? '',
+                            vendorName: bill.vendor?.name || '',
+                            total: grandTotal, 
+                            status: bill.status || 'unpaid'
+                          }} 
+                        />
                       </div>
                     </div>
                   </div>
@@ -237,51 +307,32 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
               </Card>
             )}
 
-            {bill && bill.status !== 'draft' && (
-              <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
-                {bill.status !== 'paid' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Apply Debit Note
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Bill Reminder
-                    </Button>
-                  </>
-                )}
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Resend Bill
-                </Button>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-8 px-3 shadow-none bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Download
-                </Button>
-              </div>
+            {bill && (
+              <BillActionsBar billId={bill.billId} status={bill.status} />
             )}
 
             {bill && (
               <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] border-gray-100">
                 <CardHeader className="px-6">
                   <div className="w-full flex items-center justify-between">
-                    <CardTitle className="text-base font-normal">Bill</CardTitle>
-                    <span className="text-base font-semibold">
-                      #{bill.billId}
-                    </span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {billPrintSetting?.logoDataUrl && (
+                        <div className="w-10 h-10 rounded border border-border bg-white flex items-center justify-center overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={billPrintSetting.logoDataUrl}
+                            alt="Logo"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <CardTitle className="text-base font-normal">Bill</CardTitle>
+                        <span className="text-base font-semibold block truncate">
+                          #{bill.billId}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="px-6 space-y-6">
@@ -359,18 +410,35 @@ export default async function BillDetailPage({ params }: BillDetailPageProps) {
                       </div>
                     </div>
                     <div className="flex items-start justify-end">
-                      <div className="text-sm text-right space-y-1">
-                        <div>
-                          <span className="text-muted-foreground">Status :</span>{' '}
-                          <Badge className={getBillStatusClasses(billStatus.value)}>
-                            {billStatus.label}
-                          </Badge>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Total :</span>{' '}
-                          <span className="font-semibold">
-                            Rp {grandTotal.toLocaleString('id-ID')}
-                          </span>
+                      <div className="flex flex-col items-end gap-3">
+                        {billPrintSetting?.qrDisplay !== false && (
+                          billQrDataUrl ? (
+                            <img
+                              src={billQrDataUrl}
+                              alt="Bill QR"
+                              className="w-[100px] h-[100px] rounded-lg border bg-white p-1"
+                              style={{ borderColor: billPrintSetting?.color || 'hsl(var(--border))' }}
+                            />
+                          ) : (
+                            <div
+                              className="w-[100px] h-[100px] rounded-lg bg-white p-2 border"
+                              style={{ borderColor: billPrintSetting?.color || 'hsl(var(--border))' }}
+                            />
+                          )
+                        )}
+                        <div className="text-sm text-right space-y-1">
+                          <div>
+                            <span className="text-muted-foreground">Status :</span>{' '}
+                            <Badge className={getBillStatusClasses(billStatus.value)}>
+                              {billStatus.label}
+                            </Badge>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Total :</span>{' '}
+                            <span className="font-semibold">
+                              Rp {grandTotal.toLocaleString('id-ID')}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -1,59 +1,33 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Search,
-  X,
-} from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { toast } from 'sonner'
 
-// Mock data based on reference
 const goalTypes = [
   { value: 'Invoice', label: 'Invoice' },
   { value: 'Bill', label: 'Bill' },
@@ -61,53 +35,15 @@ const goalTypes = [
   { value: 'Payment', label: 'Payment' },
 ]
 
-const mockGoals = [
-  {
-    id: 1,
-    name: 'Increase Revenue',
-    type: 'Revenue',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 500_000_000,
-    is_display: 1,
-  },
-  {
-    id: 2,
-    name: 'Reduce Expenses',
-    type: 'Payment',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 200_000_000,
-    is_display: 0,
-  },
-  {
-    id: 3,
-    name: 'Increase Invoice Sales',
-    type: 'Invoice',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 300_000_000,
-    is_display: 1,
-  },
-  {
-    id: 4,
-    name: 'Reduce Bill Payments',
-    type: 'Bill',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 150_000_000,
-    is_display: 0,
-  },
-  {
-    id: 5,
-    name: 'Monthly Revenue Target',
-    type: 'Revenue',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 600_000_000,
-    is_display: 1,
-  },
-]
+type FinancialGoal = {
+  id: string
+  name: string
+  type: string
+  from: string
+  to: string
+  amount: number
+  is_display: number
+}
 
 function formatPrice(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -119,10 +55,12 @@ function formatPrice(amount: number) {
 }
 
 export default function FinancialGoalPage() {
-  const [goals, setGoals] = useState(mockGoals)
+  const [goals, setGoals] = useState<FinancialGoal[]>([])
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingGoal, setEditingGoal] = useState<any>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -134,6 +72,33 @@ export default function FinancialGoalPage() {
     to: '',
     is_display: true,
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const loadGoals = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch('/api/financial-goals')
+        if (!res.ok) {
+          toast.error('Gagal memuat financial goal')
+          return
+        }
+        const json = await res.json().catch(() => null)
+        if (!json?.success || !Array.isArray(json.data)) {
+          toast.error(json?.message || 'Respon server tidak valid saat memuat financial goal')
+          return
+        }
+        setGoals(json.data)
+      } catch (error) {
+        toast.error('Terjadi kesalahan saat memuat financial goal')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadGoals()
+  }, [])
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -164,27 +129,60 @@ export default function FinancialGoalPage() {
     formData.from.trim().length > 0 &&
     formData.to.trim().length > 0
 
-  const handleCreate = () => {
-    if (!isFormValid) return
-    const newGoal = {
-      id: goals.length + 1,
-      ...formData,
-      amount: parseFloat(formData.amount),
-      is_display: formData.is_display ? 1 : 0,
+  const handleCreate = async () => {
+    if (!isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        type: formData.type,
+        from: formData.from,
+        to: formData.to,
+        amount: parseFloat(formData.amount),
+        is_display: formData.is_display ? 1 : 0,
+      }
+
+      const res = await fetch('/api/financial-goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal membuat financial goal')
+        return
+      }
+
+      const reloadRes = await fetch('/api/financial-goals')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setGoals(reloadJson.data)
+        }
+      }
+
+      toast.success('Financial goal berhasil dibuat')
+
+      setFormData({
+        name: '',
+        amount: '',
+        type: '',
+        from: '',
+        to: '',
+        is_display: true,
+      })
+      setCreateDialogOpen(false)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat membuat financial goal')
+    } finally {
+      setIsSubmitting(false)
     }
-    setGoals([...goals, newGoal])
-    setFormData({
-      name: '',
-      amount: '',
-      type: '',
-      from: '',
-      to: '',
-      is_display: true,
-    })
-    setCreateDialogOpen(false)
   }
 
-  const handleEdit = (goal: any) => {
+  const handleEdit = (goal: FinancialGoal) => {
     setEditingGoal(goal)
     setFormData({
       name: goal.name,
@@ -197,36 +195,94 @@ export default function FinancialGoalPage() {
     setEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (!editingGoal) return
-    if (!isFormValid) return
-    setGoals(
-      goals.map((g) =>
-        g.id === editingGoal.id
-          ? {
-              ...g,
-              ...formData,
-              amount: parseFloat(formData.amount),
-              is_display: formData.is_display ? 1 : 0,
-            }
-          : g
-      )
-    )
-    setEditDialogOpen(false)
-    setEditingGoal(null)
-    setFormData({
-      name: '',
-      amount: '',
-      type: '',
-      from: '',
-      to: '',
-      is_display: true,
-    })
+  const handleUpdate = async () => {
+    if (!editingGoal || !isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        id: editingGoal.id,
+        name: formData.name.trim(),
+        type: formData.type,
+        from: formData.from,
+        to: formData.to,
+        amount: parseFloat(formData.amount),
+        is_display: formData.is_display ? 1 : 0,
+      }
+
+      const res = await fetch('/api/financial-goals', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal memperbarui financial goal')
+        return
+      }
+
+      const reloadRes = await fetch('/api/financial-goals')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setGoals(reloadJson.data)
+        }
+      }
+
+      toast.success('Financial goal berhasil diperbarui')
+
+      setEditDialogOpen(false)
+      setEditingGoal(null)
+      setFormData({
+        name: '',
+        amount: '',
+        type: '',
+        from: '',
+        to: '',
+        is_display: true,
+      })
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat memperbarui financial goal')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are You Sure? This action can not be undone. Do you want to continue?')) {
-      setGoals(goals.filter((g) => g.id !== id))
+  const confirmDelete = (id: string) => {
+    setDeletingGoalId(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deletingGoalId) return
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/financial-goals?id=${encodeURIComponent(deletingGoalId)}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal menghapus financial goal')
+        return
+      }
+
+      const reloadRes = await fetch('/api/financial-goals')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setGoals(reloadJson.data)
+        }
+      }
+
+      toast.success('Financial goal berhasil dihapus')
+      setDeleteDialogOpen(false)
+      setDeletingGoalId(null)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menghapus financial goal')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -454,7 +510,7 @@ export default function FinancialGoalPage() {
                                   size="sm"
                                   className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Delete"
-                                  onClick={() => handleDelete(goal.id)}
+                                  onClick={() => confirmDelete(goal.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -588,6 +644,21 @@ export default function FinancialGoalPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are You Sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the financial goal.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </MainContentWrapper>
       </SidebarInset>

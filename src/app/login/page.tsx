@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Loader2, Mail, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { authService, type LoginCredentials } from "@/lib/auth"
 import { useAuth } from "@/contexts/auth-context"
@@ -203,7 +203,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Title */}
-            <div className="mb-6">
+            <div className="mb-6 text-center">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Login</h2>
               <p className="text-sm text-gray-600">
                 Enter your credentials to access your account
@@ -224,17 +224,22 @@ export default function LoginPage() {
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email
                 </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter Your Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
-                  disabled={isLoading}
-                  autoComplete="email"
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter Your Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 pl-10 border-0 bg-[#f9f9f9] focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-blue-500 rounded-full transition-colors"
+                    disabled={isLoading}
+                    autoComplete="email"
+                  />
+                </div>
               </div>
 
               {/* Password Field */}
@@ -245,22 +250,31 @@ export default function LoginPage() {
                   </Label>
                   <Link
                     href="/forgot-password"
-                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline pointer-events-auto relative z-20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log("Forgot password clicked");
+                    }}
                   >
                     Forgot your password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter Your Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11"
-                  disabled={isLoading}
-                  autoComplete="current-password"
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Lock className="h-5 w-5" />
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter Your Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11 pl-10 border-0 bg-[#f9f9f9] focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-blue-500 rounded-full transition-colors"
+                    disabled={isLoading}
+                    autoComplete="current-password"
+                  />
+                </div>
               </div>
 
               {/* Submit Button */}
@@ -268,7 +282,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   variant="blue"
-                  className="w-full h-11 font-medium shadow-sm"
+                  className="w-full h-11 font-medium shadow-sm rounded-full"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -283,12 +297,16 @@ export default function LoginPage() {
               </div>
 
               {/* Register Link */}
-              <div className="text-center pt-2">
+              <div className="text-center pt-2 relative z-20">
                 <p className="text-sm text-gray-600">
                   Don&apos;t have an account?{" "}
                   <Link
                     href="/register"
-                    className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                    className="text-blue-600 hover:text-blue-700 font-medium hover:underline pointer-events-auto relative z-30 inline-block"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log("Register clicked");
+                    }}
                   >
                     Register
                   </Link>

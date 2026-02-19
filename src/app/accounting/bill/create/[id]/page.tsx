@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useParams } from 'next/navigation'
+import { usePathname, useParams, useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -54,6 +55,9 @@ function calcItemAmount(item: BillItem) {
 export default function BillCreatePage() {
   const pathname = usePathname()
   const params = useParams<{ id: string }>()
+  const searchParams = useSearchParams()
+  const highlightStatus = searchParams.get('action') === 'status'
+
   const routeId = useMemo(() => {
     const segments = pathname.split('/').filter(Boolean)
     const last = segments[segments.length - 1]
@@ -102,7 +106,7 @@ export default function BillCreatePage() {
           fetch('/api/products').then((r) => r.json()).catch(() => ({ success: false })),
           fetch('/api/taxes').then((r) => r.json()).catch(() => ({ success: false })),
           isEdit
-            ? fetch(`/api/bills/${routeId}`).then((r) => r.json()).catch(() => ({ success: false }))
+            ? fetch(`/api/bills/${routeId}`, { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ success: false }))
             : Promise.resolve({ success: false }),
         ])
 
@@ -404,7 +408,13 @@ export default function BillCreatePage() {
                           value={formData.status}
                           onValueChange={(value) => setFormData({ ...formData, status: value })}
                         >
-                          <SelectTrigger id="status" className="h-9">
+                          <SelectTrigger
+                            id="status"
+                            className={cn(
+                              "h-9",
+                              highlightStatus && "animate-pulse ring-2 ring-blue-400",
+                            )}
+                          >
                             <SelectValue placeholder="Select Status" />
                           </SelectTrigger>
                           <SelectContent>

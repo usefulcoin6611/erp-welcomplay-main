@@ -266,7 +266,7 @@ export default async function BillPage() {
                               size="sm"
                               className="h-7 px-2 shadow-none bg-cyan-50 text-cyan-700 border-cyan-100"
                             >
-                              <Link href={`/accounting/bill/create/${bill.id}`}>Edit</Link>
+                              <Link href={`/accounting/bill/edit/${bill.billNumber}`}>Edit</Link>
                             </Button>
                           </div>
                         </TableCell>

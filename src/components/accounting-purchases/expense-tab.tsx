@@ -7,17 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -84,16 +74,6 @@ export function ExpenseTab() {
   const [search, setSearch] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseRow | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    date: '',
-    categoryId: '',
-    amount: '',
-    reference: '',
-    description: '',
-    receiptName: '',
-  })
   const [paymentDate, setPaymentDate] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -197,94 +177,6 @@ export function ExpenseTab() {
     setDeleteDialogOpen(false)
   }
 
-  const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open)
-    if (!open) {
-      setEditingId(null)
-      setFormData({
-        date: '',
-        categoryId: '',
-        amount: '',
-        reference: '',
-        description: '',
-        receiptName: '',
-      })
-    }
-  }
-
-  const handleEdit = (exp: ExpenseRow) => {
-    setEditingId(exp.id)
-    const categoryOption = categories.find((c) => c.name === exp.category)
-    setFormData({
-      date: exp.date,
-      categoryId: categoryOption?.id ?? '',
-      amount: String(exp.amount ?? ''),
-      reference: exp.reference ?? '',
-      description: exp.description ?? '',
-      receiptName: exp.receipt ?? '',
-    })
-    setDialogOpen(true)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const nextAmount = Number(formData.amount) || 0
-
-    const selectedCategory = categories.find((c) => c.id === formData.categoryId)
-    const categoryName = selectedCategory?.name ?? ''
-
-    const payload = {
-      date: formData.date,
-      type: 'Vendor',
-      party: 'Manual',
-      category: categoryName,
-      total: nextAmount,
-      reference: formData.reference || null,
-      description: formData.description || null,
-      status: 'Paid',
-    }
-
-    const target = rows.find((r) => r.id === editingId)
-    const url = editingId && target ? `/api/expenses/${target.expenseId}` : '/api/expenses'
-    const method = editingId && target ? 'PUT' : 'POST'
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => null)
-
-    if (!res || !res.ok) {
-      return
-    }
-
-    const json = await res.json().catch(() => null)
-    if (!json?.success || !json.data) {
-      return
-    }
-
-    const saved: any = json.data
-    const mapped: ExpenseRow = {
-      id: saved.id as string,
-      expenseId: saved.expenseId as string,
-      category: saved.category as string,
-      date: new Date(saved.date).toISOString().slice(0, 10),
-      status: saved.status as string,
-      amount: Number(saved.total) || 0,
-      reference: saved.reference ?? null,
-      description: saved.description ?? null,
-      receipt: null,
-    }
-
-    if (editingId && target) {
-      setRows((prev) => prev.map((r) => (r.id === editingId ? mapped : r)))
-    } else {
-      setRows((prev) => [mapped, ...prev])
-    }
-
-    handleDialogOpenChange(false)
-  }
-
   useEffect(() => {
     setCurrentPage(1)
   }, [paymentDate, categoryFilter, search])
@@ -299,138 +191,12 @@ export function ExpenseTab() {
             <CardDescription>Track and manage expenses.</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button
-              variant="blue"
-              size="sm"
-              className="shadow-none h-7 px-4"
-              title="Create"
-              onClick={() => setEditingId(null)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Expense
+            <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create" asChild>
+              <Link href="/accounting/expense/create/0">
+                <Plus className="mr-2 h-4 w-4" />
+                Create Expense
+              </Link>
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Expense' : 'Create Expense'}</DialogTitle>
-              <DialogDescription>
-                {editingId ? 'Update expense information.' : 'Add a new expense to the system.'}
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="exp-date">
-                      Date <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="exp-date"
-                      type="date"
-                      className="h-9"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="exp-category">
-                      Category <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={formData.categoryId}
-                      onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                      required
-                    >
-                      <SelectTrigger id="exp-category" className="h-9 w-full">
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="exp-amount">
-                      Amount <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="exp-amount"
-                      type="number"
-                      step="0.01"
-                      className="h-9"
-                      placeholder="Enter Amount"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="exp-reference">Reference</Label>
-                    <Input
-                      id="exp-reference"
-                      className="h-9"
-                      placeholder="Enter Reference"
-                      value={formData.reference}
-                      onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="exp-description">Description</Label>
-                    <Textarea
-                      id="exp-description"
-                      placeholder="Enter Description"
-                      rows={3}
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="exp-receipt">Payment Receipt</Label>
-                    <Input
-                      id="exp-receipt"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) =>
-                        setFormData({ ...formData, receiptName: e.target.files?.[0]?.name ?? '' })
-                      }
-                    />
-                    {formData.receiptName ? (
-                      <p className="text-xs text-muted-foreground">Selected: {formData.receiptName}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shadow-none h-7"
-                  onClick={() => handleDialogOpenChange(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="blue" size="sm" className="shadow-none h-7 px-4">
-                  {editingId ? 'Update Expense' : 'Create Expense'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
           </div>
         </CardHeader>
       </Card>
@@ -586,9 +352,11 @@ export function ExpenseTab() {
                             size="sm"
                             className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
-                            onClick={() => handleEdit(exp)}
+                            asChild
                           >
-                            <Pencil className="h-3 w-3" />
+                            <Link href={`/accounting/expense/${exp.expenseId}/edit`}>
+                              <Pencil className="h-3 w-3" />
+                            </Link>
                           </Button>
                           <Button
                             variant="outline"

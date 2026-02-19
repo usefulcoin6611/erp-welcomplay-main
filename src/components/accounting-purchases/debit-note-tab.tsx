@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -45,40 +46,31 @@ import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
   Plus,
   Search,
-  RefreshCw,
   Pencil,
   Trash2,
   X,
+  Loader2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
-// Mock debit notes
-const debitNotes = [
-  {
-    id: 1,
-    debitId: 1,
-    bill: 'BILL-2025-005',
-    billId: 5,
-    date: '2025-11-09',
-    amount: 1500000,
-    description: 'Price adjustment for overbilled items',
-    status: 0, // 0: Pending, 1: Partially Used, 2: Fully Used
-  },
-  {
-    id: 2,
-    debitId: 2,
-    bill: 'BILL-2025-006',
-    billId: 6,
-    date: '2025-11-10',
-    amount: 950000,
-    description: 'Return of damaged goods',
-    status: 1,
-  },
-]
+type DebitNoteRow = {
+  id: string
+  number: number
+  billId: string
+  bill: {
+    billId: string
+    vendor?: { name: string }
+  }
+  date: string
+  amount: number
+  description: string | null
+  status: number
+}
 
 const statusLabels = ['Pending', 'Partially Used', 'Fully Used']
 
-function formatDebitNoteId(debitId: number) {
-  return `#DN${String(debitId).padStart(5, '0')}`
+function formatDebitNoteNumber(number: number) {
+  return `#DN${String(number).padStart(5, '0')}`
 }
 
 function getDebitNoteStatusBadge(status: number) {
@@ -113,41 +105,81 @@ function formatPrice(amount: number) {
 }
 
 export function DebitNoteTab() {
+  const searchParams = useSearchParams()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [rows, setRows] = useState<typeof debitNotes>(debitNotes)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [rows, setRows] = useState<DebitNoteRow[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [noteToDelete, setNoteToDelete] = useState<(typeof debitNotes)[number] | null>(null)
+  const [noteToDelete, setNoteToDelete] = useState<DebitNoteRow | null>(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [initializedFromQuery, setInitializedFromQuery] = useState(false)
 
   const [formData, setFormData] = useState({
-    bill: '',
-    item: '',
+    billId: '',
     amount: '',
     date: '',
     description: '',
   })
 
-  // mock bills + bill items (to mimic AJAX items load)
-  const mockBills = [
-    { id: '5', label: 'BILL-2025-005' },
-    { id: '6', label: 'BILL-2025-006' },
-    { id: '7', label: 'BILL-2025-007' },
-  ]
+  // Data for Select
+  const [bills, setBills] = useState<{ id: string; label: string; vendorName: string }[]>([])
 
-  const mockBillItems: Record<string, { id: string; name: string; price: number }[]> = {
-    '5': [
-      { id: '501', name: 'Printer Paper A4', price: 250000 },
-      { id: '502', name: 'Ink Cartridge', price: 500000 },
-    ],
-    '6': [
-      { id: '601', name: 'Courier Service', price: 950000 },
-    ],
-    '7': [
-      { id: '701', name: 'IT Maintenance', price: 1200000 },
-    ],
+  useEffect(() => {
+    fetchData()
+    fetchBills()
+  }, [])
+
+  useEffect(() => {
+    if (initializedFromQuery) return
+    if (!bills.length) return
+
+    const billIdFromQuery = searchParams.get('billId')
+    const openCreate = searchParams.get('openCreate') === '1'
+
+    if (billIdFromQuery && openCreate) {
+      const exists = bills.some((b) => b.id === billIdFromQuery)
+      if (exists) {
+        setFormData((prev) => ({
+          ...prev,
+          billId: billIdFromQuery,
+        }))
+        setCreateDialogOpen(true)
+        setInitializedFromQuery(true)
+      }
+    }
+  }, [bills, initializedFromQuery, searchParams])
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/debit-notes')
+      const json = await res.json()
+      if (json.success) {
+        setRows(json.data)
+      } else {
+        toast.error(json.message || 'Gagal memuat data')
+      }
+    } catch (error) {
+      toast.error('Gagal memuat data Debit Note')
+    }
+  }
+
+  const fetchBills = async () => {
+    try {
+      const res = await fetch('/api/bills') 
+      const json = await res.json()
+      if (json.success) {
+        setBills(json.data.map((b: any) => ({
+          id: b.billNumber, 
+          label: b.billNumber, 
+          vendorName: b.vendorName || '-'
+        })))
+      }
+    } catch (error) {
+      console.error('Failed to fetch bills', error)
+    }
   }
 
   const filteredData = useMemo(() => {
@@ -155,9 +187,9 @@ export function DebitNoteTab() {
     const q = search.trim().toLowerCase()
     return rows.filter((n) => {
       return (
-        formatDebitNoteId(n.debitId).toLowerCase().includes(q) ||
-        n.bill.toLowerCase().includes(q) ||
-        n.description.toLowerCase().includes(q)
+        formatDebitNoteNumber(n.number).toLowerCase().includes(q) ||
+        n.bill.billId.toLowerCase().includes(q) ||
+        (n.description || '').toLowerCase().includes(q)
       )
     })
   }, [search, rows])
@@ -180,76 +212,86 @@ export function DebitNoteTab() {
     if (!open) {
       setEditingId(null)
       setFormData({
-        bill: '',
-        item: '',
+        billId: '',
         amount: '',
         date: '',
         description: '',
       })
+      setIsSubmitting(false)
     }
   }
 
-  const handleEdit = (note: (typeof debitNotes)[number]) => {
+  const handleEdit = (note: DebitNoteRow) => {
     setEditingId(note.id)
     setFormData({
-      bill: String(note.billId),
-      item: '',
+      billId: note.billId,
       amount: String(note.amount),
-      date: note.date,
+      date: new Date(note.date).toISOString().split('T')[0],
       description: note.description || '',
     })
     setCreateDialogOpen(true)
   }
 
-  const handleDeleteClick = (note: (typeof debitNotes)[number]) => {
+  const handleDeleteClick = (note: DebitNoteRow) => {
     setNoteToDelete(note)
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!noteToDelete) return
-    setRows((prev) => prev.filter((n) => n.id !== noteToDelete.id))
+    try {
+      const res = await fetch(`/api/debit-notes/${noteToDelete.id}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        toast.success('Debit Note berhasil dihapus')
+        fetchData()
+      } else {
+        const json = await res.json()
+        toast.error(json.message || 'Gagal menghapus Debit Note')
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menghapus')
+    }
     setNoteToDelete(null)
     setDeleteDialogOpen(false)
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const billLabel = mockBills.find((b) => b.id === formData.bill)?.label ?? ''
-    const nextAmount = Number(formData.amount) || 0
+    setIsSubmitting(true)
 
-    if (editingId) {
-      setRows((prev) =>
-        prev.map((n) =>
-          n.id === editingId
-            ? {
-                ...n,
-                bill: billLabel || n.bill,
-                billId: parseInt(formData.bill) || n.billId,
-                date: formData.date,
-                amount: nextAmount,
-                description: formData.description || '-',
-              }
-            : n,
-        ),
-      )
-    } else {
-      const nextId = rows.length > 0 ? Math.max(...rows.map((n) => n.id)) + 1 : 1
-      const nextDebitId = rows.length > 0 ? Math.max(...rows.map((n) => n.debitId)) + 1 : 1
-      const newRow = {
-        id: nextId,
-        debitId: nextDebitId,
-        bill: billLabel,
-        billId: parseInt(formData.bill) || 0,
-        date: formData.date,
-        amount: nextAmount,
-        description: formData.description || '-',
-        status: 0,
-      }
-      setRows((prev) => [newRow, ...prev])
+    const payload = {
+      billId: formData.billId,
+      date: formData.date,
+      amount: Number(formData.amount),
+      description: formData.description,
     }
 
-    handleDialogOpenChange(false)
+    try {
+      const url = editingId ? `/api/debit-notes/${editingId}` : '/api/debit-notes'
+      const method = editingId ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json()
+
+      if (json.success) {
+        toast.success(editingId ? 'Debit Note diperbarui' : 'Debit Note dibuat')
+        fetchData()
+        handleDialogOpenChange(false)
+      } else {
+        toast.error(json.message || 'Gagal menyimpan Debit Note')
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -286,47 +328,18 @@ export function DebitNoteTab() {
                     Bill <span className="text-red-500">*</span>
                   </Label>
                   <Select
-                    value={formData.bill}
-                    onValueChange={(value) => setFormData({ ...formData, bill: value, item: '', amount: '' })}
+                    value={formData.billId}
+                    onValueChange={(value) => setFormData({ ...formData, billId: value })}
                     required
+                    disabled={!!editingId} // Disable bill selection on edit to prevent inconsistency
                   >
                     <SelectTrigger id="bill">
                       <SelectValue placeholder="Select Bill" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockBills.map((b) => (
+                      {bills.map((b) => (
                         <SelectItem key={b.id} value={b.id}>
-                          {b.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="item">
-                    Item <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.item}
-                    onValueChange={(value) => {
-                      const picked = mockBillItems[formData.bill]?.find((i) => i.id === value)
-                      setFormData({
-                        ...formData,
-                        item: value,
-                        amount: picked ? String(picked.price) : '',
-                      })
-                    }}
-                    required
-                    disabled={!formData.bill}
-                  >
-                    <SelectTrigger id="item">
-                      <SelectValue placeholder="Select Item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(mockBillItems[formData.bill] || []).map((i) => (
-                        <SelectItem key={i.id} value={i.id}>
-                          {i.name}
+                          {b.label} - {b.vendorName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -345,13 +358,7 @@ export function DebitNoteTab() {
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     required
-                    disabled={!formData.bill}
                   />
-                  {formData.bill && (
-                    <p className="text-xs text-muted-foreground">
-                      Note: you can add maximum amount up to selected item value.
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -361,7 +368,6 @@ export function DebitNoteTab() {
                   <Input
                     id="date"
                     type="date"
-                    max={new Date().toISOString().split('T')[0]}
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     required
@@ -381,10 +387,11 @@ export function DebitNoteTab() {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
+                <Button type="button" variant="outline" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="blue" className="shadow-none">
+                <Button type="submit" variant="blue" className="shadow-none" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {editingId ? 'Update' : 'Create'}
                 </Button>
               </DialogFooter>
@@ -434,8 +441,9 @@ export function DebitNoteTab() {
             <Table className="w-full min-w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-6">Debit Note</TableHead>
+                  <TableHead className="px-6">Number</TableHead>
                   <TableHead className="px-6">Bill</TableHead>
+                  <TableHead className="px-6">Vendor</TableHead>
                   <TableHead className="px-6">Date</TableHead>
                   <TableHead className="px-6">Amount</TableHead>
                   <TableHead className="px-6">Description</TableHead>
@@ -449,15 +457,18 @@ export function DebitNoteTab() {
                     <TableRow key={note.id}>
                       <TableCell className="px-6">
                         <Button variant="outline" size="sm" className="shadow-none">
-                          {formatDebitNoteId(note.debitId)}
+                          {formatDebitNoteNumber(note.number)}
                         </Button>
                       </TableCell>
                       <TableCell className="px-6">
-                        <Button asChild variant="outline" size="sm" className="shadow-none">
-                          <Link href={`/accounting/bill/${note.billId}`}>
-                            {note.bill}
+                        <Button asChild variant="ghost" size="sm" className="shadow-none p-0 h-auto hover:bg-transparent text-blue-600 hover:underline justify-start">
+                          <Link href={`/accounting/purchases?tab=bill`}>
+                            {note.bill.billId}
                           </Link>
                         </Button>
+                      </TableCell>
+                      <TableCell className="px-6">
+                        {note.bill.vendor?.name || '-'}
                       </TableCell>
                       <TableCell className="px-6">{formatDate(note.date)}</TableCell>
                       <TableCell className="px-6 font-medium">{formatPrice(note.amount)}</TableCell>
@@ -489,7 +500,7 @@ export function DebitNoteTab() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="px-6 text-center py-8 text-muted-foreground">
                       No debit notes found
                     </TableCell>
                   </TableRow>
@@ -534,4 +545,3 @@ export function DebitNoteTab() {
     </div>
   )
 }
-

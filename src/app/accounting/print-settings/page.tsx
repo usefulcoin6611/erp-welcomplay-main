@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -29,6 +29,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Upload } from 'lucide-react'
 import { toast } from 'sonner'
+import * as QRCode from 'qrcode'
 
 /** Satu kartu putih besar (reference-erp): shadow ring border rounded */
 const CARD_STYLE = 'shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border border-border rounded-lg bg-white'
@@ -55,6 +56,7 @@ type DocSettings = {
   template: string
   qrDisplay: boolean
   color: string
+  logoDataUrl: string | null
   logoFile: File | null
   logoPreviewUrl: string | null
 }
@@ -63,6 +65,7 @@ const DEFAULT_SETTINGS: DocSettings = {
   template: 'new-york',
   qrDisplay: true,
   color: '#1e40af',
+  logoDataUrl: null,
   logoFile: null,
   logoPreviewUrl: null,
 }
@@ -75,6 +78,9 @@ export default function AccountingPrintSettingsPage() {
   const proposalLogoRef = useRef<HTMLInputElement>(null)
   const invoiceLogoRef = useRef<HTMLInputElement>(null)
   const billLogoRef = useRef<HTMLInputElement>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null)
 
   const getSettings = (tab: DocType) => {
     if (tab === 'proposal') return proposal
@@ -105,11 +111,146 @@ export default function AccountingPrintSettingsPage() {
     if (prev.logoPreviewUrl) URL.revokeObjectURL(prev.logoPreviewUrl)
     const url = file ? URL.createObjectURL(file) : null
     setSettings(tab, (p) => ({ ...p, logoFile: file, logoPreviewUrl: url }))
+
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = typeof reader.result === 'string' ? reader.result : null
+        setSettings(tab, (p) => ({ ...p, logoDataUrl: result }))
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setSettings(tab, (p) => ({ ...p, logoDataUrl: null }))
+    }
   }
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    const text =
+      activeTab === 'invoice'
+        ? 'INV-PREVIEW-0001'
+        : activeTab === 'proposal'
+          ? 'PROP-PREVIEW-0001'
+          : 'BILL-PREVIEW-0001'
+
+    QRCode.toDataURL(text, {
+      errorCorrectionLevel: 'M',
+      width: 100,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+    })
+      .then((url: string) => setQrPreviewUrl(url))
+      .catch(() => setQrPreviewUrl(null))
+  }, [activeTab])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadSettings = async () => {
+      setIsLoading(true)
+      try {
+        const res = await fetch('/api/settings/accounting-print')
+        const json = await res.json().catch(() => null)
+
+        if (!res.ok || !json?.success || !json.data) {
+          toast.error('Gagal memuat print settings')
+          return
+        }
+
+        if (cancelled) return
+
+        const data = json.data as {
+          proposal?: { template?: string; qrDisplay?: boolean; color?: string; logoDataUrl?: string | null }
+          invoice?: { template?: string; qrDisplay?: boolean; color?: string; logoDataUrl?: string | null }
+          bill?: { template?: string; qrDisplay?: boolean; color?: string; logoDataUrl?: string | null }
+        }
+
+        if (data.proposal) {
+          setProposal((prev) => ({
+            ...prev,
+            ...data.proposal,
+            logoPreviewUrl: data.proposal.logoDataUrl ?? prev.logoPreviewUrl,
+          }))
+        }
+
+        if (data.invoice) {
+          setInvoice((prev) => ({
+            ...prev,
+            ...data.invoice,
+            logoPreviewUrl: data.invoice.logoDataUrl ?? prev.logoPreviewUrl,
+          }))
+        }
+
+        if (data.bill) {
+          setBill((prev) => ({
+            ...prev,
+            ...data.bill,
+            logoPreviewUrl: data.bill.logoDataUrl ?? prev.logoPreviewUrl,
+          }))
+        }
+      } catch (error) {
+        toast.error('Terjadi kesalahan saat memuat print settings')
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadSettings()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success(`${docLabel(activeTab)} print setting saved.`)
+    if (isSaving) return
+
+    setIsSaving(true)
+    try {
+      const payload = {
+        proposal: {
+          template: proposal.template,
+          qrDisplay: proposal.qrDisplay,
+          color: proposal.color,
+          logoDataUrl: proposal.logoDataUrl,
+        },
+        invoice: {
+          template: invoice.template,
+          qrDisplay: invoice.qrDisplay,
+          color: invoice.color,
+          logoDataUrl: invoice.logoDataUrl,
+        },
+        bill: {
+          template: bill.template,
+          qrDisplay: bill.qrDisplay,
+          color: bill.color,
+          logoDataUrl: bill.logoDataUrl,
+        },
+      }
+
+      const res = await fetch('/api/settings/accounting-print', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || `${docLabel(activeTab)} print setting gagal disimpan`)
+        return
+      }
+
+      toast.success(`${docLabel(activeTab)} print setting berhasil disimpan`)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menyimpan print settings')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const currentSettings = getSettings(activeTab)
@@ -244,7 +385,7 @@ export default function AccountingPrintSettingsPage() {
 
                             <div className="space-y-2">
                               <Label className="text-sm font-medium text-foreground">{label} Logo</Label>
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-3">
                                 <input
                                   ref={getLogoRef(tab)}
                                   type="file"
@@ -269,6 +410,16 @@ export default function AccountingPrintSettingsPage() {
                                   <span className="text-sm text-muted-foreground truncate max-w-[160px]">
                                     {settings.logoFile.name}
                                   </span>
+                                )}
+                                {(settings.logoPreviewUrl || settings.logoDataUrl) && (
+                                  <div className="w-16 h-10 rounded border border-border bg-white flex items-center justify-center overflow-hidden">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={settings.logoPreviewUrl || settings.logoDataUrl || ''}
+                                      alt="Logo preview"
+                                      className="max-h-full max-w-full object-contain"
+                                    />
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -306,10 +457,10 @@ export default function AccountingPrintSettingsPage() {
                         style={{ backgroundColor: currentSettings.color }}
                       >
                         <div className="min-w-0 max-w-[200px]">
-                          {currentSettings.logoPreviewUrl ? (
+                          {currentSettings.logoPreviewUrl || currentSettings.logoDataUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
-                              src={currentSettings.logoPreviewUrl}
+                              src={currentSettings.logoPreviewUrl || currentSettings.logoDataUrl || ''}
                               alt="Logo"
                               className="max-h-10 w-auto object-contain"
                             />
@@ -337,16 +488,16 @@ export default function AccountingPrintSettingsPage() {
                           <p><span className="text-foreground">Tanggal Terbit:</span> 1 Feb 2026</p>
                           {currentSettings.qrDisplay && (
                             <div className="mt-2 flex justify-end">
-                              <div className="w-[100px] h-[100px] rounded-lg bg-white p-2 border border-border flex items-center justify-center">
-                                <div className="grid grid-cols-7 gap-px w-full h-full bg-black rounded p-0.5">
-                                  {Array.from({ length: 49 }).map((_, i) => (
-                                    <div
-                                      key={i}
-                                      className={(i + Math.floor(i / 7)) % 2 === 0 ? 'bg-black' : 'bg-white'}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
+                              {qrPreviewUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={qrPreviewUrl}
+                                  alt="QR"
+                                  className="w-[100px] h-[100px] rounded-lg border border-border bg-white p-1"
+                                />
+                              ) : (
+                                <div className="w-[100px] h-[100px] rounded-lg bg-white p-2 border border-border" />
+                              )}
                             </div>
                           )}
                         </div>

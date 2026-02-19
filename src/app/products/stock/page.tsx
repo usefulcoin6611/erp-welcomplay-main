@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from 'react'
+import { toast } from 'sonner'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
@@ -57,7 +58,9 @@ export default function ProductStockPage() {
         setProducts([])
       }
     } catch (e) {
-      setError('Gagal memuat data produk')
+      const msg = 'Gagal memuat data produk'
+      setError(msg)
+      toast.error(msg)
       setProducts([])
     } finally {
       setLoading(false)
@@ -114,7 +117,9 @@ export default function ProductStockPage() {
       })
       const json = await res.json().catch(() => null)
       if (!res.ok || json?.success === false) {
-        setError(json?.message || 'Gagal menyimpan data')
+        const msg = json?.message || 'Gagal menyimpan data'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
@@ -128,8 +133,11 @@ export default function ProductStockPage() {
       setDialogOpen(false)
       setSelectedProduct(null)
       setQuantity('')
+      toast.success('Quantity produk berhasil diperbarui')
     } catch (err) {
-      setError('Gagal menyimpan data')
+      const msg = 'Gagal menyimpan data'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -326,7 +334,6 @@ export default function ProductStockPage() {
     </SidebarProvider>
   )
 }
-
 
 
 

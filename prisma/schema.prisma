@@ -54,6 +54,8 @@ model Branch {
   payments         Payment[]
   bankAccounts     BankAccount[]
   bankTransfers    BankTransfer[]
+  financialGoals   FinancialGoal[]
+  budgetPlans      BudgetPlan[]
 
   @@map("branch")
 }
@@ -148,6 +150,7 @@ model Product {
   saleAccount     ChartOfAccount? @relation("SaleAccount", fields: [saleAccountId], references: [id])
   expenseAccount  ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
   billItems       BillItem[]
+  expenseItems    ExpenseItem[]
 
   @@map("product")
 }
@@ -434,6 +437,22 @@ model CreditNote {
   @@map("credit_note")
 }
 
+model DebitNote {
+  id          String   @id @default(cuid())
+  number      Int
+  billId      String
+  date        DateTime
+  amount      Float    @default(0)
+  description String?
+  status      Int      @default(0) // 0 Pending, 1 Partially Used, 2 Fully Used
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bill        Bill     @relation(fields: [billId], references: [billId])
+
+  @@map("debit_note")
+}
+
 model Bill {
   id          String   @id @default(cuid())
   billId      String   @unique
@@ -453,6 +472,7 @@ model Bill {
   branch      Branch?   @relation(fields: [branchId], references: [id])
   category    Category? @relation(fields: [categoryId], references: [id])
   items       BillItem[]
+  debitNotes  DebitNote[]
 
   @@map("bill")
 }
@@ -488,13 +508,35 @@ model Expense {
   status      String   @default("Pending")
   reference   String?
   description String?
+  paymentReceipt String?
   branchId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   branch      Branch?  @relation(fields: [branchId], references: [id])
+  items       ExpenseItem[]
 
   @@map("expense")
+}
+
+model ExpenseItem {
+  id          String   @id @default(cuid())
+  expenseId   String
+  productId   String?
+  itemName    String
+  quantity    Float    @default(0)
+  price       Float    @default(0)
+  discount    Float    @default(0)
+  taxRate     Float    @default(0)
+  amount      Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  expense     Expense  @relation(fields: [expenseId], references: [expenseId], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id])
+
+  @@map("expense_item")
 }
 
 model Payment {
@@ -508,6 +550,7 @@ model Payment {
   status      String   @default("Completed")
   reference   String?
   description String?
+  paymentReceipt String?
   branchId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -567,4 +610,36 @@ model BankAccount {
   transfersTo     BankTransfer[] @relation("BankTransferTo")
 
   @@map("bank_account")
+}
+
+model FinancialGoal {
+  id         String   @id @default(cuid())
+  branchId   String?
+  name       String
+  type       String   // Invoice, Bill, Revenue, Payment
+  fromDate   DateTime
+  toDate     DateTime
+  amount     Float    @default(0)
+  isDisplay  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch     Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("financial_goal")
+}
+
+model BudgetPlan {
+  id         String   @id @default(cuid())
+  branchId   String?
+  name       String
+  fromYear   Int
+  period     String   // Monthly, Quarterly, Half Yearly, Yearly
+  details    Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch     Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("budget_plan")
 }

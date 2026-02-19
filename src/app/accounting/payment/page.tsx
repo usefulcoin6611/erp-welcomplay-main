@@ -21,8 +21,18 @@ type PaymentDto = {
   status: string
 }
 
+function getBaseUrl() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (appUrl) {
+    if (appUrl.startsWith('http://') || appUrl.startsWith('https://')) return appUrl
+    return `https://${appUrl}`
+  }
+  return 'http://localhost:3000'
+}
+
 async function fetchPayments(): Promise<PaymentDto[]> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/payments`, {
+  const baseUrl = getBaseUrl()
+  const res = await fetch(`${baseUrl}/api/payments`, {
     cache: 'no-store',
   })
 
@@ -30,7 +40,17 @@ async function fetchPayments(): Promise<PaymentDto[]> {
     return []
   }
 
-  const json = await res.json()
+  const contentType = res.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    return []
+  }
+
+  let json: any
+  try {
+    json = await res.json()
+  } catch {
+    return []
+  }
   if (!json?.success || !Array.isArray(json.data)) {
     return []
   }

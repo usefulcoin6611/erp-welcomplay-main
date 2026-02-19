@@ -9,6 +9,7 @@ const nextConfig = {
     return [
       { source: '/project', destination: '/projects' },
       { source: '/time-tracker', destination: '/projects/time-tracker' },
+      { source: '/accounting/bill/edit/:id', destination: '/accounting/bill/create/:id' },
     ];
   },
   typescript: {

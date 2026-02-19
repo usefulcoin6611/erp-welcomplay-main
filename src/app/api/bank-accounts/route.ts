@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         openingBalance: Number(body.openingBalance ?? 0),
         contactNumber: body.contactNumber ? String(body.contactNumber) : null,
         bankAddress: body.bankAddress ? String(body.bankAddress) : null,
-        paymentGateway: String(body.paymentGateway ?? "Cash"),
+        paymentGateway: String(body.paymentGateway ?? "none"),
         branchId,
       },
     });

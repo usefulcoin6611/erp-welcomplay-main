@@ -4,6 +4,17 @@ import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
 
+const expenseItemSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.number().nonnegative(),
+  price: z.number().nonnegative(),
+  discount: z.number().nonnegative(),
+  taxRate: z.number().nonnegative(),
+  description: z.string().optional().nullable(),
+});
+
+type ExpenseItemInput = z.infer<typeof expenseItemSchema>;
+
 const expenseSchema = z.object({
   type: z.string().min(1, "Tipe wajib diisi"),
   party: z.string().min(1, "Pihak wajib diisi"),
@@ -13,7 +24,14 @@ const expenseSchema = z.object({
   status: z.string().optional().default("Pending"),
   reference: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
+  items: z.array(expenseItemSchema).optional(),
 });
+
+function calcExpenseItemAmount(item: ExpenseItemInput) {
+  const base = Math.max(0, item.price * item.quantity - item.discount);
+  const tax = (item.taxRate / 100) * base;
+  return base + tax;
+}
 
 const db = prisma as any;
 
@@ -39,6 +57,9 @@ export async function GET(request: NextRequest) {
     const expenses = await db.expense.findMany({
       where: {
         branchId,
+      },
+      include: {
+        items: true,
       },
       orderBy: {
         date: "desc",
@@ -121,6 +142,10 @@ export async function POST(request: NextRequest) {
 
     const expenseId = await generateExpenseId(branchId, date);
 
+    const itemsInput: ExpenseItemInput[] = Array.isArray(data.items)
+      ? data.items
+      : [];
+
     const expense = await db.expense.create({
       data: {
         expenseId,
@@ -133,6 +158,23 @@ export async function POST(request: NextRequest) {
         reference: data.reference ?? undefined,
         description: data.description ?? undefined,
         branchId,
+        items: itemsInput.length
+          ? {
+              create: itemsInput.map((it) => ({
+                productId: it.productId,
+                itemName: "",
+                quantity: it.quantity,
+                price: it.price,
+                discount: it.discount,
+                taxRate: it.taxRate,
+                amount: calcExpenseItemAmount(it),
+                description: it.description ?? null,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        items: true,
       },
     });
 

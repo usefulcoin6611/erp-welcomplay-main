@@ -19,6 +19,11 @@ import { seedBills } from "./seeds/bills";
 import { seedCreditNotes } from "./seeds/credit-notes";
 import { seedBankAccounts } from "./seeds/bank-accounts";
 import { seedBankTransfers } from "./seeds/bank-transfers";
+import { seedExpenses } from "./seeds/expenses";
+import { seedPayments } from "./seeds/payments";
+import { seedDebitNotes } from "./seeds/debit-notes";
+import { seedFinancialGoals } from "./seeds/financial-goals";
+import { seedBudgets } from "./seeds/budgets";
 
 dotenv.config();
 
@@ -43,9 +48,14 @@ async function main() {
     await seedProducts(prisma);
     await seedInvoices(prisma);
     await seedBills(prisma);
+    await seedExpenses(prisma);
     await seedCreditNotes(prisma);
     await seedBankAccounts(prisma);
     await seedBankTransfers(prisma);
+    await seedPayments(prisma);
+    await seedDebitNotes(prisma);
+    await seedFinancialGoals(prisma);
+    await seedBudgets(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

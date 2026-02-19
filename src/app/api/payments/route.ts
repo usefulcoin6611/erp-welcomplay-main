@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 const paymentSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
@@ -102,8 +104,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const validation = paymentSchema.safeParse(body);
+    // Handle FormData for file upload
+    const formData = await request.formData();
+    
+    const rawData = {
+      date: formData.get("date") as string,
+      vendor: formData.get("vendor") as string,
+      account: formData.get("account") as string,
+      category: formData.get("category") as string,
+      amount: Number(formData.get("amount")),
+      status: formData.get("status") as string || "Completed",
+      reference: formData.get("reference") as string || null,
+      description: formData.get("description") as string || null,
+    };
+
+    const validation = paymentSchema.safeParse(rawData);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -119,6 +134,25 @@ export async function POST(request: NextRequest) {
     const data = validation.data;
     const date = new Date(data.date);
 
+    // Handle File Upload
+    let paymentReceipt = null;
+    const file = formData.get("paymentReceipt") as File | null;
+
+    if (file && file.size > 0) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const filename = `${Date.now()}_${file.name.replace(/\s/g, "_")}`;
+      const uploadDir = path.join(process.cwd(), "public/uploads/payments");
+      
+      try {
+        await mkdir(uploadDir, { recursive: true });
+        await writeFile(path.join(uploadDir, filename), buffer);
+        paymentReceipt = `/uploads/payments/${filename}`;
+      } catch (err) {
+        console.error("Error saving file:", err);
+        // Continue without file if upload fails, or throw error
+      }
+    }
+
     const paymentId = await generatePaymentId(branchId, date);
 
     const payment = await db.payment.create({
@@ -132,6 +166,7 @@ export async function POST(request: NextRequest) {
         status: data.status ?? "Completed",
         reference: data.reference ?? undefined,
         description: data.description ?? undefined,
+        paymentReceipt,
         branchId,
       },
     });

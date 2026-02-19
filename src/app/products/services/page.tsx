@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
@@ -211,7 +212,9 @@ export default function ProductServicesPage() {
           setChartAccounts([])
         }
       } catch {
-        setError('Gagal memuat data product & services')
+        const msg = 'Gagal memuat data product & services'
+        setError(msg)
+        toast.error(msg)
         setProducts([])
         setCategories([])
         setChartAccounts([])
@@ -359,14 +362,19 @@ export default function ProductServicesPage() {
       const json = await res.json().catch(() => null)
 
       if (!res.ok || json?.success === false) {
-        setError(json?.message || 'Gagal menghapus data product & services')
+        const msg = json?.message || 'Gagal menghapus data product & services'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
       setProducts((prev) => prev.filter((item) => item.id !== deleteItem.id))
       setDeleteItem(null)
+      toast.success('Product & service berhasil dihapus')
     } catch {
-      setError('Gagal menghapus data product & services')
+      const msg = 'Gagal menghapus data product & services'
+      setError(msg)
+      toast.error(msg)
     }
   }
 
@@ -403,6 +411,7 @@ export default function ProductServicesPage() {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const isEdit = !!editingId
 
     const salePrice = Number(formData.sale_price || 0)
     const purchasePrice = Number(formData.purchase_price || 0)
@@ -449,7 +458,9 @@ export default function ProductServicesPage() {
       const json = await res.json().catch(() => null)
 
       if (!res.ok || json?.success === false) {
-        setError(json?.message || 'Gagal menyimpan data product & services')
+        const msg = json?.message || 'Gagal menyimpan data product & services'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
@@ -495,8 +506,15 @@ export default function ProductServicesPage() {
       setDialogOpen(false)
       setEditingId(null)
       setImagePreview('')
+      toast.success(
+        isEdit
+          ? 'Product & service berhasil diperbarui'
+          : 'Product & service berhasil dibuat',
+      )
     } catch {
-      setError('Gagal menyimpan data product & services')
+      const msg = 'Gagal menyimpan data product & services'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

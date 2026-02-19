@@ -1,14 +1,20 @@
-import { redirect } from 'next/navigation'
+'use client'
 
-export default function AccountingSetupRedirectPage({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | string[] | undefined }
-}) {
-  const tab = typeof searchParams?.tab === 'string' ? searchParams.tab : undefined
-  const allowed = new Set(['taxes', 'category', 'unit', 'custom-field'])
-  const targetTab = tab && allowed.has(tab) ? tab : 'taxes'
-  redirect(`/accounting/setup/custom-field?tab=${targetTab}`)
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+export default function AccountingSetupRedirectPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    const allowed = new Set(['taxes', 'category', 'unit', 'custom-field'])
+    const targetTab = tabParam && allowed.has(tabParam) ? tabParam : 'taxes'
+    router.replace(`/accounting/setup/custom-field?tab=${targetTab}`)
+  }, [router, searchParams])
+
+  return null
 }
 
 

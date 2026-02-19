@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 const paymentUpdateSchema = z.object({
   date: z.string().min(1).optional(),
@@ -47,7 +49,7 @@ export async function GET(
 
     const payment = await db.payment.findFirst({
       where: {
-        paymentId: id,
+        id: id,
         branchId,
       },
     });
@@ -93,8 +95,19 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
-    const validation = paymentUpdateSchema.safeParse(body);
+    // Handle FormData
+    const formData = await request.formData();
+    const rawData: any = {};
+    if (formData.has("date")) rawData.date = formData.get("date");
+    if (formData.has("vendor")) rawData.vendor = formData.get("vendor");
+    if (formData.has("account")) rawData.account = formData.get("account");
+    if (formData.has("category")) rawData.category = formData.get("category");
+    if (formData.has("amount")) rawData.amount = Number(formData.get("amount"));
+    if (formData.has("status")) rawData.status = formData.get("status");
+    if (formData.has("reference")) rawData.reference = formData.get("reference") || null;
+    if (formData.has("description")) rawData.description = formData.get("description") || null;
+
+    const validation = paymentUpdateSchema.safeParse(rawData);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -111,7 +124,7 @@ export async function PUT(
 
     const existing = await db.payment.findFirst({
       where: {
-        paymentId: id,
+        id: id,
         branchId,
       },
     });
@@ -121,6 +134,24 @@ export async function PUT(
         { success: false, message: "Payment tidak ditemukan" },
         { status: 404 },
       );
+    }
+
+    // Handle File Upload
+    let paymentReceipt = undefined;
+    const file = formData.get("paymentReceipt") as File | null;
+
+    if (file && file.size > 0) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const filename = `${Date.now()}_${file.name.replace(/\s/g, "_")}`;
+      const uploadDir = path.join(process.cwd(), "public/uploads/payments");
+      
+      try {
+        await mkdir(uploadDir, { recursive: true });
+        await writeFile(path.join(uploadDir, filename), buffer);
+        paymentReceipt = `/uploads/payments/${filename}`;
+      } catch (err) {
+        console.error("Error saving file:", err);
+      }
     }
 
     const updated = await db.payment.update({
@@ -141,6 +172,7 @@ export async function PUT(
           data.description === undefined
             ? existing.description
             : data.description ?? null,
+        paymentReceipt: paymentReceipt !== undefined ? paymentReceipt : existing.paymentReceipt,
       },
     });
 
@@ -180,7 +212,7 @@ export async function DELETE(
 
     const existing = await db.payment.findFirst({
       where: {
-        paymentId: id,
+        id: id,
         branchId,
       },
     });

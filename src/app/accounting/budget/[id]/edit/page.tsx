@@ -34,14 +34,24 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ArrowLeft } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 const CARD_STYLE = 'shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white'
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 const PERIOD_OPTIONS = [
@@ -51,20 +61,70 @@ const PERIOD_OPTIONS = [
   { value: 'Yearly', label: 'Yearly' },
 ]
 
+const PERIOD_LABELS: Record<string, string[]> = {
+  Monthly: MONTHS,
+  Quarterly: ['Q1', 'Q2', 'Q3', 'Q4'],
+  'Half Yearly': ['H1', 'H2'],
+  Yearly: ['Year'],
+}
+
 type CategoryRow = { name: string; budget: string[]; actual: string[] }
 
-function defaultIncomeCategories(): CategoryRow[] {
+type BudgetDetails = {
+  incomeCategories?: CategoryRow[]
+  expenseCategories?: CategoryRow[]
+}
+
+function getLabelsForPeriod(period: string): string[] {
+  return PERIOD_LABELS[period] ?? PERIOD_LABELS.Monthly
+}
+
+function normalizeArray(values: string[], size: number): string[] {
+  const result = values.slice(0, size)
+  while (result.length < size) {
+    result.push('0')
+  }
+  return result
+}
+
+function createDefaultIncomeCategories(size: number): CategoryRow[] {
+  const baseBudget = '150000000'
+  const baseActual = '145000000'
+  const zeros = Array(size).fill('0')
+  const budgetArr = zeros.map((_, index) =>
+    index === 0 ? baseBudget : '0'
+  )
+  const actualArr = zeros.map((_, index) =>
+    index === 0 ? baseActual : '0'
+  )
   return [
-    { name: 'Maintenance Sales', budget: ['15000', '0', '0', '8500', '0', '0', '0', '45000', '0', '0', '0', '1000'], actual: ['14000', '0', '0', '8000', '0', '0', '0', '46000', '0', '0', '0', '1200'] },
-    { name: 'Product Sales', budget: ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'], actual: ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'] },
-    { name: 'income', budget: ['0', '0', '8000', '0', '0', '0', '0', '0', '0', '0', '0', '0'], actual: ['0', '0', '7500', '0', '0', '0', '0', '0', '0', '0', '0', '0'] },
+    { name: 'Maintenance Sales', budget: budgetArr, actual: actualArr },
+    { name: 'Product Sales', budget: zeros.slice(), actual: zeros.slice() },
+    { name: 'Other Income', budget: zeros.slice(), actual: zeros.slice() },
   ]
 }
 
-function defaultExpenseCategories(): CategoryRow[] {
+function createDefaultExpenseCategories(size: number): CategoryRow[] {
+  const rentBudget = '25000000'
+  const rentActual = '24500000'
+  const travelBudget = '10000000'
+  const travelActual = '9500000'
+  const zeros = Array(size).fill('0')
+  const rentBudgetArr = zeros.map((_, index) =>
+    index === 0 ? rentBudget : '0'
+  )
+  const rentActualArr = zeros.map((_, index) =>
+    index === 0 ? rentActual : '0'
+  )
+  const travelBudgetArr = zeros.map((_, index) =>
+    index === 1 ? travelBudget : '0'
+  )
+  const travelActualArr = zeros.map((_, index) =>
+    index === 1 ? travelActual : '0'
+  )
   return [
-    { name: 'Rent Or Lease', budget: ['0', '15000', '0', '0', '100', '0', '4506', '0', '0', '0', '25040', '0'], actual: ['0', '15000', '0', '0', '150', '0', '4506', '0', '0', '0', '24800', '0'] },
-    { name: 'Travel', budget: ['0', '0', '0', '8500', '0', '0', '0', '0', '2000', '0', '5000', '0'], actual: ['0', '0', '0', '9000', '0', '0', '0', '0', '1800', '0', '5200', '0'] },
+    { name: 'Rent Or Lease', budget: rentBudgetArr, actual: rentActualArr },
+    { name: 'Travel', budget: travelBudgetArr, actual: travelActualArr },
   ]
 }
 
@@ -87,8 +147,14 @@ export default function BudgetEditPage() {
     budgetPeriod: 'Yearly',
   })
 
-  const [incomeCategories, setIncomeCategories] = useState<CategoryRow[]>(defaultIncomeCategories())
-  const [expenseCategories, setExpenseCategories] = useState<CategoryRow[]>(defaultExpenseCategories())
+  const [incomeCategories, setIncomeCategories] = useState<CategoryRow[]>(() =>
+    createDefaultIncomeCategories(MONTHS.length)
+  )
+  const [expenseCategories, setExpenseCategories] = useState<CategoryRow[]>(() =>
+    createDefaultExpenseCategories(MONTHS.length)
+  )
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const updateCategoryValue = (
     type: 'income' | 'expense',
@@ -116,24 +182,135 @@ export default function BudgetEditPage() {
     }
   }
 
-  const incomeTotals = useMemo(() => ({
-    budgetByMonth: MONTHS.map((_, i) => incomeCategories.reduce((s, r) => s + (Number(r.budget[i]) || 0), 0)),
-    actualByMonth: MONTHS.map((_, i) => incomeCategories.reduce((s, r) => s + (Number(r.actual[i]) || 0), 0)),
-    budgetTotal: incomeCategories.reduce((s, r) => s + sumArr(r.budget), 0),
-    actualTotal: incomeCategories.reduce((s, r) => s + sumArr(r.actual), 0),
-  }), [incomeCategories])
+  const currentLabels = getLabelsForPeriod(form.budgetPeriod)
 
-  const expenseTotals = useMemo(() => ({
-    budgetByMonth: MONTHS.map((_, i) => expenseCategories.reduce((s, r) => s + (Number(r.budget[i]) || 0), 0)),
-    actualByMonth: MONTHS.map((_, i) => expenseCategories.reduce((s, r) => s + (Number(r.actual[i]) || 0), 0)),
-    budgetTotal: expenseCategories.reduce((s, r) => s + sumArr(r.budget), 0),
-    actualTotal: expenseCategories.reduce((s, r) => s + sumArr(r.actual), 0),
-  }), [expenseCategories])
+  const incomeTotals = useMemo(
+    () => ({
+      budgetByMonth: currentLabels.map((_, i) =>
+        incomeCategories.reduce((s, r) => s + (Number(r.budget[i]) || 0), 0)
+      ),
+      actualByMonth: currentLabels.map((_, i) =>
+        incomeCategories.reduce((s, r) => s + (Number(r.actual[i]) || 0), 0)
+      ),
+      budgetTotal: incomeCategories.reduce((s, r) => s + sumArr(r.budget), 0),
+      actualTotal: incomeCategories.reduce((s, r) => s + sumArr(r.actual), 0),
+    }),
+    [incomeCategories, currentLabels]
+  )
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const expenseTotals = useMemo(
+    () => ({
+      budgetByMonth: currentLabels.map((_, i) =>
+        expenseCategories.reduce((s, r) => s + (Number(r.budget[i]) || 0), 0)
+      ),
+      actualByMonth: currentLabels.map((_, i) =>
+        expenseCategories.reduce((s, r) => s + (Number(r.actual[i]) || 0), 0)
+      ),
+      budgetTotal: expenseCategories.reduce((s, r) => s + sumArr(r.budget), 0),
+      actualTotal: expenseCategories.reduce((s, r) => s + sumArr(r.actual), 0),
+    }),
+    [expenseCategories, currentLabels]
+  )
+
+  useEffect(() => {
+    if (!id) {
+      toast.error('Budget plan tidak ditemukan')
+      router.push('/accounting/budget')
+      return
+    }
+
+    const loadBudget = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch(`/api/budgets?id=${encodeURIComponent(id)}`)
+        const json = await res.json().catch(() => null)
+
+        if (!res.ok || !json?.success || !json.data) {
+          toast.error(json?.message || 'Gagal memuat budget plan')
+          return
+        }
+
+        const period = json.data.budgetPeriod || ''
+
+        setForm({
+          name: json.data.name || '',
+          from: json.data.from || '',
+          budgetPeriod: period || 'Monthly',
+        })
+
+        const labels = getLabelsForPeriod(period || 'Monthly')
+        const size = labels.length
+
+        const details: BudgetDetails | null = json.data.details ?? null
+        if (details && Array.isArray(details.incomeCategories) && details.incomeCategories.length > 0) {
+          setIncomeCategories(
+            details.incomeCategories.map((row) => ({
+              name: row.name,
+              budget: normalizeArray(row.budget, size),
+              actual: normalizeArray(row.actual, size),
+            }))
+          )
+        } else {
+          setIncomeCategories(createDefaultIncomeCategories(size))
+        }
+
+        if (details && Array.isArray(details.expenseCategories) && details.expenseCategories.length > 0) {
+          setExpenseCategories(
+            details.expenseCategories.map((row) => ({
+              name: row.name,
+              budget: normalizeArray(row.budget, size),
+              actual: normalizeArray(row.actual, size),
+            }))
+          )
+        } else {
+          setExpenseCategories(createDefaultExpenseCategories(size))
+        }
+      } catch (error) {
+        toast.error('Terjadi kesalahan saat memuat budget plan')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadBudget()
+  }, [id, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Budget plan updated.')
-    router.push(`/accounting/budget/${id}`)
+    if (!id || isSubmitting) return
+
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/budgets', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          name: form.name,
+          from: form.from,
+          budgetPeriod: form.budgetPeriod,
+          details: {
+            incomeCategories,
+            expenseCategories,
+          },
+        }),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal memperbarui budget plan')
+        return
+      }
+
+      toast.success('Budget plan updated.')
+      router.push(`/accounting/budget/${id}`)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat memperbarui budget plan')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const formatNum = (n: number) =>
@@ -149,14 +326,14 @@ export default function BudgetEditPage() {
         <TableCell className="px-3 py-1.5 font-medium text-sm whitespace-nowrap sticky left-0 bg-background">
           {row.name}
         </TableCell>
-        {MONTHS.map((_, colIndex) => {
+        {currentLabels.map((_, colIndex) => {
           const b = Number(row.budget[colIndex]) || 0
           const a = Number(row.actual[colIndex]) || 0
           const over = a - b
           return (
             <TableCell key={colIndex} className="p-0">
               <div className="flex border-b border-r last:border-r-0">
-                <div className="flex-1 min-w-[64px] px-1 py-1">
+                <div className="flex-1 min-w-[112px] px-1 py-1">
                   <Input
                     type="number"
                     value={row.budget[colIndex]}
@@ -164,7 +341,7 @@ export default function BudgetEditPage() {
                     className="h-7 w-full text-right text-xs"
                   />
                 </div>
-                <div className="flex-1 min-w-[64px] px-1 py-1 border-l">
+                <div className="flex-1 min-w-[112px] px-1 py-1 border-l">
                   <Input
                     type="number"
                     value={row.actual[colIndex]}
@@ -172,7 +349,7 @@ export default function BudgetEditPage() {
                     className="h-7 w-full text-right text-xs"
                   />
                 </div>
-                <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">
+                <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums border-l bg-muted/30">
                   {formatNum(over)}
                 </div>
               </div>
@@ -181,13 +358,13 @@ export default function BudgetEditPage() {
         })}
         <TableCell className="p-0 align-top">
           <div className="flex border-b">
-            <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-medium">
+            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-medium">
               {formatNum(sumArr(row.budget))}
             </div>
-            <div className="flex-1 min-w-[64px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l">
+            <div className="flex-1 min-w-[112px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l">
               {formatNum(sumArr(row.actual))}
             </div>
-            <div className="flex-1 min-w-[56px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l bg-muted/30">
+            <div className="flex-1 min-w-[96px] px-1 py-1.5 text-right text-xs tabular-nums font-medium border-l bg-muted/30">
               {formatNum(sumArr(row.actual) - sumArr(row.budget))}
             </div>
           </div>
@@ -233,7 +410,7 @@ export default function BudgetEditPage() {
                     <h4 className="mt-2 text-xl font-semibold">Edit Budget Plan</h4>
                   </div>
                   <Button variant="outline" size="sm" className="shadow-none h-7" asChild>
-                    <Link href={id ? `/accounting/budget/${id}` : '/accounting/budget'}>
+                    <Link href="/accounting/budget">
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </Link>
@@ -254,7 +431,19 @@ export default function BudgetEditPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="from">From (Year)</Label>
-                    <Input id="from" value={form.from} onChange={(e) => setForm((f) => ({ ...f, from: e.target.value }))} className="h-9" />
+                    <Input
+                      id="from"
+                      type="number"
+                      inputMode="numeric"
+                      min={1900}
+                      max={2100}
+                      value={form.from}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '').slice(0, 4)
+                        setForm((f) => ({ ...f, from: raw }))
+                      }}
+                      className="h-9"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="period">Budget Period</Label>
@@ -375,7 +564,13 @@ export default function BudgetEditPage() {
                     <Button type="button" variant="outline" size="sm" className="shadow-none" asChild>
                       <Link href={id ? `/accounting/budget/${id}` : '/accounting/budget'}>Cancel</Link>
                     </Button>
-                    <Button type="submit" size="sm" variant="blue" className="shadow-none">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="blue"
+                      className="shadow-none"
+                      disabled={isSubmitting || isLoading}
+                    >
                       Update
                     </Button>
                   </div>

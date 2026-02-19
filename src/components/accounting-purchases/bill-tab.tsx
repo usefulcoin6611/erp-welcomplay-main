@@ -89,6 +89,12 @@ export function BillTab() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [billPrintSetting, setBillPrintSetting] = useState<{
+    template: string
+    qrDisplay: boolean
+    color: string
+    logoDataUrl?: string | null
+  } | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -194,6 +200,36 @@ export function BillTab() {
   useEffect(() => {
     setCurrentPage(1)
   }, [billDate, status, search])
+
+  useEffect(() => {
+    const loadPrintSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/accounting-print')
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.success || !json.data) return
+        const data = json.data as {
+          bill?: { template?: string; qrDisplay?: boolean; color?: string; logoDataUrl?: string | null }
+        }
+        if (data.bill) {
+          setBillPrintSetting({
+            template: data.bill.template || 'new-york',
+            qrDisplay: typeof data.bill.qrDisplay === 'boolean' ? data.bill.qrDisplay : true,
+            color: data.bill.color || '#1e40af',
+            logoDataUrl: data.bill.logoDataUrl ?? null,
+          })
+        } else {
+          setBillPrintSetting({
+            template: 'new-york',
+            qrDisplay: true,
+            color: '#1e40af',
+            logoDataUrl: null,
+          })
+        }
+      } catch {
+      }
+    }
+    loadPrintSettings()
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -388,7 +424,7 @@ export function BillTab() {
                             title="Edit"
                             asChild
                           >
-                            <Link href={`/accounting/bill/create/${bill.id}`}>
+                            <Link href={`/accounting/bill/edit/${bill.billNumber}`}>
                               <Pencil className="h-3 w-3" />
                             </Link>
                           </Button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -16,7 +16,16 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -44,22 +53,56 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Plus, Search, X, Eye, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const CARD_STYLE = 'shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white'
 
-const BUDGETS_MOCK = [
-  { id: '1', name: 'Monthly Budget Plan', from: '2025', budgetPeriod: 'Monthly' },
-  { id: '2', name: 'Quarterly Budget Plan', from: '2025', budgetPeriod: 'Quarterly' },
-  { id: '3', name: 'Half-Yearly Budget Plan', from: '2025', budgetPeriod: 'Half Yearly' },
-  { id: '4', name: 'Yearly Budget Plan', from: '2025', budgetPeriod: 'Yearly' },
+const PERIOD_OPTIONS = [
+  { value: 'Monthly', label: 'Monthly' },
+  { value: 'Quarterly', label: 'Quarterly' },
+  { value: 'Half Yearly', label: 'Half Yearly' },
+  { value: 'Yearly', label: 'Yearly' },
 ]
+
+type BudgetRow = {
+  id: string
+  name: string
+  from: string
+  budgetPeriod: string
+}
 
 export default function BudgetPlannerPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [budgets, setBudgets] = useState(BUDGETS_MOCK)
+  const [budgets, setBudgets] = useState<BudgetRow[]>([])
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  useEffect(() => {
+    const loadBudgets = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch('/api/budgets')
+        if (!res.ok) {
+          toast.error('Gagal memuat budget plan')
+          return
+        }
+        const json = await res.json().catch(() => null)
+        if (!json?.success || !Array.isArray(json.data)) {
+          toast.error(json?.message || 'Respon server tidak valid saat memuat budget plan')
+          return
+        }
+        setBudgets(json.data)
+      } catch (error) {
+        toast.error('Terjadi kesalahan saat memuat budget plan')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadBudgets()
+  }, [])
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return budgets
@@ -79,9 +122,34 @@ export default function BudgetPlannerPage() {
 
   const totalRecords = filteredData.length
 
-  const handleDelete = (id: string) => {
-    setBudgets((prev) => prev.filter((b) => b.id !== id))
-    setDeleteId(null)
+  const handleDelete = async (id: string) => {
+    if (isDeleting) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/budgets?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal menghapus budget plan')
+        return
+      }
+
+      const reloadRes = await fetch('/api/budgets')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setBudgets(reloadJson.data)
+        }
+      }
+
+      toast.success('Budget plan berhasil dihapus')
+      setDeleteId(null)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menghapus budget plan')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -118,9 +186,16 @@ export default function BudgetPlannerPage() {
                       </BreadcrumbList>
                     </Breadcrumb>
                   </div>
-                  <Button variant="blue" size="sm" className="shadow-none h-7 px-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add
+                  <Button
+                    variant="blue"
+                    size="sm"
+                    className="shadow-none h-7 px-4"
+                    asChild
+                  >
+                    <Link href="/accounting/budget/create">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
@@ -273,14 +348,14 @@ export default function BudgetPlannerPage() {
               This action cannot be undone. This will permanently delete the budget plan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+            <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && handleDelete(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
+                onClick={() => deleteId && handleDelete(deleteId)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

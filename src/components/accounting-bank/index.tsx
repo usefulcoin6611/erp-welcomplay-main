@@ -199,6 +199,22 @@ export function AccountTab() {
     return found ? `${found.code} - ${found.name}` : value
   }
 
+  const normalizePaymentGatewayValue = (value: string) => {
+    if (!value) return 'none'
+    const trimmed = value.trim()
+    const lowered = trimmed.toLowerCase()
+    return lowered.replace(/\s+/g, '_')
+  }
+
+  const getPaymentGatewayLabel = (value: string) => {
+    if (!value) return '-'
+    const option = paymentGatewayOptions.find((o) => o.value === value)
+    if (option) return option.label
+    const readable = value.replace(/_/g, ' ').trim()
+    if (!readable) return '-'
+    return readable.charAt(0).toUpperCase() + readable.slice(1)
+  }
+
   const coaValueFromLabel = (label: string) => {
     const code = label.split(' - ')[0]?.trim()
     const found =
@@ -368,7 +384,7 @@ export function AccountTab() {
     setEditingId(row.id)
     setFormData({
       chartOfAccount: coaValueFromLabel(row.chartOfAccount),
-      paymentGateway: row.paymentGateway,
+      paymentGateway: normalizePaymentGatewayValue(row.paymentGateway),
       holderName: row.name,
       bank: row.bank,
       accountNumber: row.accountNumber,
@@ -713,7 +729,9 @@ export function AccountTab() {
                     <TableCell className="px-6 text-right">{a.currentBalance}</TableCell>
                     <TableCell className="px-6">{a.contactNumber}</TableCell>
                     <TableCell className="px-6">
-                      <Badge variant="outline">{a.paymentGateway}</Badge>
+                      <Badge variant="outline">
+                        {getPaymentGatewayLabel(a.paymentGateway)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="px-6">
                       <div className="flex justify-end gap-2">

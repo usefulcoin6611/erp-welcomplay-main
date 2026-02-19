@@ -54,16 +54,17 @@ async function getSessionBranch() {
 export async function GET(request: NextRequest) {
   try {
     const s = await getSessionBranch()
-    if (s.error || !s.branchId) {
-      return NextResponse.json({ success: false, message: s.error }, { status: s.status })
+    if (s.error || typeof s.branchId !== 'string') {
+      return NextResponse.json({ success: false, message: s.error }, { status: s.status || 401 })
     }
 
+    const branchId = s.branchId as string;
     const url = new URL(request.url)
     const date = url.searchParams.get("date")
     const status = url.searchParams.get("status")
 
     const where: any = {
-      branchId: s.branchId,
+      branchId,
     }
 
     if (date) {
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
     const data: BillListRow[] = billsDb.map((b: any) => {
       const s = mapStatus(b.status)
       return {
-        id: b.billId as string,
+        id: b.id as string,
         billNumber: b.billId as string,
         billDate:
           b.billDate instanceof Date ? b.billDate.toISOString().slice(0, 10) : "",

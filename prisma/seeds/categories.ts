@@ -39,5 +39,9 @@ export async function seedCategories(prisma: any) {
     }
   }
 
+  await prisma.category.deleteMany({
+    where: { name: { in: ["Expense Services"] } },
+  });
+
   console.log("Categories seeding completed.");
 }

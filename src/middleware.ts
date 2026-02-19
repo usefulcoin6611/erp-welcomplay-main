@@ -1,18 +1,20 @@
 import { betterFetch } from "@better-fetch/fetch";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/login", "/api/auth"];
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/api/auth"];
 
 export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    
+    // Check if the route is public
+    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+    const isAuthRoute = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
 
-    // Skip public routes and API auth routes
-    if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
-        return NextResponse.next();
-    }
-
+    // Only fetch session if we are accessing a protected route OR an auth route (to redirect away)
+    // Optimization: Don't check session for purely public assets/routes if we can help it, 
+    // but here we need to know if user is logged in to redirect them FROM login page.
+    
     // Check session via BetterAuth API
-    // We use betterFetch to call the internal session API
     const { data: session } = await betterFetch<any>(
         "/api/auth/get-session",
         {
@@ -24,14 +26,14 @@ export default async function middleware(request: NextRequest) {
         }
     );
 
-    // If no session and trying to access protected route, redirect to login
-    if (!session) {
-        return NextResponse.redirect(new URL("/login", request.url));
+    // 1. If user IS authenticated and tries to access auth pages -> Redirect to dashboard
+    if (session && isAuthRoute) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    // If session exists but trying to access login, redirect to dashboard
-    if (session && pathname === "/login") {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+    // 2. If user is NOT authenticated and tries to access protected route -> Redirect to login
+    if (!session && !isPublicRoute) {
+        return NextResponse.redirect(new URL("/login", request.url));
     }
 
     return NextResponse.next();
@@ -39,7 +41,7 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        // Match all routes except static files and favicon
-        "/((?!_next/static|_next/image|favicon.ico).*)",
+        // Match all routes except static files, images, favicon, and API auth routes
+        "/((?!_next/static|_next/image|favicon.ico|api/auth).*)",
     ],
 };
