@@ -5,6 +5,7 @@ CREATE TABLE "bill" (
     "vendorId" TEXT NOT NULL,
     "branchId" TEXT,
     "category" TEXT,
+    "categoryId" TEXT,
     "billDate" TIMESTAMP(3) NOT NULL,
     "dueDate" TIMESTAMP(3) NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'draft',
@@ -42,6 +43,27 @@ ALTER TABLE "bill" ADD CONSTRAINT "bill_vendorId_fkey" FOREIGN KEY ("vendorId") 
 
 -- AddForeignKey
 ALTER TABLE "bill" ADD CONSTRAINT "bill_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bill" ADD CONSTRAINT "bill_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- CreateTable
+CREATE TABLE "debit_note" (
+    "id" TEXT NOT NULL,
+    "number" INTEGER NOT NULL,
+    "billId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "description" TEXT,
+    "status" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "debit_note_pkey" PRIMARY KEY ("id")
+);
+
+-- AddForeignKey
+ALTER TABLE "debit_note" ADD CONSTRAINT "debit_note_billId_fkey" FOREIGN KEY ("billId") REFERENCES "bill"("billId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bill_item" ADD CONSTRAINT "bill_item_billId_fkey" FOREIGN KEY ("billId") REFERENCES "bill"("billId") ON DELETE CASCADE ON UPDATE CASCADE;
