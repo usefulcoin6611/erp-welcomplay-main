@@ -52,6 +52,24 @@ CREATE TABLE "expense" (
 );
 
 -- CreateTable
+CREATE TABLE "expense_item" (
+    "id" TEXT NOT NULL,
+    "expenseId" TEXT NOT NULL,
+    "productId" TEXT,
+    "itemName" TEXT NOT NULL,
+    "quantity" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "price" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "discount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "taxRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "amount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "expense_item_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "payment" (
     "id" TEXT NOT NULL,
     "paymentId" TEXT NOT NULL,
@@ -82,6 +100,12 @@ CREATE UNIQUE INDEX "expense_expenseId_key" ON "expense"("expenseId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "payment_paymentId_key" ON "payment"("paymentId");
+
+-- AddForeignKey
+ALTER TABLE "expense_item" ADD CONSTRAINT "expense_item_expenseId_fkey" FOREIGN KEY ("expenseId") REFERENCES "expense"("expenseId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "expense_item" ADD CONSTRAINT "expense_item_productId_fkey" FOREIGN KEY ("productId") REFERENCES "product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "vendor" ADD CONSTRAINT "vendor_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
