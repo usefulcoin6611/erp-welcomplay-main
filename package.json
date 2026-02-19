@@ -8,7 +8,8 @@
     "dev:webpack": "next dev --webpack --disable-source-maps",
     "dev:turbo": "next dev --turbo",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
