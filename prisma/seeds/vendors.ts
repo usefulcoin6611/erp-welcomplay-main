@@ -13,11 +13,13 @@ export async function seedVendors(prisma: any) {
   });
 
   if (!user) {
-    console.log("Skipping vendor seed: Super Admin or Company user with branchId not found.");
-    return;
+    console.log(
+      "Warning: Super Admin or Company user with branchId not found. Seeding vendors with first available branch and createdById = null.",
+    );
   }
 
-  const branchId = user.branchId || (await prisma.branch.findFirst())?.id;
+  const branchId =
+    user?.branchId || (await prisma.branch.findFirst({ orderBy: { createdAt: "asc" } }))?.id;
 
   if (!branchId) {
     console.log("Skipping vendor seed: Branch not found.");
@@ -47,7 +49,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "17145",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
     {
       vendorCode: "VDR-002",
@@ -71,7 +73,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "60166",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
     {
       vendorCode: "VDR-003",
@@ -95,7 +97,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "13110",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
     {
       vendorCode: "VDR-004",
@@ -119,7 +121,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "12790",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
     {
       vendorCode: "VDR-005",
@@ -143,7 +145,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "40111",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
     {
       vendorCode: "VDR-006",
@@ -167,7 +169,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "10270",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
     {
       vendorCode: "VDR-007",
@@ -191,7 +193,7 @@ export async function seedVendors(prisma: any) {
       shippingCountry: "Indonesia",
       shippingZip: "12160",
       branchId,
-      createdById: user.id,
+      createdById: user?.id ?? null,
     },
   ];
 
