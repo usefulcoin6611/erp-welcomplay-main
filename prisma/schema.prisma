@@ -199,6 +199,7 @@ model JournalEntry {
   description String?
   reference   String?
   amount      Float
+  paymentReceipt String?
   branchId    String?
   customerId  String?
   createdAt   DateTime @default(now())

@@ -18,6 +18,16 @@ export async function seedJournals(prisma: any) {
   const salaryAccount = await prisma.chartOfAccount.findUnique({ where: { code: "5410" } }); // Salaries and Wages
   const openingBalanceAccount = await prisma.chartOfAccount.findUnique({ where: { code: "3020" } }); // Opening Balances
 
+  const customers = await prisma.customer.findMany({
+    where: { branchId },
+    orderBy: { createdAt: "asc" },
+    take: 3,
+  });
+
+  const cust1 = customers[0]?.id ?? null;
+  const cust2 = customers[1]?.id ?? null;
+  const cust3 = customers[2]?.id ?? null;
+
   if (cashAccount && arAccount && salesAccount && salaryAccount && openingBalanceAccount) {
     const journalEntries = [
       {
@@ -37,6 +47,7 @@ export async function seedJournals(prisma: any) {
         journalId: "JR-2026-002",
         date: new Date("2026-02-01"),
         description: "Monthly Sales Recognition",
+        reference: "JR-MONTHLY-2026-02",
         amount: 75000000,
         branchId: branchId,
         lines: {
@@ -48,6 +59,51 @@ export async function seedJournals(prisma: any) {
       },
       {
         journalId: "JR-2026-003",
+        date: new Date("2026-02-05"),
+        description: "Invoice payment from PT. Maju Bersama",
+        reference: "INV-2026-001",
+        amount: 13320000,
+        branchId: branchId,
+        customerId: cust1,
+        lines: {
+          create: [
+            { accountId: cashAccount.id, debit: 13320000, credit: 0 },
+            { accountId: salesAccount.id, debit: 0, credit: 13320000 },
+          ],
+        },
+      },
+      {
+        journalId: "JR-2026-004",
+        date: new Date("2026-02-08"),
+        description: "Maintenance service payment from Toko Sinar Jaya",
+        reference: "INV-2026-002",
+        amount: 9990000,
+        branchId: branchId,
+        customerId: cust3,
+        lines: {
+          create: [
+            { accountId: cashAccount.id, debit: 9990000, credit: 0 },
+            { accountId: salesAccount.id, debit: 0, credit: 9990000 },
+          ],
+        },
+      },
+      {
+        journalId: "JR-2026-005",
+        date: new Date("2026-02-12"),
+        description: "Consulting fee from Bapak Budi Santoso",
+        reference: "RCPT-2026-005",
+        amount: 2500000,
+        branchId: branchId,
+        customerId: cust2,
+        lines: {
+          create: [
+            { accountId: cashAccount.id, debit: 2500000, credit: 0 },
+            { accountId: salesAccount.id, debit: 0, credit: 2500000 },
+          ],
+        },
+      },
+      {
+        journalId: "JR-2026-006",
         date: new Date("2026-02-10"),
         description: "Salary Payment February",
         amount: 25000000,
@@ -64,8 +120,25 @@ export async function seedJournals(prisma: any) {
     for (const entry of journalEntries) {
       await prisma.journalEntry.upsert({
         where: { journalId: entry.journalId },
-        update: {},
-        create: entry,
+        update: {
+          date: entry.date,
+          description: entry.description,
+          reference: (entry as any).reference ?? null,
+          amount: entry.amount,
+          customerId: (entry as any).customerId ?? null,
+        },
+        create: {
+          journalId: entry.journalId,
+          date: entry.date,
+          description: entry.description,
+          reference: (entry as any).reference ?? null,
+          amount: entry.amount,
+          customer: (entry as any).customerId
+            ? { connect: { id: (entry as any).customerId } }
+            : undefined,
+          branch: { connect: { id: branchId } },
+          lines: entry.lines,
+        },
       });
     }
     console.log("Journal Entries seeded.");

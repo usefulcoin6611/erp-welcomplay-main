@@ -158,7 +158,7 @@ export default function InvoiceEditPage({ params }: InvoiceEditPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
               <div>

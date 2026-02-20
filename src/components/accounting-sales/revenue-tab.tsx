@@ -1,6 +1,9 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { toast } from 'sonner'
+import { useDropzone } from 'react-dropzone'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +52,9 @@ import {
   RefreshCw,
   Download,
   Eye,
+  Upload,
+  Image as ImageIcon,
+  FileText,
 } from 'lucide-react'
 
 const initialRevenueData: any[] = []
@@ -105,8 +111,26 @@ export function RevenueTab() {
     category: '',
     reference: '',
     description: '',
-    paymentReceipt: '',
+    paymentReceipt: null as File | { name: string; url: string } | null,
   })
+
+  const [formErrors, setFormErrors] = useState({
+    date: '',
+    amount: '',
+    account: '',
+    customer: '',
+    category: '',
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null)
+  const [receiptRemoved, setReceiptRemoved] = useState(false)
+
+  function shortenFileName(name: string, maxWords = 6) {
+    const parts = name.split(/\s+/)
+    if (parts.length <= maxWords) return name
+    return parts.slice(0, maxWords).join(' ') + '...'
+  }
 
   const [filters, setFilters] = useState({
     date: '',
@@ -180,6 +204,9 @@ export function RevenueTab() {
 
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
+    if (open) {
+      setReceiptRemoved(false)
+    }
     if (!open) {
       setEditingId(null)
       setFormData({
@@ -190,8 +217,10 @@ export function RevenueTab() {
         category: '',
         reference: '',
         description: '',
-        paymentReceipt: '',
+        paymentReceipt: null,
       })
+      setReceiptPreviewUrl(null)
+      setReceiptRemoved(false)
     }
   }
 
@@ -205,8 +234,19 @@ export function RevenueTab() {
       category: (revenue as any).incomeAccountId ?? '',
       reference: revenue.reference || '',
       description: revenue.description || '',
-      paymentReceipt: revenue.paymentReceipt || '',
+      paymentReceipt: revenue.paymentReceipt
+        ? {
+            name: revenue.paymentReceipt.split('/').pop() || 'Existing Receipt',
+            url: revenue.paymentReceipt,
+          }
+        : null,
     })
+    if (revenue.paymentReceipt) {
+      setReceiptPreviewUrl(revenue.paymentReceipt)
+    } else {
+      setReceiptPreviewUrl(null)
+    }
+    setReceiptRemoved(false)
     setDialogOpen(true)
   }
 
@@ -220,7 +260,7 @@ export function RevenueTab() {
     const res = await fetch(`/api/revenue/${revenueToDelete.id}`, { method: 'DELETE' })
     const json = await res.json().catch(() => null)
     if (!res.ok || json?.success === false) {
-      alert(json?.message || 'Gagal menghapus revenue')
+      toast.error(json?.message || 'Gagal menghapus revenue')
       return
     }
     await loadRevenue()
@@ -228,43 +268,132 @@ export function RevenueTab() {
     setDeleteDialogOpen(false)
   }
 
+  const fileInputRef = useState<HTMLInputElement | null>(null)
+
+  const onReceiptDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0]
+    if (file) {
+      setFormData((prev) => ({ ...prev, paymentReceipt: file }))
+      const objectUrl = URL.createObjectURL(file)
+      setReceiptPreviewUrl(objectUrl)
+      setReceiptRemoved(false)
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive, open: openReceiptPicker } = useDropzone({
+    onDrop: onReceiptDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg'],
+      'application/pdf': ['.pdf'],
+    },
+    maxFiles: 1,
+    multiple: false,
+    noClick: true, // Disable click on root, handle manually
+    noKeyboard: true // Disable keyboard on root, handle manually
+  })
+
+  const handleManualUploadClick = () => {
+    openReceiptPicker()
+  }
+
+  const handleRemoveReceipt = () => {
+    setFormData((prev) => ({ ...prev, paymentReceipt: null }))
+    setReceiptPreviewUrl(null)
+    setReceiptRemoved(true)
+  }
+
+  const validateForm = () => {
+    const errors = {
+      date: '',
+      amount: '',
+      account: '',
+      customer: '',
+      category: '',
+    }
+
+    if (!formData.date) {
+      errors.date = 'Tanggal wajib diisi'
+    }
+
+    const amountValue = Number(formData.amount)
+    if (!formData.amount || Number.isNaN(amountValue) || amountValue <= 0) {
+      errors.amount = 'Amount harus lebih dari 0'
+    }
+
+    if (!formData.account) {
+      errors.account = 'Account wajib dipilih'
+    }
+
+    if (!formData.customer) {
+      errors.customer = 'Customer wajib dipilih'
+    }
+
+    if (!formData.category) {
+      errors.category = 'Category wajib dipilih'
+    }
+
+    setFormErrors(errors)
+
+    return !errors.date && !errors.amount && !errors.account && !errors.customer && !errors.category
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const payload = {
-      date: formData.date,
-      amount: Number(formData.amount) || 0,
-      cashAccountId: formData.account,
-      incomeAccountId: formData.category,
-      customerId: formData.customer || null,
-      reference: formData.reference,
-      description: formData.description,
-      paymentReceipt: formData.paymentReceipt || null,
+    if (!validateForm()) {
+      toast.error('Mohon lengkapi field yang wajib diisi')
+      return
     }
-    if (editingId) {
-      const res = await fetch(`/api/revenue/${editingId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const json = await res.json().catch(() => null)
-      if (!res.ok || json?.success === false) {
-        alert(json?.message || 'Gagal memperbarui revenue')
-        return
-      }
-    } else {
-      const res = await fetch('/api/revenue', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const json = await res.json().catch(() => null)
-      if (!res.ok || json?.success === false) {
-        alert(json?.message || 'Gagal membuat revenue')
-        return
-      }
+
+    setIsSubmitting(true)
+
+    const payloadAmount = Number(formData.amount) || 0
+
+    const submitData = new FormData()
+    submitData.append('date', formData.date)
+    submitData.append('amount', String(payloadAmount))
+    submitData.append('cashAccountId', formData.account)
+    submitData.append('incomeAccountId', formData.category)
+    if (formData.customer) submitData.append('customerId', formData.customer)
+    if (formData.reference) submitData.append('reference', formData.reference)
+    if (formData.description) submitData.append('description', formData.description)
+    if (formData.paymentReceipt instanceof File) {
+      submitData.append('paymentReceipt', formData.paymentReceipt)
+    } else if (receiptRemoved) {
+      submitData.append('paymentReceiptRemoved', 'true')
     }
-    await loadRevenue()
-    handleDialogOpenChange(false)
+    try {
+      if (editingId) {
+        const res = await fetch(`/api/revenue/${editingId}`, {
+          method: 'PUT',
+          body: submitData,
+        })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || json?.success === false) {
+          toast.error(json?.message || 'Gagal memperbarui revenue')
+          setIsSubmitting(false)
+          return
+        }
+        toast.success('Revenue berhasil diperbarui')
+      } else {
+        const res = await fetch('/api/revenue', {
+          method: 'POST',
+          body: submitData,
+        })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || json?.success === false) {
+          toast.error(json?.message || 'Gagal membuat revenue')
+          setIsSubmitting(false)
+          return
+        }
+        toast.success('Revenue berhasil dibuat')
+      }
+      await loadRevenue()
+      handleDialogOpenChange(false)
+    } catch {
+      toast.error('Terjadi kesalahan sistem')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Filter data based on filters
@@ -321,14 +450,14 @@ export function RevenueTab() {
                 Create Revenue
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Edit Revenue' : 'Create New Revenue'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit}>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
                       <Label htmlFor="create-date">
                         Date <span className="text-red-500">*</span>
                       </Label>
@@ -339,8 +468,11 @@ export function RevenueTab() {
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       />
+                      {formErrors.date && (
+                        <p className="text-xs text-red-500">{formErrors.date}</p>
+                      )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <Label htmlFor="create-amount">
                         Amount <span className="text-red-500">*</span>
                       </Label>
@@ -353,10 +485,13 @@ export function RevenueTab() {
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                       />
+                      {formErrors.amount && (
+                        <p className="text-xs text-red-500">{formErrors.amount}</p>
+                      )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
                       <Label htmlFor="create-account">
                         Account <span className="text-red-500">*</span>
                       </Label>
@@ -376,11 +511,17 @@ export function RevenueTab() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {formErrors.account && (
+                        <p className="text-xs text-red-500">{formErrors.account}</p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        Create account here. <span className="font-medium text-primary cursor-pointer">Create account</span>
+                        Create account here.{' '}
+                        <Link className="font-medium text-primary" href="/accounting/bank-account">
+                          Create account
+                        </Link>
                       </p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <Label htmlFor="create-customer">
                         Customer <span className="text-red-500">*</span>
                       </Label>
@@ -400,8 +541,14 @@ export function RevenueTab() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {formErrors.customer && (
+                        <p className="text-xs text-red-500">{formErrors.customer}</p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        Create customer here. <span className="font-medium text-primary cursor-pointer">Create customer</span>
+                        Create customer here.{' '}
+                        <Link className="font-medium text-primary" href="/accounting/sales?tab=customer">
+                          Create customer
+                        </Link>
                       </p>
                     </div>
                   </div>
@@ -415,8 +562,8 @@ export function RevenueTab() {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
                       <Label htmlFor="create-category">
                         Category <span className="text-red-500">*</span>
                       </Label>
@@ -436,8 +583,14 @@ export function RevenueTab() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {formErrors.category && (
+                        <p className="text-xs text-red-500">{formErrors.category}</p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        Create category here. <span className="font-medium text-primary cursor-pointer">Create category</span>
+                        Create category here.{' '}
+                        <Link className="font-medium text-primary" href="/accounting/setup?tab=category">
+                          Create category
+                        </Link>
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -451,34 +604,96 @@ export function RevenueTab() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="create-receipt">Payment Receipt</Label>
-                    <Input
-                      id="create-receipt"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          paymentReceipt: e.target.files?.[0]?.name ?? '',
-                        })
-                      }
-                    />
-                    {formData.paymentReceipt ? (
-                      <p className="text-xs text-muted-foreground">Selected: {formData.paymentReceipt}</p>
-                    ) : null}
+                    <Label>Payment Receipt</Label>
+                    {!receiptPreviewUrl ? (
+                      <div
+                        {...getRootProps()}
+                        className={`
+                          border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors
+                          ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}
+                        `}
+                        onClick={handleManualUploadClick}
+                      >
+                        <input {...getInputProps()} />
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="h-6 w-6" />
+                          <p className="text-sm font-medium">
+                            {isDragActive ? 'Drop file here' : 'Drag & drop or click to upload'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Supports: PNG, JPG, JPEG, PDF
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative w-full border rounded-lg overflow-hidden bg-gray-50 p-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 shrink-0 bg-white rounded-md border flex items-center justify-center">
+                            {receiptPreviewUrl && receiptPreviewUrl.toLowerCase().endsWith('.pdf') ? (
+                              <FileText className="h-5 w-5 text-red-500" />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-blue-500" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {formData.paymentReceipt instanceof File
+                                ? shortenFileName(formData.paymentReceipt.name)
+                                : shortenFileName((formData.paymentReceipt as any)?.name || 'Receipt')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => {
+                                if (receiptPreviewUrl) {
+                                  window.open(receiptPreviewUrl, '_blank')
+                                }
+                              }}
+                            >
+                              View
+                            </Button>
+                            {/* Hidden input for change action */}
+                            <input {...getInputProps()} className="hidden" />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={handleManualUploadClick}
+                            >
+                              Change
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={handleRemoveReceipt}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" className="shadow-none" onClick={() => handleDialogOpenChange(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" variant="blue" className="shadow-none">
-                    {editingId ? 'Update' : 'Create'}
+                  <Button type="submit" variant="blue" className="shadow-none" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : editingId ? 'Update' : 'Create'}
                   </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
+
           </div>
         </CardHeader>
       </Card>
@@ -651,8 +866,7 @@ export function RevenueTab() {
                               className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                               title="Download"
                               onClick={() => {
-                                // Handle download
-                                console.log('Download:', revenue.paymentReceipt)
+                                window.open(revenue.paymentReceipt as string, '_blank')
                               }}
                             >
                               <Download className="h-3 w-3" />
@@ -663,8 +877,7 @@ export function RevenueTab() {
                               className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                               title="Preview"
                               onClick={() => {
-                                // Handle preview
-                                console.log('Preview:', revenue.paymentReceipt)
+                                window.open(revenue.paymentReceipt as string, '_blank')
                               }}
                             >
                               <Eye className="h-3 w-3" />

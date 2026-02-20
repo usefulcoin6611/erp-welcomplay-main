@@ -76,17 +76,18 @@ const initialCustomers: { id: string; name: string }[] = []
 
 const initialCategories: { id: string; name: string }[] = []
 
-const mockProducts = [
-  { id: 1, name: 'Product A', price: 100000, unit: 'pcs' },
-  { id: 2, name: 'Product B', price: 200000, unit: 'pcs' },
-  { id: 3, name: 'Service A', price: 500000, unit: 'hour' },
-  { id: 4, name: 'Service B', price: 750000, unit: 'hour' },
-]
+type ProductOption = {
+  id: string
+  name: string
+  salePrice: number
+  unit: string
+}
 
-const mockTaxes = [
-  { id: 1, name: 'VAT', rate: 11 },
-  { id: 2, name: 'PPN', rate: 10 },
-]
+type TaxOption = {
+  id: string
+  name: string
+  rate: number
+}
 
 export function InvoiceTab() {
   type InvoiceItem = {
@@ -130,11 +131,14 @@ export function InvoiceTab() {
     dueDate: '',
     refNumber: '',
     description: '',
+    status: '0',
   })
   const [invoiceNumber] = useState(`INV-2026-${String((invoices?.length || 0) + 1).padStart(3, '0')}`)
   const [items, setItems] = useState<InvoiceItem[]>([])
   const [customers, setCustomers] = useState(initialCustomers)
   const [categories, setCategories] = useState(initialCategories)
+  const [products, setProducts] = useState<ProductOption[]>([])
+  const [taxes, setTaxes] = useState<TaxOption[]>([])
 
   type InvoiceDetail = {
     invoiceId: string
@@ -273,11 +277,38 @@ export function InvoiceTab() {
   useEffect(() => {
     const loadBaseData = async () => {
       try {
-        const [invRes, custRes, catRes] = await Promise.all([
+        const [invRes, custRes, catRes, prodRes, taxRes] = await Promise.all([
           fetch(`/api/invoices`).then(r => r.json()).catch(() => ({ success: false })),
           fetch(`/api/customers`).then(r => r.json()).catch(() => ({ success: false })),
           fetch(`/api/categories`).then(r => r.json()).catch(() => ({ success: false })),
+          fetch('/api/products').then(r => r.json()).catch(() => ({ success: false })),
+          fetch('/api/taxes').then(r => r.json()).catch(() => ({ success: false })),
         ])
+        let productsData: ProductOption[] = []
+        let taxesData: TaxOption[] = []
+        if (prodRes?.success && Array.isArray(prodRes.data)) {
+          productsData = prodRes.data.map((p: any) => ({
+            id: p.id as string,
+            name: p.name as string,
+            salePrice: Number(p.salePrice) || 0,
+            unit: (p.unit as string) || '',
+          }))
+          setProducts(productsData)
+        }
+        if (taxRes?.success && Array.isArray(taxRes.data)) {
+          taxesData = taxRes.data.map((t: any) => ({
+            id: t.id as string,
+            name: t.name as string,
+            rate: Number(t.rate) || 0,
+          }))
+          setTaxes(taxesData)
+        }
+        const productsById = new Map(productsData.map((p) => [p.id, p]))
+        const productsByName = new Map(productsData.map((p) => [p.name, p.id]))
+        const taxesByRate = new Map<number, string>()
+        for (const t of taxesData) {
+          taxesByRate.set(t.rate, t.id)
+        }
         if (invRes?.success && Array.isArray(invRes.data)) {
           const loaded: InvoiceRow[] = invRes.data.map((e: any) => ({
             id: e.id,
@@ -287,19 +318,33 @@ export function InvoiceTab() {
             status: e.status,
             customer: e.customerId || '',
             category: e.categoryId || '',
-            refNumber: '',
+            refNumber: e.id || '',
             description: e.description || '',
-            items: (e.items || []).map((it: any) => ({
-              id: it.id,
-              item: it.item,
-              quantity: it.quantity,
-              price: it.price,
-              discount: it.discount,
-              tax: '',
-              taxRate: it.taxRate,
-              description: it.description || '',
-              amount: it.amount || 0,
-            })),
+            items: (e.items || []).map((it: any, index: number) => {
+              const rawItem = typeof it.item === 'string' ? it.item : ''
+              let itemValue = ''
+              if (rawItem) {
+                if (productsById.has(rawItem)) {
+                  itemValue = rawItem
+                } else {
+                  const byName = productsByName.get(rawItem)
+                  itemValue = byName ?? ''
+                }
+              }
+              const numericTaxRate = Number(it.taxRate ?? 0)
+              const taxId = taxesByRate.get(numericTaxRate) ?? ''
+              return {
+                id: typeof it.id === 'string' && it.id ? it.id : `item-${index + 1}`,
+                item: itemValue,
+                quantity: String(it.quantity ?? ''),
+                price: String(it.price ?? ''),
+                discount: String(it.discount ?? ''),
+                tax: taxId,
+                taxRate: String(numericTaxRate),
+                description: it.description || '',
+                amount: typeof it.amount === 'number' ? it.amount : 0,
+              }
+            }),
           }))
           setInvoices(loaded)
           setFilteredInvoices(loaded)
@@ -364,6 +409,7 @@ export function InvoiceTab() {
       dueDate: invoice.dueDate,
       refNumber: invoice.refNumber,
       description: invoice.description,
+      status: String(invoice.status ?? 0),
     })
     setItems(invoice.items)
     setCreateDialogOpen(true)
@@ -410,15 +456,15 @@ export function InvoiceTab() {
       if (item.id === id) {
         const updated = { ...item, [field]: value }
         if (field === 'item' && value) {
-          const product = mockProducts.find(p => p.id.toString() === value)
+          const product = products.find(p => p.id === value)
           if (product) {
-            updated.price = product.price.toString()
+            updated.price = product.salePrice.toString()
           }
         }
         if (['quantity', 'price', 'discount', 'taxRate'].includes(field)) {
           updated.amount = calculateItemAmount(updated)
         } else if (field === 'tax') {
-          const tax = mockTaxes.find(t => t.id.toString() === value)
+          const tax = taxes.find(t => t.id === value)
           updated.taxRate = tax?.rate.toString() || '0'
           updated.amount = calculateItemAmount({ ...updated, taxRate: updated.taxRate })
         }
@@ -442,11 +488,18 @@ export function InvoiceTab() {
           issueDate: formData.issueDate,
           dueDate: formData.dueDate,
           description: formData.description,
+          status: parseInt(formData.status),
           dueAmount: totalAmount,
         }),
       })
       const res = await fetch(`/api/invoices`).then(r => r.json()).catch(() => ({ success: false }))
       if (res?.success && Array.isArray(res.data)) {
+        const productsById = new Map(products.map((p) => [p.id, p]))
+        const productsByName = new Map(products.map((p) => [p.name, p.id]))
+        const taxesByRate = new Map<number, string>()
+        for (const t of taxes) {
+          taxesByRate.set(t.rate, t.id)
+        }
         const loaded: InvoiceRow[] = res.data.map((e: any) => ({
           id: e.id,
           issueDate: e.issueDate,
@@ -455,19 +508,33 @@ export function InvoiceTab() {
           status: e.status,
           customer: e.customerId || '',
           category: e.categoryId || '',
-          refNumber: '',
+          refNumber: e.id || '',
           description: e.description || '',
-          items: (e.items || []).map((it: any) => ({
-            id: it.id,
-            item: it.item,
-            quantity: it.quantity,
-            price: it.price,
-            discount: it.discount,
-            tax: '',
-            taxRate: it.taxRate,
-            description: it.description || '',
-            amount: it.amount || 0,
-          })),
+          items: (e.items || []).map((it: any, index: number) => {
+            const rawItem = typeof it.item === 'string' ? it.item : ''
+            let itemValue = ''
+            if (rawItem) {
+              if (productsById.has(rawItem)) {
+                itemValue = rawItem
+              } else {
+                const byName = productsByName.get(rawItem)
+                itemValue = byName ?? ''
+              }
+            }
+            const numericTaxRate = Number(it.taxRate ?? 0)
+            const taxId = taxesByRate.get(numericTaxRate) ?? ''
+            return {
+              id: typeof it.id === 'string' && it.id ? it.id : `item-${index + 1}`,
+              item: itemValue,
+              quantity: String(it.quantity ?? ''),
+              price: String(it.price ?? ''),
+              discount: String(it.discount ?? ''),
+              tax: taxId,
+              taxRate: String(numericTaxRate),
+              description: it.description || '',
+              amount: typeof it.amount === 'number' ? it.amount : 0,
+            }
+          }),
         }))
         setInvoices(loaded)
         setFilteredInvoices(loaded)
@@ -482,12 +549,19 @@ export function InvoiceTab() {
           issueDate: formData.issueDate,
           dueDate: formData.dueDate,
           description: formData.description,
+          status: parseInt(formData.status),
           dueAmount: totalAmount,
           items,
         }),
       })
       const res = await fetch(`/api/invoices`).then(r => r.json()).catch(() => ({ success: false }))
       if (res?.success && Array.isArray(res.data)) {
+        const productsById = new Map(products.map((p) => [p.id, p]))
+        const productsByName = new Map(products.map((p) => [p.name, p.id]))
+        const taxesByRate = new Map<number, string>()
+        for (const t of taxes) {
+          taxesByRate.set(t.rate, t.id)
+        }
         const loaded: InvoiceRow[] = res.data.map((e: any) => ({
           id: e.id,
           issueDate: e.issueDate,
@@ -496,19 +570,33 @@ export function InvoiceTab() {
           status: e.status,
           customer: e.customerId || '',
           category: e.categoryId || '',
-          refNumber: '',
+          refNumber: e.id || '',
           description: e.description || '',
-          items: (e.items || []).map((it: any) => ({
-            id: it.id,
-            item: it.item,
-            quantity: it.quantity,
-            price: it.price,
-            discount: it.discount,
-            tax: '',
-            taxRate: it.taxRate,
-            description: it.description || '',
-            amount: it.amount || 0,
-          })),
+          items: (e.items || []).map((it: any, index: number) => {
+            const rawItem = typeof it.item === 'string' ? it.item : ''
+            let itemValue = ''
+            if (rawItem) {
+              if (productsById.has(rawItem)) {
+                itemValue = rawItem
+              } else {
+                const byName = productsByName.get(rawItem)
+                itemValue = byName ?? ''
+              }
+            }
+            const numericTaxRate = Number(it.taxRate ?? 0)
+            const taxId = taxesByRate.get(numericTaxRate) ?? ''
+            return {
+              id: typeof it.id === 'string' && it.id ? it.id : `item-${index + 1}`,
+              item: itemValue,
+              quantity: String(it.quantity ?? ''),
+              price: String(it.price ?? ''),
+              discount: String(it.discount ?? ''),
+              tax: taxId,
+              taxRate: String(numericTaxRate),
+              description: it.description || '',
+              amount: typeof it.amount === 'number' ? it.amount : 0,
+            }
+          }),
         }))
         setInvoices(loaded)
         setFilteredInvoices(loaded)
@@ -523,6 +611,7 @@ export function InvoiceTab() {
       dueDate: '',
       refNumber: '',
       description: '',
+      status: '0',
     })
     setItems([])
   }
@@ -538,6 +627,7 @@ export function InvoiceTab() {
         dueDate: '',
         refNumber: '',
         description: '',
+        status: '0',
       })
       setItems([])
     }
@@ -604,32 +694,17 @@ export function InvoiceTab() {
                   variant="outline"
                   size="sm"
                   className="shadow-none h-8 px-3 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
-                  asChild
-                >
-                  <Link href={`/accounting/invoice/${selectedInvoice.invoiceId}/edit`}>Edit</Link>
-                </Button>
-                <Select
-                  value={String(selectedInvoice.status)}
-                  onValueChange={(v) => {
-                    const n = parseInt(v, 10)
-                    fetch(`/api/invoices/${selectedInvoice.invoiceId}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: n }),
-                    }).then(() => {
-                      setSelectedInvoice({ ...selectedInvoice, status: n })
-                    })
+                  onClick={() => {
+                    const inv = invoices.find(i => i.id === selectedInvoice.invoiceId)
+                    if (inv) handleEdit(inv)
                   }}
                 >
-                  <SelectTrigger className="w-40 h-8">
-                    <SelectValue placeholder={statusMap[selectedInvoice.status].label} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(statusMap).map(([k, v]) => (
-                      <SelectItem key={k} value={String(k)}>{v.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+                <Badge className={statusMap[selectedInvoice.status].color}>
+                  {statusMap[selectedInvoice.status].label}
+                </Badge>
                 <Button variant="outline" size="sm" className="shadow-none h-8 w-8 p-0" onClick={() => setSelectedInvoice(null)}>
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -905,8 +980,8 @@ export function InvoiceTab() {
         <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] w-full">
           <CardContent className="px-6">
             <form onSubmit={handleCreateSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="customer">
                       Customer <span className="text-red-500">*</span>
@@ -943,12 +1018,27 @@ export function InvoiceTab() {
                       className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
                       iconPlacement="right"
                     />
-                    <input tabIndex={-1} aria-hidden="true" className="sr-only" required value={formData.issueDate} onChange={() => {}} />
+                    <input
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                      required
+                      value={formData.issueDate}
+                      onChange={() => {}}
+                    />
                     <div className="space-y-2 mt-3">
                       <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                      <Input id="invoiceNumber" value={invoiceNumber} disabled className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3" />
+                      <Input
+                        id="invoiceNumber"
+                        value={invoiceNumber}
+                        disabled
+                        className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
+                      />
                     </div>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="category">
                       Category <span className="text-red-500">*</span>
@@ -970,9 +1060,14 @@ export function InvoiceTab() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Create category here. <Link href="/accounting/setup/custom-field?tab=category" className="font-medium text-primary">Create category</Link>
+                      Create category here.{" "}
+                      <Link href="/accounting/setup/custom-field?tab=category" className="font-medium text-primary">
+                        Create category
+                      </Link>
                     </p>
-                    <div className="space-y-2 mt-3">
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <Label htmlFor="dueDate">
                         Due Date <span className="text-red-500">*</span>
                       </Label>
@@ -985,7 +1080,27 @@ export function InvoiceTab() {
                         className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3"
                       />
                     </div>
-                    <div className="space-y-2 mt-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="status">
+                        Status <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) => setFormData({ ...formData, status: value })}
+                      >
+                        <SelectTrigger id="status" className="h-9 border-0 bg-muted/80 hover:bg-muted shadow-none px-3">
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(statusMap).map(([key, value]) => (
+                            <SelectItem key={key} value={key}>
+                              {value.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="refNumber">Ref Number</Label>
                       <Input
                         id="refNumber"
@@ -998,6 +1113,7 @@ export function InvoiceTab() {
                     </div>
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -1048,8 +1164,8 @@ export function InvoiceTab() {
                                       <SelectValue placeholder="Select Item" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {mockProducts.map((product) => (
-                                        <SelectItem key={product.id} value={product.id.toString()}>
+                                      {products.map((product) => (
+                                        <SelectItem key={product.id} value={product.id}>
                                           {product.name}
                                         </SelectItem>
                                       ))}
@@ -1070,7 +1186,7 @@ export function InvoiceTab() {
                                     />
                                     {item.item && (
                                       <span className="text-xs text-muted-foreground">
-                                        {mockProducts.find(p => p.id.toString() === item.item)?.unit || ''}
+                                        {products.find(p => p.id === item.item)?.unit || ''}
                                       </span>
                                     )}
                                   </div>
@@ -1112,7 +1228,7 @@ export function InvoiceTab() {
                                         updateItem(item.id, 'tax', '')
                                         updateItem(item.id, 'taxRate', '0')
                                       } else {
-                                        const tax = mockTaxes.find(t => t.id.toString() === value)
+                                        const tax = taxes.find(t => t.id === value)
                                         updateItem(item.id, 'tax', value)
                                         updateItem(item.id, 'taxRate', tax?.rate.toString() || '0')
                                       }
@@ -1123,8 +1239,8 @@ export function InvoiceTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="none">No Tax</SelectItem>
-                                      {mockTaxes.map((tax) => (
-                                        <SelectItem key={tax.id} value={tax.id.toString()}>
+                                      {taxes.map((tax) => (
+                                        <SelectItem key={tax.id} value={tax.id}>
                                           {tax.name} ({tax.rate}%)
                                         </SelectItem>
                                       ))}
@@ -1444,11 +1560,9 @@ export function InvoiceTab() {
                               size="sm"
                               className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                               title="Edit"
-                              asChild
+                              onClick={() => handleEdit(invoice)}
                             >
-                              <Link href={`/accounting/invoice/${invoice.id}/edit`}>
-                                <Pencil className="h-3 w-3" />
-                              </Link>
+                              <Pencil className="h-3 w-3" />
                             </Button>
                           )}
                           <Button

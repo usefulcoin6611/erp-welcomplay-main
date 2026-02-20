@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth-server"
 import { headers } from "next/headers"
 import type { Prisma } from "@prisma/client"
+import { writeFile, mkdir } from "fs/promises"
+import path from "path"
 
 type RevenueApiRow = {
   id: string
@@ -104,25 +106,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
+    const branchId = (session.user as any).branchId as string | null
     if (!branchId) {
       return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
     }
 
-    const body = await request.json()
-    const { date, amount, cashAccountId, incomeAccountId, customerId, paymentReceipt, reference, description } = body || {}
+    const formData = await request.formData()
 
-    if (!date || !amount || !cashAccountId || !incomeAccountId) {
+    const date = formData.get("date")
+    const amount = formData.get("amount")
+    const cashAccountId = formData.get("cashAccountId")
+    const incomeAccountId = formData.get("incomeAccountId")
+    const customerId = formData.get("customerId")
+    const reference = formData.get("reference")
+    const description = formData.get("description")
+
+    if (typeof date !== "string" || !date || typeof cashAccountId !== "string" || !cashAccountId || typeof incomeAccountId !== "string" || !incomeAccountId) {
       return NextResponse.json(
-        { success: false, message: "date, amount, cashAccountId, incomeAccountId wajib diisi" },
+        { success: false, message: "date, cashAccountId, incomeAccountId wajib diisi" },
         { status: 400 }
       )
     }
 
+    const amountNumber = typeof amount === "number" ? amount : Number(amount)
+    if (!amountNumber || Number.isNaN(amountNumber) || amountNumber <= 0) {
+      return NextResponse.json(
+        { success: false, message: "amount harus berupa angka lebih dari 0" },
+        { status: 400 }
+      )
+    }
+
+    let paymentReceipt: string | null = null
+    const file = formData.get("paymentReceipt") as File | null
+
+    if (file && file.size > 0) {
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const filename = `${Date.now()}_${file.name.replace(/\s/g, "_")}`
+      const uploadDir = path.join(process.cwd(), "public/uploads/revenue")
+
+      try {
+        await mkdir(uploadDir, { recursive: true })
+        await writeFile(path.join(uploadDir, filename), buffer)
+        paymentReceipt = `/uploads/revenue/${filename}`
+      } catch (err) {
+        console.error("Error saving revenue receipt file:", err)
+      }
+    }
+
     const [cashAccount, incomeAccount, customer] = await Promise.all([
-      prisma.chartOfAccount.findFirst({ where: { id: cashAccountId, type: "Assets", branchId } }),
-      prisma.chartOfAccount.findFirst({ where: { id: incomeAccountId, type: "Income", branchId } }),
-      customerId ? prisma.customer.findFirst({ where: { id: customerId, branchId } }) : Promise.resolve(null),
+      prisma.chartOfAccount.findFirst({ where: { id: cashAccountId as string, type: "Assets", branchId } }),
+      prisma.chartOfAccount.findFirst({ where: { id: incomeAccountId as string, type: "Income", branchId } }),
+      customerId && typeof customerId === "string"
+        ? prisma.customer.findFirst({ where: { id: customerId as string, branchId } })
+        : Promise.resolve(null),
     ])
 
     if (!cashAccount || !incomeAccount) {
@@ -152,11 +188,12 @@ export async function POST(request: NextRequest) {
         data: {
           journalId: `JR-${parsedDate.getFullYear()}-${Math.floor(Math.random() * 100000)}`,
           date: parsedDate,
-          description: description || null,
-          reference: reference || null,
-          amount: amount,
-          branchId: branchId,
+          description: description ? String(description) : null,
+          reference: reference ? String(reference) : null,
+          amount: amountNumber,
+          paymentReceipt,
           customer: customer ? { connect: { id: customer.id } } : undefined,
+          branch: { connect: { id: branchId } },
         } as any,
       })
 
@@ -164,9 +201,9 @@ export async function POST(request: NextRequest) {
         data: {
           journalEntryId: entry.id,
           accountId: cashAccountId,
-          debit: amount,
+          debit: amountNumber,
           credit: 0,
-          description: description || null,
+          description: description ? String(description) : null,
         },
       })
 
@@ -175,8 +212,8 @@ export async function POST(request: NextRequest) {
           journalEntryId: entry.id,
           accountId: incomeAccountId,
           debit: 0,
-          credit: amount,
-          description: description || null,
+          credit: amountNumber,
+          description: description ? String(description) : null,
         },
       })
 
@@ -184,9 +221,10 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true, data: { id: result.id } })
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error creating revenue:", error)
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: "Gagal membuat revenue" },
       { status: 500 }
     )
   }
