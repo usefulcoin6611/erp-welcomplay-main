@@ -208,7 +208,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-blue-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-sidebar-foreground w-(--sidebar-width) p-0"
+          className="bg-blue-50 dark:bg-gray-950 text-sidebar-foreground w-(--sidebar-width) p-0"
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,

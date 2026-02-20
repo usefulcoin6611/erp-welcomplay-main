@@ -115,9 +115,52 @@ export function LedgerTab() {
 
   let runningBalance = 0
 
+  const handleDownload = () => {
+    if (!selectedAccount || filteredLedger.length === 0) {
+      return
+    }
+
+    const account = accounts.find(a => a.id === selectedAccount)
+    const accountLabel = account ? `${account.code} - ${account.name}` : selectedAccount
+
+    const rows: (string | number)[][] = []
+
+    rows.push(['Account', accountLabel])
+    rows.push(['Start Date', startDate])
+    rows.push(['End Date', endDate])
+    rows.push([])
+    rows.push(['Date', 'Reference', 'Description', 'Debit', 'Credit', 'Balance'])
+
+    let balance = 0
+    filteredLedger.forEach(line => {
+      balance += line.debit - line.credit
+      const dateString = new Date(line.date).toISOString().split('T')[0]
+      rows.push([
+        dateString,
+        line.reference,
+        line.description || '',
+        line.debit,
+        line.credit,
+        balance,
+      ])
+    })
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + rows.map(r => r.join(',')).join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute(
+      'download',
+      `ledger_${accountLabel.replace(/\s+/g, '_')}_${startDate}_to_${endDate}.csv`,
+    )
+    link.setAttribute('href', encodedUri)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-4">
-      {/* Title Tab */}
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardHeader className="px-6">
           <div className="min-w-0 space-y-1">
@@ -129,13 +172,8 @@ export function LedgerTab() {
               variant="outline"
               size="sm"
               className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-              onClick={() => {
-                const element = document.getElementById('printableArea')
-                if (element) {
-                  // In real app, would use html2pdf library
-                  console.log('Download ledger as PDF')
-                }
-              }}
+              onClick={handleDownload}
+              disabled={!selectedAccount || filteredLedger.length === 0}
               title="Download"
             >
               <Download className="mr-2 h-4 w-4" />
@@ -326,4 +364,3 @@ export function LedgerTab() {
     </div>
   )
 }
-
