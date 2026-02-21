@@ -611,6 +611,7 @@ model BankAccount {
   chartAccount    ChartOfAccount @relation(fields: [chartAccountId], references: [id])
   transfersFrom   BankTransfer[] @relation("BankTransferFrom")
   transfersTo     BankTransfer[] @relation("BankTransferTo")
+  journalEntries  JournalEntry[]
 
   @@map("bank_account")
 }
