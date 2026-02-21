@@ -72,8 +72,8 @@ export default function ManageCompetenciesPage() {
       </Card>
 
       <Card className={CARD_STYLE}>
-        <CardContent className="space-y-4 px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-3">
+        <CardContent className="space-y-4 px-2 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-3 px-2">
             <div className="text-sm text-muted-foreground">Showing 0 entries</div>
             <div className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -108,4 +108,3 @@ export default function ManageCompetenciesPage() {
     </>
   );
 }
-

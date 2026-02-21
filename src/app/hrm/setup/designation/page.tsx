@@ -52,7 +52,7 @@ export default function ManageDesignationPage() {
                 <span className="text-xs uppercase tracking-wide text-slate-500">
                   Total Designations
                 </span>
-                <span className="text-base font-semibold text-foreground">
+                <span className="text-sm font-semibold text-foreground">
                   {designationCount ?? '-'}
                 </span>
               </div>

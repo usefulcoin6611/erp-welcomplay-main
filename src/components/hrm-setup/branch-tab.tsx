@@ -211,7 +211,7 @@ const BranchTabInner = function BranchTabInner(
     <>
       <Card className={CARD_STYLE}>
         {isPageMode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 px-6 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 px-2 py-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Select
                 value={String(pageSize)}

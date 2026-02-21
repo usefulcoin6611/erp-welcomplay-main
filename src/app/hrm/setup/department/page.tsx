@@ -52,7 +52,7 @@ export default function ManageDepartmentPage() {
                 <span className="text-xs uppercase tracking-wide text-slate-500">
                   Total Departments
                 </span>
-                <span className="text-base font-semibold text-foreground">
+                <span className="text-sm font-semibold text-foreground">
                   {departmentCount ?? '-'}
                 </span>
               </div>

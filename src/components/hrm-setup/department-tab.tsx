@@ -25,6 +25,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -59,7 +67,7 @@ function DepartmentTabInner(
   ref: React.Ref<DepartmentTabRef>
 ) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ branchId: '', name: '' });
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -130,7 +138,7 @@ function DepartmentTabInner(
       if (result.success) {
         toast.success(editingId ? 'Department diperbarui' : 'Department dibuat');
         fetchDepartments();
-        setShowForm(false);
+        setDialogOpen(false);
         setEditingId(null);
         setFormData({ branchId: '', name: '' });
       } else {
@@ -147,7 +155,7 @@ function DepartmentTabInner(
   const handleEdit = (department: Department) => {
     setFormData({ branchId: department.branchId, name: department.name });
     setEditingId(department.id);
-    setShowForm(true);
+    setDialogOpen(true);
   };
 
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -160,7 +168,7 @@ function DepartmentTabInner(
     ref,
     () => ({
       openCreate: () => {
-        setShowForm(true);
+        setDialogOpen(true);
         setEditingId(null);
         setFormData({ branchId: '', name: '' });
       },
@@ -215,7 +223,7 @@ function DepartmentTabInner(
     <div className="space-y-4">
       <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white rounded-lg">
         <CardContent className="space-y-4 px-2 pb-4 pt-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 pb-3 px-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Select
                 value={String(pageSize)}
@@ -264,63 +272,6 @@ function DepartmentTabInner(
               )}
             </div>
           </div>
-          {showForm && (
-            <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select
-                    value={formData.branchId}
-                    onValueChange={(value) => setFormData({ ...formData, branchId: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih Branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Department Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Human Resources"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isSubmitting}
-                  className="shadow-none bg-blue-500 text-white hover:bg-blue-600"
-                >
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingId !== null ? 'Update' : 'Create'} Department
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingId(null);
-                    setFormData({ branchId: '', name: '' });
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          )}
-
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
@@ -389,6 +340,81 @@ function DepartmentTabInner(
           </div>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({ branchId: '', name: '' });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId !== null ? 'Edit Department' : 'Create New Department'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingId !== null
+                ? 'Perbarui informasi department.'
+                : 'Tambahkan department baru.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Select
+                  value={formData.branchId}
+                  onValueChange={(value) => setFormData({ ...formData, branchId: value })}
+                >
+                  <SelectTrigger className="h-9 bg-white">
+                    <SelectValue placeholder="Pilih Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Department Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Human Resources"
+                  required
+                  className="h-9 bg-white"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="shadow-none bg-blue-500 text-white hover:bg-blue-600"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingId !== null ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDepartmentToDelete(null); }}>
         <AlertDialogContent>

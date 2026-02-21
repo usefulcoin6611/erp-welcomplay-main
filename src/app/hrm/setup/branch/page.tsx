@@ -55,7 +55,7 @@ export default function ManageBranchPage() {
                 <span className="text-xs uppercase tracking-wide text-slate-500">
                   Total Branches
                 </span>
-                <span className="text-base font-semibold text-foreground">
+                <span className="text-sm font-semibold text-foreground">
                   {branchCount ?? '-'}
                 </span>
               </div>
