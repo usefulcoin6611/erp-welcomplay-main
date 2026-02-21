@@ -39,7 +39,7 @@ import {
   Search,
   RefreshCw,
   Plus,
-  Download,
+  FileDown,
   Eye,
   Pencil,
   Trash2,
@@ -231,6 +231,34 @@ export function BillTab() {
     loadPrintSettings()
   }, [])
 
+  const handleExport = () => {
+    const headers = ['Bill Number', 'Vendor', 'Category', 'Bill Date', 'Due Date', 'Total', 'Status']
+    const rows = filteredData.map(bill => [
+      bill.billNumber,
+      bill.vendor,
+      bill.category,
+      bill.billDate,
+      bill.dueDate,
+      bill.total.toString(),
+      bill.status
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `bills_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-4">
       {/* Title Tab */}
@@ -244,14 +272,12 @@ export function BillTab() {
           <Button
             variant="outline"
             size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
             title="Export"
-            asChild
+            onClick={handleExport}
           >
-            <Link href="/accounting/bill/export">
-              <Download className="mr-2 h-4 w-4" />
-              Export Bill
-            </Link>
+            <FileDown className="mr-2 h-3.5 w-3.5" />
+            <span className="text-xs">Export Bill</span>
           </Button>
           <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create" asChild>
             <Link href="/accounting/bill/create/new">

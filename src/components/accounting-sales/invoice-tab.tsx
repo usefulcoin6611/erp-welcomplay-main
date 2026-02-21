@@ -48,7 +48,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Calendar,
-  Download,
+  FileDown,
   Eye,
   Plus,
   Search,
@@ -677,6 +677,41 @@ export function InvoiceTab() {
 
   const isOverdue = (dueDate: string) => {
     return new Date(dueDate) < new Date()
+  }
+
+  const handleExport = () => {
+    const headers = ['Invoice ID', 'Customer', 'Category', 'Issue Date', 'Due Date', 'Due Amount', 'Status', 'Description']
+    const rows = filteredInvoices.map(invoice => {
+      const customerName = customers.find(c => c.id === invoice.customer)?.name || ''
+      const categoryName = categories.find(c => c.id === invoice.category)?.name || ''
+      const statusLabel = statusMap[invoice.status]?.label || ''
+      
+      return [
+        invoice.id,
+        customerName,
+        categoryName,
+        invoice.issueDate,
+        invoice.dueDate,
+        invoice.dueAmount.toString(),
+        statusLabel,
+        invoice.description
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `invoices_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (selectedInvoice) {
@@ -1347,11 +1382,12 @@ export function InvoiceTab() {
           <Button
             variant="outline"
             size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
             title="Export"
+            onClick={handleExport}
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export Invoice
+            <FileDown className="mr-2 h-3.5 w-3.5" />
+            <span className="text-xs">Export Invoice</span>
           </Button>
           <Button
             variant="blue"

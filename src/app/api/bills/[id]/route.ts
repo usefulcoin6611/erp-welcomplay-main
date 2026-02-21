@@ -74,6 +74,99 @@ export async function PUT(
       items,
     } = body || {}
 
+    const builtItems = await prisma.$transaction(async (tx) => {
+      const branchId = s.branchId as string
+      const rawItems: any[] = Array.isArray(items) ? items : []
+
+      if (!rawItems.length) {
+        return {
+          error: "Minimal satu item produk wajib diisi",
+          items: [] as any[],
+        }
+      }
+
+      const normalized = rawItems.map((it) => {
+        const productId =
+          typeof it.productId === "string" && it.productId ? it.productId : null
+        const quantity = Number(it.quantity) || 0
+        const price = Number(it.price) || 0
+        const discount = Number(it.discount) || 0
+        const taxRate = Number(it.taxRate) || 0
+        const description =
+          typeof it.description === "string" && it.description
+            ? String(it.description)
+            : null
+
+        return { productId, quantity, price, discount, taxRate, description }
+      })
+
+      if (normalized.some((it) => !it.productId)) {
+        return {
+          error: "Semua item wajib memilih Product/Service dari katalog",
+          items: [] as any[],
+        }
+      }
+
+      const productIds = Array.from(
+        new Set(
+          normalized
+            .map((it) => it.productId)
+            .filter((id): id is string => typeof id === "string" && !!id),
+        ),
+      )
+
+      const products = await tx.product.findMany({
+        where: {
+          id: { in: productIds },
+          branchId,
+        },
+      })
+
+      const productMap = new Map<string, any>()
+      for (const p of products) {
+        if (typeof p.id === "string") {
+          productMap.set(p.id, p)
+        }
+      }
+
+      if (
+        normalized.some(
+          (it) => !it.productId || !productMap.has(it.productId as string),
+        )
+      ) {
+        return {
+          error: "Produk pada salah satu item tidak ditemukan di Products/Services",
+          items: [] as any[],
+        }
+      }
+
+      const built = normalized.map((it) => {
+        const product = productMap.get(it.productId as string)
+        const amount =
+          (it.price || 0) * (it.quantity || 0) - (it.discount || 0)
+
+        return {
+          productId: it.productId as string,
+          itemName: String(product?.name || ""),
+          quantity: it.quantity,
+          price: it.price,
+          discount: it.discount,
+          taxRate: it.taxRate,
+          amount,
+          description: it.description,
+        }
+      })
+
+      return { error: null, items: built }
+    })
+
+    if (builtItems.error) {
+      return NextResponse.json(
+        { success: false, message: builtItems.error },
+        { status: 400 },
+      )
+    }
+
     const bill = await prisma.bill.findUnique({
       where: { billId: id },
       include: { items: true },
@@ -100,17 +193,7 @@ export async function PUT(
         items: Array.isArray(items)
           ? {
               deleteMany: { billId: bill.billId },
-              create: items.map((it: any) => ({
-                itemName: String(it.itemName || ""),
-                quantity: Number(it.quantity) || 0,
-                price: Number(it.price) || 0,
-                discount: Number(it.discount) || 0,
-                taxRate: Number(it.taxRate) || 0,
-                amount:
-                  (Number(it.price) || 0) * (Number(it.quantity) || 0) -
-                  (Number(it.discount) || 0),
-                description: it.description ? String(it.description) : null,
-              })),
+              create: builtItems.items,
             }
           : undefined,
       },

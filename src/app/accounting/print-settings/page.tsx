@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Upload } from 'lucide-react'
+import { Upload, Eye, Trash2, Image as ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import * as QRCode from 'qrcode'
 
@@ -75,6 +75,11 @@ export default function AccountingPrintSettingsPage() {
   const [proposal, setProposal] = useState<DocSettings>(DEFAULT_SETTINGS)
   const [invoice, setInvoice] = useState<DocSettings>(DEFAULT_SETTINGS)
   const [bill, setBill] = useState<DocSettings>(DEFAULT_SETTINGS)
+  const [dragState, setDragState] = useState<Record<DocType, boolean>>({
+    proposal: false,
+    invoice: false,
+    bill: false,
+  })
   const proposalLogoRef = useRef<HTMLInputElement>(null)
   const invoiceLogoRef = useRef<HTMLInputElement>(null)
   const billLogoRef = useRef<HTMLInputElement>(null)
@@ -168,7 +173,7 @@ export default function AccountingPrintSettingsPage() {
           setProposal((prev) => ({
             ...prev,
             ...data.proposal,
-            logoPreviewUrl: data.proposal.logoDataUrl ?? prev.logoPreviewUrl,
+            logoPreviewUrl: data.proposal?.logoDataUrl ?? prev.logoPreviewUrl,
           }))
         }
 
@@ -176,7 +181,7 @@ export default function AccountingPrintSettingsPage() {
           setInvoice((prev) => ({
             ...prev,
             ...data.invoice,
-            logoPreviewUrl: data.invoice.logoDataUrl ?? prev.logoPreviewUrl,
+            logoPreviewUrl: data.invoice?.logoDataUrl ?? prev.logoPreviewUrl,
           }))
         }
 
@@ -184,7 +189,7 @@ export default function AccountingPrintSettingsPage() {
           setBill((prev) => ({
             ...prev,
             ...data.bill,
-            logoPreviewUrl: data.bill.logoDataUrl ?? prev.logoPreviewUrl,
+            logoPreviewUrl: data.bill?.logoDataUrl ?? prev.logoPreviewUrl,
           }))
         }
       } catch (error) {
@@ -385,43 +390,123 @@ export default function AccountingPrintSettingsPage() {
 
                             <div className="space-y-2">
                               <Label className="text-sm font-medium text-foreground">{label} Logo</Label>
-                              <div className="flex flex-wrap items-center gap-3">
-                                <input
-                                  ref={getLogoRef(tab)}
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0] ?? null
-                                    handleLogoChange(tab, file)
-                                  }}
-                                />
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="blue"
-                                  className="h-9 shadow-none rounded-md px-4"
-                                  onClick={() => getLogoRef(tab).current?.click()}
-                                >
-                                  <Upload className="mr-2 h-4 w-4" />
-                                  Choose file here
-                                </Button>
-                                {settings.logoFile && (
-                                  <span className="text-sm text-muted-foreground truncate max-w-[160px]">
-                                    {settings.logoFile.name}
-                                  </span>
-                                )}
-                                {(settings.logoPreviewUrl || settings.logoDataUrl) && (
-                                  <div className="w-16 h-10 rounded border border-border bg-white flex items-center justify-center overflow-hidden">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={settings.logoPreviewUrl || settings.logoDataUrl || ''}
-                                      alt="Logo preview"
-                                      className="max-h-full max-w-full object-contain"
-                                    />
+                              <input
+                                ref={getLogoRef(tab)}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] ?? null
+                                  handleLogoChange(tab, file)
+                                }}
+                              />
+                              {settings.logoPreviewUrl || settings.logoDataUrl ? (
+                                <div className="relative w-full border rounded-lg overflow-hidden bg-gray-50 p-2">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={settings.logoPreviewUrl || settings.logoDataUrl || ''}
+                                        alt="Logo preview"
+                                        className="max-h-full max-w-full object-contain"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">
+                                        Logo preview
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => {
+                                          const url = settings.logoPreviewUrl || settings.logoDataUrl
+                                          if (url) {
+                                            window.open(url, '_blank')
+                                          }
+                                        }}
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => {
+                                          const input = getLogoRef(tab).current
+                                          if (input) {
+                                            input.value = ''
+                                            input.click()
+                                          }
+                                        }}
+                                      >
+                                        <Upload className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => {
+                                          const input = getLogoRef(tab).current
+                                          if (input) {
+                                            input.value = ''
+                                          }
+                                          handleLogoChange(tab, null)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                )}
-                              </div>
+                                </div>
+                              ) : (
+                                <div
+                                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                                    dragState[tab]
+                                      ? 'border-primary bg-primary/5'
+                                      : 'border-gray-300 hover:border-primary hover:bg-gray-50'
+                                  }`}
+                                  onClick={() => getLogoRef(tab).current?.click()}
+                                  onDragOver={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setDragState((prev) => ({ ...prev, [tab]: true }))
+                                  }}
+                                  onDragLeave={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setDragState((prev) => ({ ...prev, [tab]: false }))
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setDragState((prev) => ({ ...prev, [tab]: false }))
+                                    const file = e.dataTransfer.files?.[0]
+                                    if (file) {
+                                      handleLogoChange(tab, file)
+                                      const input = getLogoRef(tab).current
+                                      if (input) {
+                                        input.value = ''
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                    <Upload className="h-6 w-6" />
+                                    <p className="text-sm font-medium">
+                                      {dragState[tab] ? 'Drop file here' : 'Drag & drop or click to upload'}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                      Supports: PNG, JPG, JPEG
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex justify-end border-t border-border pt-4">

@@ -344,11 +344,13 @@ export function PaymentTab() {
     submitData.append('status', 'Completed')
     if (formData.reference) submitData.append('reference', formData.reference)
     if (formData.description) submitData.append('description', formData.description)
+    const target = rows.find((p) => p.id === editingId)
     if (formData.paymentReceipt instanceof File) {
       submitData.append('paymentReceipt', formData.paymentReceipt)
+    } else if (editingId && target && target.paymentReceipt) {
+      submitData.append('paymentReceiptRemoved', 'true')
     }
 
-    const target = rows.find((p) => p.id === editingId)
     const url = editingId && target ? `/api/payments/${target.id}` : '/api/payments'
     const method = editingId && target ? 'PUT' : 'POST'
 
@@ -603,11 +605,17 @@ export function PaymentTab() {
                   ) : (
                     <div className="relative w-full border rounded-lg overflow-hidden bg-gray-50 p-2">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 shrink-0 bg-white rounded-md border flex items-center justify-center">
-                          {previewUrl.endsWith('.pdf') ? (
+                        <div className="h-10 w-10 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden">
+                          {previewUrl.toLowerCase().endsWith('.pdf') ? (
                             <FileText className="h-5 w-5 text-red-500" />
                           ) : (
-                            <ImageIcon className="h-5 w-5 text-blue-500" />
+                            <Image
+                              src={previewUrl}
+                              alt="Payment receipt preview"
+                              width={40}
+                              height={40}
+                              className="object-contain"
+                            />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">

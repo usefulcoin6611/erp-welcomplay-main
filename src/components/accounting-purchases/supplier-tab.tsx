@@ -373,6 +373,36 @@ export function SupplierTab() {
     }
   }
 
+  const handleExport = () => {
+    const headers = ['Code', 'Name', 'Contact', 'Email', 'Phone', 'Balance', 'Tax Number', 'Billing Address', 'Shipping Address']
+    const rows = filteredData.map(vendor => [
+      vendor.code,
+      vendor.name,
+      vendor.contact,
+      vendor.email,
+      vendor.phone,
+      vendor.balance.toString(),
+      vendor.taxNumber || '',
+      vendor.billingAddress || '',
+      vendor.shippingAddress || ''
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `vendors_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-4">
       {/* Title Tab */}
@@ -395,11 +425,12 @@ export function SupplierTab() {
           <Button
             variant="outline"
             size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
             title="Export"
+            onClick={handleExport}
           >
-            <FileDown className="mr-2 h-4 w-4" />
-            Export Vendor
+            <FileDown className="mr-2 h-3.5 w-3.5" />
+            <span className="text-xs">Export Vendor</span>
           </Button>
           <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>

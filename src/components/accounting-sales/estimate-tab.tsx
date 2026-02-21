@@ -48,7 +48,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Calendar,
-  Download,
+  FileDown,
   Eye,
   Plus,
   Search,
@@ -140,6 +140,10 @@ export function EstimateTab() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [proposalToDelete, setProposalToDelete] = useState<ProposalRow | null>(null)
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
+  const [proposalToDuplicate, setProposalToDuplicate] = useState<ProposalRow | EstimateDetail | null>(null)
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false)
+  const [proposalToConvert, setProposalToConvert] = useState<ProposalRow | EstimateDetail | null>(null)
   const [formData, setFormData] = useState({
     customer: '',
     category: '',
@@ -453,6 +457,233 @@ export function EstimateTab() {
     setCurrentPage(1)
   }, [dateFilter, statusFilter, proposals])
 
+  const handleDuplicate = (proposal: ProposalRow | EstimateDetail) => {
+    setProposalToDuplicate(proposal)
+    setDuplicateDialogOpen(true)
+  }
+
+  const executeDuplicate = async () => {
+    if (!proposalToDuplicate) return
+    const proposal = proposalToDuplicate
+    const id = 'id' in proposal ? proposal.id : proposal.estimateId
+    
+    try {
+      // 1. Fetch details to ensure we have all items
+      const res = await fetch(`/api/estimates/${id}`)
+      const json = await res.json()
+      if (!json.success) throw new Error("Failed to fetch estimate details")
+      const e = json.data
+
+      // 2. Prepare mappings for Items and Taxes
+      const productsByName = new Map(products.map((p) => [p.name, p.id]))
+      const taxesByRate = new Map(taxes.map((t) => [t.rate, t.id]))
+
+      // 3. Map items
+      const newItems = (e.items || []).map((it: any, index: number) => {
+        // Resolve Product ID
+        const rawItem = typeof it.itemName === 'string' ? it.itemName : ''
+        let itemValue = ''
+        if (rawItem) {
+             // If rawItem matches an ID (less likely if returned as name), check products array
+             if (products.some(p => p.id === rawItem)) {
+                 itemValue = rawItem
+             } else {
+                 itemValue = productsByName.get(rawItem) ?? ''
+             }
+        }
+
+        // Resolve Tax ID
+        const numericTaxRate = Number(it.taxRate ?? 0)
+        const taxId = taxesByRate.get(numericTaxRate) ?? ''
+
+        return {
+          id: `item-${Date.now()}-${index}`,
+          item: itemValue,
+          quantity: String(it.quantity ?? '0'),
+          price: String(it.price ?? '0'),
+          discount: String(it.discount ?? '0'),
+          tax: taxId,
+          taxRate: String(numericTaxRate),
+          description: it.description ?? '',
+          amount: it.amount ?? 0,
+        }
+      })
+
+      // 4. Send POST to create new Estimate
+      await fetch('/api/estimates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: e.customerId,
+          categoryId: e.categoryId,
+          issueDate: new Date().toISOString().split('T')[0], // Today
+          description: e.description,
+          status: 0, // Draft
+          total: e.total,
+          items: newItems,
+        })
+      })
+
+      // 5. Refresh List
+      const refreshRes = await fetch('/api/estimates')
+      const refreshJson = await refreshRes.json()
+      if (refreshJson.success) {
+        setProposals(refreshJson.data)
+        setFilteredProposals(refreshJson.data)
+      }
+      
+      // If called from detail view, close it or redirect? 
+      // For now, if it was a row action, we are done. 
+      // If it was detail view, we might want to close detail view to show list.
+      if ('estimateId' in proposal) {
+          setSelectedEstimate(null)
+      }
+
+    } catch (err) {
+      console.error(err)
+      alert('Failed to duplicate estimate')
+    } finally {
+      setDuplicateDialogOpen(false)
+      setProposalToDuplicate(null)
+    }
+  }
+
+  const handleConvertInvoice = (proposal: ProposalRow | EstimateDetail) => {
+    setProposalToConvert(proposal)
+    setConvertDialogOpen(true)
+  }
+
+  const executeConvertInvoice = async () => {
+    if (!proposalToConvert) return
+    const proposal = proposalToConvert
+    const id = 'id' in proposal ? proposal.id : proposal.estimateId
+    
+    try {
+      // 1. Fetch details
+      const res = await fetch(`/api/estimates/${id}`)
+      const json = await res.json()
+      if (!json.success) throw new Error("Failed to fetch estimate details")
+      const e = json.data
+
+      // 2. Prepare mappings
+      const productsByName = new Map(products.map((p) => [p.name, p.id]))
+      const taxesByRate = new Map(taxes.map((t) => [t.rate, t.id]))
+
+      // 3. Map items
+      const newItems = (e.items || []).map((it: any, index: number) => {
+        const rawItem = typeof it.itemName === 'string' ? it.itemName : ''
+        let itemValue = ''
+        if (rawItem) {
+             if (products.some(p => p.id === rawItem)) {
+                 itemValue = rawItem
+             } else {
+                 itemValue = productsByName.get(rawItem) ?? ''
+             }
+        }
+        const numericTaxRate = Number(it.taxRate ?? 0)
+        const taxId = taxesByRate.get(numericTaxRate) ?? ''
+
+        return {
+          id: `item-${Date.now()}-${index}`,
+          item: itemValue,
+          quantity: String(it.quantity ?? '0'),
+          price: String(it.price ?? '0'),
+          discount: String(it.discount ?? '0'),
+          tax: taxId,
+          taxRate: String(numericTaxRate),
+          description: it.description ?? '',
+          amount: it.amount ?? 0,
+        }
+      })
+
+      // 4. Create Invoice
+      const today = new Date().toISOString().split('T')[0]
+      await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: e.customerId,
+          categoryId: e.categoryId,
+          issueDate: today,
+          dueDate: today,
+          description: e.description,
+          status: 0, // Draft
+          dueAmount: e.total,
+          items: newItems,
+        })
+      })
+
+      // 5. Update Estimate Status to Converted (4)
+      await fetch(`/api/estimates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            customerId: e.customerId,
+            categoryId: e.categoryId,
+            issueDate: typeof e.issueDate === 'string' ? e.issueDate.slice(0, 10) : e.issueDate,
+            description: e.description,
+            status: 4, // Converted
+            total: e.total,
+            items: newItems 
+        })
+      })
+
+      // 6. Refresh List
+      const refreshRes = await fetch('/api/estimates')
+      const refreshJson = await refreshRes.json()
+      if (refreshJson.success) {
+        setProposals(refreshJson.data)
+        setFilteredProposals(refreshJson.data)
+      }
+      
+      if ('estimateId' in proposal) {
+        setSelectedEstimate(null)
+      }
+      
+      // alert('Estimate converted to Invoice successfully!')
+
+    } catch (err) {
+      console.error(err)
+      alert('Failed to convert invoice')
+    } finally {
+      setConvertDialogOpen(false)
+      setProposalToConvert(null)
+    }
+  }
+
+  const handleExport = () => {
+    const headers = ['Proposal ID', 'Customer', 'Category', 'Issue Date', 'Status', 'Total', 'Description']
+    const rows = filteredProposals.map(proposal => {
+      const categoryName = categories.find(c => c.id === proposal.category)?.name || ''
+      const statusLabel = statusMap[proposal.status]?.label || ''
+      
+      return [
+        proposal.id,
+        proposal.customer, // This is the customer name based on type definition
+        categoryName,
+        proposal.issueDate,
+        statusLabel,
+        proposal.total.toString(),
+        proposal.description || ''
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `estimates_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   if (selectedEstimate) {
     return (
       <div className="space-y-6">
@@ -464,7 +695,12 @@ export function EstimateTab() {
                 <p className="text-sm text-muted-foreground truncate">{selectedEstimate.estimateId}</p>
               </div>
               <div className="ml-auto flex items-center gap-2 justify-end">
-                <Button variant="outline" size="sm" className="shadow-none h-8 px-3 bg-green-50 text-green-700 hover:bg-green-100 border-green-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shadow-none h-8 px-3 bg-green-50 text-green-700 hover:bg-green-100 border-green-100"
+                  onClick={() => handleConvertInvoice(selectedEstimate)}
+                >
                   Convert Invoice
                 </Button>
                 <Button
@@ -1336,11 +1572,12 @@ export function EstimateTab() {
           <Button
             variant="outline"
             size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
             title="Export"
+            onClick={handleExport}
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export Estimate
+            <FileDown className="mr-2 h-3.5 w-3.5" />
+            <span className="text-xs">Export Estimate</span>
           </Button>
           <Button
             variant="blue"
@@ -1489,10 +1726,22 @@ export function EstimateTab() {
                       </TableCell>
                       <TableCell className="px-6">
                         <div className="flex items-center gap-2 justify-start">
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100" title="Convert Invoice">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                            title="Convert Invoice"
+                            onClick={() => handleConvertInvoice(proposal)}
+                          >
                             <ArrowLeftRight className="h-3 w-3" />
                           </Button>
-                          <Button variant="outline" size="sm" className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Duplicate">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                            title="Duplicate"
+                            onClick={() => handleDuplicate(proposal)}
+                          >
                             <Copy className="h-3 w-3" />
                           </Button>
                           <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" title="View">
@@ -1503,7 +1752,7 @@ export function EstimateTab() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                            className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                             title="Edit"
                             onClick={() => handleEdit(proposal)}
                           >
@@ -1564,6 +1813,42 @@ export function EstimateTab() {
             <AlertDialogCancel onClick={() => setProposalToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Duplicate Confirmation Dialog */}
+      <AlertDialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate Estimate</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to duplicate this estimate? A new draft estimate will be created with today's date.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProposalToDuplicate(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeDuplicate} className="bg-blue-600 hover:bg-blue-700">
+              Duplicate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Convert Confirmation Dialog */}
+      <AlertDialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert to Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to convert this estimate to an invoice? The estimate status will be changed to 'Close' and a new draft invoice will be created.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProposalToConvert(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeConvertInvoice} className="bg-green-600 hover:bg-green-700">
+              Convert
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

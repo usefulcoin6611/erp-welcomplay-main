@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { Pencil, Plus, RefreshCw, Trash2, Search, X } from 'lucide-react'
+import { Pencil, Plus, RefreshCw, Trash2, Search, X, FileDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -151,6 +151,7 @@ export function AccountTab() {
     accountNumber: string
     currentBalance: string
     contactNumber: string
+    bankAddress: string
     paymentGateway: string
   }
 
@@ -390,7 +391,7 @@ export function AccountTab() {
       accountNumber: row.accountNumber,
       openingBalance: `${parseRupiahToNumber(row.currentBalance)}`,
       contactNumber: row.contactNumber,
-      bankAddress: '',
+      bankAddress: row.bankAddress,
     })
     setDialogOpen(true)
   }
@@ -455,6 +456,34 @@ export function AccountTab() {
     setCurrentPage(1)
   }
 
+  const handleExport = () => {
+    const headers = ['Chart of Account', 'Name', 'Bank', 'Account Number', 'Current Balance', 'Contact Number', 'Payment Gateway']
+    const rows = filteredData.map(account => [
+      account.chartOfAccount,
+      account.name,
+      account.bank,
+      account.accountNumber,
+      account.currentBalance,
+      account.contactNumber,
+      getPaymentGatewayLabel(account.paymentGateway)
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `bank_accounts_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-4">
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
@@ -466,9 +495,16 @@ export function AccountTab() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-7 shadow-none">
-              Export CSV
-            </Button>
+            <Button
+               variant="outline"
+               size="sm"
+               className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+               title="Export"
+               onClick={handleExport}
+             >
+               <FileDown className="mr-2 h-3.5 w-3.5" />
+               <span className="text-xs">Export CSV</span>
+             </Button>
             <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
                 <Button
@@ -738,7 +774,7 @@ export function AccountTab() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                          className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                           aria-label={`Edit ${a.name}`}
                           onClick={() => handleEdit(a)}
                         >

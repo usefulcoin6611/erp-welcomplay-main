@@ -450,7 +450,7 @@ export function RevenueTab() {
                 Create Revenue
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Edit Revenue' : 'Create New Revenue'}</DialogTitle>
               </DialogHeader>
@@ -642,39 +642,38 @@ export function RevenueTab() {
                                 : shortenFileName((formData.paymentReceipt as any)?.name || 'Receipt')}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-8 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               onClick={() => {
                                 if (receiptPreviewUrl) {
                                   window.open(receiptPreviewUrl, '_blank')
                                 }
                               }}
                             >
-                              View
+                              <Eye className="h-4 w-4" />
                             </Button>
-                            {/* Hidden input for change action */}
                             <input {...getInputProps()} className="hidden" />
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-8 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               onClick={handleManualUploadClick}
                             >
-                              Change
+                              <Upload className="h-4 w-4" />
                             </Button>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-8 px-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                               onClick={handleRemoveReceipt}
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>

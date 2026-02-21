@@ -213,8 +213,32 @@ export default function BillCreatePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
     setError(null)
+
+    if (!items.length) {
+      const message = 'Minimal satu item produk wajib diisi'
+      setError(message)
+      toast.error(message)
+      return
+    }
+
+    const invalidItem = items.find((it) => !it.productId)
+    if (invalidItem) {
+      const message = 'Semua item wajib memilih Product/Service dari katalog'
+      setError(message)
+      toast.error(message)
+      return
+    }
+
+    const invalidProduct = items.find((it) => !products.find((p) => p.id === it.productId))
+    if (invalidProduct) {
+      const message = 'Produk pada salah satu item tidak ditemukan di Products/Services'
+      setError(message)
+      toast.error(message)
+      return
+    }
+
+    setSaving(true)
     try {
       const payload = {
         billId: billNumber,
@@ -225,16 +249,17 @@ export default function BillCreatePage() {
         reference: formData.orderNumber,
         description: formData.notes,
         total: totals.totalAmount,
-        items: items.map((it) => ({
-          productId: it.productId || null,
-          itemName:
-            products.find((p) => p.id === it.productId)?.name ||
-            `Item ${it.id}`,
-          quantity: it.quantity,
-          price: it.price,
-          discount: it.discount,
-          taxRate: it.taxRate,
-        })),
+        items: items.map((it) => {
+          const product = products.find((p) => p.id === it.productId)
+          return {
+            productId: it.productId,
+            itemName: product ? product.name : '',
+            quantity: it.quantity,
+            price: it.price,
+            discount: it.discount,
+            taxRate: it.taxRate,
+          }
+        }),
         status: formData.status,
       }
 

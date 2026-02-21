@@ -25,16 +25,25 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const data = bankAccounts.map((b: (typeof bankAccounts)[number]) => ({
-      id: b.id,
-      chartOfAccount: `${b.chartAccount.code} - ${b.chartAccount.name}`,
-      name: b.holderName,
-      bank: b.bank,
-      accountNumber: b.accountNumber,
-      currentBalance: `Rp ${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(b.chartAccount.balance ?? b.openingBalance ?? 0)}`,
-      contactNumber: b.contactNumber || "",
-      paymentGateway: b.paymentGateway,
-    }));
+    const data = bankAccounts.map((b: (typeof bankAccounts)[number]) => {
+      const balance = b.chartAccount.balance ?? 0;
+      const opening = b.openingBalance ?? 0;
+      const effectiveBalance = balance !== 0 ? balance : opening;
+
+      return {
+        id: b.id,
+        chartOfAccount: `${b.chartAccount.code} - ${b.chartAccount.name}`,
+        name: b.holderName,
+        bank: b.bank,
+        accountNumber: b.accountNumber,
+        currentBalance: `Rp ${new Intl.NumberFormat("id-ID", {
+          maximumFractionDigits: 0,
+        }).format(effectiveBalance)}`,
+        contactNumber: b.contactNumber || "",
+        bankAddress: b.bankAddress || "",
+        paymentGateway: b.paymentGateway,
+      };
+    });
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

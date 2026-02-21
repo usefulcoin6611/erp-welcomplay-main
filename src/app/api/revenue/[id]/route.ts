@@ -134,7 +134,9 @@ export async function PUT(
 
     if (file && file.size > 0) {
       const buffer = Buffer.from(await file.arrayBuffer())
-      const filename = `${Date.now()}_${file.name.replace(/\s/g, "_")}`
+      const safeName = file.name.replace(/\s/g, "_")
+      const shortPrefix = Date.now().toString(36)
+      const filename = `${shortPrefix}_${safeName}`
       const uploadDir = path.join(process.cwd(), "public/uploads/revenue")
 
       try {
