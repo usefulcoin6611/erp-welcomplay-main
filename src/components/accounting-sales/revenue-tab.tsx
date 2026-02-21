@@ -159,12 +159,22 @@ export function RevenueTab() {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const res = await fetch('/api/chart-of-accounts')
-        const json = await res.json()
-        if (json?.success && Array.isArray(json.data)) {
-          const cash = json.data.filter((a: any) => a.type === 'Assets').map((a: any) => ({ id: a.id, name: a.name }))
-          const income = json.data.filter((a: any) => a.type === 'Income').map((a: any) => ({ id: a.id, name: a.name }))
-          setAccounts(cash)
+        const resBank = await fetch('/api/bank-accounts')
+        const jsonBank = await resBank.json()
+        if (jsonBank?.success && Array.isArray(jsonBank.data)) {
+          setAccounts(
+            jsonBank.data.map((b: any) => ({
+              id: b.id,
+              name: `${b.name} - ${b.bank}`,
+            })),
+          )
+        }
+        const resChart = await fetch('/api/chart-of-accounts')
+        const jsonChart = await resChart.json()
+        if (jsonChart?.success && Array.isArray(jsonChart.data)) {
+          const income = jsonChart.data
+            .filter((a: any) => a.type === 'Income')
+            .map((a: any) => ({ id: a.id, name: a.name }))
           setCategories(income)
         }
       } catch {}
@@ -229,7 +239,7 @@ export function RevenueTab() {
     setFormData({
       date: revenue.date,
       amount: String(revenue.amount),
-      account: (revenue as any).cashAccountId ?? '',
+      account: (revenue as any).bankAccountId ?? '',
       customer: (revenue as any).customerId ?? '',
       category: (revenue as any).incomeAccountId ?? '',
       reference: revenue.reference || '',
@@ -351,7 +361,7 @@ export function RevenueTab() {
     const submitData = new FormData()
     submitData.append('date', formData.date)
     submitData.append('amount', String(payloadAmount))
-    submitData.append('cashAccountId', formData.account)
+    submitData.append('bankAccountId', formData.account)
     submitData.append('incomeAccountId', formData.category)
     if (formData.customer) submitData.append('customerId', formData.customer)
     if (formData.reference) submitData.append('reference', formData.reference)

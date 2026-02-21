@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       where: branchId ? { branchId } : undefined,
       include: {
         chartAccount: {
-          select: { code: true, name: true, balance: true },
+          select: { id: true, code: true, name: true, balance: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: b.id,
+        chartAccountId: b.chartAccount.id,
         chartOfAccount: `${b.chartAccount.code} - ${b.chartAccount.name}`,
         name: b.holderName,
         bank: b.bank,

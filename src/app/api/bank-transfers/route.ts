@@ -191,6 +191,7 @@ export async function POST(request: NextRequest) {
           reference: data.reference || transfer.id,
           amount: data.amount,
           branchId,
+          bankAccount: { connect: { id: data.fromAccountId } },
         },
       });
 

@@ -115,15 +115,32 @@ export async function POST(request: NextRequest) {
 
     const date = formData.get("date")
     const amount = formData.get("amount")
+    const bankAccountId = formData.get("bankAccountId")
     const cashAccountId = formData.get("cashAccountId")
     const incomeAccountId = formData.get("incomeAccountId")
     const customerId = formData.get("customerId")
     const reference = formData.get("reference")
     const description = formData.get("description")
 
-    if (typeof date !== "string" || !date || typeof cashAccountId !== "string" || !cashAccountId || typeof incomeAccountId !== "string" || !incomeAccountId) {
+    const effectiveCashAccountId =
+      typeof bankAccountId === "string" && bankAccountId
+        ? null
+        : typeof cashAccountId === "string" && cashAccountId
+        ? cashAccountId
+        : null
+
+    if (
+      typeof date !== "string" ||
+      !date ||
+      (!bankAccountId && !effectiveCashAccountId) ||
+      typeof incomeAccountId !== "string" ||
+      !incomeAccountId
+    ) {
       return NextResponse.json(
-        { success: false, message: "date, cashAccountId, incomeAccountId wajib diisi" },
+        {
+          success: false,
+          message: "date, bankAccountId/cashAccountId, incomeAccountId wajib diisi",
+        },
         { status: 400 }
       )
     }
@@ -155,15 +172,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const [cashAccount, incomeAccount, customer] = await Promise.all([
-      prisma.chartOfAccount.findFirst({ where: { id: cashAccountId as string, type: "Assets", branchId } }),
+    const [bankAccount, cashAccount, incomeAccount, customer] = await Promise.all([
+      typeof bankAccountId === "string" && bankAccountId
+        ? prisma.bankAccount.findFirst({
+            where: { id: bankAccountId as string, branchId },
+            include: { chartAccount: true },
+          })
+        : Promise.resolve(null),
+      effectiveCashAccountId
+        ? prisma.chartOfAccount.findFirst({
+            where: { id: effectiveCashAccountId, type: "Assets", branchId },
+          })
+        : Promise.resolve(null),
       prisma.chartOfAccount.findFirst({ where: { id: incomeAccountId as string, type: "Income", branchId } }),
       customerId && typeof customerId === "string"
         ? prisma.customer.findFirst({ where: { id: customerId as string, branchId } })
         : Promise.resolve(null),
     ])
 
-    if (!cashAccount || !incomeAccount) {
+    const resolvedCashAccount =
+      cashAccount ??
+      (bankAccount && bankAccount.chartAccount.type === "Assets"
+        ? bankAccount.chartAccount
+        : null)
+
+    if (!resolvedCashAccount || !incomeAccount) {
       return NextResponse.json(
         { success: false, message: "Akun kas (Assets) atau pendapatan (Income) tidak valid" },
         { status: 400 }
@@ -196,13 +229,14 @@ export async function POST(request: NextRequest) {
           paymentReceipt,
           customer: customer ? { connect: { id: customer.id } } : undefined,
           branch: { connect: { id: branchId } },
+          bankAccount: bankAccount ? { connect: { id: bankAccount.id } } : undefined,
         } as any,
       })
 
       await tx.journalLine.create({
         data: {
           journalEntryId: entry.id,
-          accountId: cashAccountId,
+          accountId: (resolvedCashAccount as any).id,
           debit: amountNumber,
           credit: 0,
           description: description ? String(description) : null,

@@ -1,11 +1,12 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AccountStatementData, AccountSummary } from './types'
-import { MOCK_STATEMENT_DATA, MOCK_REVENUE_ACCOUNTS, MOCK_PAYMENT_ACCOUNTS } from './constants'
 
 interface UseAccountStatementDataParams {
   searchQuery?: string
   selectedAccount?: string
   selectedCategory?: string
+  startDate?: string
+  endDate?: string
 }
 
 interface UseAccountStatementDataReturn {
@@ -14,54 +15,95 @@ interface UseAccountStatementDataReturn {
   paymentAccounts: AccountSummary[]
   totalRevenue: number
   totalPayment: number
+  loading: boolean
+  error: string | null
 }
 
 export function useAccountStatementData({
   searchQuery = '',
   selectedAccount = 'all',
   selectedCategory = 'all',
+  startDate,
+  endDate,
 }: UseAccountStatementDataParams = {}): UseAccountStatementDataReturn {
-  // Filter statement data based on search and filters
-  const statementData = useMemo(() => {
-    let filtered = [...MOCK_STATEMENT_DATA]
+  const [statementData, setStatementData] = useState<AccountStatementData[]>([])
+  const [revenueAccounts, setRevenueAccounts] = useState<AccountSummary[]>([])
+  const [paymentAccounts, setPaymentAccounts] = useState<AccountSummary[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (item) =>
-          item.description.toLowerCase().includes(query) ||
-          item.date.toLowerCase().includes(query) ||
-          item.amount.toString().includes(query)
-      )
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const fetchData = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const params = new URLSearchParams()
+        if (selectedAccount && selectedAccount !== 'all') {
+          params.set('accountId', selectedAccount)
+        }
+        if (selectedCategory && selectedCategory !== 'all') {
+          params.set('category', selectedCategory)
+        }
+        if (searchQuery) {
+          params.set('search', searchQuery)
+        }
+        if (startDate) {
+          params.set('startDate', startDate)
+        }
+        if (endDate) {
+          params.set('endDate', endDate)
+        }
+        params.set('page', '1')
+        params.set('pageSize', '500')
+
+        const url = params.toString()
+          ? `/api/reports/account-statement?${params.toString()}`
+          : '/api/reports/account-statement'
+
+        const response = await fetch(url, { signal: controller.signal })
+        if (!response.ok) {
+          throw new Error('Failed to fetch account statement data')
+        }
+
+        const json = await response.json()
+        if (!json.success || !json.data) {
+          throw new Error(json.message || 'Failed to load account statement data')
+        }
+
+        setStatementData(json.data.items as AccountStatementData[])
+        setRevenueAccounts(json.data.revenueAccounts as AccountSummary[])
+        setPaymentAccounts(json.data.paymentAccounts as AccountSummary[])
+      } catch (err: any) {
+        if (err.name === 'AbortError') return
+        setError(err.message || 'Unexpected error')
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // Filter by account
-    if (selectedAccount !== 'all') {
-      // This would filter by account in real implementation
-      // For now, we just keep all data
+    fetchData()
+
+    return () => {
+      controller.abort()
     }
+  }, [searchQuery, selectedAccount, selectedCategory, startDate, endDate])
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((item) => item.type === selectedCategory)
-    }
-
-    return filtered
-  }, [searchQuery, selectedAccount, selectedCategory])
-
-  // Calculate totals
   const { totalRevenue, totalPayment } = useMemo(() => {
-    const revenue = MOCK_REVENUE_ACCOUNTS.reduce((sum, acc) => sum + acc.total, 0)
-    const payment = MOCK_PAYMENT_ACCOUNTS.reduce((sum, acc) => sum + acc.total, 0)
+    const revenue = revenueAccounts.reduce((sum, acc) => sum + acc.total, 0)
+    const payment = paymentAccounts.reduce((sum, acc) => sum + acc.total, 0)
     return { totalRevenue: revenue, totalPayment: payment }
-  }, [])
+  }, [revenueAccounts, paymentAccounts])
 
   return {
     statementData,
-    revenueAccounts: MOCK_REVENUE_ACCOUNTS,
-    paymentAccounts: MOCK_PAYMENT_ACCOUNTS,
+    revenueAccounts,
+    paymentAccounts,
     totalRevenue,
     totalPayment,
+    loading,
+    error,
   }
 }

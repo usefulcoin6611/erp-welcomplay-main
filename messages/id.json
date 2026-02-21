@@ -641,7 +641,9 @@
       "transactions": "Transaksi",
       "date": "TANGGAL",
       "amount": "JUMLAH",
-      "description": "DESKRIPSI"
+      "description": "DESKRIPSI",
+      "accountStatementSummary": "Ringkasan Laporan Akun",
+      "totalCash": "Total Kas"
     },
     "payables": {
       "title": "Laporan Hutang",

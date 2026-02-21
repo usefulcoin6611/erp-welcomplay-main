@@ -202,11 +202,13 @@ model JournalEntry {
   paymentReceipt String?
   branchId    String?
   customerId  String?
+  bankAccountId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   branch      Branch?  @relation(fields: [branchId], references: [id])
   customer    Customer? @relation(fields: [customerId], references: [id])
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
   lines       JournalLine[]
 
   @@map("journal_entry")

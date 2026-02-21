@@ -15,6 +15,12 @@ export async function seedCOA(prisma: any) {
     { code: "1010", name: "Cash in Bank", type: "Assets", subType: "Current Asset", branchId },
     { code: "1011", name: "Cash", type: "Assets", subType: "Current Asset", branchId },
     { code: "1020", name: "Virtual Account", type: "Assets", subType: "Current Asset", branchId },
+    // New Bank Accounts Specific COA
+    { code: "1120", name: "Bank BCA", type: "Assets", subType: "Current Asset", branchId },
+    { code: "1121", name: "Bank Mandiri", type: "Assets", subType: "Current Asset", branchId },
+    { code: "1122", name: "Jago Virtual Account", type: "Assets", subType: "Current Asset", branchId },
+    { code: "1123", name: "Midtrans Virtual Account", type: "Assets", subType: "Current Asset", branchId },
+    { code: "1124", name: "Xendit Virtual Account", type: "Assets", subType: "Current Asset", branchId },
     { code: "1050", name: "Accounts Receivable", type: "Assets", subType: "Accounts Receivable", branchId },
     { code: "1060", name: "Checking Account", type: "Assets", subType: "Current Asset", branchId },
     { code: "1065", name: "Petty Cash", type: "Assets", subType: "Current Asset", branchId },

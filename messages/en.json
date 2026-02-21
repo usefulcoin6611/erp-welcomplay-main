@@ -637,7 +637,9 @@
       "transactions": "Transactions",
       "date": "DATE",
       "amount": "AMOUNT",
-      "description": "DESCRIPTION"
+      "description": "DESCRIPTION",
+      "accountStatementSummary": "Account Statement Summary",
+      "totalCash": "Total Cash"
     },
     "payables": {
       "title": "Payables Report",
