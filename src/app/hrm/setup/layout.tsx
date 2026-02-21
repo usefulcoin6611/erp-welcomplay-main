@@ -17,20 +17,20 @@ const HRM_SETUP_ITEMS = [
   { id: 'branch', label: 'Branch', href: '/hrm/setup/branch' },
   { id: 'department', label: 'Department', href: '/hrm/setup/department' },
   { id: 'designation', label: 'Designation', href: '/hrm/setup/designation' },
-  { id: 'leave-type', label: 'Leave Type', href: '#' },
-  { id: 'document-type', label: 'Document Type', href: '#' },
-  { id: 'payslip-type', label: 'Payslip Type', href: '#' },
-  { id: 'allowance-option', label: 'Allowance Option', href: '#' },
-  { id: 'loan-option', label: 'Loan Option', href: '#' },
-  { id: 'deduction-option', label: 'Deduction Option', href: '#' },
-  { id: 'goal-type', label: 'Goal Type', href: '#' },
-  { id: 'training-type', label: 'Training Type', href: '#' },
-  { id: 'award-type', label: 'Award Type', href: '#' },
-  { id: 'termination-type', label: 'Termination Type', href: '#' },
-  { id: 'job-category', label: 'Job Category', href: '#' },
-  { id: 'job-stage', label: 'Job Stage', href: '#' },
-  { id: 'performance-type', label: 'Performance Type', href: '#' },
-  { id: 'competencies', label: 'Competencies', href: '#' },
+  { id: 'leave-type', label: 'Leave Type', href: '/hrm/setup/leave-type' },
+  { id: 'document-type', label: 'Document Type', href: '/hrm/setup/document-type' },
+  { id: 'payslip-type', label: 'Payslip Type', href: '/hrm/setup/payslip-type' },
+  { id: 'allowance-option', label: 'Allowance Option', href: '/hrm/setup/allowance-option' },
+  { id: 'loan-option', label: 'Loan Option', href: '/hrm/setup/loan-option' },
+  { id: 'deduction-option', label: 'Deduction Option', href: '/hrm/setup/deduction-option' },
+  { id: 'goal-type', label: 'Goal Type', href: '/hrm/setup/goal-type' },
+  { id: 'training-type', label: 'Training Type', href: '/hrm/setup/training-type' },
+  { id: 'award-type', label: 'Award Type', href: '/hrm/setup/award-type' },
+  { id: 'termination-type', label: 'Termination Type', href: '/hrm/setup/termination-type' },
+  { id: 'job-category', label: 'Job Category', href: '/hrm/setup/job-category' },
+  { id: 'job-stage', label: 'Job Stage', href: '/hrm/setup/job-stage' },
+  { id: 'performance-type', label: 'Performance Type', href: '/hrm/setup/performance-type' },
+  { id: 'competencies', label: 'Competencies', href: '/hrm/setup/competencies' },
 ] as const;
 
 export default function HRMSetupLayout({
@@ -63,7 +63,7 @@ export default function HRMSetupLayout({
                 >
                   <ul className="flex flex-col py-1">
                     {HRM_SETUP_ITEMS.map((item) => {
-                      const isActive = pathname === item.href;
+                      const isActive = item.href !== '#' && pathname.startsWith(item.href);
                       const isLink = item.href !== '#';
                       return (
                         <li key={item.id}>
@@ -73,12 +73,14 @@ export default function HRMSetupLayout({
                               'flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
                               isActive
                                 ? 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400'
-                                : 'text-muted-foreground hover:bg-gray-100 hover:text-foreground',
+                                : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800 dark:text-slate-200 dark:hover:bg-sky-900/20 dark:hover:text-sky-200',
                               !isLink && 'pointer-events-none opacity-60'
                             )}
                             aria-current={isActive ? 'page' : undefined}
                           >
-                            <span>{item.label}</span>
+                            <span className={isActive ? 'text-sky-900 dark:text-sky-300' : undefined}>
+                              {item.label}
+                            </span>
                             <ChevronRight
                               className={cn(
                                 'h-4 w-4 shrink-0',

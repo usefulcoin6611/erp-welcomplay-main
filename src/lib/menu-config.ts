@@ -186,7 +186,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
               { title: "Employees Asset Setup", url: "/hrm/assets" },
               { title: "Document Setup", url: "/hrm/documents" },
               { title: "Company Policy", url: "/hrm/policies" },
-              { title: "HRM System Setup", url: "/hrm/setup/branch" },
+              { title: "HRM System Setup", url: "/hrm/setup" },
             ],
           },
           {

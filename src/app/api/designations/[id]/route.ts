@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
+import { z } from "zod";
+
+const designationSchema = z.object({
+  name: z.string().trim().min(1, "Nama designation wajib diisi"),
+  departmentId: z.string().min(1, "Department wajib dipilih"),
+});
 
 export async function PUT(
   request: NextRequest,
@@ -25,7 +31,33 @@ export async function PUT(
       );
     }
 
-    const { name, departmentId } = await request.json();
+    const body = await request.json();
+    const validation = designationSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: validation.error.errors[0]?.message ?? "Data tidak valid",
+          errors: validation.error.format(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const { name, departmentId } = validation.data;
+
+    const department = await prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { id: true },
+    });
+
+    if (!department) {
+      return NextResponse.json(
+        { success: false, message: "Department tidak ditemukan" },
+        { status: 400 }
+      );
+    }
 
     const designation = await prisma.designation.update({
       where: { id },
@@ -42,7 +74,11 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({ success: true, data: designation });
+    return NextResponse.json({
+      success: true,
+      message: "Designation berhasil diperbarui",
+      data: designation,
+    });
   } catch (error) {
     console.error("Error updating designation:", error);
     return NextResponse.json(

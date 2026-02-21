@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,8 +30,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Search, Plus, Pencil, Trash2, Briefcase, Loader2 } from 'lucide-react';
+} from '@/components/ui/select';
+import { Search, Plus, Pencil, Trash2, Briefcase, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Designation {
@@ -48,7 +48,16 @@ interface Department {
   name: string;
 }
 
-export default function DesignationTab() {
+export type DesignationTabRef = { openCreate: () => void };
+
+interface DesignationTabProps {
+  onCountChange?: (count: number) => void;
+}
+
+function DesignationTabInner(
+  { onCountChange }: DesignationTabProps,
+  ref: React.Ref<DesignationTabRef>
+) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,6 +74,9 @@ export default function DesignationTab() {
       const result = await response.json();
       if (result.success) {
         setDesignations(result.data);
+        if (onCountChange) {
+          onCountChange(result.data.length);
+        }
       } else {
         toast.error(result.message || 'Gagal memuat data designation');
       }
@@ -144,6 +156,21 @@ export default function DesignationTab() {
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [designationToDelete, setDesignationToDelete] = useState<Designation | null>(null);
 
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openCreate: () => {
+        setShowForm(true);
+        setEditingId(null);
+        setFormData({ departmentId: '', name: '' });
+      },
+    }),
+    []
+  );
+
   const openDeleteConfirm = (designation: Designation) => {
     setDesignationToDelete(designation);
     setDeleteAlertOpen(true);
@@ -180,47 +207,66 @@ export default function DesignationTab() {
       desig.department.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const paginatedDesignations = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredDesignations.slice(start, start + pageSize);
+  }, [filteredDesignations, currentPage, pageSize]);
+
+  const displayDesignations = paginatedDesignations;
+
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Designations</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                designations.length
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white rounded-lg">
+        <CardContent className="space-y-4 px-2 pb-4 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 pb-3 px-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span>entries per page</span>
+            </div>
+            <div className="relative w-full max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search designations..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-9 pl-9 pr-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+              />
+              {searchTerm.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCurrentPage(1);
+                  }}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Job positions defined</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Designations</h2>
-        <Button
-          onClick={() => {
-            setShowForm(!showForm);
-            if (showForm) {
-              setEditingId(null);
-              setFormData({ departmentId: '', name: '' });
-            }
-          }}
-          size="sm"
-          className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200 h-8"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Designation
-        </Button>
-      </div>
-
-      <Card>
-        <CardContent className="space-y-4 pt-6">
+          </div>
           {showForm && (
             <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -258,7 +304,7 @@ export default function DesignationTab() {
                   type="submit"
                   size="sm"
                   disabled={isSubmitting}
-                  className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                  className="shadow-none bg-blue-500 text-white hover:bg-blue-600"
                 >
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {editingId !== null ? 'Update' : 'Create'} Designation
@@ -278,23 +324,19 @@ export default function DesignationTab() {
             </form>
           )}
 
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search designations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Designation</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Department
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Designation
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-right text-muted-foreground">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -312,15 +354,15 @@ export default function DesignationTab() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredDesignations.map((designation) => (
+                  displayDesignations.map((designation) => (
                     <TableRow key={designation.id}>
-                      <TableCell>
-                        <Badge variant="secondary" className="whitespace-nowrap bg-green-50 text-green-700">
+                      <TableCell className="px-4 py-3">
+                        <Badge variant="secondary" className="whitespace-nowrap">
                           {designation.department.name}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{designation.name}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-4 py-3 text-sm">{designation.name}</TableCell>
+                      <TableCell className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="outline"
@@ -373,3 +415,9 @@ export default function DesignationTab() {
     </div>
   );
 }
+
+const DesignationTab = forwardRef(DesignationTabInner) as (
+  props: DesignationTabProps & { ref?: React.Ref<DesignationTabRef> }
+) => React.ReactElement;
+
+export default DesignationTab;

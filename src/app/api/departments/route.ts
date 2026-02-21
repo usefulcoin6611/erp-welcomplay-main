@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
+import { z } from "zod";
+
+const departmentSchema = z.object({
+  name: z.string().trim().min(1, "Nama department wajib diisi"),
+  branchId: z.string().min(1, "Branch wajib dipilih"),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,11 +61,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, branchId } = await request.json();
+    const body = await request.json();
+    const validation = departmentSchema.safeParse(body);
 
-    if (!name || !branchId) {
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, message: "Nama dan Branch harus diisi" },
+        {
+          success: false,
+          message: validation.error.errors[0]?.message ?? "Data tidak valid",
+          errors: validation.error.format(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const { name, branchId } = validation.data;
+
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { id: true },
+    });
+
+    if (!branch) {
+      return NextResponse.json(
+        { success: false, message: "Branch tidak ditemukan" },
         { status: 400 }
       );
     }
@@ -78,7 +103,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, data: department });
+    return NextResponse.json({
+      success: true,
+      message: "Department berhasil dibuat",
+      data: department,
+    });
   } catch (error) {
     console.error("Error creating department:", error);
     return NextResponse.json(

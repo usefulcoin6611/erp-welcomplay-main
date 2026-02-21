@@ -6,6 +6,8 @@ import { seedCOA } from "./seeds/coa";
 import { seedUsers } from "./seeds/users";
 import { seedJournals } from "./seeds/journals";
 import { seedBranches } from "./seeds/branches";
+import { seedDepartments } from "./seeds/departments";
+import { seedDesignations } from "./seeds/designations";
 import { seedCustomers } from "./seeds/customers";
 import { seedVendors } from "./seeds/vendors";
 import { seedEstimates } from "./seeds/estimates";
@@ -35,6 +37,8 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   try {
     await seedBranches(prisma);
+    await seedDepartments(prisma);
+    await seedDesignations(prisma);
     await seedCOA(prisma);
     await seedUsers(prisma);
     await seedTaxes(prisma);
