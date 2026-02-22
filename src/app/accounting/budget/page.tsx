@@ -252,45 +252,45 @@ export default function BudgetPlannerPage() {
               </div>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="w-full min-w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="px-4 py-3 font-normal">NAME</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">FROM</TableHead>
-                        <TableHead className="px-4 py-3 font-normal">BUDGET PERIOD</TableHead>
-                        <TableHead className="px-4 py-3 font-normal w-32">ACTION</TableHead>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">From</TableHead>
+                        <TableHead className="px-6">Budget Period</TableHead>
+                        <TableHead className="px-6 w-32">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                            No budget found.
+                          <TableCell colSpan={4} className="px-6 text-center py-8 text-muted-foreground">
+                            No budget found
                           </TableCell>
                         </TableRow>
                       ) : (
                         paginatedData.map((b) => (
                           <TableRow key={b.id}>
-                            <TableCell className="px-4 py-3 text-sm font-medium">{b.name}</TableCell>
-                            <TableCell className="px-4 py-3 text-sm">{b.from}</TableCell>
-                            <TableCell className="px-4 py-3 text-sm">{b.budgetPeriod}</TableCell>
-                            <TableCell className="px-4 py-3">
-                              <div className="flex items-center gap-1">
+                            <TableCell className="px-6 text-sm font-medium">{b.name}</TableCell>
+                            <TableCell className="px-6 text-sm">{b.from}</TableCell>
+                            <TableCell className="px-6 text-sm">{b.budgetPeriod}</TableCell>
+                            <TableCell className="px-6">
+                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                  className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                                   title="Edit"
                                   asChild
                                 >
                                   <Link href={`/accounting/budget/${b.id}/edit`}>
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="h-3 w-3" />
                                   </Link>
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                                  className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
                                   title="View"
                                   asChild
                                 >
@@ -301,7 +301,7 @@ export default function BudgetPlannerPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                                   title="Delete"
                                   onClick={() => setDeleteId(b.id)}
                                 >
@@ -316,11 +316,7 @@ export default function BudgetPlannerPage() {
                   </Table>
                 </div>
                 {totalRecords > 0 && (
-                  <div className="px-4 py-3 border-t flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-sm text-muted-foreground">
-                      Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                      {Math.min(currentPage * pageSize, totalRecords)} of {totalRecords} entries
-                    </span>
+                  <div className="px-6 pb-6 pt-4">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -330,7 +326,6 @@ export default function BudgetPlannerPage() {
                         setPageSize(size)
                         setCurrentPage(1)
                       }}
-                      hideRowsSelector
                     />
                   </div>
                 )}

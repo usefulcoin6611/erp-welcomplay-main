@@ -9,7 +9,7 @@ export async function seedBankAccounts(prisma: any) {
 
   const rows = [
     {
-      chartCode: "1010",
+      chartCode: "1120", // Bank BCA Specific
       holderName: "Operating Account",
       bank: "Bank BCA",
       accountNumber: "1234567890",
@@ -19,7 +19,7 @@ export async function seedBankAccounts(prisma: any) {
       paymentGateway: "Cash",
     },
     {
-      chartCode: "1011",
+      chartCode: "1065", // Petty Cash Specific
       holderName: "Petty Cash",
       bank: "Bank Mandiri",
       accountNumber: "998877665544",
@@ -29,7 +29,7 @@ export async function seedBankAccounts(prisma: any) {
       paymentGateway: "Cash",
     },
     {
-      chartCode: "1020",
+      chartCode: "1123", // Midtrans VA Specific
       holderName: "Midtrans VA",
       bank: "Bank Mandiri",
       accountNumber: "VA-8877-1234-9999",
@@ -39,7 +39,7 @@ export async function seedBankAccounts(prisma: any) {
       paymentGateway: "Midtrans",
     },
     {
-      chartCode: "1020",
+      chartCode: "1124", // Xendit VA Specific
       holderName: "Xendit VA",
       bank: "Bank BCA",
       accountNumber: "VA-1234-5678-9999",
@@ -47,6 +47,16 @@ export async function seedBankAccounts(prisma: any) {
       contactNumber: "+62 812-7777-8888",
       bankAddress: "VA BCA Center",
       paymentGateway: "Xendit",
+    },
+    {
+      chartCode: "1122", // Jago VA Specific
+      holderName: "Jago VA",
+      bank: "Bank Jago",
+      accountNumber: "VA-5566-7788-9999",
+      openingBalance: 10000000,
+      contactNumber: "+62 812-5555-6666",
+      bankAddress: "VA Jago Center",
+      paymentGateway: "Jago",
     },
   ];
 

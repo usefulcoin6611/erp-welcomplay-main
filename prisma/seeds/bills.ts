@@ -28,6 +28,19 @@ export async function seedBills(prisma: any) {
     return;
   }
 
+  const products = await db.product.findMany({
+    where: {
+      branchId,
+    },
+  });
+
+  const productByName: Record<string, string> = {};
+  for (const p of products) {
+    if (typeof p.name === "string" && typeof p.id === "string") {
+      productByName[p.name] = p.id;
+    }
+  }
+
   const bills = [
     // Bill dengan banyak produk dan kombinasi diskon/pajak
     {
@@ -42,7 +55,7 @@ export async function seedBills(prisma: any) {
       description: "Office supplies purchase for new branch",
       items: [
         {
-          itemName: "Printer Paper A4",
+          itemName: "Paper A4 80gsm",
           quantity: 50,
           price: 65000,
           discount: 0,
@@ -50,7 +63,7 @@ export async function seedBills(prisma: any) {
           description: "Paper for office printer",
         },
         {
-          itemName: "Ink Cartridge Black",
+          itemName: "Whiteboard Marker",
           quantity: 10,
           price: 350000,
           discount: 250000,
@@ -58,7 +71,7 @@ export async function seedBills(prisma: any) {
           description: "Black ink cartridge for HP printer",
         },
         {
-          itemName: "Office Stationery Set",
+          itemName: "Desk Lamp LED",
           quantity: 5,
           price: 425000,
           discount: 0,
@@ -92,7 +105,7 @@ export async function seedBills(prisma: any) {
       description: "Monthly logistics and courier services",
       items: [
         {
-          itemName: "Courier Service - Regular",
+          itemName: "Router",
           quantity: 8,
           price: 750000,
           discount: 0,
@@ -100,7 +113,7 @@ export async function seedBills(prisma: any) {
           description: "Regular courier service for local shipment",
         },
         {
-          itemName: "Courier Service - Express",
+          itemName: "Ethernet Cable (Box)",
           quantity: 3,
           price: 1250000,
           discount: 250000,
@@ -134,7 +147,7 @@ export async function seedBills(prisma: any) {
       description: "Monthly IT support and cloud subscription",
       items: [
         {
-          itemName: "Cloud ERP Subscription",
+          itemName: "Development Service",
           quantity: 1,
           price: 12000000,
           discount: 0,
@@ -142,7 +155,7 @@ export async function seedBills(prisma: any) {
           description: "ERP Cloud subscription February 2026",
         },
         {
-          itemName: "Onsite Support Hours",
+          itemName: "Monthly Maintenance",
           quantity: 10,
           price: 350000,
           discount: 150000,
@@ -176,7 +189,7 @@ export async function seedBills(prisma: any) {
       description: "Electricity and internet bill January 2026",
       items: [
         {
-          itemName: "Electricity Charge",
+          itemName: "Lisensi ERP Cloud",
           quantity: 1,
           price: 3500000,
           discount: 0,
@@ -184,7 +197,7 @@ export async function seedBills(prisma: any) {
           description: "Electricity usage January 2026",
         },
         {
-          itemName: "Internet Service",
+          itemName: "Onsite Training",
           quantity: 1,
           price: 1500000,
           discount: 0,
@@ -215,7 +228,30 @@ export async function seedBills(prisma: any) {
 
     await db.bill.upsert({
       where: { billId: b.billId },
-      update: {},
+      update: {
+        vendorId: b.vendorId,
+        branchId: b.branchId,
+        categoryId: b.categoryId,
+        billDate: b.billDate,
+        dueDate: b.dueDate,
+        status: b.status,
+        total: itemsTotal,
+        reference: b.reference,
+        description: b.description,
+        items: {
+          deleteMany: { billId: b.billId },
+          create: b.items.map((it: any) => ({
+            productId: productByName[it.itemName] ?? null,
+            itemName: it.itemName,
+            quantity: it.quantity,
+            price: it.price,
+            discount: it.discount,
+            taxRate: it.taxRate,
+            amount: it.amount,
+            description: it.description,
+          })),
+        },
+      },
       create: {
         billId: b.billId,
         vendorId: b.vendorId,
@@ -229,6 +265,7 @@ export async function seedBills(prisma: any) {
         description: b.description,
         items: {
           create: b.items.map((it: any) => ({
+            productId: productByName[it.itemName] ?? null,
             itemName: it.itemName,
             quantity: it.quantity,
             price: it.price,

@@ -250,11 +250,11 @@ export default function BudgetDetailPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                      className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                       asChild
                     >
                       <Link href={`/accounting/budget/${id}/edit`}>
-                        <Pencil className="mr-2 h-4 w-4" />
+                        <Pencil className="mr-2 h-3 w-3" />
                         Edit
                       </Link>
                     </Button>

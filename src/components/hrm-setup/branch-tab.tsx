@@ -50,10 +50,15 @@ const defaultFormData = { name: '' };
 
 type BranchTabVariant = 'tab' | 'page';
 
+type BranchTabProps = {
+  variant?: BranchTabVariant;
+  onCountChange?: (count: number) => void;
+};
+
 export type BranchTabRef = { openCreate: () => void };
 
 const BranchTabInner = function BranchTabInner(
-  { variant = 'tab' }: { variant?: BranchTabVariant },
+  { variant = 'tab', onCountChange }: BranchTabProps,
   ref: React.Ref<BranchTabRef>
 ) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,6 +85,9 @@ const BranchTabInner = function BranchTabInner(
       const result = await response.json();
       if (result.success) {
         setBranches(result.data);
+        if (onCountChange) {
+          onCountChange(result.data.length);
+        }
       } else {
         toast.error(result.message || 'Gagal memuat data branch');
       }
@@ -203,7 +211,7 @@ const BranchTabInner = function BranchTabInner(
     <>
       <Card className={CARD_STYLE}>
         {isPageMode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 px-6 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 px-2 py-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Select
                 value={String(pageSize)}
@@ -225,14 +233,15 @@ const BranchTabInner = function BranchTabInner(
               <span>entries per page</span>
             </div>
             <div className="relative w-full max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search branches..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-9 pl-3 pr-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                className="h-9 pl-9 pr-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
               />
               {searchTerm.length > 0 && (
                 <Button
@@ -243,6 +252,7 @@ const BranchTabInner = function BranchTabInner(
                     setSearchTerm('');
                     setCurrentPage(1);
                   }}
+                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -251,7 +261,7 @@ const BranchTabInner = function BranchTabInner(
           </div>
         )}
         {!isPageMode && (
-          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 py-3.5">
+          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-4 py-3.5">
             <div className="flex w-full max-w-md items-center gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -277,30 +287,24 @@ const BranchTabInner = function BranchTabInner(
             </div>
             <Button
               size="sm"
-              className="h-8 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+              className="h-8 px-4 shadow-none bg-blue-500 text-white hover:bg-blue-600"
               onClick={handleAdd}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create
+              Add Branch
             </Button>
           </CardHeader>
         )}
-        <CardContent className={isPageMode ? 'p-0' : undefined}>
-          <div className="overflow-x-auto">
+        <CardContent className={isPageMode ? 'space-y-4 px-2 pb-4 pt-2' : undefined}>
+          <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3 font-normal uppercase tracking-wide">
-                    <span className="inline-flex items-center gap-1">
-                      Branch
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                    </span>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Branch
                   </TableHead>
-                  <TableHead className="px-4 py-3 font-normal uppercase tracking-wide w-[200px] text-right">
-                    <span className="inline-flex items-center gap-1 justify-end">
-                      Action
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                    </span>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide w-[200px] text-right text-muted-foreground">
+                    Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -326,7 +330,7 @@ const BranchTabInner = function BranchTabInner(
                 ) : (
                   displayBranches.map((branch) => (
                     <TableRow key={branch.id}>
-                      <TableCell className="px-4 py-3 text-sm font-medium">
+                      <TableCell className="px-4 py-3 text-sm">
                         {branch.name}
                       </TableCell>
                       <TableCell className="px-4 py-3">
@@ -435,6 +439,6 @@ const BranchTabInner = function BranchTabInner(
 };
 
 const BranchTab = forwardRef(BranchTabInner) as (
-  props: { variant?: BranchTabVariant } & { ref?: React.Ref<BranchTabRef> }
+  props: BranchTabProps & { ref?: React.Ref<BranchTabRef> }
 ) => React.ReactElement;
 export default BranchTab;

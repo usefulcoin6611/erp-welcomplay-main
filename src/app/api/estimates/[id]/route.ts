@@ -34,7 +34,22 @@ export async function PUT(
         description: body.description ?? undefined,
         customerId: typeof body.customerId === "string" && body.customerId !== "" ? body.customerId : undefined,
         categoryId: typeof body.categoryId === "string" && body.categoryId !== "" ? body.categoryId : undefined,
-      }
+        items: Array.isArray(body.items)
+          ? {
+              deleteMany: {},
+              create: body.items.map((it: any) => ({
+                itemName: it.item,
+                quantity: parseFloat(it.quantity) || 0,
+                price: parseFloat(it.price) || 0,
+                discount: parseFloat(it.discount) || 0,
+                taxRate: parseFloat(it.taxRate) || 0,
+                amount: typeof it.amount === "number" ? it.amount : 0,
+                description: it.description ?? "",
+              })),
+            }
+          : undefined,
+      },
+      include: { items: true }
     })
     return NextResponse.json({ success: true, data: updated })
   } catch {

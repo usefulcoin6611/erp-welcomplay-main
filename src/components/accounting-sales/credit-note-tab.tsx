@@ -66,11 +66,6 @@ type InvoiceOption = {
   invoiceId: string
 }
 
-type InvoiceItemOption = {
-  id: string
-  name: string
-}
-
 const statusLabels = ['Pending', 'Partially Used', 'Fully Used']
 
 function formatCreditNoteId(creditId: number) {
@@ -111,7 +106,6 @@ function getStatusBadge(status: number) {
 export function CreditNoteTab() {
   const [creditNotes, setCreditNotes] = useState<CreditNoteRow[]>([])
   const [invoices, setInvoices] = useState<InvoiceOption[]>([])
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItemOption[]>([])
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -122,34 +116,10 @@ export function CreditNoteTab() {
 
   const [formData, setFormData] = useState({
     invoice: '',
-    item: '',
     date: '',
     amount: '',
     description: '',
   })
-
-  const fetchInvoiceItems = async (invoiceId: string) => {
-    if (!invoiceId) {
-      setInvoiceItems([])
-      return
-    }
-    try {
-      const res = await fetch(`/api/invoices/${invoiceId}`)
-      const json = await res.json()
-      if (json?.success && Array.isArray(json.data?.items)) {
-        setInvoiceItems(
-          json.data.items.map((it: any) => ({
-            id: it.id as string,
-            name: (it.itemName as string) || '',
-          })),
-        )
-      } else {
-        setInvoiceItems([])
-      }
-    } catch {
-      setInvoiceItems([])
-    }
-  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -181,12 +151,10 @@ export function CreditNoteTab() {
       setEditingId(null)
       setFormData({
         invoice: '',
-        item: '',
         date: '',
         amount: '',
         description: '',
       })
-      setInvoiceItems([])
     }
   }
 
@@ -194,12 +162,10 @@ export function CreditNoteTab() {
     setEditingId(creditNote.id)
     setFormData({
       invoice: creditNote.invoiceId || '',
-      item: '',
       date: creditNote.date,
       amount: String(creditNote.amount || 0),
       description: creditNote.description === '-' ? '' : creditNote.description,
     })
-    fetchInvoiceItems(creditNote.invoiceId)
     setCreateDialogOpen(true)
   }
 
@@ -267,7 +233,6 @@ export function CreditNoteTab() {
     setEditingId(null)
     setFormData({
       invoice: '',
-      item: '',
       date: '',
       amount: '',
       description: '',
@@ -337,8 +302,7 @@ export function CreditNoteTab() {
                   <Select
                     value={formData.invoice}
                     onValueChange={(value) => {
-                      setFormData((prev) => ({ ...prev, invoice: value, item: '' }))
-                      fetchInvoiceItems(value)
+                      setFormData((prev) => ({ ...prev, invoice: value }))
                     }}
                     required
                   >
@@ -349,32 +313,6 @@ export function CreditNoteTab() {
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.invoiceId}>
                           {inv.invoiceId}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="item">
-                    Item <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.item}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, item: value }))}
-                    required
-                    disabled={invoiceItems.length === 0}
-                  >
-                    <SelectTrigger id="item">
-                      <SelectValue
-                        placeholder={
-                          invoiceItems.length ? 'Select Item' : 'Select invoice first'
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {invoiceItems.map((it) => (
-                        <SelectItem key={it.id} value={it.id}>
-                          {it.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

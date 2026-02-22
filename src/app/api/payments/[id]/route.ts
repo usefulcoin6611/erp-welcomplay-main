@@ -137,8 +137,9 @@ export async function PUT(
     }
 
     // Handle File Upload
-    let paymentReceipt = undefined;
+    let paymentReceipt: string | null | undefined = undefined;
     const file = formData.get("paymentReceipt") as File | null;
+    const paymentReceiptRemoved = formData.get("paymentReceiptRemoved") === "true";
 
     if (file && file.size > 0) {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -152,6 +153,8 @@ export async function PUT(
       } catch (err) {
         console.error("Error saving file:", err);
       }
+    } else if (paymentReceiptRemoved) {
+      paymentReceipt = null;
     }
 
     const updated = await db.payment.update({

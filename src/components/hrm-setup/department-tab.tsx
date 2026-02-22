@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,13 +25,21 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Search, Plus, Pencil, Trash2, Users, Loader2 } from 'lucide-react';
+} from '@/components/ui/select';
+import { Search, Plus, Pencil, Trash2, Users, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Department {
@@ -48,9 +56,18 @@ interface Branch {
   name: string;
 }
 
-export default function DepartmentTab() {
+export type DepartmentTabRef = { openCreate: () => void };
+
+interface DepartmentTabProps {
+  onCountChange?: (count: number) => void;
+}
+
+function DepartmentTabInner(
+  { onCountChange }: DepartmentTabProps,
+  ref: React.Ref<DepartmentTabRef>
+) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ branchId: '', name: '' });
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -65,6 +82,9 @@ export default function DepartmentTab() {
       const result = await response.json();
       if (result.success) {
         setDepartments(result.data);
+        if (onCountChange) {
+          onCountChange(result.data.length);
+        }
       } else {
         toast.error(result.message || 'Gagal memuat data department');
       }
@@ -118,7 +138,7 @@ export default function DepartmentTab() {
       if (result.success) {
         toast.success(editingId ? 'Department diperbarui' : 'Department dibuat');
         fetchDepartments();
-        setShowForm(false);
+        setDialogOpen(false);
         setEditingId(null);
         setFormData({ branchId: '', name: '' });
       } else {
@@ -135,11 +155,26 @@ export default function DepartmentTab() {
   const handleEdit = (department: Department) => {
     setFormData({ branchId: department.branchId, name: department.name });
     setEditingId(department.id);
-    setShowForm(true);
+    setDialogOpen(true);
   };
 
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
+
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openCreate: () => {
+        setDialogOpen(true);
+        setEditingId(null);
+        setFormData({ branchId: '', name: '' });
+      },
+    }),
+    []
+  );
 
   const openDeleteConfirm = (department: Department) => {
     setDepartmentToDelete(department);
@@ -177,121 +212,79 @@ export default function DepartmentTab() {
       dept.branch.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const paginatedDepartments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredDepartments.slice(start, start + pageSize);
+  }, [filteredDepartments, currentPage, pageSize]);
+
+  const displayDepartments = paginatedDepartments;
+
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Departments</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                departments.length
-              )}
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white rounded-lg">
+        <CardContent className="space-y-4 px-2 pb-4 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span>entries per page</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Across all branches</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Departments</h2>
-        <Button
-          onClick={() => {
-            setShowForm(!showForm);
-            if (showForm) {
-              setEditingId(null);
-              setFormData({ branchId: '', name: '' });
-            }
-          }}
-          size="sm"
-          className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200 h-8"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Department
-        </Button>
-      </div>
-
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          {showForm && (
-            <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select
-                    value={formData.branchId}
-                    onValueChange={(value) => setFormData({ ...formData, branchId: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih Branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Department Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Human Resources"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isSubmitting}
-                  className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
-                >
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingId !== null ? 'Update' : 'Create'} Department
-                </Button>
+            <div className="relative w-full max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search departments..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-9 pl-9 pr-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+              />
+              {searchTerm.length > 0 && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
                   onClick={() => {
-                    setShowForm(false);
-                    setEditingId(null);
-                    setFormData({ branchId: '', name: '' });
+                    setSearchTerm('');
+                    setCurrentPage(1);
                   }}
+                  aria-label="Clear search"
                 >
-                  Cancel
+                  <X className="h-4 w-4" />
                 </Button>
-              </div>
-            </form>
-          )}
-
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search departments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
+              )}
+            </div>
           </div>
-
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Branch</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Branch
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Department
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-right text-muted-foreground">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -309,15 +302,15 @@ export default function DepartmentTab() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredDepartments.map((department) => (
+                  displayDepartments.map((department) => (
                     <TableRow key={department.id}>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         <Badge variant="secondary" className="whitespace-nowrap">
                           {department.branch.name}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{department.name}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-4 py-3 text-sm">{department.name}</TableCell>
+                      <TableCell className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="outline"
@@ -348,6 +341,81 @@ export default function DepartmentTab() {
         </CardContent>
       </Card>
 
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({ branchId: '', name: '' });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId !== null ? 'Edit Department' : 'Create New Department'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingId !== null
+                ? 'Perbarui informasi department.'
+                : 'Tambahkan department baru.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Select
+                  value={formData.branchId}
+                  onValueChange={(value) => setFormData({ ...formData, branchId: value })}
+                >
+                  <SelectTrigger className="h-9 bg-white">
+                    <SelectValue placeholder="Pilih Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Department Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Human Resources"
+                  required
+                  className="h-9 bg-white"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="shadow-none bg-blue-500 text-white hover:bg-blue-600"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingId !== null ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDepartmentToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -370,3 +438,9 @@ export default function DepartmentTab() {
     </div>
   );
 }
+
+const DepartmentTab = forwardRef(DepartmentTabInner) as (
+  props: DepartmentTabProps & { ref?: React.Ref<DepartmentTabRef> }
+) => React.ReactElement;
+
+export default DepartmentTab;

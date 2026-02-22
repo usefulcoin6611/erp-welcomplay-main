@@ -36,6 +36,7 @@ interface ProductService {
   purchase_price: number
   tax?: string
   category: string
+  category_id?: string | null
   unit: string
   quantity?: number
   type: 'product' | 'service'
@@ -153,6 +154,7 @@ export default function ProductServicesPage() {
               sale_price: Number(p.salePrice) || 0,
               purchase_price: Number(p.purchasePrice) || 0,
               tax: (p.tax as string) || '',
+              category_id: (p.categoryId as string) ?? null,
               category: (p.category as string) || '',
               unit: (p.unit as string) || '',
               quantity: typeof p.quantity === 'number' ? p.quantity : undefined,
@@ -172,6 +174,7 @@ export default function ProductServicesPage() {
               sale_price: Number(p.salePrice) || 0,
               purchase_price: Number(p.purchasePrice) || 0,
               tax: (p.tax as string) || '',
+              category_id: (p.categoryId as string) ?? null,
               category: (p.category as string) || '',
               unit: (p.unit as string) || '',
               quantity: typeof p.quantity === 'number' ? p.quantity : undefined,
@@ -394,7 +397,7 @@ export default function ProductServicesPage() {
       purchase_price: String(item.purchase_price),
       expense_account: item.expense_account_id ?? '',
       tax: item.tax ?? '',
-      category: item.category,
+      category: item.category_id || '',
       unit: item.unit,
       quantity: item.quantity ? String(item.quantity) : '',
       image: null,
@@ -429,7 +432,7 @@ export default function ProductServicesPage() {
       quantity,
       type,
       taxName: formData.tax || null,
-      categoryName: formData.category || null,
+      categoryId: formData.category || null,
       unitName: formData.unit || null,
       saleAccountId: formData.sale_account || null,
       expenseAccountId: formData.expense_account || null,
@@ -794,7 +797,7 @@ export default function ProductServicesPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {categories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.name}>
+                                <SelectItem key={cat.id} value={cat.id}>
                                   {cat.name}
                                 </SelectItem>
                               ))}
@@ -802,7 +805,7 @@ export default function ProductServicesPage() {
                           </Select>
                           <p className="text-xs text-muted-foreground">
                             Create category here.{' '}
-                            <Link href="/accounting/setup/category" className="text-primary underline">
+                            <Link href="/accounting/setup/custom-field?tab=category" className="text-primary underline">
                               Create Category
                             </Link>
                           </p>

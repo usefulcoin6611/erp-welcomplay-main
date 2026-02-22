@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const branchSchema = z.object({
+    name: z.string().min(1, "Nama branch wajib diisi"),
+});
 
 /**
  * GET /api/branches
@@ -57,14 +62,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { name } = await request.json();
+        const body = await request.json();
+        const validation = branchSchema.safeParse(body);
 
-        if (!name) {
+        if (!validation.success) {
             return NextResponse.json(
-                { success: false, message: "Nama branch wajib diisi" },
+                {
+                    success: false,
+                    message: validation.error.errors[0].message,
+                    errors: validation.error.format(),
+                },
                 { status: 400 }
             );
         }
+
+        const { name } = validation.data;
 
         const branch = await prisma.branch.create({
             data: { name },

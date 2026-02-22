@@ -31,9 +31,6 @@ model User {
   department    Department? @relation(fields: [departmentId], references: [id])
   createdCustomers Customer[] @relation("CreatedBy")
   createdVendors   Vendor[]
-  leadsOwned       Lead[]   @relation("LeadOwner")
-  leadsCreated     Lead[]   @relation("LeadCreatedBy")
-  contracts        Contract[]
 
   @@map("user")
 }
@@ -90,6 +87,172 @@ model Designation {
   department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
   @@map("designation")
+}
+
+model LeaveType {
+  id          String   @id @default(cuid())
+  name        String
+  daysPerYear Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("leave_type")
+}
+
+model DocumentType {
+  id            String   @id @default(cuid())
+  name          String
+  requiredField Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("document_type")
+}
+
+model PayslipType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payslip_type")
+}
+
+model GoalType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("goal_type")
+}
+
+model TrainingType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("training_type")
+}
+
+model AwardType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("award_type")
+}
+
+model TerminationType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("termination_type")
+}
+
+model JobCategory {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("job_category")
+}
+
+model JobStage {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("job_stage")
+}
+
+model PerformanceType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("performance_type")
+}
+
+model Competency {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("competency")
+}
+
+model Employee {
+  id                 String   @id @default(cuid())
+  employeeId         String   @unique
+  name                 String
+  email                String   @unique
+  phone              String
+  dateOfBirth        DateTime
+  gender             String
+  address            String
+  branch             String
+  department         String
+  designation        String
+  dateOfJoining      DateTime
+  lastLogin          DateTime?
+  isActive           Boolean  @default(true)
+  salaryType         String?
+  basicSalary        Float?
+  documentsCertificate String?
+  documentsPhoto     String?
+  accountHolderName  String?
+  accountNumber      String?
+  bankName           String?
+  bankIdentifierCode String?
+  branchLocation     String?
+  taxPayerId         String?
+  userId               String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User?    @relation(fields: [userId], references: [id])
+
+  @@map("employee")
+}
+
+model AllowanceOption {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("allowance_option")
+}
+
+model LoanOption {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("loan_option")
+}
+
+model DeductionOption {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("deduction_option")
 }
 
 model Category {
@@ -205,13 +368,16 @@ model JournalEntry {
   description String?
   reference   String?
   amount      Float
+  paymentReceipt String?
   branchId    String?
   customerId  String?
+  bankAccountId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   branch      Branch?  @relation(fields: [branchId], references: [id])
   customer    Customer? @relation(fields: [customerId], references: [id])
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
   lines       JournalLine[]
 
   @@map("journal_entry")
@@ -614,6 +780,7 @@ model BankAccount {
   chartAccount    ChartOfAccount @relation(fields: [chartAccountId], references: [id])
   transfersFrom   BankTransfer[] @relation("BankTransferFrom")
   transfersTo     BankTransfer[] @relation("BankTransferTo")
+  journalEntries  JournalEntry[]
 
   @@map("bank_account")
 }

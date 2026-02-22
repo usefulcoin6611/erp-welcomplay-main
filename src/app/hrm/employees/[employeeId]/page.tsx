@@ -13,24 +13,24 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ArrowLeft, ChevronDown, Download, Pencil } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useState } from 'react'
 
 function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: string; employeeId: string }) {
   const t = useTranslations('hrm.employee');
   const router = useRouter();
 
-  // Placeholder routes – ganti dengan API/route sebenarnya saat backend siap
-  const joiningLetterPdf = () => { /* TODO: joiningletter.download.pdf */ };
-  const joiningLetterDoc = () => { /* TODO: joiningletter.download.doc */ };
-  const expCertPdf = () => { /* TODO: exp.download.pdf */ };
-  const expCertDoc = () => { /* TODO: exp.download.doc */ };
-  const nocPdf = () => { /* TODO: noc.download.pdf */ };
-  const nocDoc = () => { /* TODO: noc.download.doc */ };
+  const joiningLetterPdf = () => {};
+  const joiningLetterDoc = () => {};
+  const expCertPdf = () => {};
+  const expCertDoc = () => {};
+  const nocPdf = () => {};
+  const nocDoc = () => {};
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -123,23 +123,79 @@ function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: stri
   )
 }
 
-import { use } from 'react'
-import { notFound } from 'next/navigation'
-import { getEmployeeById } from '@/lib/employee-data'
-
-interface EmployeeDetailPageProps {
-  params: Promise<{
-    employeeId: string
-  }>
+interface EmployeeDetail {
+  employeeId: string
+  name: string
+  email: string
+  phone: string
+  dateOfBirth: string
+  gender: string
+  address: string
+  branch: string
+  department: string
+  designation: string
+  dateOfJoining: string
+  lastLogin: string | null
+  isActive: boolean
+  salaryType: string | null
+  basicSalary: number | null
+  documentsCertificate: string | null
+  documentsPhoto: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankName: string | null
+  bankIdentifierCode: string | null
+  branchLocation: string | null
+  taxPayerId: string | null
 }
 
-export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) {
+export default function EmployeeDetailPage() {
   const t = useTranslations('hrm.employee');
-  const { employeeId } = use(params);
-  const employee = getEmployeeById(employeeId);
+  const router = useRouter();
+  const params = useParams<{ employeeId: string }>();
+  const employeeId = params.employeeId;
+
+  const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
+
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        const res = await fetch(`/api/employees/${employeeId}`);
+        const json = await res.json().catch(() => null);
+        if (!json?.success || !json.data) {
+          router.push('/hrm/employees');
+          return;
+        }
+        setEmployee(json.data as EmployeeDetail);
+      } catch (error) {
+        console.error("Error fetching employee detail:", error);
+        router.push('/hrm/employees');
+      }
+    };
+
+    if (employeeId) {
+      fetchEmployee();
+    }
+  }, [employeeId, router]);
 
   if (!employee) {
-    notFound();
+    return (
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <div className="flex flex-1 items-center justify-center bg-gray-100">
+            <p className="text-sm text-muted-foreground">{t("loadingEmployees")}</p>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    )
   }
 
   return (
@@ -264,11 +320,15 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">Certificate</span>
-                      <p className="text-sm text-emerald-600 font-medium">{employee.documents.certificate}</p>
+                      <p className="text-sm text-emerald-600 font-medium">
+                        {employee.documentsCertificate ?? "-"}
+                      </p>
                     </div>
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">Photo</span>
-                      <p className="text-sm text-emerald-600 font-medium">{employee.documents.photo}</p>
+                      <p className="text-sm text-emerald-600 font-medium">
+                        {employee.documentsPhoto ?? "-"}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -285,27 +345,27 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("accountHolderName")}</span>
-                      <p className="text-sm text-foreground">{employee.bankAccount.accountHolderName}</p>
+                      <p className="text-sm text-foreground">{employee.accountHolderName ?? "-"}</p>
                     </div>
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("accountNumber")}</span>
-                      <p className="text-sm text-foreground">{employee.bankAccount.accountNumber}</p>
+                      <p className="text-sm text-foreground">{employee.accountNumber ?? "-"}</p>
                     </div>
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("bankName")}</span>
-                      <p className="text-sm text-foreground">{employee.bankAccount.bankName}</p>
+                      <p className="text-sm text-foreground">{employee.bankName ?? "-"}</p>
                     </div>
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("bankIdentifierCode")}</span>
-                      <p className="text-sm text-foreground">{employee.bankAccount.bankIdentifierCode}</p>
+                      <p className="text-sm text-foreground">{employee.bankIdentifierCode ?? "-"}</p>
                     </div>
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("branchLocation")}</span>
-                      <p className="text-sm text-foreground">{employee.bankAccount.branchLocation}</p>
+                      <p className="text-sm text-foreground">{employee.branchLocation ?? "-"}</p>
                     </div>
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">{t("taxPayerId")}</span>
-                      <p className="text-sm text-foreground">{employee.bankAccount.taxPayerId}</p>
+                      <p className="text-sm text-foreground">{employee.taxPayerId ?? "-"}</p>
                     </div>
                   </div>
                 </CardContent>

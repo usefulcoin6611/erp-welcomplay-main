@@ -1,7 +1,8 @@
 'use client'
 
-import { use } from 'react'
-import { useRouter } from 'next/navigation'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -14,15 +15,59 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar'
-import { getEmployeeById } from '@/lib/employee-data'
-import { notFound } from 'next/navigation'
 
-interface EmployeeEditPageProps {
-  params: Promise<{ employeeId: string }>
-}
+export default function EmployeeEditPage() {
+  const t = useTranslations('hrm.employee')
+  const router = useRouter()
+  const params = useParams<{ employeeId: string }>()
+  const employeeId = params.employeeId
 
-function mapEmployeeToInitialData(employee: NonNullable<ReturnType<typeof getEmployeeById>>): CreateEmployeeFormInitialData {
-  return {
+  const [employee, setEmployee] = useState<any | null>(null)
+
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        const res = await fetch(`/api/employees/${employeeId}`)
+        const json = await res.json().catch(() => null)
+
+        if (!json?.success || !json.data) {
+          router.push('/hrm/employees')
+          return
+        }
+
+        setEmployee(json.data as any)
+      } catch (error) {
+        console.error('Error fetching employee for edit:', error)
+        router.push('/hrm/employees')
+      }
+    }
+
+    if (employeeId) {
+      fetchEmployee()
+    }
+  }, [employeeId, router])
+
+  if (!employee) {
+    return (
+      <SidebarProvider
+        style={
+          {
+            '--sidebar-width': 'calc(var(--spacing) * 72)',
+            '--header-height': 'calc(var(--spacing) * 12)',
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <div className="flex flex-1 items-center justify-center bg-gray-100">
+            <p className="text-sm text-muted-foreground">{t('loadingEmployees')}</p>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
+
+  const initialData: CreateEmployeeFormInitialData = {
     name: employee.name,
     phone: employee.phone,
     dob: employee.dateOfBirth,
@@ -31,28 +76,20 @@ function mapEmployeeToInitialData(employee: NonNullable<ReturnType<typeof getEmp
     password: '',
     address: employee.address,
     employeeId: employee.employeeId,
-    branchId: '1',
-    departmentId: '1',
-    designationId: '1',
+    branchId: '',
+    departmentId: '',
+    designationId: '',
+    branch: employee.branch,
+    department: employee.department,
+    designation: employee.designation,
     companyDoj: employee.dateOfJoining,
-    accountHolderName: employee.bankAccount.accountHolderName,
-    accountNumber: employee.bankAccount.accountNumber,
-    bankName: employee.bankAccount.bankName,
-    bankIdentifierCode: employee.bankAccount.bankIdentifierCode,
-    branchLocation: employee.bankAccount.branchLocation,
-    taxPayerId: employee.bankAccount.taxPayerId,
+    accountHolderName: employee.accountHolderName ?? '',
+    accountNumber: employee.accountNumber ?? '',
+    bankName: employee.bankName ?? '',
+    bankIdentifierCode: employee.bankIdentifierCode ?? '',
+    branchLocation: employee.branchLocation ?? '',
+    taxPayerId: employee.taxPayerId ?? '',
   }
-}
-
-export default function EmployeeEditPage({ params }: EmployeeEditPageProps) {
-  const t = useTranslations('hrm.employee')
-  const router = useRouter()
-  const { employeeId } = use(params)
-  const employee = getEmployeeById(employeeId)
-  if (!employee) {
-    notFound()
-  }
-  const initialData = mapEmployeeToInitialData(employee)
 
   return (
     <SidebarProvider
@@ -80,11 +117,11 @@ export default function EmployeeEditPage({ params }: EmployeeEditPageProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/hrm/employees/${employeeId}`)}
+                  onClick={() => router.push('/hrm/employees')}
                   className="flex items-center gap-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  {t('backToDetail')}
+                  {t('backToList')}
                 </Button>
                 <LanguageSwitcher />
               </div>
@@ -97,6 +134,7 @@ export default function EmployeeEditPage({ params }: EmployeeEditPageProps) {
               onClose={() => router.push('/hrm/employees')}
               initialData={initialData}
               isEditMode
+              employeeIdForEdit={employeeId}
             />
           </div>
         </div>

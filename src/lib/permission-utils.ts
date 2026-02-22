@@ -133,7 +133,11 @@ export function getRequiredRoleForRoute(route: string): UserRole[] | null {
 
   // System setup routes - super admin only (some exceptions for company)
   if (isSystemSetupRoute(route)) {
-    if (route.startsWith('/crm/setup')) {
+    if (
+      route.startsWith('/crm/setup') ||
+      route.startsWith('/accounting/setup') ||
+      route.startsWith('/accounting/print-settings')
+    ) {
       return ['super admin', 'company']
     }
     return ['super admin']

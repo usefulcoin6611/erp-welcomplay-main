@@ -304,6 +304,36 @@ export function CustomerTab() {
     }
   }
 
+  const handleExport = () => {
+    const headers = ['Customer Code', 'Name', 'Contact', 'Email', 'Balance', 'Tax Number', 'Branch', 'Billing Address', 'Shipping Address']
+    const rows = filteredCustomers.map(customer => [
+      customer.customerCode,
+      customer.name,
+      customer.contact || '',
+      customer.email,
+      customer.balance.toString(),
+      customer.taxNumber || '',
+      customer.branch?.name || '',
+      customer.billingAddress || '',
+      customer.shippingAddress || ''
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   if (viewingCustomer) {
     return (
       <CustomerDetail 
@@ -369,11 +399,12 @@ export function CustomerTab() {
           <Button
             variant="outline"
             size="sm"
-            className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+            className="shadow-none h-8 px-3 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
             title="Export"
+            onClick={handleExport}
           >
-            <FileDown className="mr-2 h-4 w-4" />
-            Export Customer
+            <FileDown className="mr-2 h-3.5 w-3.5" />
+            <span className="text-xs">Export Customer</span>
           </Button>
           <Dialog open={createDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
@@ -740,7 +771,7 @@ export function CustomerTab() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                          className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
                           title="Edit"
                           onClick={() => handleEdit(customer)}
                         >

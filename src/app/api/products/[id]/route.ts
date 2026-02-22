@@ -12,6 +12,7 @@ function mapProduct(p: any) {
     purchasePrice: Number(p.purchasePrice) || 0,
     quantity: Number(p.quantity) || 0,
     type: p.type as string,
+    categoryId: p.categoryId ?? null,
     category: p.category?.name ?? "",
     unit: p.unit?.name ?? "",
     tax: p.tax?.name ?? "",
@@ -167,7 +168,9 @@ export async function PUT(
     let unitId: string | null = product.unitId
     let taxId: string | null = product.taxId
 
-    if (body.categoryName && typeof body.categoryName === "string") {
+    if (body.categoryId && typeof body.categoryId === "string") {
+      categoryId = body.categoryId
+    } else if (body.categoryName && typeof body.categoryName === "string") {
       const category = await prisma.category.findFirst({
         where: { name: body.categoryName },
       })
