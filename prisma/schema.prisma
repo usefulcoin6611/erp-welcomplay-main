@@ -104,11 +104,12 @@ model LeaveType {
 }
 
 model DocumentType {
-  id            String   @id @default(cuid())
-  name          String
-  requiredField Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String             @id @default(cuid())
+  name               String
+  requiredField      Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  employeeDocuments  EmployeeDocument[]
 
   @@map("document_type")
 }
@@ -196,10 +197,10 @@ model Competency {
 }
 
 model Employee {
-  id                   String    @id @default(cuid())
-  employeeId           String    @unique
+  id                   String             @id @default(cuid())
+  employeeId           String             @unique
   name                 String
-  email                String    @unique
+  email                String             @unique
   phone                String
   dateOfBirth          DateTime
   gender               String
@@ -209,7 +210,7 @@ model Employee {
   designation          String
   dateOfJoining        DateTime
   lastLogin            DateTime?
-  isActive             Boolean   @default(true)
+  isActive             Boolean            @default(true)
   salaryType           String?
   basicSalary          Float?
   documentsCertificate String?
@@ -220,13 +221,32 @@ model Employee {
   bankIdentifierCode   String?
   branchLocation       String?
   taxPayerId           String?
-  userId               String?   @unique
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  userId               String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  employeeDocuments    EmployeeDocument[]
 
   user User? @relation(fields: [userId], references: [id])
 
   @@map("employee")
+}
+
+model EmployeeDocument {
+  id             String       @id @default(cuid())
+  employeeId     String
+  documentTypeId String
+  filePath       String?
+  fileName       String?
+  mimeType       String?
+  fileSize       Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, documentTypeId])
+  @@map("employee_document")
 }
 
 model AllowanceOption {

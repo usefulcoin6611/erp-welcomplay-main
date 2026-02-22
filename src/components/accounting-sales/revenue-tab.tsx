@@ -145,9 +145,6 @@ export function RevenueTab() {
       search.set('startDate', params.date)
       search.set('endDate', params.date)
     }
-    if (params?.categoryId) {
-      search.set('accountId', params.categoryId)
-    }
     const url = `/api/revenue${search.toString() ? `?${search.toString()}` : ''}`
     const res = await fetch(url)
     const json = await res.json()
@@ -169,13 +166,16 @@ export function RevenueTab() {
             })),
           )
         }
-        const resChart = await fetch('/api/chart-of-accounts')
-        const jsonChart = await resChart.json()
-        if (jsonChart?.success && Array.isArray(jsonChart.data)) {
-          const income = jsonChart.data
-            .filter((a: any) => a.type === 'Income')
-            .map((a: any) => ({ id: a.id, name: a.name }))
-          setCategories(income)
+        const resCategories = await fetch('/api/categories', { cache: 'no-store' })
+        const jsonCategories = await resCategories.json()
+        if (jsonCategories?.success && Array.isArray(jsonCategories.data)) {
+          const incomeCategories = jsonCategories.data
+            .filter((c: any) => c.type === 'Income')
+            .map((c: any) => ({
+              id: c.id as string,
+              name: c.name as string,
+            }))
+          setCategories(incomeCategories)
         }
       } catch {}
       try {
@@ -241,7 +241,7 @@ export function RevenueTab() {
       amount: String(revenue.amount),
       account: (revenue as any).bankAccountId ?? '',
       customer: (revenue as any).customerId ?? '',
-      category: (revenue as any).incomeAccountId ?? '',
+      category: (revenue as any).categoryId ?? '',
       reference: revenue.reference || '',
       description: revenue.description || '',
       paymentReceipt: revenue.paymentReceipt
@@ -362,7 +362,7 @@ export function RevenueTab() {
     submitData.append('date', formData.date)
     submitData.append('amount', String(payloadAmount))
     submitData.append('bankAccountId', formData.account)
-    submitData.append('incomeAccountId', formData.category)
+    submitData.append('categoryId', formData.category)
     if (formData.customer) submitData.append('customerId', formData.customer)
     if (formData.reference) submitData.append('reference', formData.reference)
     if (formData.description) submitData.append('description', formData.description)
@@ -883,7 +883,7 @@ export function RevenueTab() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="shadow-none h-7 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                              className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-0"
                               title="Preview"
                               onClick={() => {
                                 window.open(revenue.paymentReceipt as string, '_blank')

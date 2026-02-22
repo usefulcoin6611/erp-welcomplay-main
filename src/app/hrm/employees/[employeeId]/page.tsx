@@ -139,14 +139,18 @@ interface EmployeeDetail {
   isActive: boolean
   salaryType: string | null
   basicSalary: number | null
-  documentsCertificate: string | null
-  documentsPhoto: string | null
   accountHolderName: string | null
   accountNumber: string | null
   bankName: string | null
   bankIdentifierCode: string | null
   branchLocation: string | null
   taxPayerId: string | null
+  documents: {
+    documentTypeId: string
+    name: string
+    requiredField: boolean
+    filePath: string | null
+  }[]
 }
 
 export default function EmployeeDetailPage() {
@@ -317,20 +321,56 @@ export default function EmployeeDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-5 pt-0 space-y-5">
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="space-y-1">
-                      <span className="text-sm font-medium text-muted-foreground">Certificate</span>
-                      <p className="text-sm text-emerald-600 font-medium">
-                        {employee.documentsCertificate ?? "-"}
-                      </p>
+                  {(!employee.documents || employee.documents.length === 0) ? (
+                    <p className="text-sm text-muted-foreground">
+                      Tidak ada dokumen yang terupload.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {employee.documents.map((doc) => (
+                        <div key={doc.documentTypeId} className="space-y-1">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {doc.name}
+                            {doc.requiredField && (
+                              <span className="ml-0.5 text-red-500">*</span>
+                            )}
+                          </span>
+                          {doc.filePath ? (
+                            /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(doc.filePath) ? (
+                              <div className="flex items-center gap-3">
+                                <div className="relative h-20 w-20 rounded border border-gray-200 overflow-hidden bg-muted">
+                                  <img
+                                    src={doc.filePath}
+                                    alt={doc.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                                <a
+                                  href={doc.filePath}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline break-all"
+                                >
+                                  Buka file
+                                </a>
+                              </div>
+                            ) : (
+                              <a
+                                href={doc.filePath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline break-all"
+                              >
+                                {doc.filePath}
+                              </a>
+                            )
+                          ) : (
+                            <p className="text-sm text-muted-foreground">-</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-sm font-medium text-muted-foreground">Photo</span>
-                      <p className="text-sm text-emerald-600 font-medium">
-                        {employee.documentsPhoto ?? "-"}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 

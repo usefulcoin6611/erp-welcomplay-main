@@ -43,6 +43,11 @@ export type CreateEmployeeFormInitialData = Partial<typeof defaultFormData> & {
   branch?: string
   department?: string
   designation?: string
+  documents?: {
+    documentTypeId: string
+    filePath: string | null
+    fileName: string | null
+  }[]
 }
 
 interface CreateEmployeeFormProps {
@@ -63,10 +68,12 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
     ...defaultFormData,
     ...(initialData ?? {}),
   })
-  const [documentTypes, setDocumentTypes] = useState<{ id: string; name: string; requiredField: boolean }[]>([])
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([])
   const [departments, setDepartments] = useState<{ id: string; name: string; branchName: string | null }[]>([])
   const [designations, setDesignations] = useState<{ id: string; name: string; departmentName: string; branchName: string | null }[]>([])
+  const [documentTypes, setDocumentTypes] = useState<{ id: string; name: string; requiredField: boolean }[]>([])
+  const [existingDocuments, setExistingDocuments] = useState<Record<string, { filePath: string; fileName: string | null } | null>>({})
+  const [removedDocuments, setRemovedDocuments] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!isEditMode || !initialData) return
@@ -99,59 +106,141 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
     })
   }, [isEditMode, initialData, branches, departments, designations])
 
+  useEffect(() => {
+    if (!isEditMode || !initialData?.documents) return
+
+    const map: Record<string, { filePath: string; fileName: string | null } | null> = {}
+    initialData.documents.forEach(doc => {
+      if (doc.filePath) {
+        map[doc.documentTypeId] = {
+          filePath: doc.filePath,
+          fileName: doc.fileName,
+        }
+      }
+    })
+    setExistingDocuments(map)
+  }, [isEditMode, initialData])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const missingRequiredDocuments = documentTypes.filter(
-      (dt) => dt.requiredField && !documentFiles[dt.id],
+    if (documentTypes.length > 0) {
+      const missingRequired = documentTypes.filter((dt) => {
+        // Jika required, kita harus cek apakah ada file yang valid
+        if (!dt.requiredField) return false
+
+        // 1. Cek apakah ada file baru yang diupload
+        const hasNewFile = !!documentFiles[dt.id]
+
+        // 2. Cek apakah ada file existing (untuk mode edit)
+        // Dan pastikan file existing itu TIDAK ditandai untuk dihapus
+        const hasExistingFile = !!existingDocuments[dt.id] && !removedDocuments[dt.id]
+
+        // Valid jika ada file baru ATAU ada file lama yang masih aktif
+        const isValid = hasNewFile || hasExistingFile
+
+        return !isValid
+      })
+
+      if (missingRequired.length > 0) {
+        const missingNames = missingRequired.map((dt) => dt.name).join(", ")
+        toast.error(`Harap upload dokumen wajib: ${missingNames}`)
+        return
+      }
+    }
+
+    const submitFormData = new FormData()
+
+    if (isEditMode && formData.employeeId) {
+      submitFormData.append("employeeId", formData.employeeId)
+    }
+
+    submitFormData.append("name", formData.name)
+    submitFormData.append("email", formData.email)
+    submitFormData.append("phone", formData.phone)
+    submitFormData.append("dateOfBirth", formData.dob)
+    submitFormData.append("gender", formData.gender)
+    submitFormData.append("address", formData.address)
+    submitFormData.append(
+      "branch",
+      branches.find((b) => b.id === formData.branchId)?.name ?? "",
     )
-
-    if (missingRequiredDocuments.length > 0) {
-      toast.error("Harap upload semua dokumen yang bertanda *")
-      return
+    submitFormData.append(
+      "department",
+      departments.find((d) => d.id === formData.departmentId)?.name ?? "",
+    )
+    submitFormData.append(
+      "designation",
+      designations.find((d) => d.id === formData.designationId)?.name ?? "",
+    )
+    submitFormData.append("dateOfJoining", formData.companyDoj)
+    if (formData.accountHolderName) {
+      submitFormData.append("accountHolderName", formData.accountHolderName)
+    }
+    if (formData.accountNumber) {
+      submitFormData.append("accountNumber", formData.accountNumber)
+    }
+    if (formData.bankName) {
+      submitFormData.append("bankName", formData.bankName)
+    }
+    if (formData.bankIdentifierCode) {
+      submitFormData.append("bankIdentifierCode", formData.bankIdentifierCode)
+    }
+    if (formData.branchLocation) {
+      submitFormData.append("branchLocation", formData.branchLocation)
+    }
+    if (formData.taxPayerId) {
+      submitFormData.append("taxPayerId", formData.taxPayerId)
+    }
+    if (formData.password) {
+      submitFormData.append("password", formData.password)
     }
 
-    const payload = {
-      employeeId: isEditMode ? formData.employeeId : undefined,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      dateOfBirth: formData.dob,
-      gender: formData.gender,
-      address: formData.address,
-      branch: branches.find((b) => b.id === formData.branchId)?.name ?? "",
-      department: departments.find((d) => d.id === formData.departmentId)?.name ?? "",
-      designation: designations.find((d) => d.id === formData.designationId)?.name ?? "",
-      dateOfJoining: formData.companyDoj,
-      accountHolderName: formData.accountHolderName,
-      accountNumber: formData.accountNumber,
-      bankName: formData.bankName,
-      bankIdentifierCode: formData.bankIdentifierCode,
-      branchLocation: formData.branchLocation,
-      taxPayerId: formData.taxPayerId,
-      password: formData.password || undefined,
+    for (const dt of documentTypes) {
+      const file = documentFiles[dt.id]
+      if (file) {
+        submitFormData.append(`document_${dt.id}`, file)
+      } else if (isEditMode && removedDocuments[dt.id]) {
+        submitFormData.append(`document_${dt.id}_removed`, "true")
+      }
     }
 
-    const url = isEditMode && employeeIdForEdit
-      ? `/api/employees/${employeeIdForEdit}`
-      : "/api/employees"
+    const url =
+      isEditMode && employeeIdForEdit
+        ? `/api/employees/${employeeIdForEdit}`
+        : "/api/employees"
     const method = isEditMode ? "PUT" : "POST"
 
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: submitFormData,
       })
 
       const json = await res.json().catch(() => null)
+
       if (!json || !json.success) {
+        const message =
+          json?.message ||
+          (isEditMode ? "Gagal memperbarui data karyawan" : "Gagal menyimpan data karyawan")
+
+        toast.error(message)
         console.error("Failed to submit employee:", json?.message)
+        return
       }
+
+      toast.success(
+        isEditMode ? "Data karyawan berhasil diperbarui" : "Data karyawan berhasil disimpan",
+      )
+
+      onClose()
     } catch (error) {
       console.error("Error submitting employee:", error)
-    } finally {
-      onClose()
+      toast.error(
+        isEditMode
+          ? "Terjadi kesalahan saat memperbarui data karyawan"
+          : "Terjadi kesalahan saat menyimpan data karyawan",
+      )
     }
   }
 
@@ -229,31 +318,19 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
   useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [documentRes, branchRes, departmentRes, designationRes] = await Promise.all([
-          fetch("/api/document-types"),
+        const [branchRes, departmentRes, designationRes, documentTypeRes] = await Promise.all([
           fetch("/api/branches"),
           fetch("/api/departments"),
           fetch("/api/designations"),
+          fetch("/api/document-types"),
         ])
 
-        const [documentJson, branchJson, departmentJson, designationJson] = await Promise.all([
-          documentRes.json().catch(() => null),
+        const [branchJson, departmentJson, designationJson, documentTypeJson] = await Promise.all([
           branchRes.json().catch(() => null),
           departmentRes.json().catch(() => null),
           designationRes.json().catch(() => null),
+          documentTypeRes.json().catch(() => null),
         ])
-
-        if (documentJson?.success && Array.isArray(documentJson.data)) {
-          setDocumentTypes(
-            documentJson.data.map((dt: any) => ({
-              id: String(dt.id),
-              name: String(dt.name ?? ""),
-              requiredField: Boolean(dt.requiredField),
-            })),
-          )
-        } else {
-          console.error("Failed to load document types:", documentJson?.message)
-        }
 
         if (branchJson?.success && Array.isArray(branchJson.data)) {
           setBranches(
@@ -269,7 +346,7 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
         if (departmentJson?.success && Array.isArray(departmentJson.data)) {
           setDepartments(
             departmentJson.data.map((d: any) => ({
-              id: String(d.id),
+              id: String(d.name ? d.id : d.id),
               name: String(d.name ?? ""),
               branchName: d.branch ? String(d.branch.name ?? "") : null,
             })),
@@ -289,6 +366,18 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
           )
         } else {
           console.error("Failed to load designations:", designationJson?.message)
+        }
+
+        if (documentTypeJson?.success && Array.isArray(documentTypeJson.data)) {
+          setDocumentTypes(
+            documentTypeJson.data.map((dt: any) => ({
+              id: String(dt.id),
+              name: String(dt.name ?? ""),
+              requiredField: Boolean(dt.requiredField),
+            })),
+          )
+        } else {
+          console.error("Failed to load document types:", documentTypeJson?.message)
         }
       } catch (error) {
         console.error("Error loading master data for employee form:", error)
@@ -590,93 +679,244 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
           <CardContent className={contentClass}>
             {documentTypes.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No document types found. Configure them in HRM Setup &gt; Document Type.
+                Tidak ada document type yang terdaftar. Tambahkan terlebih dahulu di menu Setup &gt; Document Type.
               </p>
             ) : (
               <div className="space-y-4">
-                {documentTypes.map((document) => (
-                  <div key={document.id} className="flex flex-col sm:flex-row sm:items-start gap-3">
-                    <div className="shrink-0 sm:w-1/3 sm:pt-1.5">
-                      <Label className={`font-medium ${labelClass}`}>
-                        {document.name}
-                        {document.requiredField && (
-                          <span className="ml-1 text-xs text-red-500">*</span>
-                        )}
-                      </Label>
-                    </div>
-                    <div className="flex-1 space-y-2 min-w-0">
-                      {!documentPreviews[document.id] && (
-                        <div className="relative">
-                          <div className="flex items-center justify-center w-full">
-                            <label
-                              htmlFor={`document-${document.id}`}
-                              className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                                dragActive[document.id]
-                                  ? "border-primary bg-primary/10"
-                                  : "border-muted-foreground/25 bg-muted/5 hover:bg-muted/10"
-                              }`}
-                              onDragEnter={(e) => handleDragEnter(e, document.id)}
-                              onDragLeave={(e) => handleDragLeave(e, document.id)}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, document.id)}
-                            >
-                              <div className="flex flex-col items-center justify-center py-2">
-                                <Upload className="w-4 h-4 mb-1 text-blue-500" />
-                                <p className="text-xs text-muted-foreground">
-                                  PDF, DOC, JPG, PNG (MAX. 10MB)
-                                </p>
+                {documentTypes.map(dt => {
+                  const existing = existingDocuments[dt.id] ?? null
+                  const existingPath = existing?.filePath ?? null
+                  const existingName = existing?.fileName ?? existingPath?.split("/").pop() ?? null
+                  const previewUrl = documentPreviews[dt.id]
+                  const isRemoved = removedDocuments[dt.id] ?? false
+                  const inputId = `document-${dt.id}`
+
+                  return (
+                    <div
+                      key={dt.id}
+                      className="flex flex-col sm:flex-row sm:items-start gap-3"
+                    >
+                      <div className="shrink-0 sm:w-1/3 sm:pt-1.5">
+                        <Label className={`font-medium ${labelClass}`}>
+                          {dt.name}
+                          {dt.requiredField && (
+                            <span className="ml-0.5 text-red-500">*</span>
+                          )}
+                        </Label>
+                      </div>
+                      <div className="flex-1 space-y-2 min-w-0">
+                        {!previewUrl && existingPath && !isRemoved && (
+                          <>
+                            {/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(existingPath) ? (
+                              <div className="flex items-center gap-3">
+                                <div className="relative inline-block">
+                                  <img
+                                    src={existingPath}
+                                    alt={dt.name}
+                                    className="rounded border border-gray-200 object-contain max-h-32 w-auto bg-muted"
+                                  />
+                                  <div className="absolute right-1 top-1 flex items-center gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground bg-background/70"
+                                      onClick={() => {
+                                        window.open(existingPath, "_blank", "noopener,noreferrer")
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-red-500 hover:text-red-600 bg-background/70"
+                                      onClick={() => {
+                                        setRemovedDocuments(prev => ({ ...prev, [dt.id]: true }))
+                                        // setExistingDocuments(prev => ({ ...prev, [dt.id]: null })) // Keep existing data for restore if needed, just mark removed
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs truncate max-w-[200px] font-medium">
+                                    {existingName}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Existing File
+                                  </span>
+                                </div>
                               </div>
-                              <Input
-                                id={`document-${document.id}`}
-                                type="file"
-                                className="hidden"
-                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  handleDocumentFileChange(document.id, file ?? null)
+                            ) : (
+                              <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex flex-col">
+                                    <span className="text-xs truncate max-w-[200px] font-medium">
+                                      {existingName}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Existing File
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground"
+                                    onClick={() => {
+                                      window.open(existingPath, "_blank", "noopener,noreferrer")
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-red-500 hover:text-red-600"
+                                    onClick={() => {
+                                      setRemovedDocuments(prev => ({ ...prev, [dt.id]: true }))
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {/* Restore button if removed but not replaced yet */}
+                        {isRemoved && !documentFiles[dt.id] && (
+                          <div className="flex items-center gap-2 mb-2 p-2 bg-red-50 rounded border border-red-100">
+                             <span className="text-xs text-red-600">Dokumen lama akan dihapus.</span>
+                             <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs"
+                                onClick={() => setRemovedDocuments(prev => ({ ...prev, [dt.id]: false }))}
+                             >
+                               Batal Hapus
+                             </Button>
+                          </div>
+                        )}
+                        {!previewUrl && (!existingPath || isRemoved) && (
+                          <div className="relative">
+                            <div className="flex items-center justify-center w-full">
+                              <label
+                                htmlFor={inputId}
+                                className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                                  dragActive[dt.id]
+                                    ? "border-primary bg-primary/10"
+                                    : "border-muted-foreground/25 bg-muted/5 hover:bg-muted/10"
+                                }`}
+                                onDragEnter={(e) => handleDragEnter(e, dt.id)}
+                                onDragLeave={(e) => handleDragLeave(e, dt.id)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, dt.id)}
+                              >
+                                {documentFiles[dt.id] ? (
+                                  <div className="flex items-center gap-2 px-3 w-full">
+                                    <FileText className="w-8 h-8 text-blue-500 shrink-0" />
+                                    <div className="flex flex-col items-start min-w-0 flex-1">
+                                      <p className="text-sm font-medium text-foreground truncate w-full max-w-[200px]">
+                                        {documentFiles[dt.id]?.name}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {(documentFiles[dt.id]?.size ?? 0) / 1024 < 1024
+                                          ? `${((documentFiles[dt.id]?.size ?? 0) / 1024).toFixed(1)} KB`
+                                          : `${((documentFiles[dt.id]?.size ?? 0) / (1024 * 1024)).toFixed(2)} MB`}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 ml-2 text-muted-foreground hover:text-red-500 shrink-0 z-10"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        // Clear file input value to allow re-selecting same file
+                                        const input = document.getElementById(inputId) as HTMLInputElement
+                                        if (input) input.value = ''
+                                        handleDocumentFileChange(dt.id, null)
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center py-2">
+                                    <Upload className="w-4 h-4 mb-1 text-blue-500" />
+                                    <p className="text-xs text-muted-foreground">
+                                      PDF, DOC, JPG, PNG (MAX. 10MB)
+                                    </p>
+                                  </div>
+                                )}
+                                <Input
+                                  id={inputId}
+                                  type="file"
+                                  className="hidden"
+                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] ?? null
+                                    setRemovedDocuments(prev => ({ ...prev, [dt.id]: false }))
+                                    handleDocumentFileChange(dt.id, file)
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                        {previewUrl && (
+                          <div className="relative inline-block">
+                            <img
+                              src={previewUrl}
+                              alt={dt.name}
+                              className="rounded border border-gray-200 object-contain max-h-32 w-auto"
+                            />
+                            <div className="absolute right-1 top-1 flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground bg-background/70"
+                                onClick={() => {
+                                  window.open(previewUrl, "_blank", "noopener,noreferrer")
                                 }}
-                              />
-                            </label>
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-500 hover:text-red-600 bg-background/70"
+                                onClick={() => {
+                                  handleDocumentFileChange(dt.id, null)
+                                  setDocumentPreviews(prev => {
+                                    const next = { ...prev }
+                                    if (next[dt.id]) URL.revokeObjectURL(next[dt.id])
+                                    delete next[dt.id]
+                                    return next
+                                  })
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {documentPreviews[document.id] && (
-                        <div className="relative inline-block">
-                          <img
-                            src={documentPreviews[document.id]}
-                            alt={`Preview ${document.name}`}
-                            className="rounded border border-gray-200 object-contain max-h-32 w-auto"
-                          />
-                          <div className="absolute right-1 top-1 flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground bg-background/70"
-                              onClick={() => {
-                                const url = documentPreviews[document.id]
-                                if (url) {
-                                  window.open(url, "_blank", "noopener,noreferrer")
-                                }
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-500 hover:text-red-600 bg-background/70"
-                              onClick={() => handleDocumentFileChange(document.id, null)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </CardContent>

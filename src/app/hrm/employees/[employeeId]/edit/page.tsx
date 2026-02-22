@@ -89,6 +89,13 @@ export default function EmployeeEditPage() {
     bankIdentifierCode: employee.bankIdentifierCode ?? '',
     branchLocation: employee.branchLocation ?? '',
     taxPayerId: employee.taxPayerId ?? '',
+    documents: Array.isArray(employee.documents)
+      ? employee.documents.map((d: any) => ({
+          documentTypeId: d.documentTypeId,
+          filePath: d.filePath,
+          fileName: d.fileName,
+        }))
+      : [],
   }
 
   return (

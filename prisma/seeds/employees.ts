@@ -154,8 +154,27 @@ export async function seedEmployees(prisma: any) {
     },
   ];
 
+  const hasEmployeeDocumentModel = Boolean((prisma as any).employeeDocument);
+
+  const documentTypes = hasEmployeeDocumentModel
+    ? await prisma.documentType.findMany({
+        orderBy: { createdAt: "asc" },
+      })
+    : [];
+
+  const certificateType =
+    documentTypes.find((dt: any) => dt.name === "Employment Contract") ??
+    documentTypes[0] ??
+    null;
+
+  const photoType =
+    documentTypes.find((dt: any) => dt.name === "KTP") ??
+    documentTypes[1] ??
+    documentTypes[0] ??
+    null;
+
   for (const e of employees) {
-    await prisma.employee.upsert({
+    const employee = await prisma.employee.upsert({
       where: { employeeId: e.employeeId },
       update: {
         name: e.name,
@@ -207,6 +226,54 @@ export async function seedEmployees(prisma: any) {
         taxPayerId: e.taxPayerId,
       },
     });
+
+    if (hasEmployeeDocumentModel && certificateType && e.documentsCertificate) {
+      const existingCertificate = await (prisma as any).employeeDocument.findFirst({
+        where: {
+          employeeId: employee.id,
+          documentTypeId: certificateType.id,
+        },
+      });
+
+      if (existingCertificate) {
+        await (prisma as any).employeeDocument.update({
+          where: { id: existingCertificate.id },
+          data: { filePath: e.documentsCertificate },
+        });
+      } else {
+        await (prisma as any).employeeDocument.create({
+          data: {
+            employeeId: employee.id,
+            documentTypeId: certificateType.id,
+            filePath: e.documentsCertificate,
+          },
+        });
+      }
+    }
+
+    if (hasEmployeeDocumentModel && photoType && e.documentsPhoto) {
+      const existingPhoto = await (prisma as any).employeeDocument.findFirst({
+        where: {
+          employeeId: employee.id,
+          documentTypeId: photoType.id,
+        },
+      });
+
+      if (existingPhoto) {
+        await (prisma as any).employeeDocument.update({
+          where: { id: existingPhoto.id },
+          data: { filePath: e.documentsPhoto },
+        });
+      } else {
+        await (prisma as any).employeeDocument.create({
+          data: {
+            employeeId: employee.id,
+            documentTypeId: photoType.id,
+            filePath: e.documentsPhoto,
+          },
+        });
+      }
+    }
 
     console.log(`Employee upserted: ${e.employeeId} - ${e.name}`);
   }

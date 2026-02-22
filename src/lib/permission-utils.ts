@@ -23,6 +23,7 @@ export function hasRouteAccess(route: string, userRole: UserRole): boolean {
       '/crm-dashboard',
       '/project-dashboard',
       '/pos-dashboard',
+      '/pipelines',
       '/hrm/',
       '/accounting/',
       '/crm/',
@@ -136,7 +137,8 @@ export function getRequiredRoleForRoute(route: string): UserRole[] | null {
     if (
       route.startsWith('/crm/setup') ||
       route.startsWith('/accounting/setup') ||
-      route.startsWith('/accounting/print-settings')
+      route.startsWith('/accounting/print-settings') ||
+      route.startsWith('/hrm/setup/')
     ) {
       return ['super admin', 'company']
     }

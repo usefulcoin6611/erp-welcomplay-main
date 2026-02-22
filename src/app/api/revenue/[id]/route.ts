@@ -72,7 +72,7 @@ export async function PUT(
     const amount = formData.get("amount")
     const bankAccountId = formData.get("bankAccountId")
     const cashAccountId = formData.get("cashAccountId")
-    const incomeAccountId = formData.get("incomeAccountId")
+    const categoryId = formData.get("categoryId")
     const customerId = formData.get("customerId")
     const reference = formData.get("reference")
     const description = formData.get("description")
@@ -88,12 +88,12 @@ export async function PUT(
       !date ||
       !amount ||
       (!bankAccountId && !effectiveCashAccountId) ||
-      !incomeAccountId
+      !categoryId
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: "date, amount, bankAccountId/cashAccountId, incomeAccountId wajib diisi",
+          message: "date, amount, bankAccountId/cashAccountId, categoryId wajib diisi",
         },
         { status: 400 }
       )
@@ -108,7 +108,7 @@ export async function PUT(
       )
     }
 
-    const [entry, bankAccount, cashAccount, incomeAccount, customer] = await Promise.all([
+    const [entry, bankAccount, cashAccount, category, customer] = await Promise.all([
       prisma.journalEntry.findFirst({
         where: { id, branchId },
         include: { lines: true },
@@ -124,9 +124,28 @@ export async function PUT(
             where: { id: effectiveCashAccountId, type: "Assets", branchId },
           })
         : Promise.resolve(null),
-      prisma.chartOfAccount.findFirst({ where: { id: incomeAccountId as string, type: "Income", branchId } }),
+      prisma.category.findFirst({
+        where: { id: categoryId as string, type: "Income", branchId },
+      }),
       customerId ? prisma.customer.findFirst({ where: { id: customerId as string, branchId } }) : Promise.resolve(null),
     ])
+
+    if (!category) {
+      return NextResponse.json(
+        { success: false, message: "Category pendapatan tidak valid" },
+        { status: 400 }
+      )
+    }
+
+    const incomeAccount = category.account
+      ? await prisma.chartOfAccount.findFirst({
+          where: {
+            name: category.account,
+            type: "Income",
+            branchId,
+          },
+        })
+      : null
 
     if (!entry) {
       return NextResponse.json({ success: false, message: "Revenue entry tidak ditemukan" }, { status: 404 })
@@ -182,7 +201,7 @@ export async function PUT(
       paymentReceipt = null
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.journalEntry.update({
         where: { id },
         data: {
@@ -200,8 +219,8 @@ export async function PUT(
         } as any,
       })
 
-      const cashLine = entry.lines.find((ln) => ln.debit > 0) || entry.lines[0]
-      const incomeLine = entry.lines.find((ln) => ln.credit > 0) || entry.lines[1]
+      const cashLine = entry.lines.find((ln: any) => ln.debit > 0) || entry.lines[0]
+      const incomeLine = entry.lines.find((ln: any) => ln.credit > 0) || entry.lines[1]
 
       if (cashLine) {
         await tx.journalLine.update({
@@ -219,7 +238,7 @@ export async function PUT(
         await tx.journalLine.update({
           where: { id: incomeLine.id },
           data: {
-            accountId: incomeAccountId as string,
+            accountId: (incomeAccount as any).id,
             debit: 0,
             credit: amountNumber,
             description: description ? String(description) : null,

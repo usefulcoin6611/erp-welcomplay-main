@@ -12,8 +12,9 @@ export async function seedCategories(prisma: any) {
     { name: "Product Sales", type: "Product & Service", account: null, color: "F97316", branchId },
 
     // Income (needs account)
-    { name: "Service Income", type: "Income", account: "Sales Revenue", color: "16A34A", branchId },
-    { name: "Other Income", type: "Income", account: "Sales Revenue", color: "22C55E", branchId },
+    { name: "Sales Income", type: "Income", account: "Sales Income", color: "22C55E", branchId },
+    { name: "Service Income", type: "Income", account: "Service Income", color: "16A34A", branchId },
+    { name: "Other Income", type: "Income", account: "Sundry Income", color: "4ADE80", branchId },
 
     // Expense (needs account)
     { name: "Operating Expense", type: "Expense", account: "Operating Expenses", color: "F97316", branchId },

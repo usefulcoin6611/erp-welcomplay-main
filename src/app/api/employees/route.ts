@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import * as bcrypt from "bcryptjs";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 const createEmployeeSchema = z.object({
   employeeId: z.string().trim().optional(),
@@ -114,8 +116,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const validation = createEmployeeSchema.safeParse(body);
+    const contentType = request.headers.get("content-type") || "";
+
+    let rawData: any = {};
+    let formData: FormData | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      formData = await request.formData();
+
+      rawData = {
+        employeeId: (formData.get("employeeId") as string | null) ?? undefined,
+        name: (formData.get("name") as string | null) ?? "",
+        email: (formData.get("email") as string | null) ?? "",
+        phone: (formData.get("phone") as string | null) ?? "",
+        dateOfBirth: (formData.get("dateOfBirth") as string | null) ?? "",
+        gender: (formData.get("gender") as string | null) ?? "",
+        address: (formData.get("address") as string | null) ?? "",
+        branch: (formData.get("branch") as string | null) ?? "",
+        department: (formData.get("department") as string | null) ?? "",
+        designation: (formData.get("designation") as string | null) ?? "",
+        dateOfJoining: (formData.get("dateOfJoining") as string | null) ?? "",
+        salaryType: (formData.get("salaryType") as string | null) ?? undefined,
+        basicSalary: (formData.get("basicSalary") as string | null) ?? undefined,
+        accountHolderName:
+          (formData.get("accountHolderName") as string | null) ?? undefined,
+        accountNumber:
+          (formData.get("accountNumber") as string | null) ?? undefined,
+        bankName: (formData.get("bankName") as string | null) ?? undefined,
+        bankIdentifierCode:
+          (formData.get("bankIdentifierCode") as string | null) ?? undefined,
+        branchLocation:
+          (formData.get("branchLocation") as string | null) ?? undefined,
+        taxPayerId: (formData.get("taxPayerId") as string | null) ?? undefined,
+        isActive: formData.has("isActive")
+          ? (formData.get("isActive") as string) === "true"
+          : undefined,
+        password: (formData.get("password") as string | null) ?? undefined,
+      };
+    } else {
+      const body = await request.json();
+      rawData = body || {};
+    }
+
+    const validation = createEmployeeSchema.safeParse(rawData);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -217,6 +260,72 @@ export async function POST(request: NextRequest) {
       userId = user.id;
     }
 
+    const savedDocuments: {
+      documentTypeId: string;
+      filePath: string;
+      fileName: string;
+      mimeType: string;
+      fileSize: number;
+      isImage: boolean;
+    }[] = [];
+
+    if (formData) {
+      const documentTypes = await (prisma as any).documentType.findMany({
+        orderBy: { createdAt: "asc" },
+      });
+
+      for (const dt of documentTypes as any[]) {
+        const key = `document_${dt.id}`;
+        const file = formData.get(key) as File | null;
+
+        if (!file || file.size === 0) {
+          if (dt.requiredField) {
+            return NextResponse.json(
+              {
+                success: false,
+                message: `Dokumen ${dt.name} wajib diupload`,
+              },
+              { status: 400 },
+            );
+          }
+          continue;
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const safeName = file.name.replace(/\s/g, "_");
+        const shortPrefix = Date.now().toString(36);
+        const filename = `${shortPrefix}_${safeName}`;
+        const uploadDir = path.join(
+          process.cwd(),
+          "public/uploads/employees",
+        );
+
+        try {
+          await mkdir(uploadDir, { recursive: true });
+          await writeFile(path.join(uploadDir, filename), buffer);
+          const filePath = `/uploads/employees/${filename}`;
+          const isImage = file.type.startsWith("image/");
+
+          savedDocuments.push({
+            documentTypeId: dt.id,
+            filePath,
+            fileName: file.name,
+            mimeType: file.type,
+            fileSize: file.size,
+            isImage,
+          });
+        } catch (err) {
+          console.error(
+            `Error saving employee document file for type ${dt.name}:`,
+            err,
+          );
+        }
+      }
+    }
+
+    const firstImageDoc = savedDocuments.find(d => d.isImage);
+    const firstNonImageDoc = savedDocuments.find(d => !d.isImage);
+
     const employee = await (prisma as any).employee.create({
       data: {
         employeeId,
@@ -233,8 +342,8 @@ export async function POST(request: NextRequest) {
         isActive: data.isActive ?? true,
         salaryType: data.salaryType ?? null,
         basicSalary: basicSalaryNumber,
-        documentsCertificate: null,
-        documentsPhoto: null,
+        documentsCertificate: firstNonImageDoc?.filePath ?? null,
+        documentsPhoto: firstImageDoc?.filePath ?? null,
         accountHolderName: data.accountHolderName ?? null,
         accountNumber: data.accountNumber ?? null,
         bankName: data.bankName ?? null,
@@ -244,6 +353,23 @@ export async function POST(request: NextRequest) {
         userId,
       },
     });
+
+    if (savedDocuments.length > 0 && (prisma as any).employeeDocument) {
+      try {
+        await (prisma as any).employeeDocument.createMany({
+          data: savedDocuments.map(d => ({
+            employeeId: employee.id,
+            documentTypeId: d.documentTypeId,
+            filePath: d.filePath,
+            fileName: d.fileName,
+            mimeType: d.mimeType,
+            fileSize: d.fileSize,
+          })),
+        });
+      } catch (err) {
+        console.error("Error creating employee documents:", err);
+      }
+    }
 
     return NextResponse.json({
       success: true,
