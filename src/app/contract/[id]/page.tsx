@@ -11,8 +11,35 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { IconArrowLeft } from '@tabler/icons-react'
-import { getContractById } from '@/lib/contract-data'
+import { type Contract } from '@/lib/contract-data'
 import { ContractDetailClient } from './contract-detail-client'
+
+type ContractDetail = Contract
+
+async function fetchContractDetail(id: string): Promise<ContractDetail | null> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const baseUrl =
+    appUrl && (appUrl.startsWith("http://") || appUrl.startsWith("https://"))
+      ? appUrl
+      : appUrl
+        ? `https://${appUrl}`
+        : "http://localhost:3000"
+
+  const res = await fetch(`${baseUrl}/api/contracts/${id}`, {
+    cache: "no-store",
+  })
+
+  if (!res.ok) {
+    return null
+  }
+
+  const json = await res.json()
+  if (!json?.success || !json.data) {
+    return null
+  }
+
+  return json.data as ContractDetail
+}
 
 interface ContractDetailPageProps {
   params: Promise<{ id: string }>
@@ -22,7 +49,7 @@ export default async function ContractDetailPage({
   params,
 }: ContractDetailPageProps) {
   const { id } = await params
-  const contract = getContractById(id)
+  const contract = await fetchContractDetail(id)
 
   if (!contract) {
     return (

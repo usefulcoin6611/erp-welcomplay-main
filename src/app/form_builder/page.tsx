@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -110,6 +110,11 @@ function getFormIframeHtml(name: string, code: string) {
 
 export default function FormBuilderPage() {
   const [forms, setForms] = useState<FormItem[]>(formsData)
+  const [loading, setLoading] = useState(false)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [createFormName, setCreateFormName] = useState('')
+  const [createFormCode, setCreateFormCode] = useState('')
+  const [creating, setCreating] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -118,6 +123,27 @@ export default function FormBuilderPage() {
   const [deleteFormId, setDeleteFormId] = useState<string | null>(null)
   const [convertDialogOpen, setConvertDialogOpen] = useState(false)
   const [convertForm, setConvertForm] = useState<FormItem | null>(null)
+
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/form-builder')
+        const result = await response.json()
+        if (result.success && Array.isArray(result.data)) {
+          setForms(result.data)
+        } else {
+          toast.error(result.message || 'Gagal memuat data form')
+        }
+      } catch (error) {
+        toast.error('Terjadi kesalahan saat memuat data form')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchForms()
+  }, [])
 
   const handleCopyLink = (form: FormItem) => {
     const url = getFormPublicUrl(form.code)
@@ -137,6 +163,44 @@ export default function FormBuilderPage() {
   const handleSearchChange = (value: string) => {
     setSearch(value)
     setCurrentPage(1)
+  }
+
+  const handleCreateForm = async () => {
+    if (!createFormName.trim() || !createFormCode.trim() || creating) {
+      return
+    }
+
+    try {
+      setCreating(true)
+      const response = await fetch('/api/form-builder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: createFormName.trim(),
+          code: createFormCode.trim(),
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        toast.error(result.message || 'Gagal membuat form')
+        return
+      }
+
+      const created: FormItem = result.data
+      setForms((prev) => [created, ...prev])
+      setCreateFormName('')
+      setCreateFormCode('')
+      setCreateDialogOpen(false)
+      toast.success('Form berhasil dibuat')
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat membuat form')
+    } finally {
+      setCreating(false)
+    }
   }
 
   const handleDelete = (id: string) => {
@@ -182,7 +246,6 @@ export default function FormBuilderPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header - view toggle, Import, Export, Create Form (sesuai reference-erp) */}
             <div className="flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <div className="inline-flex rounded-md bg-muted p-0.5">
@@ -221,6 +284,7 @@ export default function FormBuilderPage() {
                     size="sm"
                     className="shadow-none h-7"
                     title="Import"
+                    disabled
                   >
                     <IconFileImport className="h-3 w-3" />
                   </Button>
@@ -229,10 +293,11 @@ export default function FormBuilderPage() {
                     size="sm"
                     className="shadow-none h-7"
                     title="Export"
+                    disabled
                   >
                     <IconDownload className="h-3 w-3" />
                   </Button>
-                  <Dialog>
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="blue" className="shadow-none h-7">
                         <IconPlus className="mr-2 h-4 w-4" />
@@ -249,18 +314,33 @@ export default function FormBuilderPage() {
                       <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                           <Label htmlFor="formName">Form Name</Label>
-                          <Input id="formName" placeholder="Website Lead Form" />
+                          <Input
+                            id="formName"
+                            placeholder="Website Lead Form"
+                            value={createFormName}
+                            onChange={(e) => setCreateFormName(e.target.value)}
+                          />
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="formCode">Form Code</Label>
-                          <Input id="formCode" placeholder="lead_web_01" />
+                          <Input
+                            id="formCode"
+                            placeholder="lead_web_01"
+                            value={createFormCode}
+                            onChange={(e) => setCreateFormCode(e.target.value)}
+                          />
                         </div>
                       </div>
                       <DialogFooter>
                         <Button type="button" variant="outline" className="shadow-none">
                           Cancel
                         </Button>
-                        <Button type="button" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                        <Button
+                          type="button"
+                          className="bg-blue-500 hover:bg-blue-600 shadow-none"
+                          onClick={handleCreateForm}
+                          disabled={!createFormName.trim() || !createFormCode.trim() || creating}
+                        >
                           Save Form
                         </Button>
                       </DialogFooter>
@@ -309,7 +389,16 @@ export default function FormBuilderPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedData.length > 0 ? (
+                        {loading ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={6}
+                              className="px-4 py-8 text-center text-muted-foreground"
+                            >
+                              Loading...
+                            </TableCell>
+                          </TableRow>
+                        ) : paginatedData.length > 0 ? (
                           paginatedData.map((form) => (
                             <TableRow key={form.id}>
                               <TableCell className="px-4 py-3">

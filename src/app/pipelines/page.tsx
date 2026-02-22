@@ -13,8 +13,8 @@ import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import PipelineTab, { PipelineTabCreateButton } from './components/PipelineTab'
-import LeadStagesTab, { LeadStagesTabCreateButton } from './components/LeadStagesTab'
-import DealStagesTab, { DealStagesTabCreateButton } from './components/DealStagesTab'
+import LeadStagesTab from './components/LeadStagesTab'
+import DealStagesTab from './components/DealStagesTab'
 import SourcesTab, { SourcesTabCreateButton } from './components/SourcesTab'
 import LabelsTab, { LabelsTabCreateButton } from './components/LabelsTab'
 import ContractTypeTab, { ContractTypeTabCreateButton } from './components/ContractTypeTab'
@@ -87,8 +87,8 @@ function CRMSystemSetupContent() {
 
   const tabAction = {
     pipelines: <PipelineTabCreateButton />,
-    'lead-stages': <LeadStagesTabCreateButton />,
-    'deal-stages': <DealStagesTabCreateButton />,
+    'lead-stages': undefined,
+    'deal-stages': undefined,
     sources: <SourcesTabCreateButton />,
     labels: <LabelsTabCreateButton />,
     'contract-type': <ContractTypeTabCreateButton />,

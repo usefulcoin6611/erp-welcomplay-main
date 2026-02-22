@@ -25,38 +25,81 @@ import {
 } from '@/components/ui/table'
 import { IconArrowLeft } from '@tabler/icons-react'
 
-const mockForms = [
-  {
-    id: 'FRM-LEAD-01',
-    name: 'Website Lead Form',
-    code: 'lead_web_01',
-    isActive: true,
-    isLeadActive: true,
-    responses: 125,
-  },
-  {
-    id: 'FRM-FEEDBACK-01',
-    name: 'Customer Feedback',
-    code: 'cust_fb_01',
-    isActive: true,
-    isLeadActive: false,
-    responses: 48,
-  },
-] as const
+type FormField = {
+  id: string
+  name: string
+  type: string
+  required: boolean
+}
 
-const mockFields = [
-  { name: 'Name', type: 'text', required: true },
-  { name: 'Email', type: 'email', required: true },
-  { name: 'Phone', type: 'text', required: false },
-] as const
+type FormDetail = {
+  id: string
+  name: string
+  code: string
+  isActive: boolean
+  isLeadActive: boolean
+  responses: number
+  fields: FormField[]
+}
 
 interface FormDetailPageProps {
   params: Promise<{ id: string }>
 }
 
+async function fetchFormDetail(id: string): Promise<FormDetail | null> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const baseUrl =
+    appUrl && (appUrl.startsWith('http://') || appUrl.startsWith('https://'))
+      ? appUrl
+      : appUrl
+        ? `https://${appUrl}`
+        : 'http://localhost:3000'
+
+  const res = await fetch(`${baseUrl}/api/form-builder/${id}`, {
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    return null
+  }
+
+  const json = await res.json()
+
+  if (!json?.success || !json.data) {
+    return null
+  }
+
+  const data = json.data as any
+
+  return {
+    id: data.id as string,
+    name: data.name as string,
+    code: data.code as string,
+    isActive: Boolean(data.isActive),
+    isLeadActive: Boolean(data.isLeadActive),
+    responses: Number(data.responses) || 0,
+    fields: Array.isArray(data.fields)
+      ? data.fields.map((f: any) => ({
+          id: f.id as string,
+          name: f.name as string,
+          type: f.type as string,
+          required: Boolean(f.required),
+        }))
+      : [],
+  }
+}
+
 export default async function FormDetailPage({ params }: FormDetailPageProps) {
   const { id } = await params
-  const form = mockForms.find((f) => f.id === id) ?? mockForms[0]
+  const form = (await fetchFormDetail(id)) ?? {
+    id,
+    name: id,
+    code: '',
+    isActive: false,
+    isLeadActive: false,
+    responses: 0,
+    fields: [],
+  }
 
   return (
     <SidebarProvider
@@ -160,8 +203,8 @@ export default async function FormDetailPage({ params }: FormDetailPageProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockFields.map((field) => (
-                      <TableRow key={field.name}>
+                    {form.fields.length > 0 ? form.fields.map((field) => (
+                      <TableRow key={field.id}>
                         <TableCell>{field.name}</TableCell>
                         <TableCell>{field.type}</TableCell>
                         <TableCell>
@@ -176,7 +219,15 @@ export default async function FormDetailPage({ params }: FormDetailPageProps) {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={3}>
+                          <span className="text-sm text-muted-foreground">
+                            Tidak ada field untuk form ini.
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

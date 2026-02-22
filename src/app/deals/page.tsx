@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -67,49 +67,38 @@ import {
 } from '@tabler/icons-react'
 import { X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { toast } from "sonner"
 
-const deals = [
-  {
-    id: 'DEAL-001',
-    name: 'Implementasi ERP PT Maju Jaya',
-    client: 'PT Maju Jaya',
-    pipeline: 'Default Pipeline',
-    stage: 'Proposal Sent',
-    price: 350_000_000,
-    status: 'Open',
-    createdAt: '2025-11-02',
-    tasks: { total: 5, completed: 3 },
-    productsCount: 2,
-    sourcesCount: 1,
-    labels: [
-      { id: 'lbl-1', name: 'Priority', color: 'blue' },
-      { id: 'lbl-2', name: 'Enterprise', color: 'purple' },
-    ],
-    users: [
-      { id: '1', name: 'John Doe', avatar: '' },
-      { id: '2', name: 'Jane Smith', avatar: '' },
-    ],
-  },
-  {
-    id: 'DEAL-002',
-    name: 'CRM Upgrade CV Kreatif Digital',
-    client: 'CV Kreatif Digital',
-    pipeline: 'Default Pipeline',
-    stage: 'Negotiation',
-    price: 180_000_000,
-    status: 'Open',
-    createdAt: '2025-11-05',
-    tasks: { total: 8, completed: 2 },
-    productsCount: 1,
-    sourcesCount: 2,
-    labels: [
-      { id: 'lbl-3', name: 'Follow Up', color: 'amber' },
-    ],
-    users: [
-      { id: '3', name: 'Bob Johnson', avatar: '' },
-    ],
-  },
-] as const
+type DealLabel = {
+  id: string
+  name: string
+  color: string
+}
+
+type DealUser = {
+  id: string
+  name: string
+  avatar: string
+}
+
+type Deal = {
+  id: string
+  name: string
+  client: string
+  pipeline: string
+  stage: string
+  price: number
+  status: string
+  createdAt: string
+  tasks: {
+    total: number
+    completed: number
+  }
+  productsCount: number
+  sourcesCount: number
+  labels: DealLabel[]
+  users: DealUser[]
+}
 
 const getInitials = (name: string) => {
   return name
@@ -155,9 +144,15 @@ function getLabelBadge(color: string) {
 export default function DealsPage() {
   const { user } = useAuth()
 
+  const [deals, setDeals] = useState<Deal[]>([])
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [search, setSearch] = useState('')
   const [selectedPipeline, setSelectedPipeline] = useState('sales-pipeline')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [newDealName, setNewDealName] = useState("")
+  const [newClient, setNewClient] = useState("")
+  const [newPrice, setNewPrice] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   
   // Mock pipelines data - replace with actual data from API
   // Only show Sales and Marketing (without "Pipeline" text)
@@ -175,12 +170,12 @@ export default function DealsPage() {
       deal.stage.toLowerCase().includes(q) ||
       deal.id.toLowerCase().includes(q),
     )
-  }, [search])
+  }, [search, deals])
 
   const stageOrder = ['Proposal Sent', 'Negotiation', 'Won', 'Lost']
 
   const dealsByStage = useMemo(() => {
-    const map: Record<string, typeof deals> = {}
+    const map: Record<string, Deal[]> = {}
     for (const stage of stageOrder) {
       map[stage] = []
     }
@@ -193,6 +188,65 @@ export default function DealsPage() {
 
   const totalDeals = deals.length
   const totalValue = deals.reduce((sum, d) => sum + d.price, 0)
+
+  const loadDeals = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch("/api/deals", { cache: "no-store" })
+      if (!res.ok) {
+        return
+      }
+      const json = await res.json().catch(() => null)
+      if (!json?.success || !Array.isArray(json.data)) {
+        return
+      }
+      setDeals(json.data as Deal[])
+    } catch {
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDeals()
+  }, [])
+
+  const handleSaveDeal = async () => {
+    if (!newDealName.trim()) {
+      toast.error("Nama deal wajib diisi")
+      return
+    }
+    try {
+      const res = await fetch("/api/deals", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newDealName,
+          client: newClient || null,
+          price: newPrice || null,
+        }),
+      })
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || "Gagal menyimpan deal")
+        return
+      }
+
+      const created = json.data as Deal
+      setDeals((prev) => [created, ...prev])
+      setIsDialogOpen(false)
+      setNewDealName("")
+      setNewClient("")
+      setNewPrice("")
+      toast.success("Deal berhasil dibuat")
+    } catch {
+      toast.error("Terjadi kesalahan sistem")
+    }
+  }
 
   return (
     <SidebarProvider
@@ -218,7 +272,6 @@ export default function DealsPage() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Pipeline Selector - Only show in Kanban mode */}
                   {viewMode === 'kanban' && (
                     <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
                       <SelectTrigger className="h-7 w-[120px] shadow-none">
@@ -233,7 +286,6 @@ export default function DealsPage() {
                       </SelectContent>
                     </Select>
                   )}
-                  {/* View mode toggle (Kanban / List) */}
                   <div className="inline-flex rounded-md bg-muted p-0.5">
                     <Button
                       type="button"
@@ -264,7 +316,6 @@ export default function DealsPage() {
                       <IconList className="h-3 w-3" />
                     </Button>
                   </div>
-                  {/* Action buttons - Import, Export, Add Deal */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -284,7 +335,7 @@ export default function DealsPage() {
                     Export
                   </Button>
                   {user?.type !== 'client' && (
-                    <Dialog>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Add Deal">
                           <IconPlus className="mr-2 h-3 w-3" />
@@ -304,6 +355,8 @@ export default function DealsPage() {
                             <Input
                               id="dealName"
                               placeholder="Implementasi ERP PT Maju Jaya"
+                              value={newDealName}
+                              onChange={(e) => setNewDealName(e.target.value)}
                             />
                           </div>
                           <div className="grid grid-cols-2 gap-4">
@@ -312,6 +365,8 @@ export default function DealsPage() {
                               <Input
                                 id="client"
                                 placeholder="PT Maju Jaya"
+                                value={newClient}
+                                onChange={(e) => setNewClient(e.target.value)}
                               />
                             </div>
                             <div className="grid gap-2">
@@ -320,6 +375,8 @@ export default function DealsPage() {
                                 id="price"
                                 type="number"
                                 placeholder="350000000"
+                                value={newPrice}
+                                onChange={(e) => setNewPrice(e.target.value)}
                               />
                             </div>
                           </div>
@@ -329,12 +386,14 @@ export default function DealsPage() {
                             type="button"
                             variant="outline"
                             className="shadow-none"
+                            onClick={() => setIsDialogOpen(false)}
                           >
                             Cancel
                           </Button>
                           <Button
                             type="button"
                             className="bg-blue-500 hover:bg-blue-600 shadow-none"
+                            onClick={handleSaveDeal}
                           >
                             Save Deal
                           </Button>

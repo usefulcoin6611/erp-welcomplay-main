@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from "next/link"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -38,6 +38,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   IconCalendar,
   IconPlus,
   IconEye,
@@ -61,17 +68,82 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { contracts, type Contract } from '@/lib/contract-data'
+import { type Contract } from '@/lib/contract-data'
+import { toast } from "sonner"
+
+type ContractItem = Contract
+
+type ContractTypeOption = {
+  id: string
+  name: string
+}
 
 export default function ContractPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [contracts, setContracts] = useState<ContractItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [contractTypes, setContractTypes] = useState<ContractTypeOption[]>([])
+  const [loadingContractTypes, setLoadingContractTypes] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editContract, setEditContract] = useState<Contract | null>(null)
+  const [editContract, setEditContract] = useState<ContractItem | null>(null)
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [createSubject, setCreateSubject] = useState("")
+  const [createClientName, setCreateClientName] = useState("")
+  const [createValue, setCreateValue] = useState("")
+  const [createStartDate, setCreateStartDate] = useState("")
+  const [createEndDate, setCreateEndDate] = useState("")
+  const [createType, setCreateType] = useState("")
+  const [createDescription, setCreateDescription] = useState("")
+  const [creating, setCreating] = useState(false)
+
+  useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch("/api/contracts")
+        if (!res.ok) {
+          toast.error("Gagal memuat data kontrak")
+          return
+        }
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data)) {
+          setContracts(json.data)
+        } else {
+          toast.error(json.message || "Gagal memuat data kontrak")
+        }
+      } catch {
+        toast.error("Terjadi kesalahan saat memuat data kontrak")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchContracts()
+  }, [])
+
+  useEffect(() => {
+    const fetchContractTypes = async () => {
+      try {
+        setLoadingContractTypes(true)
+        const res = await fetch("/api/contract-types", { cache: "no-store" })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.success || !Array.isArray(json.data)) {
+          return
+        }
+        setContractTypes(json.data as ContractTypeOption[])
+      } catch {
+      } finally {
+        setLoadingContractTypes(false)
+      }
+    }
+
+    fetchContractTypes()
+  }, [])
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -86,7 +158,7 @@ export default function ContractPage() {
         contract.project.toLowerCase().includes(q) ||
         contract.type.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, contracts])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -117,6 +189,61 @@ export default function ContractPage() {
     // Mock: in real app would call API
     setDeleteContractId(null)
     setDeleteAlertOpen(false)
+  }
+
+  const handleCreateContract = async () => {
+    if (
+      !createSubject.trim() ||
+      !createClientName.trim() ||
+      !createValue.trim() ||
+      !createStartDate ||
+      !createEndDate ||
+      !createType.trim() ||
+      creating
+    ) {
+      return
+    }
+
+    try {
+      setCreating(true)
+      const res = await fetch("/api/contracts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subject: createSubject.trim(),
+          clientName: createClientName.trim(),
+          value: Number(createValue),
+          type: createType.trim(),
+          startDate: createStartDate,
+          endDate: createEndDate,
+          description: createDescription.trim() || undefined,
+        }),
+      })
+
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.message || "Gagal membuat kontrak")
+        return
+      }
+
+      const created: ContractItem = json.data
+      setContracts((prev) => [created, ...prev])
+      setCreateSubject("")
+      setCreateClientName("")
+      setCreateValue("")
+      setCreateStartDate("")
+      setCreateEndDate("")
+      setCreateType("")
+      setCreateDescription("")
+      setCreateDialogOpen(false)
+      toast.success("Kontrak berhasil dibuat")
+    } catch {
+      toast.error("Terjadi kesalahan saat membuat kontrak")
+    } finally {
+      setCreating(false)
+    }
   }
 
   return (
@@ -193,7 +320,7 @@ export default function ContractPage() {
                     <IconDownload className="mr-2 h-3 w-3" />
                     Export
                   </Button>
-                  <Dialog>
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="blue" size="sm" className="shadow-none h-7 px-4">
                         <IconPlus className="mr-2 h-3 w-3" />
@@ -213,6 +340,8 @@ export default function ContractPage() {
                           <Input
                             id="subject"
                             placeholder="Implementasi ERP PT Maju Jaya"
+                            value={createSubject}
+                            onChange={(e) => setCreateSubject(e.target.value)}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -221,6 +350,8 @@ export default function ContractPage() {
                             <Input
                               id="client"
                               placeholder="PT Maju Jaya"
+                              value={createClientName}
+                              onChange={(e) => setCreateClientName(e.target.value)}
                             />
                           </div>
                           <div className="grid gap-2">
@@ -229,18 +360,57 @@ export default function ContractPage() {
                               id="value"
                               type="number"
                               placeholder="350000000"
+                              value={createValue}
+                              onChange={(e) => setCreateValue(e.target.value)}
                             />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-3">
                             <Label htmlFor="startDate">Start Date</Label>
-                            <Input id="startDate" type="date" />
+                            <Input
+                              id="startDate"
+                              type="date"
+                              value={createStartDate}
+                              onChange={(e) => setCreateStartDate(e.target.value)}
+                            />
                           </div>
                           <div className="space-y-3">
                             <Label htmlFor="endDate">End Date</Label>
-                            <Input id="endDate" type="date" />
+                            <Input
+                              id="endDate"
+                              type="date"
+                              value={createEndDate}
+                              onChange={(e) => setCreateEndDate(e.target.value)}
+                            />
                           </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="type">Contract Type</Label>
+                          <Select
+                            value={createType}
+                            onValueChange={setCreateType}
+                          >
+                            <SelectTrigger id="type" className="h-9">
+                              <SelectValue placeholder={loadingContractTypes ? "Loading..." : "Select contract type"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {contractTypes.map((type) => (
+                                <SelectItem key={type.id} value={type.name}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="description">Description</Label>
+                          <Input
+                            id="description"
+                            placeholder="Deskripsi singkat kontrak"
+                            value={createDescription}
+                            onChange={(e) => setCreateDescription(e.target.value)}
+                          />
                         </div>
                       </div>
                       <DialogFooter>
@@ -249,6 +419,7 @@ export default function ContractPage() {
                           variant="outline"
                           size="sm"
                           className="shadow-none h-7"
+                          onClick={() => setCreateDialogOpen(false)}
                         >
                           Cancel
                         </Button>
@@ -257,8 +428,18 @@ export default function ContractPage() {
                           variant="blue"
                           size="sm"
                           className="shadow-none h-7"
+                          disabled={
+                            !createSubject.trim() ||
+                            !createClientName.trim() ||
+                            !createValue.trim() ||
+                            !createStartDate ||
+                            !createEndDate ||
+                            !createType.trim() ||
+                            creating
+                          }
+                          onClick={handleCreateContract}
                         >
-                          Save Contract
+                          {creating ? "Saving..." : "Save Contract"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -313,7 +494,16 @@ export default function ContractPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedData.length > 0 ? (
+                      {loading ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={9}
+                            className="px-6 text-center py-8 text-muted-foreground"
+                          >
+                            Loading...
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedData.length > 0 ? (
                         paginatedData.map((contract) => (
                           <TableRow key={contract.id}>
                             <TableCell className="px-6 font-medium">

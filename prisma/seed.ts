@@ -24,6 +24,10 @@ import { seedPayments } from "./seeds/payments";
 import { seedDebitNotes } from "./seeds/debit-notes";
 import { seedFinancialGoals } from "./seeds/financial-goals";
 import { seedBudgets } from "./seeds/budgets";
+import { seedLeads } from "./seeds/leads";
+import { seedDeals } from "./seeds/deals";
+import { seedFormBuilder } from "./seeds/form-builder";
+import { seedContracts } from "./seeds/contracts";
 
 dotenv.config();
 
@@ -37,6 +41,10 @@ async function main() {
     await seedBranches(prisma);
     await seedCOA(prisma);
     await seedUsers(prisma);
+    await seedLeads(prisma);
+    await seedDeals(prisma);
+    await seedFormBuilder(prisma);
+    await seedContracts(prisma);
     await seedJournals(prisma);
     await seedCustomers(prisma);
     await seedVendors(prisma);

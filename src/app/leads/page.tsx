@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -52,6 +52,7 @@ import {
   IconPlus,
 } from '@tabler/icons-react'
 import { List, LayoutGrid, Search as SearchIcon, X, Eye, Pencil, MoreVertical, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Lead = {
   id: string
@@ -65,52 +66,7 @@ type Lead = {
   createdAt: string
 }
 
-const leadsData: Lead[] = [
-  {
-    id: 'LEAD-001',
-    name: 'PT Maju Jaya',
-    subject: 'Implementasi ERP',
-    email: 'contact@majujara.id',
-    phone: '+62 21 555 1234',
-    pipeline: 'Default Pipeline',
-    stage: 'New',
-    owner: 'Budi',
-    createdAt: '2025-11-01',
-  },
-  {
-    id: 'LEAD-002',
-    name: 'CV Kreatif Digital',
-    subject: 'Upgrade CRM',
-    email: 'halo@kreatifdigital.co.id',
-    phone: '+62 812 3456 7890',
-    pipeline: 'Default Pipeline',
-    stage: 'Qualified',
-    owner: 'Sari',
-    createdAt: '2025-11-03',
-  },
-  {
-    id: 'LEAD-003',
-    name: 'PT Sumber Makmur',
-    subject: 'Integrasi POS',
-    email: 'info@sumbermakmur.co.id',
-    phone: '+62 31 567 8901',
-    pipeline: 'Default Pipeline',
-    stage: 'New',
-    owner: 'Budi',
-    createdAt: '2025-11-05',
-  },
-  {
-    id: 'LEAD-004',
-    name: 'UD Berkah Jaya',
-    subject: 'Software Akuntansi',
-    email: 'berkah@email.com',
-    phone: '+62 812 9876 5432',
-    pipeline: 'Default Pipeline',
-    stage: 'Qualified',
-    owner: 'Sari',
-    createdAt: '2025-11-07',
-  },
-]
+const emptyLeads: Lead[] = []
 
 function getStageBadge(stage: string) {
   switch (stage) {
@@ -139,6 +95,75 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [leads, setLeads] = useState<Lead[]>(emptyLeads)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [newSubject, setNewSubject] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [newPhone, setNewPhone] = useState('')
+
+  const loadLeads = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/leads', { cache: 'no-store' })
+      if (!res.ok) {
+        setIsLoading(false)
+        return
+      }
+      const json = await res.json().catch(() => null)
+      if (!json?.success || !Array.isArray(json.data)) {
+        setIsLoading(false)
+        return
+      }
+      setLeads(json.data as Lead[])
+    } catch {
+      setIsLoading(false)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadLeads()
+  }, [])
+
+  const handleSaveLead = async () => {
+    if (!newName.trim()) {
+      toast.error('Nama lead wajib diisi')
+      return
+    }
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName,
+          subject: newSubject || null,
+          email: newEmail || null,
+          phone: newPhone || null,
+        }),
+      })
+
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal menyimpan lead')
+        return
+      }
+
+      const created = json.data as Lead
+      setLeads((prev) => [created, ...prev])
+      setIsDialogOpen(false)
+      setNewSubject('')
+      setNewName('')
+      setNewEmail('')
+      setNewPhone('')
+      toast.success('Lead berhasil dibuat')
+    } catch {
+      toast.error('Terjadi kesalahan sistem')
+    }
+  }
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
@@ -146,9 +171,9 @@ export default function LeadsPage() {
   }
 
   const filteredData = useMemo(() => {
-    if (!search.trim()) return leadsData
+    if (!search.trim()) return leads
     const q = search.trim().toLowerCase()
-    return leadsData.filter(
+    return leads.filter(
       (lead) =>
         lead.name.toLowerCase().includes(q) ||
         lead.subject.toLowerCase().includes(q) ||
@@ -156,7 +181,7 @@ export default function LeadsPage() {
         lead.owner.toLowerCase().includes(q) ||
         lead.id.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, leads])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
@@ -164,8 +189,8 @@ export default function LeadsPage() {
   }, [filteredData, currentPage, pageSize])
 
   const totalRecords = filteredData.length
-  const totalLeads = leadsData.length
-  const stages = Array.from(new Set(leadsData.map((lead) => lead.stage)))
+  const totalLeads = leads.length
+  const stages = Array.from(new Set(leads.map((lead) => lead.stage)))
   const leadsByStage = stages.map((stage) => ({
     stage,
     leads: filteredData.filter((lead) => lead.stage === stage),
@@ -243,7 +268,7 @@ export default function LeadsPage() {
                     <IconDownload className="mr-2 h-3 w-3" />
                     Export
                   </Button>
-                  <Dialog>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="blue" className="shadow-none h-7 px-4">
                         <IconPlus className="mr-2 h-3 w-3" />
@@ -260,22 +285,43 @@ export default function LeadsPage() {
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
                         <Label htmlFor="subject">Subject</Label>
-                        <Input id="subject" placeholder="Implementasi ERP" />
+                        <Input
+                          id="subject"
+                          placeholder="Implementasi ERP"
+                          value={newSubject}
+                          onChange={(e) => setNewSubject(e.target.value)}
+                        />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                           <Label htmlFor="name">Lead Name</Label>
-                          <Input id="name" placeholder="PT Maju Jaya" />
+                          <Input
+                            id="name"
+                            placeholder="PT Maju Jaya"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                          />
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="email">Email</Label>
-                          <Input id="email" type="email" placeholder="contact@company.com" />
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="contact@company.com"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                          />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                           <Label htmlFor="phone">Phone</Label>
-                          <Input id="phone" placeholder="+62 812 3456 7890" />
+                          <Input
+                            id="phone"
+                            placeholder="+62 812 3456 7890"
+                            value={newPhone}
+                            onChange={(e) => setNewPhone(e.target.value)}
+                          />
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="owner">Assigned User</Label>
@@ -287,7 +333,12 @@ export default function LeadsPage() {
                       <Button type="button" variant="outline" className="shadow-none">
                         Cancel
                       </Button>
-                      <Button type="button" className="bg-blue-500 hover:bg-blue-600 shadow-none">
+                      <Button
+                        type="button"
+                        className="bg-blue-500 hover:bg-blue-600 shadow-none"
+                        onClick={handleSaveLead}
+                        disabled={isLoading}
+                      >
                         Save Lead
                       </Button>
                     </DialogFooter>
