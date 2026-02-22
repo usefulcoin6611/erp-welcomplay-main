@@ -98,6 +98,10 @@ async function main() {
     await seedDebitNotes(prisma);
     await seedFinancialGoals(prisma);
     await seedBudgets(prisma);
+    await seedLeads(prisma);
+    await seedDeals(prisma);
+    await seedFormBuilder(prisma);
+    await seedContracts(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

@@ -13,24 +13,28 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String?
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   image         String?
   password      String?
-  role          String    @default("employee") // super admin, company, client, employee
+  role          String   @default("employee") // super admin, company, client, employee
   branchId      String?
   departmentId  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  branch        Branch?     @relation(fields: [branchId], references: [id])
-  department    Department? @relation(fields: [departmentId], references: [id])
-  createdCustomers Customer[] @relation("CreatedBy")
+  sessions         Session[]
+  accounts         Account[]
+  branch           Branch?     @relation(fields: [branchId], references: [id])
+  department       Department? @relation(fields: [departmentId], references: [id])
+  createdCustomers Customer[]  @relation("CreatedBy")
   createdVendors   Vendor[]
+  employee         Employee?
+  createdContracts Contract[]
+  ownedLeads       Lead[]      @relation("LeadOwner")
+  createdLeads     Lead[]      @relation("LeadCreatedBy")
 
   @@map("user")
 }
@@ -41,24 +45,24 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users            User[]
-  departments      Department[]
-  categories       Category[]
-  chartOfAccounts  ChartOfAccount[]
-  journalEntries   JournalEntry[]
-  customers        Customer[]
-  vendors          Vendor[]
-  bills            Bill[]
-  products         Product[]
-  expenses         Expense[]
-  payments         Payment[]
-  bankAccounts     BankAccount[]
-  bankTransfers    BankTransfer[]
-  financialGoals   FinancialGoal[]
-  budgetPlans      BudgetPlan[]
-  leads            Lead[]
-  pipelines        Pipeline[]
-  deals            Deal[]
+  users           User[]
+  departments     Department[]
+  categories      Category[]
+  chartOfAccounts ChartOfAccount[]
+  journalEntries  JournalEntry[]
+  customers       Customer[]
+  vendors         Vendor[]
+  bills           Bill[]
+  products        Product[]
+  expenses        Expense[]
+  payments        Payment[]
+  bankAccounts    BankAccount[]
+  bankTransfers   BankTransfer[]
+  financialGoals  FinancialGoal[]
+  budgetPlans     BudgetPlan[]
+  leads           Lead[]
+  pipelines       Pipeline[]
+  deals           Deal[]
 
   @@map("branch")
 }
@@ -192,35 +196,35 @@ model Competency {
 }
 
 model Employee {
-  id                 String   @id @default(cuid())
-  employeeId         String   @unique
+  id                   String    @id @default(cuid())
+  employeeId           String    @unique
   name                 String
-  email                String   @unique
-  phone              String
-  dateOfBirth        DateTime
-  gender             String
-  address            String
-  branch             String
-  department         String
-  designation        String
-  dateOfJoining      DateTime
-  lastLogin          DateTime?
-  isActive           Boolean  @default(true)
-  salaryType         String?
-  basicSalary        Float?
+  email                String    @unique
+  phone                String
+  dateOfBirth          DateTime
+  gender               String
+  address              String
+  branch               String
+  department           String
+  designation          String
+  dateOfJoining        DateTime
+  lastLogin            DateTime?
+  isActive             Boolean   @default(true)
+  salaryType           String?
+  basicSalary          Float?
   documentsCertificate String?
-  documentsPhoto     String?
-  accountHolderName  String?
-  accountNumber      String?
-  bankName           String?
-  bankIdentifierCode String?
-  branchLocation     String?
-  taxPayerId         String?
-  userId               String?  @unique
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  documentsPhoto       String?
+  accountHolderName    String?
+  accountNumber        String?
+  bankName             String?
+  bankIdentifierCode   String?
+  branchLocation       String?
+  taxPayerId           String?
+  userId               String?   @unique
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  user               User?    @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@map("employee")
 }
@@ -258,16 +262,16 @@ model DeductionOption {
 model Category {
   id        String   @id @default(cuid())
   name      String
-  type      String   // Product & Service, Income, Expense
+  type      String // Product & Service, Income, Expense
   account   String?
   color     String?  @default("FFFFFF")
   branchId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branch    Branch?  @relation(fields: [branchId], references: [id])
-  products  Product[]
-  bills     Bill[]
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  products Product[]
+  bills    Bill[]
 
   @@map("category")
 }
@@ -279,7 +283,7 @@ model Tax {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products  Product[]
+  products Product[]
 
   @@map("tax")
 }
@@ -290,36 +294,36 @@ model Unit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products  Product[]
+  products Product[]
 
   @@map("unit")
 }
 
 model Product {
-  id              String   @id @default(cuid())
-  name            String
-  sku             String   @unique
-  salePrice       Float    @default(0)
-  purchasePrice   Float    @default(0)
-  taxId           String?
-  categoryId      String?
-  unitId          String?
-  quantity        Float    @default(0)
-  type            String
-  branchId        String?
-  saleAccountId   String?
+  id               String   @id @default(cuid())
+  name             String
+  sku              String   @unique
+  salePrice        Float    @default(0)
+  purchasePrice    Float    @default(0)
+  taxId            String?
+  categoryId       String?
+  unitId           String?
+  quantity         Float    @default(0)
+  type             String
+  branchId         String?
+  saleAccountId    String?
   expenseAccountId String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  category        Category?       @relation(fields: [categoryId], references: [id])
-  unit            Unit?           @relation(fields: [unitId], references: [id])
-  tax             Tax?            @relation(fields: [taxId], references: [id])
-  branch          Branch?         @relation(fields: [branchId], references: [id])
-  saleAccount     ChartOfAccount? @relation("SaleAccount", fields: [saleAccountId], references: [id])
-  expenseAccount  ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
-  billItems       BillItem[]
-  expenseItems    ExpenseItem[]
+  category       Category?       @relation(fields: [categoryId], references: [id])
+  unit           Unit?           @relation(fields: [unitId], references: [id])
+  tax            Tax?            @relation(fields: [taxId], references: [id])
+  branch         Branch?         @relation(fields: [branchId], references: [id])
+  saleAccount    ChartOfAccount? @relation("SaleAccount", fields: [saleAccountId], references: [id])
+  expenseAccount ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
+  billItems      BillItem[]
+  expenseItems   ExpenseItem[]
 
   @@map("product")
 }
@@ -336,48 +340,48 @@ model CustomField {
 }
 
 model ChartOfAccount {
-  id            String   @id @default(cuid())
-  name          String
-  code          String   @unique
-  type          String   // Assets, Liabilities, Equity, Income, Expense
-  subType       String   // e.g., Current Assets, Fixed Assets, etc.
-  description   String?
-  isSubAccount  Boolean  @default(false)
-  parentId      String?
-  branchId      String?
-  balance       Float    @default(0)
-  status        String   @default("Active") // Active, Inactive
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  type         String // Assets, Liabilities, Equity, Income, Expense
+  subType      String // e.g., Current Assets, Fixed Assets, etc.
+  description  String?
+  isSubAccount Boolean  @default(false)
+  parentId     String?
+  branchId     String?
+  balance      Float    @default(0)
+  status       String   @default("Active") // Active, Inactive
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  branch        Branch?          @relation(fields: [branchId], references: [id])
-  parent        ChartOfAccount?  @relation("SubAccounts", fields: [parentId], references: [id])
-  subAccounts   ChartOfAccount[] @relation("SubAccounts")
-  journalLines  JournalLine[]
-  saleProducts  Product[]        @relation("SaleAccount")
-  expenseProducts Product[]      @relation("ExpenseAccount")
-  bankAccounts   BankAccount[]
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  parent          ChartOfAccount?  @relation("SubAccounts", fields: [parentId], references: [id])
+  subAccounts     ChartOfAccount[] @relation("SubAccounts")
+  journalLines    JournalLine[]
+  saleProducts    Product[]        @relation("SaleAccount")
+  expenseProducts Product[]        @relation("ExpenseAccount")
+  bankAccounts    BankAccount[]
 
   @@map("chart_of_account")
 }
 
 model JournalEntry {
-  id          String   @id @default(cuid())
-  journalId   String   @unique // e.g., JR-2025-001
-  date        DateTime
-  description String?
-  reference   String?
-  amount      Float
+  id             String   @id @default(cuid())
+  journalId      String   @unique // e.g., JR-2025-001
+  date           DateTime
+  description    String?
+  reference      String?
+  amount         Float
   paymentReceipt String?
-  branchId    String?
-  customerId  String?
-  bankAccountId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  branchId       String?
+  customerId     String?
+  bankAccountId  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch      Branch?  @relation(fields: [branchId], references: [id])
-  customer    Customer? @relation(fields: [customerId], references: [id])
-  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
+  branch      Branch?       @relation(fields: [branchId], references: [id])
+  customer    Customer?     @relation(fields: [customerId], references: [id])
+  bankAccount BankAccount?  @relation(fields: [bankAccountId], references: [id])
   lines       JournalLine[]
 
   @@map("journal_entry")
@@ -393,8 +397,8 @@ model JournalLine {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  account        ChartOfAccount @relation(fields: [accountId], references: [id])
+  journalEntry JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId], references: [id])
 
   @@map("journal_line")
 }
@@ -409,7 +413,7 @@ model Session {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
 }
@@ -429,82 +433,82 @@ model Account {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
   @@map("account")
 }
 
 model Customer {
-  id                String   @id @default(cuid())
-  customerCode      String   @unique
-  name              String
-  email             String   @unique
-  contact           String?
-  avatar            String?
-  isActive          Boolean  @default(true)
-  taxNumber         String?
-  billingName       String?
-  billingCountry    String?
-  billingState      String?
-  billingCity       String?
-  billingPhone      String?
-  billingZip        String?
-  billingAddress    String?
-  shippingName      String?
-  shippingCountry   String?
-  shippingState     String?
-  shippingCity      String?
-  shippingPhone     String?
-  shippingZip       String?
-  shippingAddress   String?
-  balance           Float    @default(0)
-  branchId          String?
-  createdById       String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String   @id @default(cuid())
+  customerCode    String   @unique
+  name            String
+  email           String   @unique
+  contact         String?
+  avatar          String?
+  isActive        Boolean  @default(true)
+  taxNumber       String?
+  billingName     String?
+  billingCountry  String?
+  billingState    String?
+  billingCity     String?
+  billingPhone    String?
+  billingZip      String?
+  billingAddress  String?
+  shippingName    String?
+  shippingCountry String?
+  shippingState   String?
+  shippingCity    String?
+  shippingPhone   String?
+  shippingZip     String?
+  shippingAddress String?
+  balance         Float    @default(0)
+  branchId        String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  branch            Branch?  @relation(fields: [branchId], references: [id])
-  createdBy         User?    @relation("CreatedBy", fields: [createdById], references: [id])
-  estimates         Estimate[]
-  invoices          Invoice[]
-  journalEntries    JournalEntry[]
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  createdBy      User?          @relation("CreatedBy", fields: [createdById], references: [id])
+  estimates      Estimate[]
+  invoices       Invoice[]
+  journalEntries JournalEntry[]
 
   @@map("customer")
 }
 
 model Vendor {
-  id                String   @id @default(cuid())
-  vendorCode        String   @unique
-  name              String
-  email             String   @unique
-  contact           String?
-  avatar            String?
-  isActive          Boolean  @default(true)
-  taxNumber         String?
-  billingName       String?
-  billingCountry    String?
-  billingState      String?
-  billingCity       String?
-  billingPhone      String?
-  billingZip        String?
-  billingAddress    String?
-  shippingName      String?
-  shippingCountry   String?
-  shippingState     String?
-  shippingCity      String?
-  shippingPhone     String?
-  shippingZip       String?
-  shippingAddress   String?
-  balance           Float    @default(0)
-  branchId          String?
-  createdById       String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String   @id @default(cuid())
+  vendorCode      String   @unique
+  name            String
+  email           String   @unique
+  contact         String?
+  avatar          String?
+  isActive        Boolean  @default(true)
+  taxNumber       String?
+  billingName     String?
+  billingCountry  String?
+  billingState    String?
+  billingCity     String?
+  billingPhone    String?
+  billingZip      String?
+  billingAddress  String?
+  shippingName    String?
+  shippingCountry String?
+  shippingState   String?
+  shippingCity    String?
+  shippingPhone   String?
+  shippingZip     String?
+  shippingAddress String?
+  balance         Float    @default(0)
+  branchId        String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  branch            Branch?  @relation(fields: [branchId], references: [id])
-  createdBy         User?    @relation(fields: [createdById], references: [id])
-  bills             Bill[]
+  branch    Branch? @relation(fields: [branchId], references: [id])
+  createdBy User?   @relation(fields: [createdById], references: [id])
+  bills     Bill[]
 
   @@map("vendor")
 }
@@ -532,25 +536,25 @@ model Estimate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  customer    Customer @relation(fields: [customerId], references: [id])
-  items       EstimateItem[]
+  customer Customer       @relation(fields: [customerId], references: [id])
+  items    EstimateItem[]
 
   @@map("estimate")
 }
 
 model EstimateItem {
-  id          String   @id @default(cuid())
-  estimateId  String
-  itemName    String
-  quantity    Float    @default(0)
-  price       Float    @default(0)
-  discount    Float    @default(0)
-  taxRate     Float    @default(0)
-  amount      Float    @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  estimateId String
+  itemName   String
+  quantity   Float    @default(0)
+  price      Float    @default(0)
+  discount   Float    @default(0)
+  taxRate    Float    @default(0)
+  amount     Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 
   @@map("estimate_item")
 }
@@ -568,7 +572,7 @@ model Invoice {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  customer    Customer @relation(fields: [customerId], references: [id])
+  customer    Customer      @relation(fields: [customerId], references: [id])
   items       InvoiceItem[]
   creditNotes CreditNote[]
 
@@ -588,7 +592,7 @@ model InvoiceItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_item")
 }
@@ -604,7 +608,7 @@ model CreditNote {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  invoice     Invoice  @relation(fields: [invoiceId], references: [invoiceId])
+  invoice Invoice @relation(fields: [invoiceId], references: [invoiceId])
 
   @@map("credit_note")
 }
@@ -620,7 +624,7 @@ model DebitNote {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  bill        Bill     @relation(fields: [billId], references: [billId])
+  bill Bill @relation(fields: [billId], references: [billId])
 
   @@map("debit_note")
 }
@@ -640,11 +644,11 @@ model Bill {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  vendor      Vendor    @relation(fields: [vendorId], references: [id])
-  branch      Branch?   @relation(fields: [branchId], references: [id])
-  category    Category? @relation(fields: [categoryId], references: [id])
-  items       BillItem[]
-  debitNotes  DebitNote[]
+  vendor     Vendor      @relation(fields: [vendorId], references: [id])
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  category   Category?   @relation(fields: [categoryId], references: [id])
+  items      BillItem[]
+  debitNotes DebitNote[]
 
   @@map("bill")
 }
@@ -663,30 +667,30 @@ model BillItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  bill        Bill     @relation(fields: [billId], references: [billId], onDelete: Cascade)
-  product     Product? @relation(fields: [productId], references: [id])
+  bill    Bill     @relation(fields: [billId], references: [billId], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
 
   @@map("bill_item")
 }
 
 model Expense {
-  id          String   @id @default(cuid())
-  expenseId   String   @unique
-  type        String
-  party       String
-  date        DateTime
-  category    String
-  total       Float    @default(0)
-  status      String   @default("Pending")
-  reference   String?
-  description String?
+  id             String   @id @default(cuid())
+  expenseId      String   @unique
+  type           String
+  party          String
+  date           DateTime
+  category       String
+  total          Float    @default(0)
+  status         String   @default("Pending")
+  reference      String?
+  description    String?
   paymentReceipt String?
-  branchId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  branchId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch      Branch?  @relation(fields: [branchId], references: [id])
-  items       ExpenseItem[]
+  branch Branch?       @relation(fields: [branchId], references: [id])
+  items  ExpenseItem[]
 
   @@map("expense")
 }
@@ -705,29 +709,29 @@ model ExpenseItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  expense     Expense  @relation(fields: [expenseId], references: [expenseId], onDelete: Cascade)
-  product     Product? @relation(fields: [productId], references: [id])
+  expense Expense  @relation(fields: [expenseId], references: [expenseId], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
 
   @@map("expense_item")
 }
 
 model Payment {
-  id          String   @id @default(cuid())
-  paymentId   String   @unique
-  date        DateTime
-  vendor      String
-  account     String
-  category    String
-  amount      Float    @default(0)
-  status      String   @default("Completed")
-  reference   String?
-  description String?
+  id             String   @id @default(cuid())
+  paymentId      String   @unique
+  date           DateTime
+  vendor         String
+  account        String
+  category       String
+  amount         Float    @default(0)
+  status         String   @default("Completed")
+  reference      String?
+  description    String?
   paymentReceipt String?
-  branchId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  branchId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch      Branch?  @relation(fields: [branchId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
 
   @@map("payment")
 }
@@ -762,60 +766,59 @@ model BankTransfer {
 }
 
 model BankAccount {
-  id              String   @id @default(cuid())
-  branchId        String?
-  chartAccountId  String
-  holderName      String
-  bank            String
-  accountNumber   String
-  openingBalance  Float    @default(0)
-  contactNumber   String?
-  bankAddress     String?
-  paymentGateway  String
-  status          String   @default("Active")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  branchId       String?
+  chartAccountId String
+  holderName     String
+  bank           String
+  accountNumber  String
+  openingBalance Float    @default(0)
+  contactNumber  String?
+  bankAddress    String?
+  paymentGateway String
+  status         String   @default("Active")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch          Branch?        @relation(fields: [branchId], references: [id])
-  chartAccount    ChartOfAccount @relation(fields: [chartAccountId], references: [id])
-  transfersFrom   BankTransfer[] @relation("BankTransferFrom")
-  transfersTo     BankTransfer[] @relation("BankTransferTo")
-  journalEntries  JournalEntry[]
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  chartAccount   ChartOfAccount @relation(fields: [chartAccountId], references: [id])
+  transfersFrom  BankTransfer[] @relation("BankTransferFrom")
+  transfersTo    BankTransfer[] @relation("BankTransferTo")
+  journalEntries JournalEntry[]
 
   @@map("bank_account")
 }
 
 model FinancialGoal {
-  id         String   @id @default(cuid())
-  branchId   String?
-  name       String
-  type       String   // Invoice, Bill, Revenue, Payment
-  fromDate   DateTime
-  toDate     DateTime
-  amount     Float    @default(0)
-  isDisplay  Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  branchId  String?
+  name      String
+  type      String // Invoice, Bill, Revenue, Payment
+  fromDate  DateTime
+  toDate    DateTime
+  amount    Float    @default(0)
+  isDisplay Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  branch     Branch?  @relation(fields: [branchId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
 
   @@map("financial_goal")
 }
 
 model BudgetPlan {
-  id         String   @id @default(cuid())
-  branchId   String?
-  name       String
-  fromYear   Int
-  period     String   // Monthly, Quarterly, Half Yearly, Yearly
-  details    Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  branchId  String?
+  name      String
+  fromYear  Int
+  period    String // Monthly, Quarterly, Half Yearly, Yearly
+  details   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+
   @@map("budget_plan")
-  branch     Branch?  @relation(fields: [branchId], references: [id])
-
 }
-
 
 model Contract {
   id                  String   @id @default(cuid())
@@ -834,7 +837,7 @@ model Contract {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  createdBy           User?    @relation(fields: [createdById], references: [id])
+  createdBy User? @relation(fields: [createdById], references: [id])
 
   @@map("contract")
 }
@@ -863,9 +866,9 @@ model LeadStage {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
-  leads      Lead[]
-  deals      Deal[]
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  leads    Lead[]
+  deals    Deal[]
 
   @@map("lead_stage")
 }
@@ -878,65 +881,65 @@ model DealStage {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
 
   @@map("deal_stage")
 }
 
 model Lead {
-  id           String    @id @default(cuid())
-  leadId       String    @unique
-  branchId     String?
-  name         String
-  email        String?
-  subject      String?
-  phone        String?
-  pipelineId   String?
-  stageId      String?
-  sources      String?
-  products     String?
-  notes        String?
-  labels       String?
-  order        Int?
-  ownerId      String?
-  createdById  String?
-  isActive     Boolean   @default(true)
-  date         DateTime? @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  leadId      String    @unique
+  branchId    String?
+  name        String
+  email       String?
+  subject     String?
+  phone       String?
+  pipelineId  String?
+  stageId     String?
+  sources     String?
+  products    String?
+  notes       String?
+  labels      String?
+  order       Int?
+  ownerId     String?
+  createdById String?
+  isActive    Boolean   @default(true)
+  date        DateTime? @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  branch       Branch?    @relation(fields: [branchId], references: [id])
-  pipeline     Pipeline?  @relation(fields: [pipelineId], references: [id])
-  stage        LeadStage? @relation(fields: [stageId], references: [id])
-  owner        User?      @relation("LeadOwner", fields: [ownerId], references: [id])
-  createdBy    User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+  pipeline  Pipeline?  @relation(fields: [pipelineId], references: [id])
+  stage     LeadStage? @relation(fields: [stageId], references: [id])
+  owner     User?      @relation("LeadOwner", fields: [ownerId], references: [id])
+  createdBy User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
 
   @@map("lead")
 }
 
 model Deal {
-  id             String    @id @default(cuid())
-  dealId         String    @unique
+  id             String   @id @default(cuid())
+  dealId         String   @unique
   branchId       String?
   name           String
   client         String?
-  price          Float     @default(0)
+  price          Float    @default(0)
   pipelineId     String?
   stageId        String?
-  status         String    @default("Open")
-  isActive       Boolean   @default(true)
-  tasksTotal     Int?      @default(0)
-  tasksCompleted Int?      @default(0)
-  productsCount  Int?      @default(0)
-  sourcesCount   Int?      @default(0)
+  status         String   @default("Open")
+  isActive       Boolean  @default(true)
+  tasksTotal     Int?     @default(0)
+  tasksCompleted Int?     @default(0)
+  productsCount  Int?     @default(0)
+  sourcesCount   Int?     @default(0)
   labels         Json?
   users          Json?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch         Branch?   @relation(fields: [branchId], references: [id])
-  pipeline       Pipeline? @relation(fields: [pipelineId], references: [id])
-  stage          LeadStage? @relation(fields: [stageId], references: [id])
+  branch   Branch?    @relation(fields: [branchId], references: [id])
+  pipeline Pipeline?  @relation(fields: [pipelineId], references: [id])
+  stage    LeadStage? @relation(fields: [stageId], references: [id])
 
   @@map("deal")
 }
@@ -952,21 +955,21 @@ model FormBuilder {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  fields       FormField[]
+  fields FormField[]
 
   @@map("form_builder")
 }
 
 model FormField {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   formId    String
   name      String
   type      String
-  required  Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  required  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  form      FormBuilder @relation(fields: [formId], references: [id], onDelete: Cascade)
+  form FormBuilder @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@map("form_field")
 }
