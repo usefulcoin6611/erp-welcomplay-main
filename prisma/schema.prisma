@@ -31,6 +31,7 @@ model User {
   department    Department? @relation(fields: [departmentId], references: [id])
   createdCustomers Customer[] @relation("CreatedBy")
   createdVendors   Vendor[]
+  employee        Employee?
 
   @@map("user")
 }
@@ -87,19 +88,21 @@ model Designation {
 }
 
 model LeaveType {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  daysPerYear Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("leave_type")
 }
 
 model DocumentType {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  requiredField Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("document_type")
 }
@@ -184,6 +187,40 @@ model Competency {
   updatedAt DateTime @updatedAt
 
   @@map("competency")
+}
+
+model Employee {
+  id                 String   @id @default(cuid())
+  employeeId         String   @unique
+  name                 String
+  email                String   @unique
+  phone              String
+  dateOfBirth        DateTime
+  gender             String
+  address            String
+  branch             String
+  department         String
+  designation        String
+  dateOfJoining      DateTime
+  lastLogin          DateTime?
+  isActive           Boolean  @default(true)
+  salaryType         String?
+  basicSalary        Float?
+  documentsCertificate String?
+  documentsPhoto     String?
+  accountHolderName  String?
+  accountNumber      String?
+  bankName           String?
+  bankIdentifierCode String?
+  branchLocation     String?
+  taxPayerId         String?
+  userId               String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User?    @relation(fields: [userId], references: [id])
+
+  @@map("employee")
 }
 
 model AllowanceOption {

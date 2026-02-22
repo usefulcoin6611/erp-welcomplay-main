@@ -2,13 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { IconLanguage } from '@tabler/icons-react'
 import { useLocale } from 'next-intl'
 
@@ -20,41 +13,41 @@ export function LanguageSwitcher() {
   const currentLocale = useLocale()
 
   const switchLocale = (locale: Locale) => {
+    if (locale === currentLocale) return
+
     startTransition(() => {
-      // Set cookie
       document.cookie = `locale=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
-      
-      // Refresh the page to apply new locale
       router.refresh()
     })
   }
 
   const locales = [
     { code: 'id', name: 'Indonesian', flag: '🇮🇩' },
-    { code: 'en', name: 'English', flag: '🇺🇸' }
+    { code: 'en', name: 'English', flag: '🇺🇸' },
   ]
 
-  const currentLocaleData = locales.find(l => l.code === currentLocale) || locales[0]
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" disabled={isPending} suppressHydrationWarning className="hover:cursor-pointer">
-          <IconLanguage className="h-4 w-4 mr-2" />
-          {currentLocaleData.flag} {currentLocaleData.name}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {locales.map((localeItem) => (
-          <DropdownMenuItem
+    <div className="mt-1 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5">
+      <IconLanguage className="mr-1 h-3.5 w-3.5 text-slate-500" />
+      {locales.map((localeItem) => {
+        const isActive = currentLocale === localeItem.code
+        return (
+          <button
             key={localeItem.code}
+            type="button"
+            disabled={isPending || isActive}
             onClick={() => switchLocale(localeItem.code as Locale)}
-            className={currentLocale === localeItem.code ? 'bg-accent' : ''}
+            className={[
+              'px-2.5 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer disabled:cursor-default',
+              isActive
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'bg-transparent text-slate-600 hover:bg-blue-50 hover:text-blue-700',
+            ].join(' ')}
           >
-            {localeItem.flag} {localeItem.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            {localeItem.flag}
+          </button>
+        )
+      })}
+    </div>
   )
 }

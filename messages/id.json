@@ -608,7 +608,11 @@
       "backToDetail": "Kembali ke Detail",
       "chooseFileHere": "Pilih file di sini",
       "deleteConfirmTitle": "Hapus karyawan?",
-      "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin melanjutkan?"
+      "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin melanjutkan?",
+      "loadingEmployees": "Memuat data karyawan...",
+      "failedToLoadEmployees": "Gagal memuat data karyawan",
+      "failedToDeleteEmployee": "Gagal menghapus karyawan",
+      "employeeDeleted": "Karyawan berhasil dihapus"
     }
   },
   "reports": {

@@ -602,13 +602,15 @@
       "noc": "NOC",
       "pdf": "PDF",
       "doc": "DOC",
-      "edit": "Edit",
-      "editEmployee": "Edit Employee",
       "updateEmployee": "Update",
       "backToDetail": "Back to Detail",
       "chooseFileHere": "Choose file here",
       "deleteConfirmTitle": "Delete employee?",
-      "deleteConfirmDescription": "This action cannot be undone. Are you sure you want to continue?"
+      "deleteConfirmDescription": "This action cannot be undone. Are you sure you want to continue?",
+      "loadingEmployees": "Loading employees...",
+      "failedToLoadEmployees": "Failed to load employees",
+      "failedToDeleteEmployee": "Failed to delete employee",
+      "employeeDeleted": "Employee deleted successfully"
     }
   },
   "reports": {

@@ -22,6 +22,7 @@ import { seedJobCategories } from "./seeds/job-categories";
 import { seedJobStages } from "./seeds/job-stages";
 import { seedPerformanceTypes } from "./seeds/performance-types";
 import { seedCompetencies } from "./seeds/competencies";
+import { seedEmployees, seedDevEmployeeUserLink } from "./seeds/employees";
 import { seedCustomers } from "./seeds/customers";
 import { seedVendors } from "./seeds/vendors";
 import { seedEstimates } from "./seeds/estimates";
@@ -67,8 +68,10 @@ async function main() {
     await seedJobStages(prisma);
     await seedPerformanceTypes(prisma);
     await seedCompetencies(prisma);
+    await seedEmployees(prisma);
     await seedCOA(prisma);
     await seedUsers(prisma);
+    await seedDevEmployeeUserLink(prisma);
     await seedTaxes(prisma);
     await seedUnits(prisma);
     await seedCategories(prisma);

@@ -48,10 +48,23 @@ interface Designation {
   departmentId: string;
   department: {
     name: string;
+    branch?: {
+      id: string;
+      name: string;
+    } | null;
   };
 }
 
 interface Department {
+  id: string;
+  name: string;
+  branchId: string;
+  branch: {
+    name: string;
+  };
+}
+
+interface Branch {
   id: string;
   name: string;
 }
@@ -72,6 +85,8 @@ function DesignationTabInner(
   const [formData, setFormData] = useState({ departmentId: '', name: '' });
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,10 +123,23 @@ function DesignationTabInner(
     }
   }, []);
 
+  const fetchBranches = useCallback(async () => {
+    try {
+      const response = await fetch('/api/branches');
+      const result = await response.json();
+      if (result.success) {
+        setBranches(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDesignations();
     fetchDepartments();
-  }, [fetchDesignations, fetchDepartments]);
+    fetchBranches();
+  }, [fetchDesignations, fetchDepartments, fetchBranches]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +185,8 @@ function DesignationTabInner(
       departmentId: designation.departmentId,
       name: designation.name,
     });
+    const dept = departments.find((d) => d.id === designation.departmentId);
+    setSelectedBranchId(dept?.branchId ?? '');
     setEditingId(designation.id);
     setDialogOpen(true);
   };
@@ -174,6 +204,7 @@ function DesignationTabInner(
         setDialogOpen(true);
         setEditingId(null);
         setFormData({ departmentId: '', name: '' });
+        setSelectedBranchId('');
       },
     }),
     []
@@ -212,7 +243,16 @@ function DesignationTabInner(
   const filteredDesignations = designations.filter(
     (desig) =>
       desig.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      desig.department.name.toLowerCase().includes(searchTerm.toLowerCase())
+      desig.department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (desig.department.branch?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredDepartmentsForSelect = useMemo(
+    () =>
+      selectedBranchId
+        ? departments.filter((dept) => dept.branchId === selectedBranchId)
+        : departments,
+    [departments, selectedBranchId]
   );
 
   const paginatedDesignations = useMemo(() => {
@@ -280,6 +320,9 @@ function DesignationTabInner(
               <TableHeader>
                 <TableRow>
                   <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Branch
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
                     Department
                   </TableHead>
                   <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
@@ -307,6 +350,11 @@ function DesignationTabInner(
                 ) : (
                   displayDesignations.map((designation) => (
                     <TableRow key={designation.id}>
+                      <TableCell className="px-4 py-3">
+                        <Badge variant="secondary" className="whitespace-nowrap">
+                          {designation.department.branch?.name ?? '-'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="px-4 py-3">
                         <Badge variant="secondary" className="whitespace-nowrap">
                           {designation.department.name}
@@ -368,16 +416,38 @@ function DesignationTabInner(
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Select
+                  value={selectedBranchId}
+                  onValueChange={(value) => {
+                    setSelectedBranchId(value);
+                    setFormData({ ...formData, departmentId: '' });
+                  }}
+                >
+                  <SelectTrigger className="h-9 bg-white">
+                    <SelectValue placeholder="Pilih Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                  disabled={!selectedBranchId}
                 >
                   <SelectTrigger className="h-9 bg-white">
                     <SelectValue placeholder="Pilih Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
+                    {filteredDepartmentsForSelect.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
                       </SelectItem>

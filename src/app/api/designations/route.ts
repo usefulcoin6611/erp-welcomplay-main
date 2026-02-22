@@ -24,6 +24,12 @@ export async function GET(request: NextRequest) {
         department: {
           select: {
             name: true,
+            branch: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },

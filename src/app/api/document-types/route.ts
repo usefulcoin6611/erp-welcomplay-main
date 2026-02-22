@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const documentTypeSchema = z.object({
   name: z.string().trim().min(1, "Nama document type wajib diisi"),
+  requiredField: z.coerce.boolean().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -66,11 +67,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name } = validation.data;
+    const { name, requiredField = false } = validation.data;
 
     const documentType = await (prisma as any).documentType.create({
       data: {
         name,
+        requiredField,
       },
     });
 

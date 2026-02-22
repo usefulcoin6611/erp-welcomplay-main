@@ -47,6 +47,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -63,6 +64,7 @@ const CARD_STYLE =
 interface DocumentType {
   id: string;
   name: string;
+  requiredField: boolean;
 }
 
 export default function ManageDocumentTypePage() {
@@ -78,6 +80,7 @@ export default function ManageDocumentTypePage() {
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [documentTypeToDelete, setDocumentTypeToDelete] =
     useState<DocumentType | null>(null);
+  const [requiredField, setRequiredField] = useState(false);
 
   const total = documentTypes.length;
 
@@ -87,7 +90,13 @@ export default function ManageDocumentTypePage() {
       const res = await fetch('/api/document-types');
       const data = await res.json();
       if (data.success) {
-        setDocumentTypes(data.data);
+        setDocumentTypes(
+          data.data.map((dt: any) => ({
+            id: String(dt.id),
+            name: String(dt.name ?? ''),
+            requiredField: Boolean(dt.requiredField),
+          }))
+        );
       } else {
         toast.error(data.message || 'Gagal memuat data document type');
       }
@@ -107,12 +116,14 @@ export default function ManageDocumentTypePage() {
     setDialogOpen(true);
     setEditingId(null);
     setName('');
+    setRequiredField(false);
   };
 
   const handleEditClick = (item: DocumentType) => {
     setDialogOpen(true);
     setEditingId(item.id);
     setName(item.name);
+    setRequiredField(item.requiredField);
   };
 
   const openDeleteConfirm = (item: DocumentType) => {
@@ -162,7 +173,7 @@ export default function ManageDocumentTypePage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: name.trim(), requiredField }),
       });
 
       const data = await res.json();
@@ -306,6 +317,9 @@ export default function ManageDocumentTypePage() {
                   <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
                     Name
                   </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Required Field
+                  </TableHead>
                   <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-right text-muted-foreground">
                     Actions
                   </TableHead>
@@ -338,6 +352,9 @@ export default function ManageDocumentTypePage() {
                     <TableRow key={item.id}>
                       <TableCell className="px-4 py-3 text-sm">
                         {item.name}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        {item.requiredField ? 'Yes' : 'No'}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -378,6 +395,7 @@ export default function ManageDocumentTypePage() {
           if (!open) {
             setEditingId(null);
             setName('');
+            setRequiredField(false);
           }
         }}
       >
@@ -407,6 +425,26 @@ export default function ManageDocumentTypePage() {
                   disabled={isSubmitting}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="document-type-required"
+                  >
+                    Required Field
+                  </label>
+                  <Switch
+                    id="document-type-required"
+                    checked={requiredField}
+                    onCheckedChange={setRequiredField}
+                    disabled={isSubmitting}
+                    className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-slate-200"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Jika aktif, dokumen ini dianggap wajib diisi karyawan.
+                </p>
               </div>
             </div>
             <DialogFooter>

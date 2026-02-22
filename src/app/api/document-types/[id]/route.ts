@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const documentTypeSchema = z.object({
   name: z.string().trim().min(1, "Nama document type wajib diisi"),
+  requiredField: z.coerce.boolean().optional(),
 });
 
 export async function PUT(
@@ -44,12 +45,13 @@ export async function PUT(
       );
     }
 
-    const { name } = validation.data;
+    const { name, requiredField = false } = validation.data;
 
     const documentType = await (prisma as any).documentType.update({
       where: { id },
       data: {
         name,
+        requiredField,
       },
     });
 

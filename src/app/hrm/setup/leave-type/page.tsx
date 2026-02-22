@@ -63,6 +63,7 @@ const CARD_STYLE =
 interface LeaveType {
   id: string;
   name: string;
+  daysPerYear: number;
 }
 
 export default function ManageLeaveTypePage() {
@@ -77,6 +78,7 @@ export default function ManageLeaveTypePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [leaveTypeToDelete, setLeaveTypeToDelete] = useState<LeaveType | null>(null);
+  const [daysPerYear, setDaysPerYear] = useState('');
 
   const total = leaveTypes.length;
 
@@ -106,12 +108,14 @@ export default function ManageLeaveTypePage() {
     setDialogOpen(true);
     setEditingId(null);
     setName('');
+    setDaysPerYear('');
   };
 
   const handleEditClick = (item: LeaveType) => {
     setDialogOpen(true);
     setEditingId(item.id);
     setName(item.name);
+    setDaysPerYear(String(item.daysPerYear ?? 0));
   };
 
   const openDeleteConfirm = (item: LeaveType) => {
@@ -149,6 +153,12 @@ export default function ManageLeaveTypePage() {
       toast.error('Nama leave type wajib diisi');
       return;
     }
+    const parsedDaysPerYear = Number(daysPerYear || '0');
+
+    if (Number.isNaN(parsedDaysPerYear) || parsedDaysPerYear < 0) {
+      toast.error('Days per year tidak boleh kurang dari 0');
+      return;
+    }
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -159,7 +169,10 @@ export default function ManageLeaveTypePage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          daysPerYear: parsedDaysPerYear,
+        }),
       });
 
       const data = await res.json();
@@ -171,6 +184,7 @@ export default function ManageLeaveTypePage() {
         setDialogOpen(false);
         setEditingId(null);
         setName('');
+        setDaysPerYear('');
         fetchLeaveTypes();
       } else {
         toast.error(data.message || 'Gagal menyimpan leave type');
@@ -297,7 +311,10 @@ export default function ManageLeaveTypePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
-                    Name
+                    Leave Type
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    Days Per Year
                   </TableHead>
                   <TableHead className="px-4 py-3 text-xs font-semibold tracking-wide text-right text-muted-foreground">
                     Actions
@@ -308,7 +325,7 @@ export default function ManageLeaveTypePage() {
                 {isLoading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={2}
+                      colSpan={3}
                       className="py-8 text-center text-sm text-muted-foreground"
                     >
                       <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
@@ -320,7 +337,7 @@ export default function ManageLeaveTypePage() {
                 ) : filteredLeaveTypes.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={2}
+                      colSpan={3}
                       className="py-8 text-center text-sm text-muted-foreground"
                     >
                       Tidak ada data ditemukan
@@ -331,6 +348,9 @@ export default function ManageLeaveTypePage() {
                     <TableRow key={item.id}>
                       <TableCell className="px-4 py-3 text-sm">
                         {item.name}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        {item.daysPerYear ?? 0}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -389,16 +409,31 @@ export default function ManageLeaveTypePage() {
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="leave-type-name">
-                  Name
+                  Leave Type
                 </label>
                 <Input
                   id="leave-type-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Leave type name"
+                  placeholder="Enter Leave Type Name"
                   className="h-9 bg-white"
                   disabled={isSubmitting}
                   required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="leave-type-max">
+                  Days Per Year
+                </label>
+                <Input
+                  id="leave-type-max"
+                  type="number"
+                  min={0}
+                  value={daysPerYear}
+                  onChange={(e) => setDaysPerYear(e.target.value)}
+                  placeholder="Enter Days / Year"
+                  className="h-9 bg-white"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>

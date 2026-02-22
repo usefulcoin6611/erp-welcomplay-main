@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const leaveTypeSchema = z.object({
   name: z.string().trim().min(1, "Nama leave type wajib diisi"),
+  daysPerYear: z.coerce.number().int().min(0, "Days per year minimal 0"),
 });
 
 export async function PUT(
@@ -44,12 +45,13 @@ export async function PUT(
       );
     }
 
-    const { name } = validation.data;
+    const { name, daysPerYear } = validation.data;
 
     const leaveType = await (prisma as any).leaveType.update({
       where: { id },
       data: {
         name,
+        daysPerYear,
       },
     });
 
