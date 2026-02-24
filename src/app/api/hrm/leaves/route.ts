@@ -55,18 +55,51 @@ export async function POST(request: NextRequest) {
 
     if (!employeeId || !leaveTypeId || !startDate || !endDate) {
       return NextResponse.json(
-        { success: false, message: "Missing required fields" },
+        { success: false, message: "Employee, leave type, start date, dan end date wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    const sd = new Date(startDate);
+    const ed = new Date(endDate);
+
+    if (isNaN(sd.getTime()) || isNaN(ed.getTime())) {
+      return NextResponse.json(
+        { success: false, message: "Tanggal mulai/akhir tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    if (ed < sd) {
+      return NextResponse.json(
+        { success: false, message: "End date harus sesudah start date" },
+        { status: 400 }
+      );
+    }
+
+    const employee = await prisma.employee.findUnique({ where: { id: String(employeeId) } });
+    if (!employee) {
+      return NextResponse.json(
+        { success: false, message: "Employee tidak ditemukan" },
+        { status: 400 }
+      );
+    }
+
+    const leaveType = await prisma.leaveType.findUnique({ where: { id: String(leaveTypeId) } });
+    if (!leaveType) {
+      return NextResponse.json(
+        { success: false, message: "Leave type tidak ditemukan" },
         { status: 400 }
       );
     }
 
     const leave = await prisma.leaveRequest.create({
       data: {
-        employeeId,
-        leaveTypeId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        reason,
+        employeeId: String(employeeId),
+        leaveTypeId: String(leaveTypeId),
+        startDate: sd,
+        endDate: ed,
+        reason: reason ? String(reason) : null,
         status: "Pending",
       },
     });

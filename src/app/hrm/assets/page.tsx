@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
@@ -52,135 +53,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { EmployeeMultiCombobox } from "@/components/ui/employee-multi-combobox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   IconPlus,
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react"
-import { Search, X } from 'lucide-react'
-import { SimplePagination } from '@/components/ui/simple-pagination'
+import { Search, X } from "lucide-react"
+import { SimplePagination } from "@/components/ui/simple-pagination"
+import { toast } from "sonner"
 
 interface Asset {
   id: number
   name: string
-  employeeIds: number[]
-  employees: { id: number; name: string; avatar?: string }[]
+  employeeIds: string[]
+  employees: { id: string; name: string; avatar?: string }[]
   purchaseDate: string
   supportedDate: string
   amount: number
   description: string
 }
 
-const employees = [
-  { id: 1, name: 'John Doe', avatar: '' },
-  { id: 2, name: 'Jane Smith', avatar: '' },
-  { id: 3, name: 'Bob Johnson', avatar: '' },
-  { id: 4, name: 'Alice Williams', avatar: '' },
-  { id: 5, name: 'Charlie Brown', avatar: '' },
-]
-
-const assets: Asset[] = [
-  {
-    id: 1,
-    name: 'Dell Laptop - Latitude 5520',
-    employeeIds: [1, 2],
-    employees: [
-      { id: 1, name: 'John Doe', avatar: '' },
-      { id: 2, name: 'Jane Smith', avatar: '' },
-    ],
-    purchaseDate: '2023-01-15',
-    supportedDate: '2026-01-15',
-    amount: 1200,
-    description: 'High-performance laptop for development team',
-  },
-  {
-    id: 2,
-    name: 'iPhone 13 Pro',
-    employeeIds: [3],
-    employees: [
-      { id: 3, name: 'Bob Johnson', avatar: '' },
-    ],
-    purchaseDate: '2023-03-20',
-    supportedDate: '2025-03-20',
-    amount: 999,
-    description: 'Mobile device for sales team',
-  },
-  {
-    id: 3,
-    name: 'Herman Miller Chair',
-    employeeIds: [4],
-    employees: [
-      { id: 4, name: 'Alice Williams', avatar: '' },
-    ],
-    purchaseDate: '2022-11-10',
-    supportedDate: '2027-11-10',
-    amount: 800,
-    description: 'Ergonomic office chair',
-  },
-  {
-    id: 4,
-    name: 'HP Printer - LaserJet Pro',
-    employeeIds: [5],
-    employees: [
-      { id: 5, name: 'Charlie Brown', avatar: '' },
-    ],
-    purchaseDate: '2023-02-05',
-    supportedDate: '2026-02-05',
-    amount: 450,
-    description: 'Office printer for all departments',
-  },
-  {
-    id: 5,
-    name: 'MacBook Pro 16"',
-    employeeIds: [1, 3],
-    employees: [
-      { id: 1, name: 'John Doe', avatar: '' },
-      { id: 3, name: 'Bob Johnson', avatar: '' },
-    ],
-    purchaseDate: '2023-05-10',
-    supportedDate: '2026-05-10',
-    amount: 2500,
-    description: 'High-end laptop for design team',
-  },
-  {
-    id: 6,
-    name: 'Samsung Monitor 27"',
-    employeeIds: [2, 4],
-    employees: [
-      { id: 2, name: 'Jane Smith', avatar: '' },
-      { id: 4, name: 'Alice Williams', avatar: '' },
-    ],
-    purchaseDate: '2023-06-15',
-    supportedDate: '2026-06-15',
-    amount: 350,
-    description: '4K monitor for design and development',
-  },
-  {
-    id: 7,
-    name: 'Logitech MX Master 3',
-    employeeIds: [5],
-    employees: [
-      { id: 5, name: 'Charlie Brown', avatar: '' },
-    ],
-    purchaseDate: '2023-07-20',
-    supportedDate: '2026-07-20',
-    amount: 99,
-    description: 'Wireless mouse for productivity',
-  },
-  {
-    id: 8,
-    name: 'iPad Pro 12.9"',
-    employeeIds: [1],
-    employees: [
-      { id: 1, name: 'John Doe', avatar: '' },
-    ],
-    purchaseDate: '2023-08-01',
-    supportedDate: '2026-08-01',
-    amount: 1100,
-    description: 'Tablet for presentations and meetings',
-  },
-]
+interface EmployeeOption {
+  id: string
+  name: string
+  avatar?: string
+}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString)
@@ -192,9 +91,9 @@ function formatDate(dateString: string) {
 }
 
 function formatPrice(amount: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
@@ -210,33 +109,36 @@ function getInitials(name: string) {
 }
 
 export default function EmployeesAssetSetupPage() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [rows, setRows] = useState<Asset[]>(assets)
+  const [rows, setRows] = useState<Asset[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null)
   const [formData, setFormData] = useState({
-    name: '',
-    employeeIds: [] as number[],
-    purchaseDate: '',
-    supportedDate: '',
-    amount: '',
-    description: '',
+    name: "",
+    employeeIds: [] as string[],
+    purchaseDate: "",
+    supportedDate: "",
+    amount: "",
+    description: "",
   })
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Filtered data
   const filteredData = useMemo(() => {
     if (!search.trim()) return rows
-    
+
     const q = search.trim().toLowerCase()
     return rows.filter(
       (asset) =>
         asset.name.toLowerCase().includes(q) ||
-        asset.description.toLowerCase().includes(q) ||
-        asset.employees.some((emp) => emp.name.toLowerCase().includes(q))
+        (asset.description ?? "").toLowerCase().includes(q) ||
+        asset.employees.some((emp) => emp.name.toLowerCase().includes(q)),
     )
   }, [search, rows])
 
@@ -254,17 +156,61 @@ export default function EmployeesAssetSetupPage() {
     setCurrentPage(1)
   }
 
+  const fetchAssets = async () => {
+    try {
+      setIsLoading(true)
+      const res = await fetch("/api/hrm/assets")
+      const json = await res.json()
+      if (json.success) {
+        setRows(json.data ?? [])
+      } else {
+        toast.error(json.message || "Gagal memuat data assets")
+      }
+    } catch (error) {
+      console.error("Error fetching assets:", error)
+      toast.error("Gagal memuat data assets")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch("/api/hrm/assets/employees")
+      const json = await res.json()
+      if (json.success) {
+        setEmployees(
+          (json.data ?? []).map((e: any) => ({
+            id: e.id as string,
+            name: e.name as string,
+            avatar: "",
+          })),
+        )
+      } else {
+        toast.error(json.message || "Gagal memuat data employee")
+      }
+    } catch (error) {
+      console.error("Error fetching employees for assets:", error)
+      toast.error("Gagal memuat data employee")
+    }
+  }
+
+  useEffect(() => {
+    fetchAssets()
+    fetchEmployees()
+  }, [])
+
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
     if (!open) {
       setEditingId(null)
       setFormData({
-        name: '',
+        name: "",
         employeeIds: [],
-        purchaseDate: '',
-        supportedDate: '',
-        amount: '',
-        description: '',
+        purchaseDate: "",
+        supportedDate: "",
+        amount: "",
+        description: "",
       })
     }
   }
@@ -277,16 +223,73 @@ export default function EmployeesAssetSetupPage() {
       purchaseDate: asset.purchaseDate,
       supportedDate: asset.supportedDate,
       amount: asset.amount.toString(),
-      description: asset.description,
+      description: asset.description ?? "",
     })
     setDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log('Form data:', formData)
-    handleDialogOpenChange(false)
+
+    if (!formData.name.trim()) {
+      toast.error("Name wajib diisi")
+      return
+    }
+    if (!formData.amount || Number.isNaN(Number(formData.amount)) || Number(formData.amount) < 0) {
+      toast.error("Amount harus berupa angka positif")
+      return
+    }
+    if (!formData.purchaseDate || !formData.supportedDate) {
+      toast.error("Purchase date dan supported date wajib diisi")
+      return
+    }
+    if (new Date(formData.supportedDate) < new Date(formData.purchaseDate)) {
+      toast.error("Supported date tidak boleh sebelum purchase date")
+      return
+    }
+    if (formData.employeeIds.length === 0) {
+      toast.error("Minimal satu employee harus dipilih")
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const url = editingId ? `/api/hrm/assets/${editingId}` : "/api/hrm/assets"
+      const method = editingId ? "PUT" : "POST"
+
+      const payload = {
+        name: formData.name.trim(),
+        employeeIds: formData.employeeIds,
+        purchaseDate: formData.purchaseDate,
+        supportedDate: formData.supportedDate,
+        amount: Number(formData.amount),
+        description: formData.description.trim(),
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+
+      if (json.success) {
+        toast.success(
+          json.message || (editingId ? "Asset berhasil diperbarui" : "Asset berhasil dibuat"),
+        )
+        await fetchAssets()
+        handleDialogOpenChange(false)
+      } else {
+        toast.error(json.message || "Gagal menyimpan asset")
+      }
+    } catch (error) {
+      console.error("Error submitting asset:", error)
+      toast.error("Gagal menyimpan asset")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleDelete = (id: number) => {
@@ -296,10 +299,30 @@ export default function EmployeesAssetSetupPage() {
   }
 
   const handleConfirmDelete = () => {
-    if (!assetToDelete) return
-    setRows((prev) => prev.filter((a) => a.id !== assetToDelete.id))
-    setAssetToDelete(null)
-    setDeleteDialogOpen(false)
+    ;(async () => {
+      if (!assetToDelete) {
+        setDeleteDialogOpen(false)
+        return
+      }
+      try {
+        const res = await fetch(`/api/hrm/assets/${assetToDelete.id}`, {
+          method: "DELETE",
+        })
+        const json = await res.json()
+        if (json.success) {
+          toast.success(json.message || "Asset berhasil dihapus")
+          await fetchAssets()
+        } else {
+          toast.error(json.message || "Gagal menghapus asset")
+        }
+      } catch (error) {
+        console.error("Error deleting asset:", error)
+        toast.error("Gagal menghapus asset")
+      } finally {
+        setAssetToDelete(null)
+        setDeleteDialogOpen(false)
+      }
+    })()
   }
 
   return (
@@ -341,69 +364,28 @@ export default function EmployeesAssetSetupPage() {
                       </DialogHeader>
                       <form onSubmit={handleSubmit}>
                     <div className="grid gap-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="employee_id">
-                          Employee
-                        </Label>
-                        <Select
-                          value=""
-                          onValueChange={(value) => {
-                            const id = parseInt(value)
-                            if (!formData.employeeIds.includes(id)) {
-                              setFormData({ ...formData, employeeIds: [...formData.employeeIds, id] })
-                            }
-                          }}
-                        >
-                          <SelectTrigger id="employee_id">
-                            <SelectValue placeholder="Select Employee" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {employees
-                              .filter((emp) => !formData.employeeIds.includes(emp.id))
-                              .map((emp) => (
-                                <SelectItem key={emp.id} value={emp.id.toString()}>
-                                  {emp.name}
-                                </SelectItem>
-                              ))}
-                            {employees.filter((emp) => !formData.employeeIds.includes(emp.id)).length === 0 && (
-                              <SelectItem value="no-more" disabled>
-                                All employees selected
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Create employee here. <Link href="/hrm/employees" className="font-medium text-primary hover:underline">Create employee</Link>
-                        </p>
-                        {formData.employeeIds.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {formData.employeeIds.map((empId) => {
-                              const emp = employees.find((e) => e.id === empId)
-                              return emp ? (
-                                <Badge
-                                  key={empId}
-                                  variant="secondary"
-                                  className="flex items-center gap-1"
-                                >
-                                  {emp.name}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setFormData({
-                                        ...formData,
-                                        employeeIds: formData.employeeIds.filter((id) => id !== empId),
-                                      })
-                                    }}
-                                    className="ml-1 hover:text-destructive"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              ) : null
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <EmployeeMultiCombobox
+                        id="employee_id"
+                        label={
+                          <>
+                            Employee <span className="text-red-500">*</span>
+                          </>
+                        }
+                        placeholder="Select Employee"
+                        options={employees.map((e) => ({
+                          value: e.id,
+                          label: e.name,
+                        }))}
+                        value={formData.employeeIds}
+                        onChange={(next) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            employeeIds: next,
+                          }))
+                        }
+                        helperText="Press to select employee."
+                        createHref="/hrm/employees"
+                      />
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="name">
@@ -484,8 +466,9 @@ export default function EmployeesAssetSetupPage() {
                         variant="blue"
                         size="sm"
                         className="shadow-none h-7"
+                        disabled={isSubmitting}
                       >
-                        {editingId ? 'Update' : 'Create'}
+                        {isSubmitting ? "Saving..." : editingId ? "Update" : "Create"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -537,7 +520,16 @@ export default function EmployeesAssetSetupPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedData.length > 0 ? (
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="px-6 text-center py-8 text-muted-foreground"
+                          >
+                            Loading assets...
+                          </TableCell>
+                        </TableRow>
+                      ) : paginatedData.length > 0 ? (
                         paginatedData.map((asset) => (
                           <TableRow key={asset.id}>
                             <TableCell className="px-6 font-medium">
@@ -596,7 +588,10 @@ export default function EmployeesAssetSetupPage() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
+                          <TableCell
+                            colSpan={7}
+                            className="px-6 text-center py-8 text-muted-foreground"
+                          >
                             No assets found
                           </TableCell>
                         </TableRow>

@@ -5,9 +5,35 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -15,8 +41,10 @@ const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 interface Leave {
   id: string;
-  employeeId: string;
+  employeeId: string;      // Employee code e.g. EMP001
+  employeeDbId: string;    // Employee.id (Prisma)
   employeeName: string;
+  leaveTypeId: string;
   leaveType: string;
   startDate: string;
   endDate: string;
@@ -26,14 +54,43 @@ interface Leave {
   appliedDate: string;
 }
 
+function splitReasonAndRemark(combined: string | null | undefined): {
+  reason: string;
+  remark: string;
+} {
+  if (!combined) {
+    return { reason: '', remark: '' };
+  }
+
+  const marker = '\n\nRemark:';
+  const index = combined.indexOf(marker);
+
+  if (index === -1) {
+    return { reason: combined, remark: '' };
+  }
+
+  const reason = combined.slice(0, index).trimEnd();
+  const remarkRaw = combined.slice(index + marker.length).trim();
+
+  return {
+    reason: reason || '',
+    remark: remarkRaw || '',
+  };
+}
+
 export function ManageLeaveContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState<Leave[]>([]);
-  const [employees, setEmployees] = useState<{id: string, name: string, employeeId: string}[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<{id: string, name: string}[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; name: string; employeeId: string }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; name: string; daysPerYear: number }[]>([]);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [leaveToDelete, setLeaveToDelete] = useState<Leave | null>(null);
+  const [statusAlertOpen, setStatusAlertOpen] = useState(false);
+  const [pendingStatusAction, setPendingStatusAction] = useState<'Approved' | 'Rejected' | null>(null);
+  const [pendingStatusLeave, setPendingStatusLeave] = useState<Leave | null>(null);
   
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -41,6 +98,7 @@ export function ManageLeaveContent() {
     startDate: '',
     endDate: '',
     reason: '',
+    remark: '',
   });
 
   const fetchLeaveTypes = async () => {
@@ -68,7 +126,9 @@ export function ManageLeaveContent() {
            return {
              id: item.id,
              employeeId: item.employee?.employeeId || '-',
+             employeeDbId: item.employeeId,
              employeeName: item.employee?.name || '-',
+             leaveTypeId: item.leaveType?.id || '',
              leaveType: item.leaveType?.name || '-', // Assuming relation is included
              startDate: item.startDate.split('T')[0],
              endDate: item.endDate.split('T')[0],
@@ -117,6 +177,7 @@ export function ManageLeaveContent() {
       startDate: '',
       endDate: '',
       reason: '',
+      remark: '',
     });
   };
 
@@ -124,29 +185,41 @@ export function ManageLeaveContent() {
     e.preventDefault();
     
     // Simple validation
-    if (!formData.employeeId || !formData.leaveType || !formData.startDate || !formData.endDate || !formData.reason) {
-        toast.error("Please fill all fields");
+    if (
+      !formData.employeeId ||
+      !formData.leaveType ||
+      !formData.startDate ||
+      !formData.endDate ||
+      !formData.reason ||
+      !formData.remark
+    ) {
+        toast.error("Please fill all required fields");
         return;
     }
 
     try {
+        const composedReason = `${formData.reason}\n\nRemark: ${formData.remark}`;
         const payload = {
             employeeId: formData.employeeId,
-            leaveTypeId: formData.leaveType, // This now stores the ID
+            leaveTypeId: formData.leaveType, // This stores the ID
             startDate: formData.startDate,
             endDate: formData.endDate,
-            reason: formData.reason
+            reason: composedReason,
         };
 
-        const response = await fetch('/api/hrm/leaves', {
-            method: 'POST',
+        const isEdit = Boolean(editingId);
+        const url = isEdit ? `/api/hrm/leaves/${editingId}` : '/api/hrm/leaves';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
         const data = await response.json();
         
         if (data.success) {
-            toast.success("Leave requested successfully");
+            toast.success(isEdit ? "Leave updated successfully" : "Leave requested successfully");
             fetchLeaves();
             setShowForm(false);
             setFormData({
@@ -155,9 +228,11 @@ export function ManageLeaveContent() {
                 startDate: '',
                 endDate: '',
                 reason: '',
+                remark: '',
             });
+            setEditingId(null);
         } else {
-            toast.error(data.message || "Failed to request leave");
+            toast.error(data.message || (isEdit ? "Failed to update leave" : "Failed to request leave"));
         }
     } catch (error) {
         console.error("Error submitting leave:", error);
@@ -166,28 +241,52 @@ export function ManageLeaveContent() {
   };
 
   const handleEdit = (item: Leave) => {
-    // Edit logic would go here - usually PUT to /api/hrm/leaves/[id]
-    // Since my API currently only supports status update on PUT, I might not support full edit yet.
-    // I'll just show toast.
-    toast.info("Edit feature not fully implemented in API yet (Status update only)");
+    const employee = employees.find(
+      (e) => e.id === item.employeeDbId || e.employeeId === item.employeeId,
+    );
+
+    const { reason, remark } = splitReasonAndRemark(item.reason);
+
+    setFormData({
+      employeeId: employee ? employee.id : '',
+      leaveType: item.leaveTypeId || '',
+      startDate: item.startDate,
+      endDate: item.endDate,
+      reason,
+      remark,
+    });
+
+    setEditingId(item.id);
+    setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this leave request?')) {
-      try {
-        const response = await fetch(`/api/hrm/leaves/${id}`, {
-            method: 'DELETE',
-        });
-        const data = await response.json();
-        if (data.success) {
-            toast.success("Leave request deleted");
-            fetchLeaves();
-        } else {
-            toast.error(data.message);
-        }
-      } catch (error) {
-        toast.error("Failed to delete leave");
+  const openDeleteDialog = (leave: Leave) => {
+    setLeaveToDelete(leave);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!leaveToDelete) {
+      setDeleteAlertOpen(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/hrm/leaves/${leaveToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Leave request deleted');
+        fetchLeaves();
+      } else {
+        toast.error(data.message || 'Failed to delete leave');
       }
+    } catch (error) {
+      toast.error('Failed to delete leave');
+    } finally {
+      setDeleteAlertOpen(false);
+      setLeaveToDelete(null);
     }
   };
 
@@ -227,6 +326,29 @@ export function ManageLeaveContent() {
     } catch (error) {
         toast.error("Failed to reject leave");
     }
+  };
+
+  const openStatusDialog = (leave: Leave, action: 'Approved' | 'Rejected') => {
+    setPendingStatusLeave(leave);
+    setPendingStatusAction(action);
+    setStatusAlertOpen(true);
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!pendingStatusLeave || !pendingStatusAction) {
+      setStatusAlertOpen(false);
+      return;
+    }
+
+    if (pendingStatusAction === 'Approved') {
+      await handleApprove(pendingStatusLeave.id);
+    } else {
+      await handleReject(pendingStatusLeave.id);
+    }
+
+    setStatusAlertOpen(false);
+    setPendingStatusLeave(null);
+    setPendingStatusAction(null);
   };
 
   const filteredData = leaves.filter(
@@ -297,91 +419,169 @@ export function ManageLeaveContent() {
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4 pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Apply'} Leave</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employeeId">Employee Name</Label>
-                  <Select value={formData.employeeId} onValueChange={(value) => setFormData({ ...formData, employeeId: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.id}>
-                          {emp.name} ({emp.employeeId})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="leaveType">Leave Type</Label>
-                  <Select value={formData.leaveType} onValueChange={(value) => setFormData({ ...formData, leaveType: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select leave type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leaveTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, startDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, endDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
+      {/* Apply / Edit Leave Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({
+              employeeId: '',
+              leaveType: '',
+              startDate: '',
+              endDate: '',
+              reason: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Leave' : 'Apply Leave'}</DialogTitle>
+            <DialogDescription>
+              Isi detail pengajuan cuti sesuai dengan kebijakan perusahaan.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="employeeId">
+                  Employee <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.employeeId}
+                  onValueChange={(value) => setFormData({ ...formData, employeeId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.employeeId})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Create employee here.{' '}
+                  <Link
+                    href="/hrm/employees"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Create employee
+                  </Link>
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="reason">Reason</Label>
+                <Label htmlFor="leaveType">
+                  Leave Type <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.leaveType}
+                  onValueChange={(value) => setFormData({ ...formData, leaveType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select leave type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leaveTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                        {type.daysPerYear > 0 ? ` (${type.daysPerYear} days / year)` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Create leave type here.{' '}
+                  <Link
+                    href="/hrm/setup/leave-type"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Create leave type
+                  </Link>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="startDate">
+                  Start Date <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="reason"
-                  value={formData.reason}
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, reason: e.target.value })
+                    setFormData({ ...formData, startDate: e.target.value })
                   }
                   required
                 />
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Submit'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">
+                  End Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
+                  required
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">
+                Leave Reason <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="reason"
+                value={formData.reason}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
+                placeholder="Tuliskan alasan pengajuan cuti"
+                className="min-h-[100px]"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="remark">
+                Remark <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="remark"
+                value={formData.remark}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, remark: e.target.value })
+                }
+                placeholder="Catatan tambahan terkait pengajuan cuti"
+                className="min-h-[80px]"
+                required
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+              >
+                {editingId ? 'Update' : 'Submit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Leave List */}
       <Card className={cardClass}>
@@ -404,18 +604,19 @@ export function ManageLeaveContent() {
                 <TableHead className="px-4 py-3">Employee ID</TableHead>
                 <TableHead className="px-4 py-3">Employee Name</TableHead>
                 <TableHead className="px-4 py-3">Leave Type</TableHead>
+                <TableHead className="px-4 py-3">Applied On</TableHead>
                 <TableHead className="px-4 py-3">Start Date</TableHead>
                 <TableHead className="px-4 py-3">End Date</TableHead>
-                <TableHead className="px-4 py-3 text-center">Days</TableHead>
-                <TableHead className="px-4 py-3">Reason</TableHead>
+                <TableHead className="px-4 py-3 text-center">Total Days</TableHead>
+                <TableHead className="px-4 py-3">Leave Reason</TableHead>
                 <TableHead className="px-4 py-3 text-center">Status</TableHead>
-                <TableHead className="px-4 py-3 text-right">Actions</TableHead>
+                <TableHead className="px-4 py-3 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground px-4 py-3">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No leave requests found
                   </TableCell>
                 </TableRow>
@@ -425,6 +626,7 @@ export function ManageLeaveContent() {
                     <TableCell className="px-4 py-3 font-medium">{leave.employeeId}</TableCell>
                     <TableCell className="px-4 py-3">{leave.employeeName}</TableCell>
                     <TableCell className="px-4 py-3">{leave.leaveType}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.appliedDate}</TableCell>
                     <TableCell className="px-4 py-3">{leave.startDate}</TableCell>
                     <TableCell className="px-4 py-3">{leave.endDate}</TableCell>
                     <TableCell className="px-4 py-3 text-center">{leave.days}</TableCell>
@@ -449,7 +651,7 @@ export function ManageLeaveContent() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleApprove(leave.id)}
+                              onClick={() => openStatusDialog(leave, 'Approved')}
                               title="Approve"
                               className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
                             >
@@ -458,7 +660,7 @@ export function ManageLeaveContent() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleReject(leave.id)}
+                              onClick={() => openStatusDialog(leave, 'Rejected')}
                               title="Reject"
                               className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             >
@@ -478,7 +680,7 @@ export function ManageLeaveContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(leave.id)}
+                          onClick={() => openDeleteDialog(leave)}
                           title="Delete"
                           className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
@@ -493,6 +695,46 @@ export function ManageLeaveContent() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Leave?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Leave request akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
+              <span>Hapus</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={statusAlertOpen} onOpenChange={setStatusAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingStatusAction === 'Approved'
+                ? 'Approve Leave Request?'
+                : 'Reject Leave Request?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingStatusAction === 'Approved'
+                ? 'Apakah Anda yakin ingin menyetujui pengajuan cuti ini?'
+                : 'Apakah Anda yakin ingin menolak pengajuan cuti ini?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleStatusConfirm}>
+              <span>{pendingStatusAction === 'Approved' ? 'Approve' : 'Reject'}</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

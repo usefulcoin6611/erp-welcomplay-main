@@ -187,6 +187,21 @@ export async function seedEmployees(prisma: any) {
       (b: any) => b.chartAccount?.code === "1121",
     ) ?? null;
 
+  // Ambil master data payroll (allowance / loan / deduction options) untuk relasi Set Salary
+  const allowanceOptionsAll = await prisma.allowanceOption.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+  const loanOptionsAll = await prisma.loanOption.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+  const deductionOptionsAll = await prisma.deductionOption.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+
+  const leaveTypesAll = await prisma.leaveType.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+
   for (const e of employees) {
     // Mapping sederhana: Pusat Jakarta -> BCA, cabang lain -> Mandiri (fallback silang bila salah satu tidak ada)
     const payrollBank =
@@ -301,7 +316,155 @@ export async function seedEmployees(prisma: any) {
       }
     }
 
-    console.log(`Employee upserted: ${e.employeeId} - ${e.name}`);
+    // Seed data Set Salary (Allowance, Commission, Loan, Deduction, Other Payment, Overtime)
+    const baseSalary = Number(e.basicSalary ?? 0);
+
+    const allowanceOption = allowanceOptionsAll[0] ?? null;
+    const loanOption = loanOptionsAll[0] ?? null;
+    const deductionOption = deductionOptionsAll[0] ?? null;
+
+    // Allowances
+    await prisma.employeeAllowance.deleteMany({ where: { employeeId: employee.id } });
+    if (allowanceOption && baseSalary > 0) {
+      await prisma.employeeAllowance.createMany({
+        data: [
+          {
+            employeeId: employee.id,
+            allowanceOptionId: allowanceOption.id,
+            title: `${allowanceOption.name} Default`,
+            amount: Math.round(baseSalary * 0.1),
+            type: "Fixed",
+          },
+        ],
+      });
+    }
+
+    // Commissions
+    await prisma.employeeCommission.deleteMany({ where: { employeeId: employee.id } });
+    if (baseSalary > 0) {
+      await prisma.employeeCommission.createMany({
+        data: [
+          {
+            employeeId: employee.id,
+            title: "Sales Commission",
+            amount: Math.round(baseSalary * 0.05),
+            type: "Percentage",
+          },
+        ],
+      });
+    }
+
+    // Loans
+    await prisma.employeeLoan.deleteMany({ where: { employeeId: employee.id } });
+    if (loanOption && baseSalary > 0) {
+      const now = new Date("2024-01-01T00:00:00.000Z");
+      const end = new Date("2024-12-31T00:00:00.000Z");
+      await prisma.employeeLoan.createMany({
+        data: [
+          {
+            employeeId: employee.id,
+            loanOptionId: loanOption.id,
+            title: `${loanOption.name} Seed`,
+            amount: Math.round(baseSalary * 0.3),
+            startDate: now,
+            endDate: end,
+            reason: "Seeded demo loan for Set Salary.",
+          },
+        ],
+      });
+    }
+
+    // Saturation Deductions
+    await prisma.employeeSaturationDeduction.deleteMany({ where: { employeeId: employee.id } });
+    if (deductionOption && baseSalary > 0) {
+      await prisma.employeeSaturationDeduction.createMany({
+        data: [
+          {
+            employeeId: employee.id,
+            deductionOptionId: deductionOption.id,
+            title: `${deductionOption.name} Seed`,
+            amount: Math.round(baseSalary * 0.05),
+            type: "Fixed",
+          },
+        ],
+      });
+    }
+
+    // Other Payments
+    await prisma.employeeOtherPayment.deleteMany({ where: { employeeId: employee.id } });
+    if (baseSalary > 0) {
+      await prisma.employeeOtherPayment.createMany({
+        data: [
+          {
+            employeeId: employee.id,
+            title: "Performance Bonus",
+            amount: Math.round(baseSalary * 0.15),
+            type: "Fixed",
+          },
+        ],
+      });
+    }
+
+    // Overtimes
+    await prisma.employeeOvertime.deleteMany({ where: { employeeId: employee.id } });
+    if (baseSalary > 0) {
+      await prisma.employeeOvertime.createMany({
+        data: [
+          {
+            employeeId: employee.id,
+            title: "Weekend Overtime",
+            days: 2,
+            hours: 4,
+            rate: Math.round(baseSalary / 160 / 2), // kira-kira setengah hourly rate
+          },
+        ],
+      });
+    }
+
+    // Seed contoh data LeaveRequest agar halaman Manage Leave terisi
+    await prisma.leaveRequest.deleteMany({
+      where: { employeeId: employee.id },
+    });
+
+    const annualLeaveType =
+      leaveTypesAll.find((lt: any) => lt.name === "Annual Leave") ??
+      leaveTypesAll[0] ??
+      null;
+    const sickLeaveType =
+      leaveTypesAll.find((lt: any) => lt.name === "Sick Leave") ??
+      leaveTypesAll[1] ??
+      leaveTypesAll[0] ??
+      null;
+
+    const baseYear = 2024;
+
+    if (annualLeaveType) {
+      await prisma.leaveRequest.create({
+        data: {
+          employeeId: employee.id,
+          leaveTypeId: annualLeaveType.id,
+          startDate: new Date(`${baseYear}-02-05T00:00:00.000Z`),
+          endDate: new Date(`${baseYear}-02-07T00:00:00.000Z`),
+          reason: "Annual leave (seed data)",
+          status: "Approved",
+        },
+      });
+    }
+
+    if (sickLeaveType) {
+      await prisma.leaveRequest.create({
+        data: {
+          employeeId: employee.id,
+          leaveTypeId: sickLeaveType.id,
+          startDate: new Date(`${baseYear}-03-12T00:00:00.000Z`),
+          endDate: new Date(`${baseYear}-03-13T00:00:00.000Z`),
+          reason: "Sick leave (seed data)",
+          status: "Pending",
+        },
+      });
+    }
+
+    console.log(`Employee upserted & payroll seeded: ${e.employeeId} - ${e.name}`);
   }
 
   console.log("Employees seeding completed.");

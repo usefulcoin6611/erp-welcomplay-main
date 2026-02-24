@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -60,91 +61,106 @@ import {
   Eye,
   Building2,
   X,
+  Upload,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CompanyPolicy {
   id: number;
   branch: string;
   title: string;
-  description: string;
-  attachment?: string;
+  description: string | null;
+  attachment?: string | null;
 }
 
-const BRANCHES = [
-  { value: 'main', label: 'Main Branch' },
-  { value: 'branch-office', label: 'Branch Office' },
-  { value: 'remote', label: 'Remote Office' },
-];
+type PolicyFormData = {
+  branch: string;
+  title: string;
+  description: string;
+  attachment: File | null;
+};
 
-const defaultFormData = {
+type BranchOption = {
+  id: number;
+  name: string;
+};
+
+const defaultFormData: PolicyFormData = {
   branch: '',
   title: '',
   description: '',
-  attachment: '' as string | File | '',
+  attachment: null,
 };
 
 const statCardClass =
   'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 
-function getBranchLabel(value: string): string {
-  return (BRANCHES.find((b) => b.value === value)?.label ?? value) || '-';
+function getBranchLabel(value: string, branchOptions: BranchOption[]): string {
+  if (!value) return '-';
+  return (branchOptions.find((b) => b.name === value)?.name ?? value) || '-';
 }
 
 export default function CompanyPolicyPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState(defaultFormData);
+  const [formData, setFormData] = useState<PolicyFormData>(defaultFormData);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [policyToDelete, setPolicyToDelete] = useState<CompanyPolicy | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [policies, setPolicies] = useState<CompanyPolicy[]>([
-    {
-      id: 1,
-      branch: 'main',
-      title: 'Work From Home Policy',
-      description:
-        'Guidelines for remote work arrangements, including eligibility criteria, equipment provision, and communication expectations.',
-      attachment: 'wfh-policy.pdf',
-    },
-    {
-      id: 2,
-      branch: 'main',
-      title: 'Code of Conduct',
-      description:
-        'Ethical standards and behavioral expectations for all employees, including conflict of interest, confidentiality, and professional conduct.',
-      attachment: 'code-of-conduct.pdf',
-    },
-    {
-      id: 3,
-      branch: 'branch-office',
-      title: 'Attendance and Leave Policy',
-      description:
-        'Regulations regarding working hours, attendance tracking, leave types, and approval procedures.',
-      attachment: 'attendance-leave.pdf',
-    },
-    {
-      id: 4,
-      branch: 'main',
-      title: 'Health and Safety Policy',
-      description:
-        'Workplace safety protocols, emergency procedures, and health regulations to ensure employee well-being.',
-    },
-    {
-      id: 5,
-      branch: 'main',
-      title: 'Data Protection and Privacy Policy',
-      description:
-        'Guidelines for handling confidential information, customer data, and compliance with data protection regulations.',
-      attachment: 'data-protection.pdf',
-    },
-  ]);
+  const [policies, setPolicies] = useState<CompanyPolicy[]>([]);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [currentAttachmentPath, setCurrentAttachmentPath] = useState<string | null>(null);
+  const [attachmentRemoved, setAttachmentRemoved] = useState(false);
+  const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
+
+  const fetchPolicies = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/hrm/policies');
+      const json = await res.json();
+      if (json.success) {
+        setPolicies(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat company policy');
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+      toast.error('Gagal memuat company policy');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/branches');
+      const json = await res.json();
+      if (json.success) {
+        setBranches(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat data branch');
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      toast.error('Gagal memuat data branch');
+    }
+  };
+
+  useEffect(() => {
+    fetchPolicies();
+    fetchBranches();
+  }, []);
 
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
       setEditingId(null);
       setFormData({ ...defaultFormData });
+      setCurrentAttachmentPath(null);
+      setAttachmentRemoved(false);
     }
   };
 
@@ -154,49 +170,68 @@ export default function CompanyPolicyPage() {
     setDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.branch || !formData.title.trim()) return;
-    const attachmentName =
-      typeof formData.attachment === 'string'
-        ? formData.attachment
-        : formData.attachment instanceof File
-          ? formData.attachment.name
-          : '';
-    if (editingId !== null) {
-      setPolicies(
-        policies.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                branch: formData.branch,
-                title: formData.title,
-                description: formData.description,
-                attachment: attachmentName || undefined,
-              }
-            : p
-        )
-      );
-    } else {
-      const newPolicy: CompanyPolicy = {
-        id: Math.max(0, ...policies.map((p) => p.id)) + 1,
-        branch: formData.branch,
-        title: formData.title,
-        description: formData.description,
-        attachment: attachmentName || undefined,
-      };
-      setPolicies([...policies, newPolicy]);
+
+    if (!formData.branch) {
+      toast.error('Branch wajib dipilih');
+      return;
     }
-    handleDialogOpenChange(false);
+    if (!formData.title.trim()) {
+      toast.error('Title wajib diisi');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const url =
+        editingId !== null ? `/api/hrm/policies/${editingId}` : '/api/hrm/policies';
+      const method = editingId !== null ? 'PUT' : 'POST';
+
+      const payload = new FormData();
+      payload.append('branch', formData.branch);
+      payload.append('title', formData.title.trim());
+      payload.append('description', formData.description.trim());
+      if (formData.attachment instanceof File) {
+        payload.append('attachment', formData.attachment);
+      }
+      if (editingId !== null) {
+        payload.append('attachmentRemoved', attachmentRemoved ? 'true' : 'false');
+      }
+
+      const res = await fetch(url, {
+        method,
+        body: payload,
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        toast.success(
+          json.message ||
+            (editingId !== null ? 'Company policy updated' : 'Company policy created'),
+        );
+        await fetchPolicies();
+        handleDialogOpenChange(false);
+      } else {
+        toast.error(json.message || 'Gagal menyimpan company policy');
+      }
+    } catch (error) {
+      console.error('Error submitting company policy:', error);
+      toast.error('Gagal menyimpan company policy');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (policy: CompanyPolicy) => {
     setFormData({
       branch: policy.branch,
       title: policy.title,
-      description: policy.description,
-      attachment: policy.attachment ?? '',
+      description: policy.description ?? '',
+      attachment: null,
     });
+    setCurrentAttachmentPath(policy.attachment ?? null);
+    setAttachmentRemoved(false);
     setEditingId(policy.id);
     setDialogOpen(true);
   };
@@ -207,22 +242,44 @@ export default function CompanyPolicyPage() {
   };
 
   const handleConfirmDelete = () => {
-    if (policyToDelete) {
-      setPolicies(policies.filter((p) => p.id !== policyToDelete.id));
-      setPolicyToDelete(null);
-    }
-    setDeleteAlertOpen(false);
+    (async () => {
+      if (!policyToDelete) {
+        setDeleteAlertOpen(false);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/hrm/policies/${policyToDelete.id}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast.success(json.message || 'Company policy deleted');
+          await fetchPolicies();
+        } else {
+          toast.error(json.message || 'Gagal menghapus company policy');
+        }
+      } catch (error) {
+        console.error('Error deleting company policy:', error);
+        toast.error('Gagal menghapus company policy');
+      } finally {
+        setDeleteAlertOpen(false);
+        setPolicyToDelete(null);
+      }
+    })();
   };
 
   const filteredPolicies = useMemo(
     () =>
-      policies.filter(
-        (p) =>
-          p.title.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-          getBranchLabel(p.branch).toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-          p.description.toLowerCase().includes(searchTerm.trim().toLowerCase())
-      ),
-    [policies, searchTerm]
+      policies.filter((p) => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return true;
+        return (
+          p.title.toLowerCase().includes(term) ||
+          getBranchLabel(p.branch, branches).toLowerCase().includes(term) ||
+          (p.description ?? '').toLowerCase().includes(term)
+        );
+      }),
+    [policies, branches, searchTerm],
   );
 
   const totalPolicies = policies.length;
@@ -347,7 +404,16 @@ export default function CompanyPolicyPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredPolicies.length === 0 ? (
+                        {isLoading ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="px-6 text-center py-8 text-muted-foreground"
+                            >
+                              Loading policies...
+                            </TableCell>
+                          </TableRow>
+                        ) : filteredPolicies.length === 0 ? (
                           <TableRow>
                             <TableCell
                               colSpan={5}
@@ -360,34 +426,51 @@ export default function CompanyPolicyPage() {
                           filteredPolicies.map((policy) => (
                             <TableRow key={policy.id}>
                               <TableCell className="px-6">
-                                {getBranchLabel(policy.branch)}
+                                {getBranchLabel(policy.branch, branches)}
                               </TableCell>
                               <TableCell className="px-6 font-medium">{policy.title}</TableCell>
                               <TableCell className="px-6 max-w-xs">
                                 <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {policy.description}
+                                  {policy.description ?? '-'}
                                 </p>
                               </TableCell>
                               <TableCell className="px-6">
                                 {policy.attachment ? (
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200"
-                                      title="Download"
-                                    >
-                                      <Download className="w-3.5 h-3.5" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0"
-                                      title="Preview"
-                                    >
-                                      <Eye className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </div>
+                                  (() => {
+                                    const fileUrl = policy.attachment!.startsWith('/')
+                                      ? policy.attachment!
+                                      : `/uploads/companyPolicy/${policy.attachment}`;
+                                    return (
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200"
+                                          title="Download"
+                                          asChild
+                                        >
+                                          <a href={fileUrl} download>
+                                            <Download className="w-3.5 h-3.5" />
+                                          </a>
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 w-7 p-0 shadow-none bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                          title="Preview"
+                                          asChild
+                                        >
+                                          <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                          </a>
+                                        </Button>
+                                      </div>
+                                    );
+                                  })()
                                 ) : (
                                   <span className="text-sm text-muted-foreground">-</span>
                                 )}
@@ -450,17 +533,22 @@ export default function CompanyPolicyPage() {
                   <Select
                     value={formData.branch}
                     onValueChange={(value) => setFormData({ ...formData, branch: value })}
-                    required
                   >
                     <SelectTrigger id="branch">
                       <SelectValue placeholder="Select Branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {BRANCHES.map((b) => (
-                        <SelectItem key={b.value} value={b.value}>
-                          {b.label}
+                      {branches.length === 0 ? (
+                        <SelectItem value="__no-branch__" disabled>
+                          No branches available
                         </SelectItem>
-                      ))}
+                      ) : (
+                        branches.map((b) => (
+                          <SelectItem key={b.id} value={b.name}>
+                            {b.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -500,24 +588,145 @@ export default function CompanyPolicyPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="attachment">Attachment</Label>
-                <Input
-                  id="attachment"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    setFormData({
-                      ...formData,
-                      attachment: file ?? '',
-                    });
-                  }}
-                />
-                {typeof formData.attachment === 'string' && formData.attachment && (
-                  <p className="text-xs text-muted-foreground">
-                    Current: {formData.attachment}
-                  </p>
+                <div className="relative">
+                  <label
+                    htmlFor="attachment"
+                    className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      formData.attachment || isDraggingAttachment
+                        ? 'border-blue-400 bg-blue-50/50'
+                        : 'border-muted-foreground/25 bg-muted/5 hover:bg-muted/10'
+                    }`}
+                    onDragOver={(e: React.DragEvent<HTMLLabelElement>) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!isDraggingAttachment) {
+                        setIsDraggingAttachment(true);
+                      }
+                    }}
+                    onDragLeave={(e: React.DragEvent<HTMLLabelElement>) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (isDraggingAttachment) {
+                        setIsDraggingAttachment(false);
+                      }
+                    }}
+                    onDrop={(e: React.DragEvent<HTMLLabelElement>) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingAttachment(false);
+                      const file = e.dataTransfer.files?.[0] ?? null;
+                      if (file) {
+                        setFormData({
+                          ...formData,
+                          attachment: file,
+                        });
+                        setAttachmentRemoved(false);
+                      }
+                    }}
+                  >
+                    {formData.attachment ? (
+                      <div className="flex items-center gap-2 px-3 w-full">
+                        <FileText className="w-6 h-6 text-blue-500 shrink-0" />
+                        <div className="flex flex-col items-start min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate w-full max-w-[220px]">
+                            {formData.attachment.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {(formData.attachment.size / 1024 < 1024
+                              ? `${(formData.attachment.size / 1024).toFixed(1)} KB`
+                              : `${(formData.attachment.size / (1024 * 1024)).toFixed(2)} MB`)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 ml-2 text-muted-foreground hover:text-red-500 shrink-0 z-10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const input = document.getElementById(
+                              'attachment',
+                            ) as HTMLInputElement | null;
+                            if (input) input.value = '';
+                            setFormData({ ...formData, attachment: null });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-2">
+                        <Upload className="w-4 h-4 mb-1 text-blue-500" />
+                        <p className="text-xs text-muted-foreground">
+                          PDF, DOC, JPG, PNG (MAX. 10MB)
+                        </p>
+                      </div>
+                    )}
+                    <Input
+                      id="attachment"
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setFormData({
+                          ...formData,
+                          attachment: file,
+                        });
+                        if (file) {
+                          setAttachmentRemoved(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                {currentAttachmentPath && !attachmentRemoved && !formData.attachment && (
+                  <div className="mt-2 flex items-center justify-between rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-sky-600" />
+                      <span className="text-xs text-muted-foreground break-all">
+                        {currentAttachmentPath.split('/').pop()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const fileUrl = currentAttachmentPath.startsWith('/')
+                          ? currentAttachmentPath
+                          : `/uploads/companyPolicy/${currentAttachmentPath}`;
+                        return (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200"
+                              title="Download attachment"
+                              asChild
+                            >
+                              <a href={fileUrl} download>
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 p-0 shadow-none text-rose-700 hover:bg-rose-100"
+                              title="Remove attachment"
+                              onClick={() => {
+                                setAttachmentRemoved(true);
+                                setCurrentAttachmentPath(null);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 )}
-                {formData.attachment instanceof File && (
+                {formData.attachment && (
                   <p className="text-xs text-muted-foreground">
                     Selected: {formData.attachment.name}
                   </p>
@@ -528,8 +737,12 @@ export default function CompanyPolicyPage() {
               <Button type="button" variant="outline" onClick={() => handleDialogOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="blue" className="shadow-none">
-                {editingId !== null ? 'Update' : 'Create'}
+              <Button type="submit" variant="blue" className="shadow-none" disabled={isSubmitting}>
+                {isSubmitting
+                  ? 'Saving...'
+                  : editingId !== null
+                    ? 'Update'
+                    : 'Create'}
               </Button>
             </DialogFooter>
           </form>

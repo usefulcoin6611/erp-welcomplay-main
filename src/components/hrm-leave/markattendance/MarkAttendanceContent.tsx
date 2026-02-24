@@ -7,6 +7,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Search, RotateCcw, FileUp, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,8 +41,18 @@ interface AttendanceRecord {
   overtime: string;
 }
 
-const BRANCHES = [{ value: '', label: 'Select Branch' }, { value: '1', label: 'Head Office' }, { value: '2', label: 'Branch 2' }];
-const DEPARTMENTS = [{ value: '', label: 'Select Department' }, { value: '1', label: 'IT' }, { value: '2', label: 'HR' }, { value: '3', label: 'Finance' }];
+const ALL_OPTION = '__all__';
+
+type BranchOption = {
+  id: string;
+  name: string;
+};
+
+type DepartmentOption = {
+  id: string;
+  name: string;
+  branchName?: string;
+};
 
 export function MarkAttendanceContent() {
   const [filterType, setFilterType] = useState<'monthly' | 'daily'>('monthly');
@@ -38,6 +65,15 @@ export function MarkAttendanceContent() {
   const [department, setDepartment] = useState('');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [editStatus, setEditStatus] = useState('Present');
+  const [editClockIn, setEditClockIn] = useState('');
+  const [editClockOut, setEditClockOut] = useState('');
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<AttendanceRecord | null>(null);
 
   const fetchAttendance = async () => {
     try {
@@ -75,8 +111,45 @@ export function MarkAttendanceContent() {
     }
   };
 
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/branches');
+      const json = await res.json();
+      if (json.success) {
+        setBranches(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat data branch');
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      toast.error('Gagal memuat data branch');
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments');
+      const json = await res.json();
+      if (json.success) {
+        const mapped: DepartmentOption[] = (json.data ?? []).map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          branchName: d.branch?.name,
+        }));
+        setDepartments(mapped);
+      } else {
+        toast.error(json.message || 'Gagal memuat data department');
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      toast.error('Gagal memuat data department');
+    }
+  };
+
   useEffect(() => {
     fetchAttendance();
+    fetchBranches();
+    fetchDepartments();
   }, []);
 
   const handleApply = () => {
@@ -97,13 +170,75 @@ export function MarkAttendanceContent() {
     toast.info("Import feature not implemented");
   };
 
-  const handleEdit = (id: string) => {
-    toast.info("Edit feature not implemented");
+  const handleEdit = (record: AttendanceRecord) => {
+    setEditingRecord(record);
+    setEditStatus(record.status || 'Present');
+    setEditClockIn(record.clockIn && record.clockIn !== '-' ? record.clockIn : '');
+    setEditClockOut(record.clockOut && record.clockOut !== '-' ? record.clockOut : '');
+    setEditOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this attendance?')) {
-      toast.info("Delete feature not implemented in API yet");
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRecord) return;
+
+    try {
+      const payload = {
+        date: editingRecord.date,
+        status: editStatus,
+        clockIn: editClockIn || null,
+        clockOut: editClockOut || null,
+      };
+
+      const response = await fetch(`/api/hrm/attendance/${editingRecord.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Attendance updated');
+        setEditOpen(false);
+        setEditingRecord(null);
+        fetchAttendance();
+      } else {
+        toast.error(data.message || 'Failed to update attendance');
+      }
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      toast.error('Failed to update attendance');
+    }
+  };
+
+  const openDeleteDialog = (record: AttendanceRecord) => {
+    setRecordToDelete(record);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!recordToDelete) {
+      setDeleteAlertOpen(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/hrm/attendance/${recordToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Attendance deleted');
+        fetchAttendance();
+      } else {
+        toast.error(data.message || 'Failed to delete attendance');
+      }
+    } catch (error) {
+      console.error('Error deleting attendance:', error);
+      toast.error('Failed to delete attendance');
+    } finally {
+      setDeleteAlertOpen(false);
+      setRecordToDelete(null);
     }
   };
 
@@ -175,14 +310,18 @@ export function MarkAttendanceContent() {
               )}
               <div className="space-y-2 min-w-[140px]">
                 <Label>Branch</Label>
-                <Select value={branch || ' '} onValueChange={(v) => setBranch(v === ' ' ? '' : v)}>
+                <Select
+                  value={branch || ALL_OPTION}
+                  onValueChange={(v) => setBranch(v === ALL_OPTION ? '' : v)}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BRANCHES.map((b) => (
-                      <SelectItem key={b.value || 'empty'} value={b.value || ' '}>
-                        {b.label}
+                    <SelectItem value={ALL_OPTION}>All Branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -190,14 +329,19 @@ export function MarkAttendanceContent() {
               </div>
               <div className="space-y-2 min-w-[140px]">
                 <Label>Department</Label>
-                <Select value={department || ' '} onValueChange={(v) => setDepartment(v === ' ' ? '' : v)}>
+                <Select
+                  value={department || ALL_OPTION}
+                  onValueChange={(v) => setDepartment(v === ALL_OPTION ? '' : v)}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d.value || 'empty'} value={d.value || ' '}>
-                        {d.label}
+                    <SelectItem value={ALL_OPTION}>All Departments</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name}
+                        {d.branchName ? ` (${d.branchName})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -264,7 +408,7 @@ export function MarkAttendanceContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEdit(row.id)}
+                          onClick={() => handleEdit(row)}
                           title="Edit"
                           className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                         >
@@ -273,7 +417,7 @@ export function MarkAttendanceContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(row.id)}
+                          onClick={() => openDeleteDialog(row)}
                           title="Delete"
                           className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
@@ -288,6 +432,102 @@ export function MarkAttendanceContent() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Attendance Dialog */}
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) {
+            setEditingRecord(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Edit Attendance</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="font-medium">{editingRecord?.employeeName}</span>
+                <span className="text-muted-foreground">{editingRecord?.date}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={editStatus}
+                onValueChange={(value) => setEditStatus(value)}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Present">Present</SelectItem>
+                  <SelectItem value="Absent">Absent</SelectItem>
+                  <SelectItem value="Late">Late</SelectItem>
+                  <SelectItem value="Half Day">Half Day</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clockIn">Clock In</Label>
+                <Input
+                  id="clockIn"
+                  type="time"
+                  value={editClockIn}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEditClockIn(e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clockOut">Clock Out</Label>
+                <Input
+                  id="clockOut"
+                  type="time"
+                  value={editClockOut}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEditClockOut(e.target.value)
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Attendance?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Attendance record akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
+              <span>Hapus</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

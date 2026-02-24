@@ -27,21 +27,66 @@ interface Employee {
 const DEFAULT_CLOCK_IN = '09:00';
 const DEFAULT_CLOCK_OUT = '17:00';
 
-const BRANCHES = [{ value: '', label: 'Select Branch' }, { value: '1', label: 'Head Office' }, { value: '2', label: 'Branch 2' }];
-const DEPARTMENTS = [{ value: '', label: 'Select Department' }, { value: '1', label: 'IT' }, { value: '2', label: 'HR' }, { value: '3', label: 'Finance' }];
+type BranchOption = {
+  id: string;
+  name: string;
+};
+
+type DepartmentOption = {
+  id: string;
+  name: string;
+  branchName?: string;
+};
 
 export function BulkAttendanceContent() {
+  const ALL_OPTION = '__all__';
+
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [branch, setBranch] = useState('');
   const [department, setDepartment] = useState('');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/branches');
+      const json = await res.json();
+      if (json.success) {
+        setBranches(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat data branch');
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      toast.error('Gagal memuat data branch');
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments');
+      const json = await res.json();
+      if (json.success) {
+        const mapped: DepartmentOption[] = (json.data ?? []).map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          branchName: d.branch?.name,
+        }));
+        setDepartments(mapped);
+      } else {
+        toast.error(json.message || 'Gagal memuat data department');
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      toast.error('Gagal memuat data department');
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
         setLoading(true);
-        // Reusing set-salary endpoint to get employee list
-        // In real app, create dedicated /api/hrm/employees endpoint with filters
         const response = await fetch('/api/hrm/payroll/set-salary'); 
         const data = await response.json();
         
@@ -50,19 +95,19 @@ export function BulkAttendanceContent() {
                 id: emp.id,
                 employeeId: emp.employeeId,
                 name: emp.name,
-                branch: 'Head Office', // Mock branch since API doesn't return it yet (or check schema)
+                branch: emp.branch || '',
                 department: emp.department,
                 present: true,
                 clockIn: DEFAULT_CLOCK_IN,
                 clockOut: DEFAULT_CLOCK_OUT,
             }));
             
-            // Client side filter for demo
-            const filtered = mapped.filter((e: any) => {
-                if (department && e.department !== 'IT') return true; // Mock logic, department names vary
+            const filtered = mapped.filter((e: Employee) => {
+                if (branch && e.branch !== branch) return false;
+                if (department && e.department !== department) return false;
                 return true;
             });
-            
+
             setEmployees(filtered);
         } else {
             toast.error("Failed to fetch employees");
@@ -76,8 +121,8 @@ export function BulkAttendanceContent() {
   };
 
   useEffect(() => {
-    // Initial fetch empty or auto fetch?
-    // Usually bulk attendance starts empty until filter applied.
+    fetchBranches();
+    fetchDepartments();
   }, []);
 
   const handleApply = () => {
@@ -176,14 +221,18 @@ export function BulkAttendanceContent() {
               </div>
               <div className="space-y-2 min-w-[140px]">
                 <Label>Branch</Label>
-                <Select value={branch || ' '} onValueChange={(v) => setBranch(v === ' ' ? '' : v)}>
+                <Select
+                  value={branch || ALL_OPTION}
+                  onValueChange={(v) => setBranch(v === ALL_OPTION ? '' : v)}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BRANCHES.map((b) => (
-                      <SelectItem key={b.value || 'empty'} value={b.value || ' '}>
-                        {b.label}
+                    <SelectItem value={ALL_OPTION}>All Branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -191,14 +240,19 @@ export function BulkAttendanceContent() {
               </div>
               <div className="space-y-2 min-w-[140px]">
                 <Label>Department</Label>
-                <Select value={department || ' '} onValueChange={(v) => setDepartment(v === ' ' ? '' : v)}>
+                <Select
+                  value={department || ALL_OPTION}
+                  onValueChange={(v) => setDepartment(v === ALL_OPTION ? '' : v)}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d.value || 'empty'} value={d.value || ' '}>
-                        {d.label}
+                    <SelectItem value={ALL_OPTION}>All Departments</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name}
+                        {d.branchName ? ` (${d.branchName})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

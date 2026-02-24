@@ -120,9 +120,25 @@ export function PayslipContent() {
     }
   };
 
-  const handleBulkPayment = () => {
-    // TODO: Implement bulk payment logic if needed via API
-    toast.info('Bulk payment feature coming soon');
+  const handleBulkPayment = async () => {
+    try {
+      const salaryMonth = `${filterYear}-${String(filterMonth).padStart(2, '0')}`;
+      const res = await fetch('/api/hrm/payroll/payslip/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salaryMonth }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message || 'Bulk payment failed');
+        return;
+      }
+      toast.success(data.message || 'Bulk payment succeeded');
+      fetchPayslips();
+    } catch (error) {
+      console.error('Error in bulk payment:', error);
+      toast.error('Bulk payment failed');
+    }
   };
 
   const handleExport = () => {

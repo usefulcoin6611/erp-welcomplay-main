@@ -6,10 +6,12 @@ import { seedCOA } from "./seeds/coa";
 import { seedUsers } from "./seeds/users";
 import { seedJournals } from "./seeds/journals";
 import { seedBranches } from "./seeds/branches";
+import { seedCompanyPolicies } from "./seeds/company-policies";
 import { seedDepartments } from "./seeds/departments";
 import { seedDesignations } from "./seeds/designations";
 import { seedLeaveTypes } from "./seeds/leave-types";
 import { seedDocumentTypes } from "./seeds/document-types";
+import { seedDocumentUploads } from "./seeds/document-uploads";
 import { seedPayslipTypes } from "./seeds/payslip-types";
 import { seedAllowanceOptions } from "./seeds/allowance-options";
 import { seedLoanOptions } from "./seeds/loan-options";
@@ -45,6 +47,7 @@ import { seedLeads } from "./seeds/leads";
 import { seedDeals } from "./seeds/deals";
 import { seedFormBuilder } from "./seeds/form-builder";
 import { seedContracts } from "./seeds/contracts";
+import { seedHrmAssets } from "./seeds/hrm-assets";
 
 dotenv.config();
 
@@ -56,6 +59,8 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   try {
     await seedBranches(prisma);
+    await seedCompanyPolicies(prisma);
+    await seedDocumentUploads(prisma);
     await seedDepartments(prisma);
     await seedDesignations(prisma);
     await seedLeaveTypes(prisma);
@@ -73,6 +78,7 @@ async function main() {
     await seedPerformanceTypes(prisma);
     await seedCompetencies(prisma);
     await seedEmployees(prisma);
+    await seedHrmAssets(prisma);
     await seedCOA(prisma);
     await seedUsers(prisma);
     await seedJournals(prisma);
