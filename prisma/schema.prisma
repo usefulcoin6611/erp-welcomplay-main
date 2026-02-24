@@ -99,6 +99,7 @@ model LeaveType {
   daysPerYear Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  leaveRequests LeaveRequest[]
 
   @@map("leave_type")
 }
@@ -119,6 +120,7 @@ model PayslipType {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  payslips  Payslip[]
 
   @@map("payslip_type")
 }
@@ -225,6 +227,15 @@ model Employee {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   employeeDocuments    EmployeeDocument[]
+  allowances           EmployeeAllowance[]
+  commissions          EmployeeCommission[]
+  loans                EmployeeLoan[]
+  saturationDeductions EmployeeSaturationDeduction[]
+  otherPayments        EmployeeOtherPayment[]
+  overtimes            EmployeeOvertime[]
+  payslips             Payslip[]
+  leaves               LeaveRequest[]
+  attendances          Attendance[]
 
   user User? @relation(fields: [userId], references: [id])
 
@@ -255,6 +266,7 @@ model AllowanceOption {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  employeeAllowances EmployeeAllowance[]
 
   @@map("allowance_option")
 }
@@ -265,6 +277,7 @@ model LoanOption {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  employeeLoans EmployeeLoan[]
 
   @@map("loan_option")
 }
@@ -275,6 +288,7 @@ model DeductionOption {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  employeeSaturationDeductions EmployeeSaturationDeduction[]
 
   @@map("deduction_option")
 }
@@ -993,3 +1007,156 @@ model FormField {
 
   @@map("form_field")
 }
+
+model EmployeeAllowance {
+  id                String          @id @default(cuid())
+  employeeId        String
+  allowanceOptionId String
+  title             String
+  amount            Float           @default(0)
+  type              String          @default("Fixed") // Fixed or Percentage
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  allowanceOption AllowanceOption @relation(fields: [allowanceOptionId], references: [id])
+  
+  @@map("employee_allowance")
+}
+
+model EmployeeCommission {
+  id         String   @id @default(cuid())
+  employeeId String
+  title      String
+  amount     Float    @default(0)
+  type       String   @default("Fixed") // Fixed or Percentage
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@map("employee_commission")
+}
+
+model EmployeeLoan {
+  id           String   @id @default(cuid())
+  employeeId   String
+  loanOptionId String
+  title        String
+  amount       Float    @default(0)
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  loanOption LoanOption @relation(fields: [loanOptionId], references: [id])
+  
+  @@map("employee_loan")
+}
+
+model EmployeeSaturationDeduction {
+  id                String          @id @default(cuid())
+  employeeId        String
+  deductionOptionId String
+  title             String
+  amount            Float           @default(0)
+  type              String          @default("Fixed") // Fixed or Percentage
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  deductionOption DeductionOption @relation(fields: [deductionOptionId], references: [id])
+  
+  @@map("employee_saturation_deduction")
+}
+
+model EmployeeOtherPayment {
+  id         String   @id @default(cuid())
+  employeeId String
+  title      String
+  amount     Float    @default(0)
+  type       String   @default("Fixed") // Fixed or Percentage
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@map("employee_other_payment")
+}
+
+model EmployeeOvertime {
+  id         String   @id @default(cuid())
+  employeeId String
+  title      String
+  days       Int      @default(0)
+  hours      Int      @default(0)
+  rate       Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@map("employee_overtime")
+}
+
+model Payslip {
+  id             String   @id @default(cuid())
+  employeeId     String
+  payslipTypeId  String?
+  salaryMonth    String   // YYYY-MM
+  basicSalary    Float
+  allowance      Float    @default(0)
+  commission     Float    @default(0)
+  loan           Float    @default(0)
+  saturationDeduction Float @default(0)
+  otherPayment   Float    @default(0)
+  overtime       Float    @default(0)
+  netSalary      Float
+  status         Int      @default(0) // 0: Unpaid, 1: Paid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  employee    Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payslipType PayslipType? @relation(fields: [payslipTypeId], references: [id])
+  
+  @@map("payslip")
+}
+
+model LeaveRequest {
+  id          String   @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  startDate   DateTime
+  endDate     DateTime
+  reason      String?
+  status      String   @default("Pending") // Pending, Approved, Rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+  
+  @@map("leave_request")
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  date        DateTime
+  clockIn     DateTime?
+  clockOut    DateTime?
+  status      String   @default("Present") // Present, Absent, Late, Half Day
+  late        String?  // Duration
+  earlyLeaving String? // Duration
+  overtime    String?  // Duration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  @@unique([employeeId, date])
+  
+  @@map("attendance")
+}
+

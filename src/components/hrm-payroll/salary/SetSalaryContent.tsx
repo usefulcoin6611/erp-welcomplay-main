@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Eye, Calculator } from 'lucide-react';
+import { Search, Calculator, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface Employee {
   id: string;
@@ -21,55 +23,32 @@ interface Employee {
 }
 
 export function SetSalaryContent() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - sesuai dengan struktur Laravel reference
-  const [employees] = useState<Employee[]>([
-    {
-      id: '1',
-      employeeId: 'EMP001',
-      name: 'John Doe',
-      payrollType: 'Monthly',
-      salary: 8000000,
-      allowances: 1500000,
-      deductions: 500000,
-      netSalary: 9000000,
-      department: 'IT',
-    },
-    {
-      id: '2',
-      employeeId: 'EMP002',
-      name: 'Jane Smith',
-      payrollType: 'Monthly',
-      salary: 7500000,
-      allowances: 1200000,
-      deductions: 400000,
-      netSalary: 8300000,
-      department: 'HR',
-    },
-    {
-      id: '3',
-      employeeId: 'EMP003',
-      name: 'Bob Johnson',
-      payrollType: 'Monthly',
-      salary: 9000000,
-      allowances: 2000000,
-      deductions: 600000,
-      netSalary: 10400000,
-      department: 'Finance',
-    },
-    {
-      id: '4',
-      employeeId: 'EMP004',
-      name: 'Alice Brown',
-      payrollType: 'Hourly',
-      salary: 6000000,
-      allowances: 800000,
-      deductions: 300000,
-      netSalary: 6500000,
-      department: 'Marketing',
-    },
-  ]);
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/hrm/payroll/set-salary');
+      const data = await response.json();
+      if (data.success) {
+        setEmployees(data.data);
+      } else {
+        toast.error(data.message || 'Failed to fetch employees');
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast.error('Failed to fetch employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
   const filteredData = employees.filter(
     (emp) =>
@@ -82,11 +61,17 @@ export function SetSalaryContent() {
     router.push(`/hrm/payroll/set-salary/${id}/edit`);
   };
 
-  const handleViewDetails = (id: string) => {
-    router.push(`/hrm/payroll/set-salary/${id}`);
-  };
+  // View details dihilangkan sesuai requirement (aksi hanya Set Salary)
 
   const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -175,15 +160,12 @@ export function SetSalaryContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4 py-3 font-medium">Employee ID</TableHead>
+                <TableHead className="px-4 py-3 font-medium">Employee Id</TableHead>
                 <TableHead className="px-4 py-3 font-medium">Name</TableHead>
-                <TableHead className="px-4 py-3 font-medium">Department</TableHead>
                 <TableHead className="px-4 py-3 font-medium">Payroll Type</TableHead>
-                <TableHead className="px-4 py-3 font-medium text-right">Base Salary</TableHead>
-                <TableHead className="px-4 py-3 font-medium text-right">Allowances</TableHead>
-                <TableHead className="px-4 py-3 font-medium text-right">Deductions</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Salary</TableHead>
                 <TableHead className="px-4 py-3 font-medium text-right">Net Salary</TableHead>
-                <TableHead className="px-4 py-3 font-medium text-center w-[140px]">Actions</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-center w-[120px]">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -196,17 +178,8 @@ export function SetSalaryContent() {
               ) : (
                 filteredData.map((employee) => (
                   <TableRow key={employee.id}>
-                    <TableCell className="px-4 py-3">
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto font-medium text-primary"
-                        onClick={() => handleViewDetails(employee.id)}
-                      >
-                        {employee.employeeId}
-                      </Button>
-                    </TableCell>
+                    <TableCell className="px-4 py-3 font-medium">{employee.employeeId}</TableCell>
                     <TableCell className="px-4 py-3 font-medium">{employee.name}</TableCell>
-                    <TableCell className="px-4 py-3">{employee.department}</TableCell>
                     <TableCell className="px-4 py-3">
                       <Badge variant="outline">{employee.payrollType}</Badge>
                     </TableCell>
@@ -217,20 +190,6 @@ export function SetSalaryContent() {
                         minimumFractionDigits: 0,
                       }).format(employee.salary)}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-right text-green-600">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.allowances)}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-right text-red-600">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.deductions)}
-                    </TableCell>
                     <TableCell className="px-4 py-3 text-right font-semibold">
                       {new Intl.NumberFormat('id-ID', {
                         style: 'currency',
@@ -239,17 +198,7 @@ export function SetSalaryContent() {
                       }).format(employee.netSalary)}
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <div className="flex justify-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewDetails(employee.id)}
-                          title="View Details"
-                          className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
+                      <div className="flex justify-center">
                         <Button
                           size="sm"
                           variant="outline"

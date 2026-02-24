@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, RotateCcw, FileUp, Pencil, Trash2 } from 'lucide-react';
+import { Search, RotateCcw, FileUp, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -23,13 +24,6 @@ interface AttendanceRecord {
   overtime: string;
 }
 
-const MOCK_RECORDS: AttendanceRecord[] = [
-  { id: '1', employeeName: 'John Doe', date: '2024-03-15', status: 'Present', clockIn: '09:00', clockOut: '17:00', late: '00:00', earlyLeaving: '00:00', overtime: '00:00' },
-  { id: '2', employeeName: 'Jane Smith', date: '2024-03-15', status: 'Present', clockIn: '09:15', clockOut: '17:30', late: '00:15', earlyLeaving: '00:00', overtime: '00:30' },
-  { id: '3', employeeName: 'Bob Wilson', date: '2024-03-15', status: 'Present', clockIn: '10:00', clockOut: '17:00', late: '01:00', earlyLeaving: '00:00', overtime: '00:00' },
-  { id: '4', employeeName: 'Alice Brown', date: '2024-03-15', status: 'Leave', clockIn: '00:00', clockOut: '00:00', late: '00:00', earlyLeaving: '00:00', overtime: '00:00' },
-];
-
 const BRANCHES = [{ value: '', label: 'Select Branch' }, { value: '1', label: 'Head Office' }, { value: '2', label: 'Branch 2' }];
 const DEPARTMENTS = [{ value: '', label: 'Select Department' }, { value: '1', label: 'IT' }, { value: '2', label: 'HR' }, { value: '3', label: 'Finance' }];
 
@@ -42,10 +36,51 @@ export function MarkAttendanceContent() {
   const [date, setDate] = useState('');
   const [branch, setBranch] = useState('');
   const [department, setDepartment] = useState('');
-  const [records] = useState<AttendanceRecord[]>(MOCK_RECORDS);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAttendance = async () => {
+    try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (filterType === 'monthly' && month) params.append('month', month);
+        if (filterType === 'daily' && date) params.append('date', date);
+        if (branch) params.append('branchId', branch);
+        if (department) params.append('departmentId', department);
+
+        const response = await fetch(`/api/hrm/attendance?${params.toString()}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const mapped = data.data.map((item: any) => ({
+                id: item.id,
+                employeeName: item.employee?.name || '-',
+                date: item.date.split('T')[0],
+                status: item.status,
+                clockIn: item.clockIn ? new Date(item.clockIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-',
+                clockOut: item.clockOut ? new Date(item.clockOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-',
+                late: item.late || '-',
+                earlyLeaving: item.earlyLeaving || '-',
+                overtime: item.overtime || '-',
+            }));
+            setRecords(mapped);
+        } else {
+            toast.error(data.message || "Failed to fetch attendance");
+        }
+    } catch (error) {
+        console.error("Error fetching attendance:", error);
+        toast.error("Failed to fetch attendance");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAttendance();
+  }, []);
 
   const handleApply = () => {
-    console.log('Apply filter', { filterType, month, date, branch, department });
+    fetchAttendance();
   };
 
   const handleReset = () => {
@@ -55,22 +90,30 @@ export function MarkAttendanceContent() {
     setDate('');
     setBranch('');
     setDepartment('');
+    // fetchAttendance(); // Optional: auto fetch on reset?
   };
 
   const handleImport = () => {
-    alert('Import employee attendance CSV file');
+    toast.info("Import feature not implemented");
   };
 
   const handleEdit = (id: string) => {
-    console.log('Edit', id);
-    alert('Edit attendance (modal/form)');
+    toast.info("Edit feature not implemented");
   };
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this attendance?')) {
-      console.log('Delete', id);
+      toast.info("Delete feature not implemented in API yet");
     }
   };
+
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

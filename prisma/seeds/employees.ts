@@ -16,14 +16,14 @@ export async function seedEmployees(prisma: any) {
       dateOfJoining: "2024-01-15",
       lastLogin: "2024-10-31T09:30:00",
       isActive: true,
-      salaryType: "Monthly Payslip",
+      salaryType: "Monthly",
       basicSalary: 15000000,
       documentsCertificate: "certificate.png",
       documentsPhoto: "profile.png",
       accountHolderName: "John Doe",
-      accountNumber: "14202546",
-      bankName: "Bank Central",
-      bankIdentifierCode: "5879823",
+      accountNumber: "1234567890",
+      bankName: "Bank BCA",
+      bankIdentifierCode: "BCA001",
       branchLocation: "Jakarta",
       taxPayerId: "95682",
     },
@@ -41,14 +41,14 @@ export async function seedEmployees(prisma: any) {
       dateOfJoining: "2023-12-01",
       lastLogin: "2024-10-31T08:15:00",
       isActive: true,
-      salaryType: "Monthly Payslip",
+      salaryType: "Monthly",
       basicSalary: 18000000,
       documentsCertificate: "certificate.png",
       documentsPhoto: "profile.png",
       accountHolderName: "Jane Smith",
-      accountNumber: "14202547",
-      bankName: "Bank Central",
-      bankIdentifierCode: "5879823",
+      accountNumber: "223344556677",
+      bankName: "Bank Mandiri",
+      bankIdentifierCode: "MAND001",
       branchLocation: "Bandung",
       taxPayerId: "95683",
     },
@@ -66,14 +66,14 @@ export async function seedEmployees(prisma: any) {
       dateOfJoining: "2024-02-20",
       lastLogin: "2024-10-30T17:45:00",
       isActive: true,
-      salaryType: "Monthly Payslip",
+      salaryType: "Monthly",
       basicSalary: 12000000,
       documentsCertificate: "certificate.png",
       documentsPhoto: "profile.png",
       accountHolderName: "Bob Johnson",
-      accountNumber: "14202548",
-      bankName: "Bank Central",
-      bankIdentifierCode: "5879823",
+      accountNumber: "1234567891",
+      bankName: "Bank BCA",
+      bankIdentifierCode: "BCA001",
       branchLocation: "Surabaya",
       taxPayerId: "95684",
     },
@@ -91,14 +91,14 @@ export async function seedEmployees(prisma: any) {
       dateOfJoining: "2024-03-10",
       lastLogin: null,
       isActive: false,
-      salaryType: "Monthly Payslip",
+      salaryType: "Monthly",
       basicSalary: 14000000,
       documentsCertificate: "certificate.png",
       documentsPhoto: "profile.png",
       accountHolderName: "Alice Brown",
-      accountNumber: "14202549",
-      bankName: "Bank Central",
-      bankIdentifierCode: "5879823",
+      accountNumber: "1234567892",
+      bankName: "Bank BCA",
+      bankIdentifierCode: "BCA001",
       branchLocation: "Jakarta",
       taxPayerId: "95685",
     },
@@ -116,14 +116,14 @@ export async function seedEmployees(prisma: any) {
       dateOfJoining: "2024-01-25",
       lastLogin: "2024-10-29T16:30:00",
       isActive: true,
-      salaryType: "Monthly Payslip",
+      salaryType: "Monthly",
       basicSalary: 13000000,
       documentsCertificate: "certificate.png",
       documentsPhoto: "profile.png",
       accountHolderName: "Charlie Wilson",
-      accountNumber: "14202550",
-      bankName: "Bank Central",
-      bankIdentifierCode: "5879823",
+      accountNumber: "223344556678",
+      bankName: "Bank Mandiri",
+      bankIdentifierCode: "MAND001",
       branchLocation: "Medan",
       taxPayerId: "95686",
     },
@@ -141,14 +141,14 @@ export async function seedEmployees(prisma: any) {
       dateOfJoining: "2024-01-01",
       lastLogin: null,
       isActive: true,
-      salaryType: "Monthly Payslip",
+      salaryType: "Monthly",
       basicSalary: 8000000,
       documentsCertificate: null,
       documentsPhoto: null,
       accountHolderName: "Employee Demo",
-      accountNumber: "14202551",
-      bankName: "Bank Demo",
-      bankIdentifierCode: "0000000",
+      accountNumber: "1234567893",
+      bankName: "Bank BCA",
+      bankIdentifierCode: "BCA001",
       branchLocation: "Demo City",
       taxPayerId: "99999",
     },
@@ -173,7 +173,33 @@ export async function seedEmployees(prisma: any) {
     documentTypes[0] ??
     null;
 
+  // Ambil bank account yang terkait COA payroll (1120, 1121) agar konsisten dengan Set Salary
+  const payrollBankAccounts = await prisma.bankAccount.findMany({
+    include: { chartAccount: true },
+  });
+
+  const payrollBca =
+    payrollBankAccounts.find(
+      (b: any) => b.chartAccount?.code === "1120",
+    ) ?? null;
+  const payrollMandiri =
+    payrollBankAccounts.find(
+      (b: any) => b.chartAccount?.code === "1121",
+    ) ?? null;
+
   for (const e of employees) {
+    // Mapping sederhana: Pusat Jakarta -> BCA, cabang lain -> Mandiri (fallback silang bila salah satu tidak ada)
+    const payrollBank =
+      e.branch === "Pusat Jakarta"
+        ? payrollBca ?? payrollMandiri
+        : payrollMandiri ?? payrollBca;
+
+    const accountHolderName = payrollBank?.holderName ?? e.accountHolderName;
+    const accountNumber = payrollBank?.accountNumber ?? e.accountNumber;
+    const bankName = payrollBank?.bank ?? e.bankName;
+    const bankIdentifierCode =
+      (payrollBank as any)?.chartAccount?.code ?? e.bankIdentifierCode;
+
     const employee = await prisma.employee.upsert({
       where: { employeeId: e.employeeId },
       update: {
@@ -193,10 +219,10 @@ export async function seedEmployees(prisma: any) {
         basicSalary: e.basicSalary,
         documentsCertificate: e.documentsCertificate,
         documentsPhoto: e.documentsPhoto,
-        accountHolderName: e.accountHolderName,
-        accountNumber: e.accountNumber,
-        bankName: e.bankName,
-        bankIdentifierCode: e.bankIdentifierCode,
+        accountHolderName,
+        accountNumber,
+        bankName,
+        bankIdentifierCode,
         branchLocation: e.branchLocation,
         taxPayerId: e.taxPayerId,
       },
@@ -218,10 +244,10 @@ export async function seedEmployees(prisma: any) {
         basicSalary: e.basicSalary,
         documentsCertificate: e.documentsCertificate,
         documentsPhoto: e.documentsPhoto,
-        accountHolderName: e.accountHolderName,
-        accountNumber: e.accountNumber,
-        bankName: e.bankName,
-        bankIdentifierCode: e.bankIdentifierCode,
+        accountHolderName,
+        accountNumber,
+        bankName,
+        bankIdentifierCode,
         branchLocation: e.branchLocation,
         taxPayerId: e.taxPayerId,
       },

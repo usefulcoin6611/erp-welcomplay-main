@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -29,59 +30,89 @@ export function ManageLeaveContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [employees, setEmployees] = useState<{id: string, name: string, employeeId: string}[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{id: string, name: string}[]>([]);
+  
   const [formData, setFormData] = useState({
-    employeeName: '',
-    leaveType: '',
+    employeeId: '',
+    leaveType: '', // This will store ID
     startDate: '',
     endDate: '',
     reason: '',
   });
 
-  // Mock data
-  const [leaves, setLeaves] = useState<Leave[]>([
-    {
-      id: '1',
-      employeeId: 'EMP001',
-      employeeName: 'John Doe',
-      leaveType: 'Annual Leave',
-      startDate: '2024-03-15',
-      endDate: '2024-03-17',
-      days: 3,
-      reason: 'Family vacation',
-      status: 'Approved',
-      appliedDate: '2024-03-01',
-    },
-    {
-      id: '2',
-      employeeId: 'EMP002',
-      employeeName: 'Jane Smith',
-      leaveType: 'Sick Leave',
-      startDate: '2024-03-20',
-      endDate: '2024-03-21',
-      days: 2,
-      reason: 'Medical checkup',
-      status: 'Pending',
-      appliedDate: '2024-03-18',
-    },
-    {
-      id: '3',
-      employeeId: 'EMP003',
-      employeeName: 'Bob Wilson',
-      leaveType: 'Casual Leave',
-      startDate: '2024-03-10',
-      endDate: '2024-03-10',
-      days: 1,
-      reason: 'Personal matters',
-      status: 'Rejected',
-      appliedDate: '2024-03-08',
-    },
-  ]);
+  const fetchLeaveTypes = async () => {
+    try {
+      const response = await fetch('/api/hrm/leave-types');
+      const data = await response.json();
+      if (data.success) {
+        setLeaveTypes(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching leave types:', error);
+    }
+  };
+
+  const fetchLeaves = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/hrm/leaves');
+      const data = await response.json();
+      if (data.success) {
+        const mappedData = data.data.map((item: any) => {
+           const start = new Date(item.startDate);
+           const end = new Date(item.endDate);
+           const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+           return {
+             id: item.id,
+             employeeId: item.employee?.employeeId || '-',
+             employeeName: item.employee?.name || '-',
+             leaveType: item.leaveType?.name || '-', // Assuming relation is included
+             startDate: item.startDate.split('T')[0],
+             endDate: item.endDate.split('T')[0],
+             days,
+             reason: item.reason,
+             status: item.status,
+             appliedDate: item.createdAt.split('T')[0],
+           };
+        });
+        setLeaves(mappedData);
+      } else {
+        toast.error(data.message || 'Failed to fetch leaves');
+      }
+    } catch (error) {
+      console.error('Error fetching leaves:', error);
+      toast.error('Failed to fetch leaves');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/hrm/payroll/set-salary'); // Reusing this endpoint to get employees list
+      const data = await response.json();
+      if (data.success) {
+        setEmployees(data.data.map((e: any) => ({ id: e.id, name: e.name, employeeId: e.employeeId })));
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+    fetchEmployees();
+    fetchLeaveTypes();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(true);
     setEditingId(null);
     setFormData({
-      employeeName: '',
+      employeeId: '',
       leaveType: '',
       startDate: '',
       endDate: '',
@@ -89,70 +120,113 @@ export function ManageLeaveContent() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
-
-    if (editingId) {
-      setLeaves(
-        leaves.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                ...formData,
-                days,
-                status: 'Pending' as const,
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: Leave = {
-        id: Date.now().toString(),
-        employeeId: 'EMP' + Math.floor(Math.random() * 1000).toString().padStart(3, '0'),
-        ...formData,
-        days,
-        status: 'Pending',
-        appliedDate: new Date().toISOString().split('T')[0],
-      };
-      setLeaves([...leaves, newItem]);
+    
+    // Simple validation
+    if (!formData.employeeId || !formData.leaveType || !formData.startDate || !formData.endDate || !formData.reason) {
+        toast.error("Please fill all fields");
+        return;
     }
-    setShowForm(false);
-    setFormData({
-      employeeName: '',
-      leaveType: '',
-      startDate: '',
-      endDate: '',
-      reason: '',
-    });
+
+    try {
+        const payload = {
+            employeeId: formData.employeeId,
+            leaveTypeId: formData.leaveType, // This now stores the ID
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            reason: formData.reason
+        };
+
+        const response = await fetch('/api/hrm/leaves', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            toast.success("Leave requested successfully");
+            fetchLeaves();
+            setShowForm(false);
+            setFormData({
+                employeeId: '',
+                leaveType: '',
+                startDate: '',
+                endDate: '',
+                reason: '',
+            });
+        } else {
+            toast.error(data.message || "Failed to request leave");
+        }
+    } catch (error) {
+        console.error("Error submitting leave:", error);
+        toast.error("An error occurred");
+    }
   };
 
   const handleEdit = (item: Leave) => {
-    setShowForm(true);
-    setEditingId(item.id);
-    setFormData({
-      employeeName: item.employeeName,
-      leaveType: item.leaveType,
-      startDate: item.startDate,
-      endDate: item.endDate,
-      reason: item.reason,
-    });
+    // Edit logic would go here - usually PUT to /api/hrm/leaves/[id]
+    // Since my API currently only supports status update on PUT, I might not support full edit yet.
+    // I'll just show toast.
+    toast.info("Edit feature not fully implemented in API yet (Status update only)");
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this leave request?')) {
-      setLeaves(leaves.filter((item) => item.id !== id));
+      try {
+        const response = await fetch(`/api/hrm/leaves/${id}`, {
+            method: 'DELETE',
+        });
+        const data = await response.json();
+        if (data.success) {
+            toast.success("Leave request deleted");
+            fetchLeaves();
+        } else {
+            toast.error(data.message);
+        }
+      } catch (error) {
+        toast.error("Failed to delete leave");
+      }
     }
   };
 
-  const handleApprove = (id: string) => {
-    setLeaves(leaves.map((item) => (item.id === id ? { ...item, status: 'Approved' as const } : item)));
+  const handleApprove = async (id: string) => {
+    try {
+        const response = await fetch(`/api/hrm/leaves/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Approved' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+            toast.success("Leave approved");
+            fetchLeaves();
+        } else {
+            toast.error(data.message);
+        }
+    } catch (error) {
+        toast.error("Failed to approve leave");
+    }
   };
 
-  const handleReject = (id: string) => {
-    setLeaves(leaves.map((item) => (item.id === id ? { ...item, status: 'Rejected' as const } : item)));
+  const handleReject = async (id: string) => {
+    try {
+        const response = await fetch(`/api/hrm/leaves/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Rejected' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+            toast.success("Leave rejected");
+            fetchLeaves();
+        } else {
+            toast.error(data.message);
+        }
+    } catch (error) {
+        toast.error("Failed to reject leave");
+    }
   };
 
   const filteredData = leaves.filter(
@@ -162,12 +236,10 @@ export function ManageLeaveContent() {
       leave.leaveType.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const leaveTypes = ['Annual Leave', 'Sick Leave', 'Casual Leave', 'Maternity Leave', 'Paternity Leave'];
-
   return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className={cardClass}>
           <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
@@ -233,15 +305,19 @@ export function ManageLeaveContent() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="employeeName">Employee Name</Label>
-                  <Input
-                    id="employeeName"
-                    value={formData.employeeName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, employeeName: e.target.value })
-                    }
-                    required
-                  />
+                  <Label htmlFor="employeeId">Employee Name</Label>
+                  <Select value={formData.employeeId} onValueChange={(value) => setFormData({ ...formData, employeeId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select employee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.name} ({emp.employeeId})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="leaveType">Leave Type</Label>
@@ -251,8 +327,8 @@ export function ManageLeaveContent() {
                     </SelectTrigger>
                     <SelectContent>
                       {leaveTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

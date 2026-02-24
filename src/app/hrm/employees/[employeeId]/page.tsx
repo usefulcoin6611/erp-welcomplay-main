@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, ChevronDown, Download, Pencil } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Download, Eye, Pencil, User, Building2, CreditCard, FileText } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter, useParams } from 'next/navigation'
 import {
@@ -150,6 +150,7 @@ interface EmployeeDetail {
     name: string
     requiredField: boolean
     filePath: string | null
+    fileName?: string | null
   }[]
 }
 
@@ -160,6 +161,7 @@ export default function EmployeeDetailPage() {
   const employeeId = params.employeeId;
 
   const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
+  const [documentTypes, setDocumentTypes] = useState<{ id: string; name: string; requiredField: boolean }[]>([]);
 
   useEffect(() => {
     const fetchEmployee = async () => {
@@ -181,6 +183,27 @@ export default function EmployeeDetailPage() {
       fetchEmployee();
     }
   }, [employeeId, router]);
+
+  useEffect(() => {
+    const fetchDocumentTypes = async () => {
+      try {
+        const res = await fetch('/api/document-types');
+        const json = await res.json().catch(() => null);
+        if (json?.success && Array.isArray(json.data)) {
+          setDocumentTypes(
+            json.data.map((dt: { id: string; name: string; requiredField: boolean }) => ({
+              id: String(dt.id),
+              name: String(dt.name ?? ''),
+              requiredField: Boolean(dt.requiredField),
+            }))
+          );
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchDocumentTypes();
+  }, []);
 
   if (!employee) {
     return (
@@ -218,80 +241,82 @@ export default function EmployeeDetailPage() {
           <div className="@container/main flex flex-1 flex-col gap-5 p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Personal Detail */}
-              <Card className="bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
-                <CardHeader className="px-5 pt-5 pb-3">
-                  <CardTitle className="text-base font-semibold text-foreground">
+              <Card className="rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+                <CardHeader className="px-6 pt-6 pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <User className="h-4 w-4" />
                     {t("personalDetail")}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-5 pb-5 pt-0 space-y-5">
+                <CardContent className="px-6 pb-6 pt-0 space-y-5">
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">EmployeeId</span>
                       <p className="text-sm text-foreground">#{employee.employeeId}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("name")}</span>
                       <p className="text-sm text-foreground">{employee.name}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("email")}</span>
                       <p className="text-sm text-foreground">{employee.email}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("dateOfBirth")}</span>
                       <p className="text-sm text-foreground">{new Date(employee.dateOfBirth).toLocaleDateString()}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("phone")}</span>
                       <p className="text-sm text-foreground">{employee.phone}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("address")}</span>
                       <p className="text-sm text-foreground">{employee.address}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("gender")}</span>
                       <p className="text-sm text-foreground">{employee.gender}</p>
                     </div>
                     <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">Salary Type</span>
-                      <p className="text-sm text-foreground"><span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded">{employee.salaryType}</span></p>
+                      <p className="text-sm text-foreground"><span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">{employee.salaryType}</span></p>
                     </div>
                     <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">Basic Salary</span>
-                      <p className="text-sm text-foreground"><span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded">{employee.basicSalary}</span></p>
+                      <p className="text-sm text-foreground"><span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs font-medium">{employee.basicSalary}</span></p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Company Detail */}
-              <Card className="bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
-                <CardHeader className="px-5 pt-5 pb-3">
-                  <CardTitle className="text-base font-semibold text-foreground">
+              <Card className="rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+                <CardHeader className="px-6 pt-6 pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
                     {t("companyDetail")}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-5 pb-5 pt-0 space-y-5">
+                <CardContent className="px-6 pb-6 pt-0 space-y-5">
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("branch")}</span>
                       <p className="text-sm text-foreground">{employee.branch}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("department")}</span>
                       <p className="text-sm text-foreground">{employee.department}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("designation")}</span>
                       <p className="text-sm text-foreground">{employee.designation}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("dateOfJoining")}</span>
                       <p className="text-sm text-foreground">{new Date(employee.dateOfJoining).toLocaleDateString()}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("lastLogin")}</span>
                       <p className="text-sm text-foreground">
                         {employee.lastLogin
@@ -299,10 +324,10 @@ export default function EmployeeDetailPage() {
                           : '-'}
                       </p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("status")}</span>
                       <p className="text-sm text-foreground">
-                        <span className={employee.isActive ? 'bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded' : 'bg-gray-100 text-gray-800 px-2 py-0.5 rounded'}>
+                        <span className={employee.isActive ? 'bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium' : 'bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium'}>
                           {employee.isActive ? t('active') : t('inactive')}
                         </span>
                       </p>
@@ -313,97 +338,146 @@ export default function EmployeeDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Document Detail */}
-              <Card className="bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+              {/* Document Detail - layout sama persis dengan Edit Employee */}
+              <Card className="rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
                 <CardHeader className="px-5 pt-5 pb-3">
-                  <CardTitle className="text-base font-semibold text-foreground">
-                    {t("document")} Detail
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    {t("document")}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-5 pb-5 pt-0 space-y-5">
-                  {(!employee.documents || employee.documents.length === 0) ? (
+                <CardContent className="space-y-5 px-5 pb-5 pt-0">
+                  {documentTypes.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Tidak ada dokumen yang terupload.
+                      Tidak ada document type yang terdaftar. Tambahkan terlebih dahulu di menu Setup &gt; Document Type.
                     </p>
                   ) : (
                     <div className="space-y-4">
-                      {employee.documents.map((doc) => (
-                        <div key={doc.documentTypeId} className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {doc.name}
-                            {doc.requiredField && (
-                              <span className="ml-0.5 text-red-500">*</span>
-                            )}
-                          </span>
-                          {doc.filePath ? (
-                            /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(doc.filePath) ? (
-                              <div className="flex items-center gap-3">
-                                <div className="relative h-20 w-20 rounded border border-gray-200 overflow-hidden bg-muted">
-                                  <img
-                                    src={doc.filePath}
-                                    alt={doc.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                                <a
-                                  href={doc.filePath}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 hover:underline break-all"
-                                >
-                                  Buka file
-                                </a>
-                              </div>
-                            ) : (
-                              <a
-                                href={doc.filePath}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:underline break-all"
-                              >
-                                {doc.filePath}
-                              </a>
-                            )
-                          ) : (
-                            <p className="text-sm text-muted-foreground">-</p>
-                          )}
-                        </div>
-                      ))}
+                      {documentTypes.map((dt) => {
+                        const doc = (employee.documents || []).find(
+                          (d) => String(d.documentTypeId) === dt.id
+                        )
+                        const filePath = doc?.filePath ?? null
+                        const fileName =
+                          (doc as { fileName?: string | null })?.fileName ??
+                          filePath?.split('/').pop() ??
+                          null
+
+                        return (
+                          <div
+                            key={dt.id}
+                            className="flex flex-col sm:flex-row sm:items-start gap-3"
+                          >
+                            <div className="shrink-0 sm:w-1/3 sm:pt-1.5">
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {dt.name}
+                                {dt.requiredField && (
+                                  <span className="ml-0.5 text-red-500">*</span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex-1 space-y-2 min-w-0">
+                              {filePath ? (
+                                /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath) ? (
+                                  <div className="flex items-center gap-3">
+                                    <div className="relative inline-block">
+                                      <img
+                                        src={filePath}
+                                        alt={dt.name}
+                                        className="rounded border border-gray-200 object-contain max-h-32 w-auto bg-muted"
+                                      />
+                                      <div className="absolute right-1 top-1 flex items-center gap-1">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7 text-muted-foreground bg-background/70"
+                                          onClick={() => {
+                                            window.open(filePath, '_blank', 'noopener,noreferrer')
+                                          }}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-xs truncate max-w-[200px] font-medium">
+                                        {fileName ?? 'Buka file'}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        Existing File
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4 text-muted-foreground" />
+                                      <div className="flex flex-col">
+                                        <span className="text-xs truncate max-w-[200px] font-medium">
+                                          {fileName ?? filePath}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                          Existing File
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground"
+                                      onClick={() => {
+                                        window.open(filePath, '_blank', 'noopener,noreferrer')
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )
+                              ) : (
+                                <p className="text-sm text-muted-foreground">-</p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </CardContent>
               </Card>
 
               {/* Bank Account Detail */}
-              <Card className="bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
-                <CardHeader className="px-5 pt-5 pb-3">
-                  <CardTitle className="text-base font-semibold text-foreground">
+              <Card className="rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+                <CardHeader className="px-6 pt-6 pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
                     {t("bankAccountDetail")}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-5 pb-5 pt-0 space-y-5">
+                <CardContent className="px-6 pb-6 pt-0 space-y-5">
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("accountHolderName")}</span>
                       <p className="text-sm text-foreground">{employee.accountHolderName ?? "-"}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("accountNumber")}</span>
                       <p className="text-sm text-foreground">{employee.accountNumber ?? "-"}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("bankName")}</span>
                       <p className="text-sm text-foreground">{employee.bankName ?? "-"}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("bankIdentifierCode")}</span>
                       <p className="text-sm text-foreground">{employee.bankIdentifierCode ?? "-"}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("branchLocation")}</span>
                       <p className="text-sm text-foreground">{employee.branchLocation ?? "-"}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <span className="text-sm font-medium text-muted-foreground">{t("taxPayerId")}</span>
                       <p className="text-sm text-foreground">{employee.taxPayerId ?? "-"}</p>
                     </div>
