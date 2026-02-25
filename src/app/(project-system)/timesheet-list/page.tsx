@@ -106,7 +106,7 @@ export default function TimesheetListPage() {
   }, [rows])
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+    <div className="flex flex-col gap-4">
       {/* Title card - acuan /hrm/assets */}
       <Card className={CARD_STYLE}>
         <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">

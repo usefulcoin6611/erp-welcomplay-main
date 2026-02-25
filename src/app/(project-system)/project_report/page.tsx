@@ -191,7 +191,7 @@ export default function ProjectReportPage() {
   }
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+    <div className="flex flex-col gap-4">
       <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
         <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
           <div className="min-w-0 space-y-1 flex-1">
@@ -204,14 +204,11 @@ export default function ProjectReportPage() {
       </Card>
 
       {isCompany && (
-        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="text-base font-medium">Filter Projects</CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+          <CardContent className="px-6 py-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[14rem_14rem_14rem_14rem_auto] md:justify-start">
               <div className="space-y-2">
-                <Label htmlFor="users">Users</Label>
+                <Label htmlFor="users" className="text-sm font-medium">Users</Label>
                 <Select value={selectedUser} onValueChange={setSelectedUser}>
                   <SelectTrigger id="users" className="h-9 bg-white">
                     <SelectValue placeholder="All Users" />
@@ -225,7 +222,7 @@ export default function ProjectReportPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status" className="text-sm font-medium">Status</Label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger id="status" className="h-9 bg-white">
                     <SelectValue placeholder="Select Status" />
@@ -238,7 +235,7 @@ export default function ProjectReportPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date</Label>
+                <Label htmlFor="start_date" className="text-sm font-medium">Start Date</Label>
                 <Input 
                   id="start_date" 
                   type="date" 
@@ -248,33 +245,33 @@ export default function ProjectReportPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_date">End Date</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    id="end_date" 
-                    type="date" 
-                    value={endDate} 
-                    onChange={(e) => setEndDate(e.target.value)} 
-                    className="h-9 bg-white" 
-                  />
-                  <Button 
-                    variant="blue" 
-                    size="sm" 
-                    className="h-9 w-9 p-0 shadow-none shrink-0" 
-                    onClick={() => {}}
-                  >
-                    <IconSearch className="h-4 w-4" /> 
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-9 w-9 p-0 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200 shadow-none shrink-0" 
-                    onClick={handleReset}
-                    title="Reset"
-                  >
-                    <IconRefresh className="h-4 w-4" /> 
-                  </Button>
-                </div>
+                <Label htmlFor="end_date" className="text-sm font-medium">End Date</Label>
+                <Input 
+                  id="end_date" 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  className="h-9 bg-white" 
+                />
+              </div>
+              <div className="flex items-center gap-2 md:pt-6">
+                <Button 
+                  variant="blue" 
+                  size="sm" 
+                  className="h-9 w-9 p-0 shadow-none shrink-0" 
+                  onClick={() => {}}
+                >
+                  <IconSearch className="h-4 w-4" /> 
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 w-9 p-0 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200 shadow-none shrink-0" 
+                  onClick={handleReset}
+                  title="Reset"
+                >
+                  <IconRefresh className="h-4 w-4" /> 
+                </Button>
               </div>
             </div>
           </CardContent>

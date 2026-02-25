@@ -49,6 +49,13 @@ import { seedLeads } from "./seeds/leads";
 import { seedDeals } from "./seeds/deals";
 import { seedFormBuilder } from "./seeds/form-builder";
 import { seedContracts } from "./seeds/contracts";
+import { seedHrmAssets } from "./seeds/hrm-assets";
+import { seedCrmPipelines } from "./seeds/crm-pipelines";
+import { seedProjects } from "./seeds/projects";
+import { seedProjectTasks } from "./seeds/project-tasks";
+import { seedTimesheets } from "./seeds/timesheets";
+import { seedBugs } from "./seeds/bugs";
+import { seedTimeTrackers } from "./seeds/time-trackers";
 
 dotenv.config();
 

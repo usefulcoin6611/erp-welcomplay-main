@@ -2,11 +2,12 @@ export async function seedProjectTaskStages(prisma: any) {
   console.log("Seeding Project Task Stages...");
 
   const stages: { name: string; order: number }[] = [
-    { name: "Planning", order: 1 },
-    { name: "In Progress", order: 2 },
-    { name: "On Hold", order: 3 },
-    { name: "Review", order: 4 },
-    { name: "Completed", order: 5 },
+    { name: "To Do", order: 1 },
+    { name: "Planning", order: 2 },
+    { name: "In Progress", order: 3 },
+    { name: "On Hold", order: 4 },
+    { name: "Review", order: 5 },
+    { name: "Completed", order: 6 },
   ];
 
   let createdCount = 0;

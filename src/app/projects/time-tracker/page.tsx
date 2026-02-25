@@ -134,7 +134,7 @@ export default function TimeTrackerPage() {
   }
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+    <div className="flex flex-col gap-4">
       <Card className={CARD_STYLE}>
         <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
           <div className="min-w-0 space-y-1 flex-1">
