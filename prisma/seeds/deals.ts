@@ -113,12 +113,62 @@ export async function seedDeals(prisma: any) {
     },
   ];
 
+  const now = new Date();
   for (const deal of deals) {
-    await prisma.deal.upsert({
-      where: { dealId: deal.dealId },
-      update: {},
-      create: deal,
-    });
+    try {
+      await prisma.deal.upsert({
+        where: { dealId: deal.dealId },
+        update: {},
+        create: {
+          ...deal,
+          updatedAt: now,
+        },
+      });
+    } catch (err: unknown) {
+      const isColumnNotFound =
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2022";
+      if (isColumnNotFound) {
+        // Tabel deal belum punya kolom dari schema (mis. phone). Upsert pakai kolom dasar saja.
+        const id = (deal as { id?: string }).id ?? `deal-${deal.dealId}`;
+        const labelsJson = JSON.stringify(deal.labels ?? null);
+        const usersJson = JSON.stringify(deal.users ?? null);
+        await (prisma as any).$executeRawUnsafe(
+          `INSERT INTO deal (id, "dealId", "branchId", name, client, price, "pipelineId", "stageId", status, "isActive", "tasksTotal", "tasksCompleted", "productsCount", "sourcesCount", labels, users, "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17, $18)
+           ON CONFLICT ("dealId") DO UPDATE SET
+             name = EXCLUDED.name, client = EXCLUDED.client, price = EXCLUDED.price,
+             "pipelineId" = EXCLUDED."pipelineId", "stageId" = EXCLUDED."stageId",
+             status = EXCLUDED.status, "isActive" = EXCLUDED."isActive",
+             "tasksTotal" = EXCLUDED."tasksTotal", "tasksCompleted" = EXCLUDED."tasksCompleted",
+             "productsCount" = EXCLUDED."productsCount", "sourcesCount" = EXCLUDED."sourcesCount",
+             labels = EXCLUDED.labels, users = EXCLUDED.users,
+             "updatedAt" = EXCLUDED."updatedAt"`,
+          id,
+          deal.dealId,
+          deal.branchId ?? null,
+          deal.name,
+          deal.client ?? null,
+          deal.price,
+          deal.pipelineId ?? null,
+          deal.stageId ?? null,
+          deal.status,
+          deal.isActive,
+          deal.tasksTotal ?? 0,
+          deal.tasksCompleted ?? 0,
+          deal.productsCount ?? 0,
+          deal.sourcesCount ?? 0,
+          labelsJson,
+          usersJson,
+          deal.createdAt,
+          now
+        );
+      } else {
+        throw err;
+      }
+    }
   }
 
   console.log(`Seeded ${deals.length} deals.`);

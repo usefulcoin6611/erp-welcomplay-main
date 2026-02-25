@@ -10,19 +10,51 @@ type SeedTimesheet = {
 export async function seedTimesheets(prisma: any) {
   console.log("Seeding timesheets...");
 
-  const existing = await prisma.timesheet.findFirst();
-  if (existing) {
-    console.log("Skipping timesheet seed: records already exist.");
+  if (!prisma.timesheet) {
+    console.warn("Prisma client has no timesheet model. Skipping timesheets seed.");
     return;
   }
 
-  const tasks = await prisma.projectTask.findMany({
-    where: {
-      taskKey: {
-        in: ["TASK-PRJ-001-1", "TASK-PRJ-001-2"],
+  try {
+    const existing = await prisma.timesheet.findFirst();
+    if (existing) {
+      console.log("Skipping timesheet seed: records already exist.");
+      return;
+    }
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      console.warn("Table timesheet does not exist. Run: pnpm prisma migrate deploy. Skipping timesheets seed.");
+      return;
+    }
+    throw err;
+  }
+
+  let tasks: any[] = [];
+  try {
+    tasks = await prisma.projectTask.findMany({
+      where: {
+        taskKey: {
+          in: ["TASK-PRJ-001-1", "TASK-PRJ-001-2"],
+        },
       },
-    },
-  });
+    });
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      console.warn("Table project_task does not exist. Skipping timesheets seed.");
+      return;
+    }
+    throw err;
+  }
 
   const taskByKey: Record<string, any> = {};
   for (const t of tasks) {
@@ -51,21 +83,34 @@ export async function seedTimesheets(prisma: any) {
   let createdCount = 0;
 
   for (const ts of base) {
-    const task =
-      ts.taskKey && taskByKey[ts.taskKey] ? taskByKey[ts.taskKey] : null;
+    try {
+      const task =
+        ts.taskKey && taskByKey[ts.taskKey] ? taskByKey[ts.taskKey] : null;
 
-    await prisma.timesheet.create({
-      data: {
-        projectId: ts.projectId,
-        taskId: task ? task.id : null,
-        date: ts.date,
-        minutes: ts.minutes,
-        userName: ts.userName,
-        description: ts.description ?? null,
-      },
-    });
+      await prisma.timesheet.create({
+        data: {
+          projectId: ts.projectId,
+          taskId: task ? task.id : null,
+          date: ts.date,
+          minutes: ts.minutes,
+          userName: ts.userName,
+          description: ts.description ?? null,
+        },
+      });
 
-    createdCount++;
+      createdCount++;
+    } catch (err: unknown) {
+      const isTableMissing =
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2021";
+      if (isTableMissing) {
+        console.warn("Table timesheet does not exist. Skipping timesheets seed.");
+        return;
+      }
+      throw err;
+    }
   }
 
   console.log(`Timesheets seeding completed. New records: ${createdCount}`);

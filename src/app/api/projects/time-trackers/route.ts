@@ -14,6 +14,17 @@ type TimeTrackerItem = {
   totalTime: string;
 };
 
+type TrackerRow = {
+  id: string;
+  projectId: string;
+  name: string;
+  startTime: Date;
+  endTime: Date | null;
+  totalSeconds: number;
+  project?: { name?: string } | null;
+  task?: { name?: string } | null;
+};
+
 function formatTime(date: Date | null): string {
   if (!date) return "00:00:00";
   const h = date.getHours().toString().padStart(2, "0");
@@ -44,7 +55,15 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const trackers = await prisma.timeTracker.findMany({
+    const client = prisma as unknown as { timeTracker?: typeof prisma.timeTracker };
+    if (!client.timeTracker) {
+      return NextResponse.json(
+        { success: true, data: [] as TimeTrackerItem[] },
+        { status: 200 },
+      );
+    }
+
+    const trackers = await client.timeTracker.findMany({
       orderBy: { startTime: "desc" },
       include: {
         project: true,
@@ -52,7 +71,7 @@ export async function GET(_request: NextRequest) {
       },
     });
 
-    const data: TimeTrackerItem[] = trackers.map((t) => ({
+    const data: TimeTrackerItem[] = trackers.map((t: TrackerRow) => ({
       id: t.id,
       projectId: t.projectId,
       project: t.project?.name ?? "",
@@ -64,7 +83,18 @@ export async function GET(_request: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data });
-  } catch {
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      return NextResponse.json({ success: true, data: [] as TimeTrackerItem[] }, { status: 200 });
+    }
+    if (process.env.NODE_ENV === "development") {
+      console.error("[time-trackers GET]", err);
+    }
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan internal" },
       { status: 500 },

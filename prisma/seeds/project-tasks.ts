@@ -18,6 +18,11 @@ type SeedTask = {
 export async function seedProjectTasks(prisma: any) {
   console.log("Seeding project tasks...");
 
+  if (!prisma.projectTask) {
+    console.warn("Prisma client has no projectTask model. Skipping project tasks seed.");
+    return;
+  }
+
   const projects = await prisma.project.findMany({
     orderBy: { createdAt: "asc" },
   });
@@ -139,41 +144,54 @@ export async function seedProjectTasks(prisma: any) {
       continue;
     }
 
-    const existing = await prisma.projectTask.findFirst({
-      where: { taskKey: bt.taskKey },
-    });
+    try {
+      const existing = await prisma.projectTask.findFirst({
+        where: { taskKey: bt.taskKey },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      const users = Array.isArray(project.users) ? (project.users as string[]) : [];
+
+      await prisma.projectTask.create({
+        data: {
+          taskKey: bt.taskKey,
+          projectId: bt.projectId,
+          name: bt.name,
+          description: bt.description ?? null,
+          estimatedHrs: bt.estimatedHrs ?? 0,
+          startDate: bt.startDate ?? project.startDate ?? null,
+          endDate: bt.endDate ?? project.endDate ?? null,
+          priority: bt.priority,
+          stage: bt.stage,
+          assignedTo:
+            users.length > 0
+              ? users.slice(0, bt.isOwner ? 2 : 1)
+              : ["Budi Santoso", "Sari Wijaya"],
+          completion: bt.completion ?? 0,
+          attachments: bt.attachments ?? 0,
+          comments: bt.comments ?? 0,
+          checklists: bt.checklists ?? 0,
+          isOwner: bt.isOwner ?? false,
+        },
+      });
+
+      createdCount++;
+      console.log(`ProjectTask created: ${bt.taskKey} - ${bt.name}`);
+    } catch (err: unknown) {
+      const isTableMissing =
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2021";
+      if (isTableMissing) {
+        console.warn("Table project_task does not exist. Run: pnpm prisma migrate deploy. Skipping project tasks.");
+        break;
+      }
+      throw err;
     }
-
-    const users = Array.isArray(project.users) ? (project.users as string[]) : [];
-
-    await prisma.projectTask.create({
-      data: {
-        taskKey: bt.taskKey,
-        projectId: bt.projectId,
-        name: bt.name,
-        description: bt.description ?? null,
-        estimatedHrs: bt.estimatedHrs ?? 0,
-        startDate: bt.startDate ?? project.startDate ?? null,
-        endDate: bt.endDate ?? project.endDate ?? null,
-        priority: bt.priority,
-        stage: bt.stage,
-        assignedTo:
-          users.length > 0
-            ? users.slice(0, bt.isOwner ? 2 : 1)
-            : ["Budi Santoso", "Sari Wijaya"],
-        completion: bt.completion ?? 0,
-        attachments: bt.attachments ?? 0,
-        comments: bt.comments ?? 0,
-        checklists: bt.checklists ?? 0,
-        isOwner: bt.isOwner ?? false,
-      },
-    });
-
-    createdCount++;
-    console.log(`ProjectTask created: ${bt.taskKey} - ${bt.name}`);
   }
 
   console.log(`Project tasks seeding completed. New records: ${createdCount}`);

@@ -16,13 +16,45 @@ type SeedBug = {
 export async function seedBugs(prisma: any) {
   console.log("Seeding project bugs...");
 
-  const existing = await prisma.bug.findFirst();
-  if (existing) {
-    console.log("Skipping bug seed: records already exist.");
+  if (!prisma.bug) {
+    console.warn("Prisma client has no bug model. Skipping bugs seed.");
     return;
   }
 
-  const statuses = await prisma.bugStatus.findMany();
+  try {
+    const existing = await prisma.bug.findFirst();
+    if (existing) {
+      console.log("Skipping bug seed: records already exist.");
+      return;
+    }
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      console.warn("Table bug does not exist. Run: pnpm prisma migrate deploy. Skipping bugs seed.");
+      return;
+    }
+    throw err;
+  }
+
+  let statuses: any[] = [];
+  try {
+    statuses = await prisma.bugStatus.findMany();
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      console.warn("Table bug_status does not exist. Skipping bugs seed.");
+      return;
+    }
+    throw err;
+  }
   const statusByTitle: Record<string, any> = {};
   for (const s of statuses) {
     statusByTitle[s.title] = s;
@@ -107,27 +139,40 @@ export async function seedBugs(prisma: any) {
   let createdCount = 0;
 
   for (const b of base) {
-    const status = statusByTitle[b.statusTitle];
+    try {
+      const status = statusByTitle[b.statusTitle];
 
-    await prisma.bug.create({
-      data: {
-        bugKey: b.bugKey,
-        projectId: b.projectId,
-        title: b.title,
-        priority: b.priority,
-        startDate: b.startDate ?? null,
-        dueDate: b.dueDate ?? null,
-        description: b.description ?? null,
-        statusId: status ? status.id : null,
-        createdBy: b.createdBy ?? null,
-        assignedTo: b.assignedTo ?? [],
-        attachments: b.attachments ?? 0,
-        comments: b.comments ?? 0,
-      },
-    });
+      await prisma.bug.create({
+        data: {
+          bugKey: b.bugKey,
+          projectId: b.projectId,
+          title: b.title,
+          priority: b.priority,
+          startDate: b.startDate ?? null,
+          dueDate: b.dueDate ?? null,
+          description: b.description ?? null,
+          statusId: status ? status.id : null,
+          createdBy: b.createdBy ?? null,
+          assignedTo: b.assignedTo ?? [],
+          attachments: b.attachments ?? 0,
+          comments: b.comments ?? 0,
+        },
+      });
 
-    createdCount++;
-    console.log(`Bug created: ${b.bugKey} - ${b.title}`);
+      createdCount++;
+      console.log(`Bug created: ${b.bugKey} - ${b.title}`);
+    } catch (err: unknown) {
+      const isTableMissing =
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2021";
+      if (isTableMissing) {
+        console.warn("Table bug does not exist. Skipping bugs seed.");
+        return;
+      }
+      throw err;
+    }
   }
 
   console.log(`Project bugs seeding completed. New records: ${createdCount}`);
