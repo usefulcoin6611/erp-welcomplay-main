@@ -11,19 +11,51 @@ type SeedTracker = {
 export async function seedTimeTrackers(prisma: any) {
   console.log("Seeding time trackers...");
 
-  const existing = await prisma.timeTracker.findFirst();
-  if (existing) {
-    console.log("Skipping time tracker seed: records already exist.");
+  if (!prisma.timeTracker) {
+    console.warn("Prisma client has no timeTracker model. Skipping time trackers seed.");
     return;
   }
 
-  const tasks = await prisma.projectTask.findMany({
-    where: {
-      taskKey: {
-        in: ["TASK-PRJ-001-1", "TASK-PRJ-001-2", "TASK-PRJ-002-1"],
+  try {
+    const existing = await prisma.timeTracker.findFirst();
+    if (existing) {
+      console.log("Skipping time tracker seed: records already exist.");
+      return;
+    }
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      console.warn("Table time_tracker does not exist. Run: pnpm prisma migrate deploy. Skipping time trackers seed.");
+      return;
+    }
+    throw err;
+  }
+
+  let tasks: any[] = [];
+  try {
+    tasks = await prisma.projectTask.findMany({
+      where: {
+        taskKey: {
+          in: ["TASK-PRJ-001-1", "TASK-PRJ-001-2", "TASK-PRJ-002-1"],
+        },
       },
-    },
-  });
+    });
+  } catch (err: unknown) {
+    const isTableMissing =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2021";
+    if (isTableMissing) {
+      console.warn("Table project_task does not exist. Skipping time trackers seed.");
+      return;
+    }
+    throw err;
+  }
 
   const taskByKey: Record<string, any> = {};
   for (const t of tasks) {
@@ -63,29 +95,42 @@ export async function seedTimeTrackers(prisma: any) {
   let createdCount = 0;
 
   for (const tr of base) {
-    const task =
-      tr.taskKey && taskByKey[tr.taskKey] ? taskByKey[tr.taskKey] : null;
+    try {
+      const task =
+        tr.taskKey && taskByKey[tr.taskKey] ? taskByKey[tr.taskKey] : null;
 
-    const totalSeconds = Math.max(
-      0,
-      Math.floor((tr.endTime.getTime() - tr.startTime.getTime()) / 1000),
-    );
+      const totalSeconds = Math.max(
+        0,
+        Math.floor((tr.endTime.getTime() - tr.startTime.getTime()) / 1000),
+      );
 
-    await prisma.timeTracker.create({
-      data: {
-        projectId: tr.projectId,
-        taskId: task ? task.id : null,
-        name: tr.name,
-        isActive: false,
-        isBillable: tr.isBillable ?? false,
-        startTime: tr.startTime,
-        endTime: tr.endTime,
-        totalSeconds,
-        userName: tr.userName ?? null,
-      },
-    });
+      await prisma.timeTracker.create({
+        data: {
+          projectId: tr.projectId,
+          taskId: task ? task.id : null,
+          name: tr.name,
+          isActive: false,
+          isBillable: tr.isBillable ?? false,
+          startTime: tr.startTime,
+          endTime: tr.endTime,
+          totalSeconds,
+          userName: tr.userName ?? null,
+        },
+      });
 
-    createdCount++;
+      createdCount++;
+    } catch (err: unknown) {
+      const isTableMissing =
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code?: string }).code === "P2021";
+      if (isTableMissing) {
+        console.warn("Table time_tracker does not exist. Skipping time trackers seed.");
+        return;
+      }
+      throw err;
+    }
   }
 
   console.log(
