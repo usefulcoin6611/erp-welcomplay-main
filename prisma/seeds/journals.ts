@@ -34,6 +34,18 @@ export async function seedJournals(prisma: any) {
   const cust2 = customers[1]?.id ?? null;
   const cust3 = customers[2]?.id ?? null;
 
+  const bankAccounts = await prisma.bankAccount.findMany({
+    where: { branchId },
+    include: { chartAccount: true },
+  });
+
+  const bankByChartCode: Record<string, string> = {};
+  for (const ba of bankAccounts) {
+    if (ba.chartAccount?.code) {
+      bankByChartCode[ba.chartAccount.code] = ba.id;
+    }
+  }
+
   if (cashAccount && arAccount && salesAccount && salaryAccount && openingBalanceAccount) {
     const journalEntries = [
       {
@@ -130,6 +142,7 @@ export async function seedJournals(prisma: any) {
         amount: 15000000,
         branchId: branchId,
         customerId: cust1,
+        bankAccountId: bankByChartCode["1120"] ?? null,
         lines: {
           create: [
             { accountId: bcaAccount.id, debit: 15000000, credit: 0 },
@@ -145,6 +158,7 @@ export async function seedJournals(prisma: any) {
         amount: 5500000,
         branchId: branchId,
         customerId: cust2,
+        bankAccountId: bankByChartCode["1123"] ?? null,
         lines: {
           create: [
             { accountId: midtransAccount.id, debit: 5500000, credit: 0 },
@@ -160,6 +174,7 @@ export async function seedJournals(prisma: any) {
         amount: 7250000,
         branchId: branchId,
         customerId: cust3,
+        bankAccountId: bankByChartCode["1124"] ?? null,
         lines: {
           create: [
             { accountId: xenditAccount.id, debit: 7250000, credit: 0 },
@@ -175,6 +190,7 @@ export async function seedJournals(prisma: any) {
         amount: 3000000,
         branchId: branchId,
         customerId: cust1,
+        bankAccountId: bankByChartCode["1122"] ?? null,
         lines: {
           create: [
             { accountId: jagoAccount.id, debit: 3000000, credit: 0 },

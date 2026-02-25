@@ -9,13 +9,23 @@ export async function seedBankAccounts(prisma: any) {
 
   const rows = [
     {
-      chartCode: "1120", // Bank BCA Specific
-      holderName: "Operating Account",
+      chartCode: "1120", // Payroll Bank BCA (salary)
+      holderName: "Payroll Account BCA",
       bank: "Bank BCA",
       accountNumber: "1234567890",
       openingBalance: 150000000,
       contactNumber: "+62 812-1111-2222",
       bankAddress: "KCP Sudirman Jakarta",
+      paymentGateway: "Cash",
+    },
+    {
+      chartCode: "1121", // Payroll Bank Mandiri (salary)
+      holderName: "Payroll Account Mandiri",
+      bank: "Bank Mandiri",
+      accountNumber: "223344556677",
+      openingBalance: 95000000,
+      contactNumber: "+62 812-9999-0000",
+      bankAddress: "KCP Thamrin Jakarta",
       paymentGateway: "Cash",
     },
     {

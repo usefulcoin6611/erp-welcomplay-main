@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useEffect, useState } from 'react'
 import { notFound } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -10,9 +10,8 @@ import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, Star } from 'lucide-react'
+import { ArrowLeft, Download, Star, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getCandidateById } from '@/lib/recruitment-data'
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
 
@@ -32,8 +31,35 @@ interface CandidateDetailPageProps {
 export default function CandidateDetailPage({ params }: CandidateDetailPageProps) {
   const router = useRouter()
   const { id } = use(params)
-  const candidate = getCandidateById(id)
+  const [candidate, setCandidate] = useState<{ name: string; email: string; phone: string; position: string; skills: string[]; status: string; rating?: number; appliedAt?: string; resume?: string } | null>(null)
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/hrm/recruitment/candidates/${id}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (!cancelled && json.success && json.data) setCandidate(json.data)
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [id])
+
+  if (loading) {
+    return (
+      <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
   if (!candidate) notFound()
 
   const handleDownloadResume = () => {

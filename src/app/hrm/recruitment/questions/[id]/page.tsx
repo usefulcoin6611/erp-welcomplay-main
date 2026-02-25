@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useEffect, useState } from 'react'
 import { notFound } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -10,8 +10,7 @@ import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Pencil } from 'lucide-react'
-import { getQuestionById } from '@/lib/recruitment-data'
+import { ArrowLeft, Pencil, Loader2 } from 'lucide-react'
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
 
@@ -22,8 +21,35 @@ interface QuestionDetailPageProps {
 export default function QuestionDetailPage({ params }: QuestionDetailPageProps) {
   const router = useRouter()
   const { id } = use(params)
-  const q = getQuestionById(id)
+  const [q, setQ] = useState<{ question: string; isRequired: string } | null>(null)
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/hrm/recruitment/questions/${id}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json.success && json.data) setQ(json.data)
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [id])
+
+  if (loading) {
+    return (
+      <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
   if (!q) notFound()
 
   return (

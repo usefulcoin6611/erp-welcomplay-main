@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -11,14 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft } from 'lucide-react'
-import { getJobById, updateJob } from '@/lib/recruitment-data'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
-const branches = ['Head Office', 'Branch A', 'Branch B']
-const categories = ['IT', 'Marketing', 'Finance', 'HR', 'Operations', 'Sales']
+
+type BranchOption = { id: string; name: string }
+type CategoryOption = { id: string; name: string }
 
 interface JobEditPageProps {
   params: Promise<{ id: string }>
@@ -27,34 +28,99 @@ interface JobEditPageProps {
 export default function JobEditPage({ params }: JobEditPageProps) {
   const router = useRouter()
   const { id } = use(params)
-  const job = getJobById(id)
+  const [job, setJob] = useState<{ title: string; branchId: string; jobCategoryId: string; positions: number; status: string; startDate: string; endDate: string; description?: string; requirement?: string } | null>(null)
+  const [branches, setBranches] = useState<BranchOption[]>([])
+  const [categories, setCategories] = useState<CategoryOption[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
-  const [title, setTitle] = useState(job?.title ?? '')
-  const [branch, setBranch] = useState(job?.branch ?? '')
-  const [category, setCategory] = useState(job?.category ?? '')
-  const [positions, setPositions] = useState(job ? String(job.positions) : '')
-  const [status, setStatus] = useState<'active' | 'in_active'>(job?.status ?? 'active')
-  const [startDate, setStartDate] = useState(job?.startDate ?? '')
-  const [endDate, setEndDate] = useState(job?.endDate ?? '')
-  const [description, setDescription] = useState(job?.description ?? '')
+  const [title, setTitle] = useState('')
+  const [branchId, setBranchId] = useState('')
+  const [jobCategoryId, setJobCategoryId] = useState('')
+  const [positions, setPositions] = useState('')
+  const [status, setStatus] = useState<'active' | 'in_active'>('active')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [description, setDescription] = useState('')
+  const [requirement, setRequirement] = useState('')
 
-  if (!job) {
-    notFound()
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      fetch(`/api/hrm/recruitment/jobs/${id}`).then((r) => r.json()),
+      fetch('/api/branches').then((r) => r.json()),
+      fetch('/api/job-categories').then((r) => r.json()),
+    ]).then(([jobJson, branchJson, categoryJson]) => {
+      if (cancelled) return
+      if (jobJson.success && jobJson.data) {
+        const j = jobJson.data
+        setJob(j)
+        setTitle(j.title)
+        setBranchId(j.branchId ?? '')
+        setJobCategoryId(j.jobCategoryId ?? '')
+        setPositions(String(j.positions ?? ''))
+        setStatus((j.status === 'in_active' ? 'in_active' : 'active') as 'active' | 'in_active')
+        setStartDate(j.startDate ?? '')
+        setEndDate(j.endDate ?? '')
+        setDescription(j.description ?? '')
+        setRequirement(j.requirement ?? '')
+      }
+      if (branchJson.success && Array.isArray(branchJson.data)) setBranches(branchJson.data)
+      if (categoryJson.success && Array.isArray(categoryJson.data)) setCategories(categoryJson.data)
+    }).finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [id])
+
+  if (!job && !loading) notFound()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/hrm/recruitment/jobs/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          branchId,
+          jobCategoryId,
+          positions: parseInt(positions, 10) || 0,
+          status,
+          startDate,
+          endDate,
+          description: description || undefined,
+          requirement: requirement || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success(json.message ?? 'Job berhasil diperbarui')
+        router.push(`/hrm/recruitment/jobs/${id}`)
+      } else {
+        toast.error(json.message ?? 'Gagal memperbarui job')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Gagal memperbarui job')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    updateJob(id, {
-      title,
-      branch,
-      category,
-      positions: parseInt(positions, 10) || 0,
-      status,
-      startDate,
-      endDate,
-      description: description || undefined,
-    })
-    router.push(`/hrm/recruitment/jobs/${id}`)
+  if (loading) {
+    return (
+      <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
   }
 
   return (
@@ -72,7 +138,7 @@ export default function JobEditPage({ params }: JobEditPageProps) {
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-semibold">Edit Job - {job.title}</h1>
+              <h1 className="text-lg font-semibold">Edit Job - {job?.title ?? id}</h1>
               <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => router.push('/hrm/recruitment?tab=jobs')}>
                 <ArrowLeft className="h-4 w-4" />
                 Kembali ke Job
@@ -92,26 +158,26 @@ export default function JobEditPage({ params }: JobEditPageProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Branch</Label>
-                      <Select value={branch} onValueChange={setBranch}>
+                      <Select value={branchId} onValueChange={setBranchId}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select branch" />
                         </SelectTrigger>
                         <SelectContent>
                           {branches.map((b) => (
-                            <SelectItem key={b} value={b}>{b}</SelectItem>
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <Select value={category} onValueChange={setCategory}>
+                      <Select value={jobCategoryId} onValueChange={setJobCategoryId}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((c) => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -143,13 +209,27 @@ export default function JobEditPage({ params }: JobEditPageProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Job Description</Label>
-                    <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Enter job description..." className="resize-none" />
-                  </div>
+                  <RichTextEditor
+                    id="edit-description"
+                    label="Job Description"
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="Enter job description..."
+                    minHeight="180px"
+                  />
+                  <RichTextEditor
+                    id="edit-requirement"
+                    label="Job Requirement"
+                    value={requirement}
+                    onChange={setRequirement}
+                    placeholder="Enter job requirement..."
+                    minHeight="180px"
+                  />
                   <div className="flex gap-2 pt-2">
-                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 shadow-none">Simpan</Button>
-                    <Button type="button" variant="outline" className="h-9" onClick={() => router.push('/hrm/recruitment?tab=jobs')}>Batal</Button>
+                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 shadow-none" disabled={submitting}>
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
+                    </Button>
+                    <Button type="button" variant="outline" className="h-9" onClick={() => router.push('/hrm/recruitment?tab=jobs')} disabled={submitting}>Batal</Button>
                   </div>
                 </form>
               </CardContent>

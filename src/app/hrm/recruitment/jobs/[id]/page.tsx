@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useEffect, useState } from 'react'
 import { notFound } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -16,8 +16,7 @@ import {
   TableCell,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowLeft, Pencil } from 'lucide-react'
-import { getJobById } from '@/lib/recruitment-data'
+import { ArrowLeft, Pencil, Loader2 } from 'lucide-react'
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
 
@@ -29,6 +28,24 @@ function formatDate(d: string) {
   }
 }
 
+type JobDetail = {
+  id: string
+  title: string
+  branch: string
+  category: string
+  positions: number
+  status: string
+  startDate: string
+  endDate: string
+  createdAt: string
+  description?: string
+  requirement?: string
+  skill?: string[]
+  applicant?: string[]
+  visibility?: string[]
+  customQuestionTitles?: string[]
+}
+
 interface JobDetailPageProps {
   params: Promise<{ id: string }>
 }
@@ -36,8 +53,35 @@ interface JobDetailPageProps {
 export default function JobDetailPage({ params }: JobDetailPageProps) {
   const router = useRouter()
   const { id } = use(params)
-  const job = getJobById(id)
+  const [job, setJob] = useState<JobDetail | null>(null)
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/hrm/recruitment/jobs/${id}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json.success && json.data) setJob(json.data)
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [id])
+
+  if (loading) {
+    return (
+      <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
   if (!job) notFound()
 
   const statusClass = job.status === 'active' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-red-100 text-red-700 border-red-100'
@@ -156,13 +200,19 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                     {job.description && (
                       <div>
                         <h6 className="text-sm font-semibold text-foreground mb-1">Job Description</h6>
-                        <div className="text-sm text-foreground whitespace-pre-wrap">{job.description}</div>
+                        <div
+                          className="job-rich-content text-sm text-foreground"
+                          dangerouslySetInnerHTML={{ __html: job.description }}
+                        />
                       </div>
                     )}
                     {job.requirement && (
                       <div>
                         <h6 className="text-sm font-semibold text-foreground mb-1">Job Requirement</h6>
-                        <div className="text-sm text-foreground whitespace-pre-wrap">{job.requirement}</div>
+                        <div
+                          className="job-rich-content text-sm text-foreground"
+                          dangerouslySetInnerHTML={{ __html: job.requirement }}
+                        />
                       </div>
                     )}
                   </div>

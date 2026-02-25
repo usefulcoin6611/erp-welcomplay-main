@@ -1,7 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
-import { notFound } from 'next/navigation'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -19,9 +18,24 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ArrowLeft } from 'lucide-react'
-import { getPayslipById, updatePayslip } from '@/lib/payroll-data'
+import { toast } from 'sonner'
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
+
+interface PayslipApiDetail {
+  id: string
+  employeeId: string
+  employeeName: string
+  salaryMonth: string
+  year?: string
+  month?: string
+  payrollType: string
+  basicSalary: number
+  totalAllowances: number
+  totalDeductions: number
+  netSalary: number
+  status: 'Paid' | 'UnPaid'
+}
 
 interface PayslipEditPageProps {
   params: Promise<{ id: string }>
@@ -30,32 +44,91 @@ interface PayslipEditPageProps {
 export default function PayslipEditPage({ params }: PayslipEditPageProps) {
   const router = useRouter()
   const { id } = use(params)
-  const payslip = getPayslipById(id)
 
-  const [salary, setSalary] = useState(payslip ? String(payslip.salary) : '')
-  const [allowances, setAllowances] = useState(payslip ? String(payslip.allowances) : '')
-  const [deductions, setDeductions] = useState(payslip ? String(payslip.deductions) : '')
-  const [status, setStatus] = useState<'Paid' | 'UnPaid'>(payslip?.status ?? 'UnPaid')
+  const [payslip, setPayslip] = useState<PayslipApiDetail | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!payslip) {
-    notFound()
-  }
+  const [salary, setSalary] = useState('')
+  const [allowances, setAllowances] = useState('')
+  const [deductions, setDeductions] = useState('')
+  const [status, setStatus] = useState<'Paid' | 'UnPaid'>('UnPaid')
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadDetail = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch(`/api/hrm/payroll/payslip/${id}`)
+        const json = await res.json().catch(() => null)
+
+        if (!res.ok || !json?.success || !json.data) {
+          if (!cancelled) {
+            toast.error(json?.message ?? 'Payslip tidak ditemukan.')
+            setPayslip(null)
+          }
+          return
+        }
+
+        if (!cancelled) {
+          const data = json.data as PayslipApiDetail
+          setPayslip(data)
+          setSalary(String(data.basicSalary ?? 0))
+          setAllowances(String(data.totalAllowances ?? 0))
+          setDeductions(String(data.totalDeductions ?? 0))
+          setStatus(data.status ?? 'UnPaid')
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error('Gagal memuat detail payslip.')
+          setPayslip(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadDetail()
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   const base = parseInt(salary, 10) || 0
   const allow = parseInt(allowances, 10) || 0
   const deduct = parseInt(deductions, 10) || 0
   const netSalary = base + allow - deduct
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    updatePayslip(id, {
-      salary: base,
-      allowances: allow,
-      deductions: deduct,
-      netSalary,
-      status,
-    })
-    router.push(`/hrm/payroll/payslip/${id}`)
+
+    try {
+      const res = await fetch(`/api/hrm/payroll/payslip/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          basicSalary: base,
+          allowances: allow,
+          deductions: deduct,
+          netSalary,
+          status: status === 'Paid' ? 1 : 0,
+        }),
+      })
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? 'Gagal menyimpan payslip.')
+        return
+      }
+
+      toast.success('Payslip berhasil diperbarui.')
+      router.push(`/hrm/payroll/payslip/${id}`)
+    } catch {
+      toast.error('Terjadi kesalahan saat menyimpan payslip.')
+    }
   }
 
   return (
@@ -73,7 +146,9 @@ export default function PayslipEditPage({ params }: PayslipEditPageProps) {
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-semibold">Edit Payslip - {payslip.employeeName}</h1>
+              <h1 className="text-lg font-semibold">
+                Edit Payslip{payslip ? ` - ${payslip.employeeName}` : ''}
+              </h1>
               <Button
                 variant="outline"
                 size="sm"
@@ -85,6 +160,19 @@ export default function PayslipEditPage({ params }: PayslipEditPageProps) {
               </Button>
             </div>
 
+            {loading ? (
+              <Card className={cardClass}>
+                <CardContent className="px-5 py-10">
+                  <p className="text-sm text-muted-foreground">Memuat data payslip...</p>
+                </CardContent>
+              </Card>
+            ) : !payslip ? (
+              <Card className={cardClass}>
+                <CardContent className="px-5 py-10">
+                  <p className="text-sm text-muted-foreground">Payslip tidak ditemukan.</p>
+                </CardContent>
+              </Card>
+            ) : (
             <Card className={cardClass}>
               <CardHeader className="px-5 pt-5 pb-3">
                 <CardTitle className="text-base font-semibold text-foreground">Form Edit Payslip</CardTitle>
@@ -102,7 +190,7 @@ export default function PayslipEditPage({ params }: PayslipEditPageProps) {
                     </div>
                     <div className="space-y-2">
                       <Label>Periode</Label>
-                      <Input value={`${payslip.month}/${payslip.year}`} disabled className="h-9 bg-muted" />
+                      <Input value={payslip.salaryMonth} disabled className="h-9 bg-muted" />
                     </div>
                     <div className="space-y-2">
                       <Label>Status</Label>
@@ -149,7 +237,14 @@ export default function PayslipEditPage({ params }: PayslipEditPageProps) {
                   </div>
                   <div className="pt-2 border-t">
                     <p className="text-sm text-muted-foreground">
-                      Net Salary: <span className="font-semibold text-foreground">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(netSalary)}</span>
+                      Net Salary:{' '}
+                      <span className="font-semibold text-foreground">
+                        {new Intl.NumberFormat('id-ID', {
+                          style: 'currency',
+                          currency: 'IDR',
+                          minimumFractionDigits: 0,
+                        }).format(netSalary)}
+                      </span>
                     </p>
                   </div>
                   <div className="flex gap-2 pt-2">
@@ -168,6 +263,7 @@ export default function PayslipEditPage({ params }: PayslipEditPageProps) {
                 </form>
               </CardContent>
             </Card>
+            )}
           </div>
         </MainContentWrapper>
       </SidebarInset>

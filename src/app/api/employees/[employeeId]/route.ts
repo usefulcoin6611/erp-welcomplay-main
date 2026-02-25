@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import * as bcrypt from "bcryptjs";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 const updateEmployeeSchema = z.object({
   name: z.string().trim().min(1, "Nama karyawan wajib diisi"),
@@ -54,6 +56,37 @@ export async function GET(
       );
     }
 
+    const documentTypes = await (prisma as any).documentType.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+
+    let employeeDocuments: any[] = [];
+
+    try {
+      employeeDocuments = await (prisma as any).employeeDocument.findMany({
+        where: { employeeId: employee.id },
+      });
+    } catch (err) {
+      console.error("Error fetching employee documents:", err);
+      employeeDocuments = [];
+    }
+
+    const documents = documentTypes.map((dt: any) => {
+      const doc = employeeDocuments.find(
+        (d: any) => d.documentTypeId === dt.id,
+      );
+
+      return {
+        documentTypeId: dt.id,
+        name: dt.name,
+        requiredField: dt.requiredField,
+        filePath: doc?.filePath ?? null,
+        fileName: doc?.fileName ?? null,
+        mimeType: doc?.mimeType ?? null,
+        fileSize: doc?.fileSize ?? null,
+      };
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -83,6 +116,7 @@ export async function GET(
         bankIdentifierCode: employee.bankIdentifierCode,
         branchLocation: employee.branchLocation,
         taxPayerId: employee.taxPayerId,
+        documents,
       },
     });
   } catch (error) {
@@ -116,8 +150,48 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
-    const validation = updateEmployeeSchema.safeParse(body);
+    const contentType = request.headers.get("content-type") || "";
+
+    let rawData: any = {};
+    let formData: FormData | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      formData = await request.formData();
+
+      rawData = {
+        name: (formData.get("name") as string | null) ?? "",
+        email: (formData.get("email") as string | null) ?? "",
+        phone: (formData.get("phone") as string | null) ?? "",
+        dateOfBirth: (formData.get("dateOfBirth") as string | null) ?? "",
+        gender: (formData.get("gender") as string | null) ?? "",
+        address: (formData.get("address") as string | null) ?? "",
+        branch: (formData.get("branch") as string | null) ?? "",
+        department: (formData.get("department") as string | null) ?? "",
+        designation: (formData.get("designation") as string | null) ?? "",
+        dateOfJoining: (formData.get("dateOfJoining") as string | null) ?? "",
+        salaryType: (formData.get("salaryType") as string | null) ?? undefined,
+        basicSalary: (formData.get("basicSalary") as string | null) ?? undefined,
+        accountHolderName:
+          (formData.get("accountHolderName") as string | null) ?? undefined,
+        accountNumber:
+          (formData.get("accountNumber") as string | null) ?? undefined,
+        bankName: (formData.get("bankName") as string | null) ?? undefined,
+        bankIdentifierCode:
+          (formData.get("bankIdentifierCode") as string | null) ?? undefined,
+        branchLocation:
+          (formData.get("branchLocation") as string | null) ?? undefined,
+        taxPayerId: (formData.get("taxPayerId") as string | null) ?? undefined,
+        isActive: formData.has("isActive")
+          ? (formData.get("isActive") as string) === "true"
+          : undefined,
+        password: (formData.get("password") as string | null) ?? undefined,
+      };
+    } else {
+      const body = await request.json();
+      rawData = body || {};
+    }
+
+    const validation = updateEmployeeSchema.safeParse(rawData);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -265,6 +339,105 @@ export async function PUT(
       });
     }
 
+    let nextDocumentsCertificate: string | null | undefined = undefined;
+    let nextDocumentsPhoto: string | null | undefined = undefined;
+
+    if (formData) {
+      const documentTypes = await (prisma as any).documentType.findMany({
+        orderBy: { createdAt: "asc" },
+      });
+
+      const hasEmployeeDocumentModel = Boolean(
+        (prisma as any).employeeDocument,
+      );
+
+      const existingDocuments = hasEmployeeDocumentModel
+        ? await (prisma as any).employeeDocument.findMany({
+            where: { employeeId: existingEmployee.id },
+          })
+        : [];
+
+      for (const dt of documentTypes as any[]) {
+        const key = `document_${dt.id}`;
+        const removeKey = `document_${dt.id}_removed`;
+
+        const file = formData.get(key) as File | null;
+        const removed = formData.get(removeKey) === "true";
+
+        const existing = existingDocuments.find(
+          (d: any) => d.documentTypeId === dt.id,
+        );
+
+        if (file && file.size > 0) {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const safeName = file.name.replace(/\s/g, "_");
+          const shortPrefix = Date.now().toString(36);
+          const filename = `${shortPrefix}_${safeName}`;
+          const uploadDir = path.join(
+            process.cwd(),
+            "public/uploads/employees",
+          );
+
+          try {
+            await mkdir(uploadDir, { recursive: true });
+            await writeFile(path.join(uploadDir, filename), buffer);
+            const filePath = `/uploads/employees/${filename}`;
+            const isImage = file.type.startsWith("image/");
+
+            if (hasEmployeeDocumentModel) {
+              if (existing) {
+                await (prisma as any).employeeDocument.update({
+                  where: { id: existing.id },
+                  data: {
+                    filePath,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    fileSize: file.size,
+                  },
+                });
+              } else {
+                await (prisma as any).employeeDocument.create({
+                  data: {
+                    employeeId: existingEmployee.id,
+                    documentTypeId: dt.id,
+                    filePath,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    fileSize: file.size,
+                  },
+                });
+              }
+            }
+
+            if (isImage) {
+              nextDocumentsPhoto = filePath;
+            } else if (nextDocumentsCertificate === undefined) {
+              nextDocumentsCertificate = filePath;
+            }
+          } catch (err) {
+            console.error(
+              `Error saving employee document file for type ${dt.name}:`,
+              err,
+            );
+          }
+        } else if (removed && existing && hasEmployeeDocumentModel) {
+          await (prisma as any).employeeDocument.update({
+            where: { id: existing.id },
+            data: { filePath: null },
+          });
+
+          const nameLower = String(dt.name ?? "").toLowerCase();
+          if (
+            nameLower.includes("photo") ||
+            nameLower.includes("foto") ||
+            nameLower.includes("image")
+          ) {
+            nextDocumentsPhoto = null;
+          }
+        }
+      }
+    }
+
     const employee = await (prisma as any).employee.update({
       where: { employeeId },
       data: {
@@ -281,6 +454,14 @@ export async function PUT(
         isActive: data.isActive ?? true,
         salaryType: data.salaryType ?? null,
         basicSalary: basicSalaryNumber,
+        documentsCertificate:
+          nextDocumentsCertificate !== undefined
+            ? nextDocumentsCertificate
+            : existingEmployee.documentsCertificate,
+        documentsPhoto:
+          nextDocumentsPhoto !== undefined
+            ? nextDocumentsPhoto
+            : existingEmployee.documentsPhoto,
         accountHolderName: data.accountHolderName ?? null,
         accountNumber: data.accountNumber ?? null,
         bankName: data.bankName ?? null,

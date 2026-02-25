@@ -15,7 +15,9 @@ const adapter = new PrismaPg(pool);
 
 if (
   !globalForPrisma.prisma ||
-  !("employee" in (globalForPrisma.prisma as any))
+  !("employee" in (globalForPrisma.prisma as any)) ||
+  !("job" in (globalForPrisma.prisma as any)) ||
+  !("jobApplication" in (globalForPrisma.prisma as any))
 ) {
   globalForPrisma.prisma = new PrismaClient({ adapter });
 }

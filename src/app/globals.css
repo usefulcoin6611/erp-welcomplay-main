@@ -479,6 +479,32 @@
   }
 }
 
+/* Rich HTML content (e.g. Job Description / Job Requirement from Quill) */
+.job-rich-content p {
+  margin: 0.25em 0;
+}
+.job-rich-content ul,
+.job-rich-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+.job-rich-content li {
+  margin: 0.125em 0;
+}
+.job-rich-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+.job-rich-content a:hover {
+  opacity: 0.9;
+}
+.job-rich-content strong {
+  font-weight: 600;
+}
+.job-rich-content h1 { font-size: 1.25em; font-weight: 600; margin: 0.5em 0; }
+.job-rich-content h2 { font-size: 1.125em; font-weight: 600; margin: 0.5em 0; }
+.job-rich-content h3 { font-size: 1em; font-weight: 600; margin: 0.5em 0; }
+
 /* Page transition optimizations */
 [data-slot="page-transition"] {
   will-change: opacity, transform;

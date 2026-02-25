@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       return {
         id: b.id,
         chartAccountId: b.chartAccount.id,
+        chartCode: b.chartAccount.code,
         chartOfAccount: `${b.chartAccount.code} - ${b.chartAccount.name}`,
         name: b.holderName,
         bank: b.bank,

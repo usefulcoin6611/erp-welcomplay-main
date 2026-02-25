@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Calendar, Clock, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Calendar, Clock, Eye, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
@@ -20,9 +20,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { getInterviewsList, addInterview, updateInterview, removeInterviewById, type InterviewScheduleDetail } from '@/lib/recruitment-data';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+
+type ScheduleItem = {
+  id: string;
+  candidateName: string;
+  position: string;
+  applicationId?: string;
+  interviewDate: string;
+  interviewTime: string;
+  interviewer: string;
+  location: string;
+  status: string;
+};
+
+type ApplicationOption = { id: string; applicantName: string; jobTitle: string };
 
 export function InterviewScheduleContent() {
   const router = useRouter();
@@ -30,32 +44,84 @@ export function InterviewScheduleContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteScheduleId, setDeleteScheduleId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
+    applicationId: '',
     candidateName: '',
     position: '',
     interviewDate: '',
     interviewTime: '',
     interviewer: '',
     location: '',
-    status: '',
+    status: 'Scheduled',
     notes: '',
   });
-  const [schedules, setSchedules] = useState<InterviewScheduleDetail[]>(() => getInterviewsList());
+  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+  const [applications, setApplications] = useState<ApplicationOption[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refreshSchedules = () => setSchedules([...getInterviewsList()]);
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/recruitment/interviews');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setSchedules(json.data);
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat jadwal interview');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSchedules();
+  }, [fetchSchedules]);
+
+  useEffect(() => {
+    if (showForm && applications.length === 0) {
+      fetch('/api/hrm/recruitment/applications')
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.data)) {
+            setApplications(json.data.map((a: { id: string; applicantName: string; jobTitle: string }) => ({
+              id: a.id,
+              applicantName: a.applicantName,
+              jobTitle: a.jobTitle,
+            })));
+          }
+        });
+    }
+  }, [showForm, applications.length]);
+
+  const refreshSchedules = () => fetchSchedules();
 
   const openDeleteConfirm = (id: string) => {
     setDeleteScheduleId(id);
     setDeleteAlertOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteScheduleId) {
-      removeInterviewById(deleteScheduleId);
-      refreshSchedules();
-      setDeleteScheduleId(null);
+  const handleDeleteConfirm = async () => {
+    if (!deleteScheduleId) {
+      setDeleteAlertOpen(false);
+      return;
     }
-    setDeleteAlertOpen(false);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/interviews/${deleteScheduleId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Jadwal dihapus');
+        refreshSchedules();
+        setDeleteScheduleId(null);
+        setDeleteAlertOpen(false);
+      } else toast.error(json.message ?? 'Gagal menghapus');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const interviewers = ['Sarah Johnson', 'Emily Davis', 'David Lee', 'Michael Brown'];
@@ -66,48 +132,78 @@ export function InterviewScheduleContent() {
     setShowForm(true);
     setEditingId(null);
     setFormData({
+      applicationId: '',
       candidateName: '',
       position: '',
       interviewDate: '',
       interviewTime: '',
       interviewer: '',
       location: '',
-      status: '',
+      status: 'Scheduled',
       notes: '',
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      updateInterview(editingId, {
-        candidateName: formData.candidateName,
-        position: formData.position,
-        interviewDate: formData.interviewDate,
-        interviewTime: formData.interviewTime,
-        interviewer: formData.interviewer,
-        location: formData.location,
-        status: formData.status,
-      });
-    } else {
-      addInterview({
-        candidateName: formData.candidateName,
-        position: formData.position,
-        interviewDate: formData.interviewDate,
-        interviewTime: formData.interviewTime,
-        interviewer: formData.interviewer,
-        location: formData.location,
-        status: formData.status,
-      });
+    setSubmitting(true);
+    try {
+      if (editingId) {
+        const res = await fetch(`/api/hrm/recruitment/interviews/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            interviewDate: formData.interviewDate,
+            interviewTime: formData.interviewTime,
+            interviewer: formData.interviewer,
+            location: formData.location,
+            status: formData.status,
+          }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast.success(json.message ?? 'Jadwal berhasil diperbarui');
+          refreshSchedules();
+          setShowForm(false);
+        } else toast.error(json.message ?? 'Gagal memperbarui');
+      } else {
+        if (!formData.applicationId) {
+          toast.error('Pilih kandidat (lamaran)');
+          setSubmitting(false);
+          return;
+        }
+        const res = await fetch('/api/hrm/recruitment/interviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            applicationId: formData.applicationId,
+            interviewDate: formData.interviewDate,
+            interviewTime: formData.interviewTime,
+            interviewer: formData.interviewer,
+            location: formData.location,
+            status: formData.status,
+          }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast.success(json.message ?? 'Jadwal berhasil dibuat');
+          refreshSchedules();
+          setShowForm(false);
+        } else toast.error(json.message ?? 'Gagal membuat jadwal');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan');
+    } finally {
+      setSubmitting(false);
     }
-    refreshSchedules();
-    setShowForm(false);
   };
 
-  const handleEdit = (item: InterviewScheduleDetail) => {
+  const handleEdit = (item: ScheduleItem) => {
     setShowForm(true);
     setEditingId(item.id);
     setFormData({
+      applicationId: item.applicationId ?? '',
       candidateName: item.candidateName,
       position: item.position,
       interviewDate: item.interviewDate,
@@ -134,9 +230,17 @@ export function InterviewScheduleContent() {
     }
   };
 
-  const upcomingSchedules = schedules.filter((s) => s.status === 'Scheduled').sort((a, b) => 
+  const upcomingSchedules = schedules.filter((s) => s.status === 'Scheduled').sort((a, b) =>
     new Date(a.interviewDate).getTime() - new Date(b.interviewDate).getTime()
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -197,30 +301,41 @@ export function InterviewScheduleContent() {
           <CardContent className="px-6 pt-6 pb-6">
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Schedule New'} Interview</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="candidateName">Candidate Name</Label>
-                  <Input
-                    id="candidateName"
-                    value={formData.candidateName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, candidateName: e.target.value })
-                    }
-                    required
-                  />
+              {editingId ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Candidate</Label>
+                    <p className="text-sm text-foreground">{formData.candidateName} – {formData.position}</p>
+                  </div>
                 </div>
+              ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="position">Position</Label>
-                  <Input
-                    id="position"
-                    value={formData.position}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, position: e.target.value })
-                    }
-                    required
-                  />
+                  <Label htmlFor="applicationId">Kandidat (Lamaran)</Label>
+                  <Select
+                    value={formData.applicationId}
+                    onValueChange={(value) => {
+                      const app = applications.find((a) => a.id === value);
+                      setFormData({
+                        ...formData,
+                        applicationId: value,
+                        candidateName: app?.applicantName ?? '',
+                        position: app?.jobTitle ?? '',
+                      });
+                    }}
+                  >
+                    <SelectTrigger id="applicationId">
+                      <SelectValue placeholder="Pilih lamaran (kandidat)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {applications.map((app) => (
+                        <SelectItem key={app.id} value={app.id}>
+                          {app.applicantName} – {app.jobTitle}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -235,12 +350,13 @@ export function InterviewScheduleContent() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="interviewTime">Interview Time</Label>
-                  <Input
-                    id="interviewTime"
-                    type="time"
-                    value={formData.interviewTime}
+              <div className="space-y-2">
+                <Label htmlFor="interviewTime">Interview Time</Label>
+                <Input
+                  id="interviewTime"
+                  type="text"
+                  placeholder="e.g. 10:00"
+                  value={formData.interviewTime}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setFormData({ ...formData, interviewTime: e.target.value })
                     }
@@ -318,10 +434,10 @@ export function InterviewScheduleContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Schedule'}
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Schedule')}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
                   Cancel
                 </Button>
               </div>
@@ -399,8 +515,8 @@ export function InterviewScheduleContent() {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-3 sm:gap-2">
             <AlertDialogCancel type="button">Batal</AlertDialogCancel>
-            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
-              <span>Hapus</span>
+            <AlertDialogAction type="button" disabled={deleting} onClick={handleDeleteConfirm}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Hapus</span>}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

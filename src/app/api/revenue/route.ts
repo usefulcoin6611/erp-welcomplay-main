@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth-server"
 import { headers } from "next/headers"
-import type { Prisma } from "@prisma/client"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 
@@ -13,11 +12,13 @@ type RevenueApiRow = {
   account: string
   customerId: string | null
   category: string | null
+  categoryId?: string | null
   reference: string | null
   description: string | null
   paymentReceipt: string | null
   cashAccountId?: string | null
   incomeAccountId?: string | null
+  bankAccountId?: string | null
 }
 
 export async function GET(request: NextRequest) {
@@ -44,24 +45,40 @@ export async function GET(request: NextRequest) {
     if (startDate) dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`)
     if (endDate) dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`)
 
-    const entries = await prisma.journalEntry.findMany({
-      where: {
-        branchId: branchId,
-        date: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
-      },
-      include: {
-        lines: {
-          include: {
-            account: true,
-          },
+    const [entries, incomeCategories] = await Promise.all([
+      prisma.journalEntry.findMany({
+        where: {
+          branchId: branchId,
+          date: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
         },
-      },
-      orderBy: {
-        date: "desc",
-      },
-    }) as any[]
+        include: {
+          lines: {
+            include: {
+              account: true,
+            },
+          },
+          bankAccount: true,
+        },
+        orderBy: {
+          date: "desc",
+        },
+      }) as any[],
+      prisma.category.findMany({
+        where: {
+          branchId,
+          type: "Income",
+        },
+      }),
+    ])
 
-    const data = entries.reduce<RevenueApiRow[]>((acc, entry: any) => {
+    const categoryByAccountName = new Map<string, { id: string; name: string }>()
+    for (const cat of incomeCategories as any[]) {
+      if (cat.account) {
+        categoryByAccountName.set(cat.account, { id: cat.id, name: cat.name })
+      }
+    }
+
+    const data = (entries as any[]).reduce<RevenueApiRow[]>((acc, entry: any) => {
       const incomeLines = entry.lines.filter((ln: any) => ln.account.type === "Income")
       const cashLines = entry.lines.filter((ln: any) => ln.account.type === "Assets")
       const incomeAmount = incomeLines.reduce(
@@ -70,18 +87,31 @@ export async function GET(request: NextRequest) {
       )
       const cashLine = cashLines.find((ln: any) => (ln.debit || 0) > 0)
       if (incomeAmount > 0 && (!accountId || incomeLines.some((ln: any) => ln.account.id === accountId))) {
+        const bankAccount = (entry as any).bankAccount as { id: string; holderName: string; bank: string } | null
+        const accountLabel = bankAccount
+          ? `${bankAccount.holderName} - ${bankAccount.bank}`
+          : cashLine
+          ? cashLine.account.name
+          : "-"
+
+        const incomeAccount = incomeLines[0]?.account
+        const mappedCategory =
+          incomeAccount && categoryByAccountName.get(incomeAccount.name as string)
+
         acc.push({
           id: entry.id,
           date: entry.date.toISOString().slice(0, 10),
           amount: incomeAmount,
-          account: cashLine ? cashLine.account.name : "-",
+          account: accountLabel,
           customerId: (entry as any).customerId ?? null,
-          category: incomeLines[0]?.account.name || null,
+          category: mappedCategory?.name ?? incomeAccount?.name ?? null,
+          categoryId: mappedCategory?.id ?? null,
           reference: entry.reference || null,
           description: entry.description || null,
           paymentReceipt: (entry as any).paymentReceipt ?? null,
           cashAccountId: cashLine?.account.id ?? null,
-          incomeAccountId: incomeLines[0]?.account.id ?? null,
+          incomeAccountId: incomeAccount?.id ?? null,
+          bankAccountId: (entry as any).bankAccountId ?? null,
         })
       }
       return acc
@@ -117,7 +147,7 @@ export async function POST(request: NextRequest) {
     const amount = formData.get("amount")
     const bankAccountId = formData.get("bankAccountId")
     const cashAccountId = formData.get("cashAccountId")
-    const incomeAccountId = formData.get("incomeAccountId")
+    const categoryId = formData.get("categoryId")
     const customerId = formData.get("customerId")
     const reference = formData.get("reference")
     const description = formData.get("description")
@@ -133,13 +163,13 @@ export async function POST(request: NextRequest) {
       typeof date !== "string" ||
       !date ||
       (!bankAccountId && !effectiveCashAccountId) ||
-      typeof incomeAccountId !== "string" ||
-      !incomeAccountId
+      typeof categoryId !== "string" ||
+      !categoryId
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: "date, bankAccountId/cashAccountId, incomeAccountId wajib diisi",
+          message: "date, bankAccountId/cashAccountId, categoryId wajib diisi",
         },
         { status: 400 }
       )
@@ -172,7 +202,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const [bankAccount, cashAccount, incomeAccount, customer] = await Promise.all([
+    const [bankAccount, cashAccount, category, customer] = await Promise.all([
       typeof bankAccountId === "string" && bankAccountId
         ? prisma.bankAccount.findFirst({
             where: { id: bankAccountId as string, branchId },
@@ -184,11 +214,30 @@ export async function POST(request: NextRequest) {
             where: { id: effectiveCashAccountId, type: "Assets", branchId },
           })
         : Promise.resolve(null),
-      prisma.chartOfAccount.findFirst({ where: { id: incomeAccountId as string, type: "Income", branchId } }),
+      prisma.category.findFirst({
+        where: { id: categoryId as string, type: "Income", branchId },
+      }),
       customerId && typeof customerId === "string"
         ? prisma.customer.findFirst({ where: { id: customerId as string, branchId } })
         : Promise.resolve(null),
     ])
+
+    if (!category) {
+      return NextResponse.json(
+        { success: false, message: "Category pendapatan tidak valid" },
+        { status: 400 }
+      )
+    }
+
+    const incomeAccount = category.account
+      ? await prisma.chartOfAccount.findFirst({
+          where: {
+            name: category.account,
+            type: "Income",
+            branchId,
+          },
+        })
+      : null
 
     const resolvedCashAccount =
       cashAccount ??
@@ -218,7 +267,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const entry = await tx.journalEntry.create({
         data: {
           journalId: `JR-${parsedDate.getFullYear()}-${Math.floor(Math.random() * 100000)}`,
@@ -246,7 +295,7 @@ export async function POST(request: NextRequest) {
       await tx.journalLine.create({
         data: {
           journalEntryId: entry.id,
-          accountId: incomeAccountId,
+          accountId: (incomeAccount as any).id,
           debit: 0,
           credit: amountNumber,
           description: description ? String(description) : null,

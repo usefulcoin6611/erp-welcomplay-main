@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ import {
   FileText,
   X,
   UserPlus,
+  Loader2,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -51,21 +52,45 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  getOnboardingsList,
-  addOnboarding,
-  updateOnboarding,
-  removeOnboardingById,
-  type OnboardingDetail,
-} from '@/lib/recruitment-data';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]';
 
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'converted', label: 'Converted' },
+] as const;
+
+type OnboardingItem = {
+  id: string;
+  applicationId: string;
+  application: {
+    id: string;
+    applicantName: string;
+    email: string;
+    jobId: string;
+    jobTitle: string;
+    stage: string;
+  };
+  employeeId?: string;
+  employee?: { id: string; name: string; employeeId: string };
+  status: string;
+  onboardingDate?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type ApplicationOption = { id: string; applicantName: string; jobTitle: string; stage: string };
+type EmployeeOption = { id: string; name: string; employeeId: string };
+type StageOption = { id: string; name: string };
+
 function formatDate(value: string | undefined): string {
   if (!value) return '-';
   try {
-    return new Date(value).toLocaleDateString('id-ID', {
+    return new Date(value + 'T00:00:00').toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -78,85 +103,171 @@ function formatDate(value: string | undefined): string {
 export function OnboardingContent() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [deleteOnboardingId, setDeleteOnboardingId] = useState<string | null>(null);
-  const [onboardings, setOnboardings] = useState(() => getOnboardingsList());
+  const [loading, setLoading] = useState(true);
+  const [onboardings, setOnboardings] = useState<OnboardingItem[]>([]);
+  const [stages, setStages] = useState<StageOption[]>([]);
+  const [hiredApplications, setHiredApplications] = useState<ApplicationOption[]>([]);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
 
-  const [formData, setFormData] = useState({
-    employeeName: '',
-    position: '',
-    department: '',
-    joinDate: '',
-    status: '',
-    branch: '',
-    appliedAt: '',
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<OnboardingItem | null>(null);
+  const [createApplicationId, setCreateApplicationId] = useState('');
+  const [editForm, setEditForm] = useState({
+    status: 'pending',
+    onboardingDate: '',
+    completedAt: '',
+    employeeId: '',
   });
 
-  const refreshOnboardings = () => setOnboardings([...getOnboardingsList()]);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [deleteOnboardingId, setDeleteOnboardingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const departments = ['IT', 'Marketing', 'Finance', 'HR', 'Operations'];
-  const statuses = ['Pending', 'In Progress', 'Completed'];
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
-
-  const handleAdd = () => {
-    setShowForm(true);
-    setEditingId(null);
-    setFormData({
-      employeeName: '',
-      position: '',
-      department: '',
-      joinDate: '',
-      status: 'Pending',
-      branch: '',
-      appliedAt: '',
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingId) {
-      updateOnboarding(editingId, {
-        employeeName: formData.employeeName,
-        position: formData.position,
-        department: formData.department,
-        joinDate: formData.joinDate,
-        status: formData.status,
-        branch: formData.branch || undefined,
-        appliedAt: formData.appliedAt || undefined,
-      });
-      toast.success('Onboarding berhasil diupdate');
-    } else {
-      addOnboarding({
-        employeeName: formData.employeeName,
-        position: formData.position,
-        department: formData.department,
-        joinDate: formData.joinDate,
-        status: formData.status,
-        progress: 0,
-        branch: formData.branch || undefined,
-        appliedAt: formData.appliedAt || undefined,
-        convertToEmployeeId: null,
-      });
-      toast.success('Onboarding berhasil dibuat');
+  const fetchOnboardings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/recruitment/onboarding');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setOnboardings(json.data);
+      } else {
+        toast.error(json.message ?? 'Gagal memuat data onboarding');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat data onboarding');
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    refreshOnboardings();
+  }, []);
+
+  useEffect(() => {
+    fetchOnboardings();
+  }, [fetchOnboardings]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [stagesRes, employeesRes] = await Promise.all([
+          fetch('/api/job-stages'),
+          fetch('/api/hrm/assets/employees'),
+        ]);
+        const stagesJson = await stagesRes.json();
+        const employeesJson = await employeesRes.json();
+        if (stagesJson.success && Array.isArray(stagesJson.data)) {
+          setStages(stagesJson.data.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name })));
+        }
+        if (employeesJson.success && Array.isArray(employeesJson.data)) {
+          setEmployees(
+            employeesJson.data.map((e: { id: string; name: string; employeeId: string }) => ({
+              id: e.id,
+              name: e.name,
+              employeeId: e.employeeId ?? e.id,
+            }))
+          );
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
+
+  const loadHiredApplications = useCallback(async () => {
+    const stagesRes = await fetch('/api/job-stages');
+    const stagesJson = await stagesRes.json();
+    if (!stagesJson.success || !Array.isArray(stagesJson.data)) return;
+    const hiredStage = (stagesJson.data as StageOption[]).find((s) => s.name === 'Hired');
+    if (!hiredStage) {
+      toast.error('Stage "Hired" tidak ditemukan. Tambah di Setup → Job Stage.');
+      return;
+    }
+    const appRes = await fetch(`/api/hrm/recruitment/applications?stageId=${hiredStage.id}`);
+    const appJson = await appRes.json();
+    if (!appJson.success || !Array.isArray(appJson.data)) return;
+    const hired = (appJson.data as { id: string; applicantName: string; jobTitle: string; stage: string }[]).map(
+      (a) => ({ id: a.id, applicantName: a.applicantName, jobTitle: a.jobTitle, stage: a.stage })
+    );
+    const existingAppIds = new Set(onboardings.map((o) => o.applicationId));
+    setHiredApplications(hired.filter((a) => !existingAppIds.has(a.id)));
+  }, [onboardings]);
+
+  const handleOpenCreate = () => {
+    setCreateApplicationId('');
+    loadHiredApplications();
+    setShowCreateModal(true);
   };
 
-  const handleEdit = (item: OnboardingDetail) => {
-    setShowForm(true);
-    setEditingId(item.id);
-    setFormData({
-      employeeName: item.employeeName,
-      position: item.position,
-      department: item.department,
-      joinDate: item.joinDate,
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createApplicationId) {
+      toast.error('Pilih lamaran (Hired) terlebih dahulu');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/hrm/recruitment/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: createApplicationId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Onboarding berhasil dibuat');
+        setShowCreateModal(false);
+        fetchOnboardings();
+      } else {
+        toast.error(json.message ?? 'Gagal membuat onboarding');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal membuat onboarding');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (item: OnboardingItem) => {
+    setEditingItem(item);
+    setEditForm({
       status: item.status,
-      branch: item.branch ?? '',
-      appliedAt: item.appliedAt ?? '',
+      onboardingDate: item.onboardingDate ?? '',
+      completedAt: item.completedAt ?? '',
+      employeeId: item.employeeId ?? '',
     });
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/onboarding/${editingItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: editForm.status,
+          onboardingDate: editForm.onboardingDate || null,
+          completedAt: editForm.completedAt || null,
+          employeeId: editForm.employeeId || null,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Onboarding berhasil diperbarui');
+        setShowEditModal(false);
+        setEditingItem(null);
+        fetchOnboardings();
+      } else {
+        toast.error(json.message ?? 'Gagal memperbarui onboarding');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memperbarui onboarding');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openDeleteConfirm = (id: string) => {
@@ -164,62 +275,87 @@ export function OnboardingContent() {
     setDeleteAlertOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteOnboardingId) {
-      removeOnboardingById(deleteOnboardingId);
-      refreshOnboardings();
-      setDeleteOnboardingId(null);
+  const handleDeleteConfirm = async () => {
+    if (!deleteOnboardingId) {
+      setDeleteAlertOpen(false);
+      return;
     }
-    setDeleteAlertOpen(false);
-    toast.success('Onboarding dihapus');
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/onboarding/${deleteOnboardingId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Onboarding berhasil dihapus');
+        fetchOnboardings();
+        setDeleteOnboardingId(null);
+        setDeleteAlertOpen(false);
+      } else {
+        toast.error(json.message ?? 'Gagal menghapus onboarding');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus onboarding');
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  const handleConvertToEmployee = (item: OnboardingDetail) => {
-    const employeeId = `emp-${item.id}`;
-    updateOnboarding(item.id, { convertToEmployeeId: employeeId });
-    refreshOnboardings();
-    toast.success(`${item.employeeName} berhasil dikonversi ke karyawan`);
+  const handleConvertToEmployee = (item: OnboardingItem) => {
+    setEditingItem(item);
+    setEditForm((prev) => ({ ...prev, status: 'converted', employeeId: prev.employeeId ?? '' }));
+    setShowEditModal(true);
   };
 
-  const handleViewEmployee = (employeeId: string) => {
-    router.push(`/hrm/employees/${employeeId}`);
+  const handleViewEmployee = (item: OnboardingItem) => {
+    if (!item.employee?.employeeId) return;
+    router.push(`/hrm/employees/${item.employee.employeeId}`);
   };
 
-  const handleDownloadOfferLetter = (format: 'pdf' | 'doc', item: OnboardingDetail) => {
-    toast.success(`Download Offer Letter ${format.toUpperCase()}: ${item.employeeName}`);
+  const handleDownloadOfferLetter = (_format: 'pdf' | 'doc', item: OnboardingItem) => {
+    toast.info(`Unduh offer letter (${item.application.applicantName}) akan tersedia di versi berikutnya.`);
   };
 
   const filteredData = onboardings.filter(
     (o) =>
-      o.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (o.department && o.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (o.branch && o.branch.toLowerCase().includes(searchTerm.toLowerCase()))
+      o.application.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.application.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (o.application.email && o.application.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'Completed':
+      case 'completed':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'In Progress':
+      case 'converted':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_progress':
         return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'Pending':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'pending':
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const isConfirm = (status: string) => status === 'Completed';
-  const canConvert = (o: OnboardingDetail) =>
-    isConfirm(o.status) && (o.convertToEmployeeId == null || o.convertToEmployeeId === '');
-  const hasConverted = (o: OnboardingDetail) =>
-    isConfirm(o.status) && o.convertToEmployeeId != null && o.convertToEmployeeId !== '';
+  const getStatusLabel = (status: string) => {
+    const o = STATUS_OPTIONS.find((s) => s.value === status);
+    return o?.label ?? status;
+  };
+
+  const canConvert = (o: OnboardingItem) =>
+    (o.status === 'completed' || o.status === 'in_progress') && !o.employeeId;
+  const hasConverted = (o: OnboardingItem) => o.employeeId && o.employee;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards - sesuai acuan */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className={cardClass}>
           <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
@@ -236,7 +372,7 @@ export function OnboardingContent() {
             <div>
               <p className="text-sm text-muted-foreground">In Progress</p>
               <p className="text-2xl font-bold text-amber-600">
-                {onboardings.filter((o) => o.status === 'In Progress').length}
+                {onboardings.filter((o) => o.status === 'in_progress').length}
               </p>
             </div>
           </CardContent>
@@ -246,7 +382,7 @@ export function OnboardingContent() {
             <div>
               <p className="text-sm text-muted-foreground">Completed</p>
               <p className="text-2xl font-bold text-blue-600">
-                {onboardings.filter((o) => o.status === 'Completed').length}
+                {onboardings.filter((o) => o.status === 'completed').length}
               </p>
             </div>
           </CardContent>
@@ -256,14 +392,23 @@ export function OnboardingContent() {
             <div>
               <p className="text-sm text-muted-foreground">Pending</p>
               <p className="text-2xl font-bold text-amber-600">
-                {onboardings.filter((o) => o.status === 'Pending').length}
+                {onboardings.filter((o) => o.status === 'pending').length}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Converted</p>
+              <p className="text-2xl font-bold text-green-600">
+                {onboardings.filter((o) => o.status === 'converted' || o.employeeId).length}
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Card: Title + Create Button - sesuai reference-erp action-btn */}
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
           <CardTitle className="text-base font-semibold">Manage Job On-boarding</CardTitle>
@@ -271,7 +416,7 @@ export function OnboardingContent() {
             <div className="relative w-full min-w-[200px] max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name, job, department..."
+                placeholder="Search by name, job, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
@@ -292,7 +437,7 @@ export function OnboardingContent() {
             <Button
               size="sm"
               className="h-9 shadow-none bg-blue-600 text-white hover:bg-blue-700"
-              onClick={handleAdd}
+              onClick={handleOpenCreate}
             >
               <Plus className="h-4 w-4 mr-1" />
               Create
@@ -306,9 +451,8 @@ export function OnboardingContent() {
                 <TableRow className="border-b bg-muted/30">
                   <TableHead className="px-6 font-medium">Name</TableHead>
                   <TableHead className="px-6 font-medium">Job</TableHead>
-                  <TableHead className="px-6 font-medium">Branch</TableHead>
-                  <TableHead className="px-6 font-medium">Applied at</TableHead>
-                  <TableHead className="px-6 font-medium">Joining at</TableHead>
+                  <TableHead className="px-6 font-medium">Onboarding date</TableHead>
+                  <TableHead className="px-6 font-medium">Completed at</TableHead>
                   <TableHead className="px-6 font-medium">Status</TableHead>
                   <TableHead className="px-6 font-medium text-right">Action</TableHead>
                 </TableRow>
@@ -316,24 +460,20 @@ export function OnboardingContent() {
               <TableBody>
                 {filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="px-6 py-8 text-center text-muted-foreground"
-                    >
-                      No onboarding records found
+                    <TableCell colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                      Tidak ada data onboarding. Buat dari lamaran yang sudah stage Hired.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredData.map((o) => (
                     <TableRow key={o.id} className="border-b">
-                      <TableCell className="px-6 font-medium">{o.employeeName}</TableCell>
-                      <TableCell className="px-6">{o.position}</TableCell>
-                      <TableCell className="px-6">{o.branch ?? '-'}</TableCell>
-                      <TableCell className="px-6">{formatDate(o.appliedAt)}</TableCell>
-                      <TableCell className="px-6">{formatDate(o.joinDate)}</TableCell>
+                      <TableCell className="px-6 font-medium">{o.application.applicantName}</TableCell>
+                      <TableCell className="px-6">{o.application.jobTitle}</TableCell>
+                      <TableCell className="px-6">{formatDate(o.onboardingDate)}</TableCell>
+                      <TableCell className="px-6">{formatDate(o.completedAt)}</TableCell>
                       <TableCell className="px-6">
                         <Badge className={getStatusBadgeColor(o.status)} variant="outline">
-                          {o.status}
+                          {getStatusLabel(o.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6">
@@ -349,12 +489,12 @@ export function OnboardingContent() {
                               <UserPlus className="h-4 w-4" />
                             </Button>
                           )}
-                          {hasConverted(o) && o.convertToEmployeeId && (
+                          {hasConverted(o) && o.employee && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                              onClick={() => handleViewEmployee(o.convertToEmployeeId!)}
+                              onClick={() => handleViewEmployee(o)}
                               title="View Employee"
                             >
                               <Eye className="h-4 w-4" />
@@ -378,7 +518,7 @@ export function OnboardingContent() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          {isConfirm(o.status) && (
+                          {(o.status === 'completed' || o.status === 'converted') && (
                             <>
                               <Button
                                 variant="outline"
@@ -411,148 +551,134 @@ export function OnboardingContent() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Form - modal sesuai reference-erp (data-ajax-popup) */}
+      {/* Create: pilih application Hired */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Buat Onboarding Baru</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Lamaran (stage Hired)</Label>
+              <Select value={createApplicationId} onValueChange={setCreateApplicationId} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih lamaran yang sudah Hired" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hiredApplications.length === 0 ? (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      Tidak ada lamaran Hired yang belum onboarding.
+                    </div>
+                  ) : (
+                    hiredApplications.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.applicantName} – {a.jobTitle}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)} disabled={submitting}>
+                Batal
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={submitting || hiredApplications.length === 0}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buat'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit: status, dates, link employee */}
       <Dialog
-        open={showForm}
+        open={showEditModal}
         onOpenChange={(open) => {
-          setShowForm(open);
-          if (!open) setEditingId(null);
+          if (!submitting) {
+            setShowEditModal(open);
+            if (!open) setEditingItem(null);
+          }
         }}
       >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Job OnBoard' : 'Create New Job OnBoard'}</DialogTitle>
+            <DialogTitle>Edit Onboarding</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-employeeName">Employee Name</Label>
-                <Input
-                  id="modal-employeeName"
-                  value={formData.employeeName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, employeeName: e.target.value })
-                  }
-                  className="h-9"
-                  required
-                />
+          {editingItem && (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {editingItem.application.applicantName} – {editingItem.application.jobTitle}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(v) => setEditForm((f) => ({ ...f, status: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Link ke Employee (convert)</Label>
+                  <Select
+                    value={editForm.employeeId || 'none'}
+                    onValueChange={(v) => setEditForm((f) => ({ ...f, employeeId: v === 'none' ? '' : v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih karyawan (opsional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Tidak link —</SelectItem>
+                      {employees.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name} ({e.employeeId})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-position">Job</Label>
-                <Input
-                  id="modal-position"
-                  value={formData.position}
-                  onChange={(e) =>
-                    setFormData({ ...formData, position: e.target.value })
-                  }
-                  className="h-9"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tanggal onboarding</Label>
+                  <Input
+                    type="date"
+                    value={editForm.onboardingDate}
+                    onChange={(e) => setEditForm((f) => ({ ...f, onboardingDate: e.target.value }))}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tanggal selesai</Label>
+                  <Input
+                    type="date"
+                    value={editForm.completedAt}
+                    onChange={(e) => setEditForm((f) => ({ ...f, completedAt: e.target.value }))}
+                    className="h-9"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-branch">Branch</Label>
-                <Select
-                  value={formData.branch || 'all'}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, branch: v === 'all' ? '' : v })
-                  }
-                >
-                  <SelectTrigger id="modal-branch" className="h-9">
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">-</SelectItem>
-                    {branches.map((b) => (
-                      <SelectItem key={b} value={b}>
-                        {b}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-appliedAt">Applied at</Label>
-                <Input
-                  id="modal-appliedAt"
-                  type="date"
-                  value={formData.appliedAt}
-                  onChange={(e) =>
-                    setFormData({ ...formData, appliedAt: e.target.value })
-                  }
-                  className="h-9"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-joinDate">Joining at</Label>
-                <Input
-                  id="modal-joinDate"
-                  type="date"
-                  value={formData.joinDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, joinDate: e.target.value })
-                  }
-                  className="h-9"
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-department">Department</Label>
-                <Select
-                  value={formData.department}
-                  onValueChange={(v) => setFormData({ ...formData, department: v })}
-                >
-                  <SelectTrigger id="modal-department" className="h-9">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(v) => setFormData({ ...formData, status: v })}
-                >
-                  <SelectTrigger id="modal-status" className="h-9">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="h-9 bg-blue-600 text-white hover:bg-blue-700 shadow-none"
-              >
-                {editingId ? 'Update' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter className="gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowEditModal(false)} disabled={submitting}>
+                  Batal
+                </Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -566,8 +692,8 @@ export function OnboardingContent() {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-3 sm:gap-2">
             <AlertDialogCancel type="button">Batal</AlertDialogCancel>
-            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
-              Hapus
+            <AlertDialogAction type="button" disabled={deleting} onClick={handleDeleteConfirm}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hapus'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

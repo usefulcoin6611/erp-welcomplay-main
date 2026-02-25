@@ -1,20 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Link2, ExternalLink } from 'lucide-react';
-import { getJobsList } from '@/lib/recruitment-data';
+import { Search, Link2, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
+type JobItem = { id: string; title: string; branch: string; category: string; status: string; startDate: string; endDate: string };
+
 export function CareerContent() {
   const [searchTerm, setSearchTerm] = useState('');
-  const jobs = getJobsList().filter((j) => j.status === 'active');
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchJobs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/recruitment/jobs?status=active');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setJobs(json.data);
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat career jobs');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
   const filteredData = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,6 +60,14 @@ export function CareerContent() {
 
   const careerPageUrl =
     typeof window !== 'undefined' ? `${window.location.origin}/career` : '/career';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

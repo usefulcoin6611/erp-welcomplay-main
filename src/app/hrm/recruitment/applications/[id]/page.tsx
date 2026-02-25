@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -13,16 +13,8 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ArrowLeft, Download, Star, Trash } from 'lucide-react'
+import { ArrowLeft, Download, Star, Trash, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  getApplicationById,
-  getJobStagesList,
-  updateApplicationStage,
-  setApplicationArchive,
-  deleteApplication,
-  addApplicationNote,
-} from '@/lib/recruitment-data'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +37,25 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
+type AppData = {
+  id: string
+  applicantName: string
+  email: string
+  phone: string
+  jobTitle: string
+  stageId: string
+  stage: string
+  appliedDate: string
+  rating: number
+  resume?: string
+  coverLetter?: string
+  isArchive: boolean
+  profile?: string
+  notes: { id: string; note: string; createdAt: string; noteCreatedName: string }[]
+}
+
+type StageOption = { id: string; name: string }
+
 interface ApplicationDetailPageProps {
   params: Promise<{ id: string }>
 }
@@ -55,31 +66,98 @@ export default function ApplicationDetailPage({ params }: ApplicationDetailPageP
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [newNote, setNewNote] = useState('')
-  const [app, setApp] = useState(() => getApplicationById(id))
-  const stages = getJobStagesList()
+  const [app, setApp] = useState<AppData | null>(null)
+  const [stages, setStages] = useState<StageOption[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
-  const refreshApp = () => setApp(getApplicationById(id))
+  const refreshApp = async () => {
+    const [appRes, stagesRes] = await Promise.all([
+      fetch(`/api/hrm/recruitment/applications/${id}`),
+      fetch('/api/job-stages'),
+    ])
+    const appJson = await appRes.json()
+    const stagesJson = await stagesRes.json()
+    if (appJson.success && appJson.data) setApp(appJson.data)
+    if (stagesJson.success && Array.isArray(stagesJson.data)) setStages(stagesJson.data)
+  }
 
+  useEffect(() => {
+    let cancelled = false
+    refreshApp().finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [id])
+
+  if (loading) {
+    return (
+      <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
   if (!app) notFound()
 
-  const handleStageChange = (stageId: string) => {
-    updateApplicationStage(id, stageId)
-    refreshApp()
-    toast.success('Stage berhasil diubah')
+  const handleStageChange = async (stageId: string) => {
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stageId }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        await refreshApp()
+        toast.success('Stage berhasil diubah')
+      } else toast.error(json.message ?? 'Gagal mengubah stage')
+    } catch (e) {
+      console.error(e)
+      toast.error('Gagal mengubah stage')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleArchive = () => {
-    setApplicationArchive(id, !app.isArchive)
-    refreshApp()
-    toast.success(app.isArchive ? 'Unarchived' : 'Archived')
-    setArchiveDialogOpen(false)
+  const handleArchive = async () => {
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isArchive: !app.isArchive }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        await refreshApp()
+        toast.success(app.isArchive ? 'Unarchived' : 'Archived')
+        setArchiveDialogOpen(false)
+      } else toast.error(json.message ?? 'Gagal')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleDelete = () => {
-    deleteApplication(id)
-    setDeleteDialogOpen(false)
-    toast.success('Aplikasi dihapus')
-    router.push('/hrm/recruitment?tab=applications')
+  const handleDelete = async () => {
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('Aplikasi dihapus')
+        setDeleteDialogOpen(false)
+        router.push('/hrm/recruitment?tab=applications')
+      } else toast.error(json.message ?? 'Gagal menghapus')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleAddToOnBoard = () => {
@@ -87,12 +165,24 @@ export default function ApplicationDetailPage({ params }: ApplicationDetailPageP
     router.push('/hrm/recruitment?tab=onboarding')
   }
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (!newNote.trim()) return
-    addApplicationNote(id, newNote.trim(), 'Current User')
-    refreshApp()
-    setNewNote('')
-    toast.success('Catatan ditambahkan')
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: newNote.trim(), noteCreatedName: 'Current User' }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        await refreshApp()
+        setNewNote('')
+        toast.success('Catatan ditambahkan')
+      } else toast.error(json.message ?? 'Gagal menambah catatan')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const stars = Array.from({ length: 5 }, (_, i) => i + 1)
@@ -162,11 +252,12 @@ export default function ApplicationDetailPage({ params }: ApplicationDetailPageP
                               <input
                                 type="radio"
                                 name="stage"
-                                checked={app.stageId === stage.id || app.stage === stage.title}
+                                checked={app.stageId === stage.id || app.stage === stage.name}
                                 onChange={() => handleStageChange(stage.id)}
+                                disabled={submitting}
                                 className="rounded-full border-input"
                               />
-                              <span className="text-sm">{stage.title}</span>
+                              <span className="text-sm">{stage.name}</span>
                             </label>
                           ))}
                         </div>

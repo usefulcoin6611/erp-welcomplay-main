@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,13 +18,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, FileText, Eye, Edit, Trash2, Download, Send, DollarSign } from 'lucide-react';
+import { Search, FileText, Eye, Edit, Trash2, Download, Send, DollarSign, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import {
-  getPayslipsList,
-  removePayslipById,
-  updatePayslipStatus,
-} from '@/lib/payroll-data';
+import { toast } from 'sonner';
+
+interface Payslip {
+  id: string;
+  employeeId: string;
+  employeeName?: string;
+  employee?: { name: string; employeeId: string; salaryType: string };
+  payrollType?: string;
+  salary: number; // basicSalary
+  netSalary: number;
+  status: string; // "Paid" | "UnPaid"
+}
 
 export function PayslipContent() {
   const router = useRouter();
@@ -33,11 +40,45 @@ export function PayslipContent() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
-  const [payslips, setPayslips] = useState(() => getPayslipsList());
+  const [payslips, setPayslips] = useState<Payslip[]>([]);
+  const [loading, setLoading] = useState(true);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [payslipToDelete, setPayslipToDelete] = useState<string | null>(null);
 
-  const refreshPayslips = () => setPayslips([...getPayslipsList()]);
+  const fetchPayslips = async () => {
+    try {
+      setLoading(true);
+      const query = new URLSearchParams({
+        month: `${filterYear}-${String(filterMonth).padStart(2, '0')}`,
+      });
+      const response = await fetch(`/api/hrm/payroll/payslip?${query}`);
+      const data = await response.json();
+      if (data.success) {
+        // Map API data to component interface
+        const mappedData = data.data.map((item: any) => ({
+          id: item.id,
+          employeeId: item.employee.employeeId,
+          employeeName: item.employee.name,
+          payrollType: item.employee.salaryType || 'Monthly',
+          salary: item.basicSalary,
+          netSalary: item.netSalary,
+          status: item.status === 1 ? 'Paid' : 'UnPaid',
+        }));
+        setPayslips(mappedData);
+      } else {
+        toast.error(data.message || 'Failed to fetch payslips');
+      }
+    } catch (error) {
+      console.error('Error fetching payslips:', error);
+      toast.error('Failed to fetch payslips');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayslips();
+  }, [filterMonth, filterYear]);
 
   const months = [
     { value: 1, label: 'January' },
@@ -56,29 +97,76 @@ export function PayslipContent() {
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
-  const handleGeneratePayslip = () => {
-    console.log('Generate payslip for:', selectedMonth, selectedYear);
-    // TODO: Implement payslip generation logic
-    alert(`Generating payslip for ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`);
+  const handleGeneratePayslip = async () => {
+    try {
+      const response = await fetch('/api/hrm/payroll/payslip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month: selectedMonth, year: selectedYear }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        // If generated for current filter, refresh
+        if (selectedMonth === filterMonth && selectedYear === filterYear) {
+          fetchPayslips();
+        }
+      } else {
+        toast.error(data.message || 'Failed to generate payslips');
+      }
+    } catch (error) {
+      console.error('Error generating payslips:', error);
+      toast.error('Failed to generate payslips');
+    }
   };
 
-  const handleBulkPayment = () => {
-    console.log('Bulk payment for:', filterMonth, filterYear);
-    // TODO: Implement bulk payment logic
+  const handleBulkPayment = async () => {
+    try {
+      const salaryMonth = `${filterYear}-${String(filterMonth).padStart(2, '0')}`;
+      const res = await fetch('/api/hrm/payroll/payslip/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salaryMonth }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message || 'Bulk payment failed');
+        return;
+      }
+      toast.success(data.message || 'Bulk payment succeeded');
+      fetchPayslips();
+    } catch (error) {
+      console.error('Error in bulk payment:', error);
+      toast.error('Bulk payment failed');
+    }
   };
 
   const handleExport = () => {
-    console.log('Export payslips for:', filterMonth, filterYear);
-    // TODO: Implement export logic
+    toast.info('Export feature coming soon');
   };
 
   const handleViewPayslip = (id: string) => {
     router.push(`/hrm/payroll/payslip/${id}`);
   };
 
-  const handleClickToPaid = (id: string) => {
-    updatePayslipStatus(id, 'Paid');
-    refreshPayslips();
+  const handleClickToPaid = async (id: string) => {
+    try {
+      const response = await fetch(`/api/hrm/payroll/payslip/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 1 }), // Paid
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Payslip marked as Paid');
+        fetchPayslips();
+      } else {
+        toast.error(data.message || 'Failed to update payslip');
+      }
+    } catch (error) {
+      console.error('Error updating payslip:', error);
+      toast.error('Failed to update payslip');
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -90,19 +178,33 @@ export function PayslipContent() {
     setDeleteAlertOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (payslipToDelete) {
-      removePayslipById(payslipToDelete);
-      refreshPayslips();
-      setPayslipToDelete(null);
+      try {
+        const response = await fetch(`/api/hrm/payroll/payslip/${payslipToDelete}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast.success('Payslip deleted successfully');
+          fetchPayslips();
+        } else {
+          toast.error(data.message || 'Failed to delete payslip');
+        }
+      } catch (error) {
+        console.error('Error deleting payslip:', error);
+        toast.error('Failed to delete payslip');
+      } finally {
+        setPayslipToDelete(null);
+        setDeleteAlertOpen(false);
+      }
     }
-    setDeleteAlertOpen(false);
   };
 
   const filteredData = payslips.filter(
     (payslip) =>
-      payslip.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payslip.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
+      (payslip.employeeName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (payslip.employeeId?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';

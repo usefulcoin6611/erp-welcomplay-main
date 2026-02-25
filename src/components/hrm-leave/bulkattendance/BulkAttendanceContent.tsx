@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -26,36 +27,110 @@ interface Employee {
 const DEFAULT_CLOCK_IN = '09:00';
 const DEFAULT_CLOCK_OUT = '17:00';
 
-const BRANCHES = [{ value: '', label: 'Select Branch' }, { value: '1', label: 'Head Office' }, { value: '2', label: 'Branch 2' }];
-const DEPARTMENTS = [{ value: '', label: 'Select Department' }, { value: '1', label: 'IT' }, { value: '2', label: 'HR' }, { value: '3', label: 'Finance' }];
+type BranchOption = {
+  id: string;
+  name: string;
+};
 
-const MOCK_EMPLOYEES: Omit<Employee, 'present' | 'clockIn' | 'clockOut'>[] = [
-  { id: '1', employeeId: 'EMP001', name: 'John Doe', branch: 'Head Office', department: 'IT' },
-  { id: '2', employeeId: 'EMP002', name: 'Jane Smith', branch: 'Head Office', department: 'HR' },
-  { id: '3', employeeId: 'EMP003', name: 'Bob Wilson', branch: 'Head Office', department: 'Finance' },
-  { id: '4', employeeId: 'EMP004', name: 'Alice Brown', branch: 'Head Office', department: 'Marketing' },
-  { id: '5', employeeId: 'EMP005', name: 'Charlie Davis', branch: 'Head Office', department: 'IT' },
-];
+type DepartmentOption = {
+  id: string;
+  name: string;
+  branchName?: string;
+};
 
 export function BulkAttendanceContent() {
+  const ALL_OPTION = '__all__';
+
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [branch, setBranch] = useState('');
   const [department, setDepartment] = useState('');
-  const [employees, setEmployees] = useState<Employee[]>(() =>
-    MOCK_EMPLOYEES.map((e) => ({
-      ...e,
-      present: true,
-      clockIn: DEFAULT_CLOCK_IN,
-      clockOut: DEFAULT_CLOCK_OUT,
-    }))
-  );
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/branches');
+      const json = await res.json();
+      if (json.success) {
+        setBranches(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat data branch');
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      toast.error('Gagal memuat data branch');
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments');
+      const json = await res.json();
+      if (json.success) {
+        const mapped: DepartmentOption[] = (json.data ?? []).map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          branchName: d.branch?.name,
+        }));
+        setDepartments(mapped);
+      } else {
+        toast.error(json.message || 'Gagal memuat data department');
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      toast.error('Gagal memuat data department');
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+        setLoading(true);
+        const response = await fetch('/api/hrm/payroll/set-salary'); 
+        const data = await response.json();
+        
+        if (data.success) {
+            const mapped = data.data.map((emp: any) => ({
+                id: emp.id,
+                employeeId: emp.employeeId,
+                name: emp.name,
+                branch: emp.branch || '',
+                department: emp.department,
+                present: true,
+                clockIn: DEFAULT_CLOCK_IN,
+                clockOut: DEFAULT_CLOCK_OUT,
+            }));
+            
+            const filtered = mapped.filter((e: Employee) => {
+                if (branch && e.branch !== branch) return false;
+                if (department && e.department !== department) return false;
+                return true;
+            });
+
+            setEmployees(filtered);
+        } else {
+            toast.error("Failed to fetch employees");
+        }
+    } catch (error) {
+        console.error("Error fetching employees:", error);
+        toast.error("Failed to fetch employees");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBranches();
+    fetchDepartments();
+  }, []);
 
   const handleApply = () => {
-    if (!branch || !department) {
-      alert('Branch & Department field required.');
-      return;
+    if (!branch && !department) {
+      // Allow fetching all if no filter? Or require at least one?
+      // For UX, let's fetch all if empty or just fetch.
     }
-    console.log('Apply filter', { filterDate, branch, department });
+    fetchEmployees();
   };
 
   const handlePresentAllChange = (checked: boolean) => {
@@ -87,13 +162,43 @@ export function BulkAttendanceContent() {
     setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, clockOut: value } : e)));
   };
 
-  const handleUpdate = () => {
-    if (!branch || !department) {
-      alert('Branch & Department field required.');
-      return;
+  const handleUpdate = async () => {
+    if (employees.length === 0) {
+        toast.warning("No employees to update");
+        return;
     }
-    console.log('Update bulk attendance', { filterDate, branch, department, employees });
-    alert('Employee attendance successfully created.');
+
+    try {
+        const payload = {
+            date: filterDate,
+            employees: employees.filter(e => e.present).map(e => ({
+                employeeId: e.id,
+                status: 'Present',
+                clockIn: e.clockIn,
+                clockOut: e.clockOut
+            }))
+        };
+        
+        // Also handle absent? For now only present ones.
+        // Or send all and let backend handle status based on present flag?
+        // Logic above only sends present employees.
+
+        const response = await fetch('/api/hrm/attendance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            toast.success("Attendance updated successfully");
+        } else {
+            toast.error(data.message || "Failed to update attendance");
+        }
+    } catch (error) {
+        console.error("Error updating attendance:", error);
+        toast.error("Failed to update attendance");
+    }
   };
 
   return (
@@ -116,14 +221,18 @@ export function BulkAttendanceContent() {
               </div>
               <div className="space-y-2 min-w-[140px]">
                 <Label>Branch</Label>
-                <Select value={branch || ' '} onValueChange={(v) => setBranch(v === ' ' ? '' : v)}>
+                <Select
+                  value={branch || ALL_OPTION}
+                  onValueChange={(v) => setBranch(v === ALL_OPTION ? '' : v)}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BRANCHES.map((b) => (
-                      <SelectItem key={b.value || 'empty'} value={b.value || ' '}>
-                        {b.label}
+                    <SelectItem value={ALL_OPTION}>All Branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -131,14 +240,19 @@ export function BulkAttendanceContent() {
               </div>
               <div className="space-y-2 min-w-[140px]">
                 <Label>Department</Label>
-                <Select value={department || ' '} onValueChange={(v) => setDepartment(v === ' ' ? '' : v)}>
+                <Select
+                  value={department || ALL_OPTION}
+                  onValueChange={(v) => setDepartment(v === ALL_OPTION ? '' : v)}
+                >
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d.value || 'empty'} value={d.value || ' '}>
-                        {d.label}
+                    <SelectItem value={ALL_OPTION}>All Departments</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name}
+                        {d.branchName ? ` (${d.branchName})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, HelpCircle, Eye } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +27,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { getQuestionsList, addQuestion, updateQuestion, removeQuestionById } from '@/lib/recruitment-data';
+import { Plus, Pencil, Trash2, Search, HelpCircle, Eye, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+
+type QuestionItem = { id: string; question: string; isRequired: string };
 
 export function CustomQuestionsContent() {
   const router = useRouter();
@@ -32,13 +41,34 @@ export function CustomQuestionsContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     question: '',
     isRequired: '',
   });
-  const [questions, setQuestions] = useState(() => getQuestionsList());
+  const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refreshQuestions = () => setQuestions([...getQuestionsList()]);
+  const fetchQuestions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/recruitment/questions');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setQuestions(json.data);
+      else toast.error(json.message ?? 'Gagal memuat custom question');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat custom question');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  const refreshQuestions = () => fetchQuestions();
 
   const handleAdd = () => {
     setShowForm(true);
@@ -49,16 +79,34 @@ export function CustomQuestionsContent() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      updateQuestion(editingId, { question: formData.question, isRequired: formData.isRequired });
-    } else {
-      addQuestion({ question: formData.question, isRequired: formData.isRequired });
+    setSubmitting(true);
+    try {
+      const url = editingId
+        ? `/api/hrm/recruitment/questions/${editingId}`
+        : '/api/hrm/recruitment/questions';
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: formData.question, isRequired: formData.isRequired }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? (editingId ? 'Pertanyaan berhasil diperbarui' : 'Pertanyaan berhasil dibuat'));
+        setShowForm(false);
+        setFormData({ question: '', isRequired: '' });
+        refreshQuestions();
+      } else {
+        toast.error(json.message ?? 'Gagal menyimpan');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan');
+    } finally {
+      setSubmitting(false);
     }
-    refreshQuestions();
-    setShowForm(false);
-    setFormData({ question: '', isRequired: '' });
   };
 
   const handleEdit = (item: { id: string; question: string; isRequired: string }) => {
@@ -75,18 +123,42 @@ export function CustomQuestionsContent() {
     setDeleteAlertOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteQuestionId) {
-      removeQuestionById(deleteQuestionId);
-      refreshQuestions();
-      setDeleteQuestionId(null);
+  const handleDeleteConfirm = async () => {
+    if (!deleteQuestionId) {
+      setDeleteAlertOpen(false);
+      return;
     }
-    setDeleteAlertOpen(false);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/questions/${deleteQuestionId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Pertanyaan berhasil dihapus');
+        refreshQuestions();
+        setDeleteQuestionId(null);
+        setDeleteAlertOpen(false);
+      } else {
+        toast.error(json.message ?? 'Gagal menghapus');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menghapus');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filteredData = questions.filter((question) =>
     question.question.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -129,54 +201,62 @@ export function CustomQuestionsContent() {
         </Card>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card className={cardClass}>
-          <CardContent className="px-6 py-4 pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Custom Question</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="question">Question</Label>
-                <Textarea
-                  id="question"
-                  value={formData.question}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setFormData({ ...formData, question: e.target.value })
-                  }
-                  rows={3}
-                  placeholder="Enter your question..."
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="isRequired">Is Required?</Label>
-                <Select
-                  value={formData.isRequired}
-                  onValueChange={(value) => setFormData({ ...formData, isRequired: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yes">Yes (Required)</SelectItem>
-                    <SelectItem value="no">No (Optional)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      {/* Create/Edit Question Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (submitting) return;
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({ question: '', isRequired: '' });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit' : 'Create New'} Custom Question</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="modal-question">Question</Label>
+              <Textarea
+                id="modal-question"
+                value={formData.question}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, question: e.target.value })
+                }
+                rows={3}
+                placeholder="Enter your question..."
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="modal-isRequired">Is Required?</Label>
+              <Select
+                value={formData.isRequired}
+                onValueChange={(value) => setFormData({ ...formData, isRequired: value })}
+              >
+                <SelectTrigger id="modal-isRequired">
+                  <SelectValue placeholder="Select option" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes (Required)</SelectItem>
+                  <SelectItem value="no">No (Optional)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={submitting}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Custom Question - satu card: header (title + search + Create), table */}
       <Card className={cardClass}>
@@ -230,7 +310,7 @@ export function CustomQuestionsContent() {
                         <Button size="sm" variant="outline" onClick={() => router.push(`/hrm/recruitment/questions/${question.id}`)} title="View" className="h-7 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100">
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => router.push(`/hrm/recruitment/questions/${question.id}/edit`)} title="Edit" className="h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(question)} title="Edit" className="h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => openDeleteConfirm(question.id)} title="Delete" className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200">
@@ -256,8 +336,8 @@ export function CustomQuestionsContent() {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-3 sm:gap-2">
             <AlertDialogCancel type="button">Batal</AlertDialogCancel>
-            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
-              <span>Hapus</span>
+            <AlertDialogAction type="button" disabled={deleting} onClick={handleDeleteConfirm}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Hapus</span>}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
