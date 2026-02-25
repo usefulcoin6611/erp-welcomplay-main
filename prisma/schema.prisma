@@ -74,12 +74,13 @@ model Department {
 }
 
 model Designation {
-  id           String     @id @default(cuid())
-  name         String
-  departmentId String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  name           String
+  departmentId   String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  department     Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  hrmPromotions  HrmPromotion[]
 
   @@map("designation")
 }
@@ -207,6 +208,8 @@ model AwardType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  awards    HrmAward[]
+
   @@map("award_type")
 }
 
@@ -216,7 +219,183 @@ model TerminationType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  terminations HrmTermination[]
+
   @@map("termination_type")
+}
+
+/// HR Admin: Award records
+model HrmAward {
+  id            String   @id @default(cuid())
+  employeeId    String
+  awardTypeId   String
+  date          DateTime
+  gift          String
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  awardType  AwardType  @relation(fields: [awardTypeId], references: [id], onDelete: Restrict)
+
+  @@map("hrm_award")
+  @@index([employeeId])
+  @@index([awardTypeId])
+}
+
+/// HR Admin: Transfer records
+model HrmTransfer {
+  id            String   @id @default(cuid())
+  employeeId    String
+  branch        String
+  department    String
+  transferDate  DateTime
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("hrm_transfer")
+  @@index([employeeId])
+}
+
+/// HR Admin: Resignation records
+model HrmResignation {
+  id              String   @id @default(cuid())
+  employeeId      String
+  noticeDate      DateTime
+  lastWorkingDate DateTime
+  reason          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("hrm_resignation")
+  @@index([employeeId])
+}
+
+/// HR Admin: Travel/Trip records
+model HrmTravel {
+  id          String   @id @default(cuid())
+  employeeId  String
+  startDate   DateTime
+  endDate     DateTime
+  purpose     String
+  country     String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("hrm_travel")
+  @@index([employeeId])
+}
+
+/// HR Admin: Promotion records
+model HrmPromotion {
+  id             String    @id @default(cuid())
+  employeeId     String
+  designationId  String?
+  title          String
+  promotionDate  DateTime
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  designation  Designation? @relation(fields: [designationId], references: [id], onDelete: SetNull)
+
+  @@map("hrm_promotion")
+  @@index([employeeId])
+  @@index([designationId])
+}
+
+/// HR Admin: Complaint records
+model HrmComplaint {
+  id               String   @id @default(cuid())
+  employeeFromId   String
+  complaintAgainstId String
+  title            String
+  date             DateTime
+  description      String?
+  status           String   @default("Pending") // Pending, In Progress, Resolved
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  employeeFrom      Employee @relation("ComplaintFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
+  complaintAgainst  Employee @relation("ComplaintAgainst", fields: [complaintAgainstId], references: [id], onDelete: Cascade)
+
+  @@map("hrm_complaint")
+  @@index([employeeFromId])
+  @@index([complaintAgainstId])
+}
+
+/// HR Admin: Warning records
+model HrmWarning {
+  id          String   @id @default(cuid())
+  employeeId  String
+  warningById String
+  subject     String
+  warningDate DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee   Employee @relation("WarningEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  warningBy  Employee @relation("WarningBy", fields: [warningById], references: [id], onDelete: Cascade)
+
+  @@map("hrm_warning")
+  @@index([employeeId])
+  @@index([warningById])
+}
+
+/// HR Admin: Termination records
+model HrmTermination {
+  id               String   @id @default(cuid())
+  employeeId       String
+  terminationTypeId String
+  noticeDate       DateTime
+  terminationDate  DateTime
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  terminationType TerminationType @relation(fields: [terminationTypeId], references: [id], onDelete: Restrict)
+
+  @@map("hrm_termination")
+  @@index([employeeId])
+  @@index([terminationTypeId])
+}
+
+/// HR Admin: Announcement records
+model HrmAnnouncement {
+  id          String   @id @default(cuid())
+  title       String
+  branch      String
+  department  String
+  startDate   DateTime
+  endDate     DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("hrm_announcement")
+}
+
+/// HR Admin: Holiday records
+model HrmHoliday {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("hrm_holiday")
 }
 
 model JobCategory {
@@ -466,6 +645,16 @@ model Employee {
   saturationDeductions     EmployeeSaturationDeduction[]
   otherPayments            EmployeeOtherPayment[]
   overtimes                EmployeeOvertime[]
+  hrmAwards                HrmAward[]
+  hrmTransfers             HrmTransfer[]
+  hrmResignations          HrmResignation[]
+  hrmTravels               HrmTravel[]
+  hrmPromotions            HrmPromotion[]
+  complaintsFrom           HrmComplaint[]  @relation("ComplaintFrom")
+  complaintsAgainst        HrmComplaint[]  @relation("ComplaintAgainst")
+  warningsReceived         HrmWarning[]     @relation("WarningEmployee")
+  warningsGiven            HrmWarning[]    @relation("WarningBy")
+  hrmTerminations          HrmTermination[]
 
   @@map("employee")
 }

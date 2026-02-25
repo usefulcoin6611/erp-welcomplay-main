@@ -18,7 +18,7 @@ function createPrismaClient() {
 }
 
 // Invalidate cached client if it lacks new models (schema was updated)
-const requiredModels = ["leaveRequest", "employeeAllowance"];
+const requiredModels = ["leaveRequest", "employeeAllowance", "hrmAward"];
 if (globalForPrisma.prisma) {
   const missing = requiredModels.filter((m) => !(m in (globalForPrisma.prisma as any)));
   if (missing.length > 0) {

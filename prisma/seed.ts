@@ -63,6 +63,7 @@ import { ensureTrainingSchema } from "./seeds/schema-training";
 import { seedLeaveRequests } from "./seeds/leave-requests";
 import { seedSetSalary } from "./seeds/set-salary";
 import { ensurePayrollEmployeeSchema } from "./seeds/schema-payroll-employee";
+import { seedHrmAdmin } from "./seeds/hrm-admin";
 
 dotenv.config();
 
@@ -123,6 +124,7 @@ async function main() {
     await seedExpenses(prisma);
     await seedCreditNotes(prisma);
     await seedSetSalary(prisma);
+    await seedHrmAdmin(prisma);
     await seedBankTransfers(prisma);
     await seedPayments(prisma);
     await seedDebitNotes(prisma);
