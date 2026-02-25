@@ -1,26 +1,28 @@
 'use client';
 
-import { useState, useCallback, KeyboardEvent } from 'react';
+import { useState, useCallback, KeyboardEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Badge } from '@/components/ui/badge';
-import { addJob, getJobCategoriesList, getQuestionsList } from '@/lib/recruitment-data';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]';
 
-const branches = ['Head Office', 'Branch A', 'Branch B'];
 const statusOptions: { value: 'active' | 'in_active'; label: string }[] = [
   { value: 'active', label: 'Active' },
   { value: 'in_active', label: 'In Active' },
 ];
+
+type BranchOption = { id: string; name: string };
+type CategoryOption = { id: string; name: string };
+type QuestionOption = { id: string; question: string; isRequired: string };
 
 const needToAskOptions = [
   { id: 'gender', label: 'Gender' },
@@ -37,13 +39,16 @@ const needToShowOptions = [
 
 export function JobCreateContent() {
   const router = useRouter();
-  const categories = getJobCategoriesList();
-  const customQuestions = getQuestionsList();
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [customQuestions, setCustomQuestions] = useState<QuestionOption[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
-    branch: '',
-    category: '',
+    branchId: '',
+    jobCategoryId: '',
     positions: '',
     status: 'active' as 'active' | 'in_active',
     startDate: '',
@@ -56,6 +61,32 @@ export function JobCreateContent() {
   const [applicant, setApplicant] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<string[]>([]);
   const [customQuestionIds, setCustomQuestionIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [branchRes, categoryRes, questionRes] = await Promise.all([
+          fetch('/api/branches'),
+          fetch('/api/job-categories'),
+          fetch('/api/hrm/recruitment/questions'),
+        ]);
+        const branchJson = await branchRes.json();
+        const categoryJson = await categoryRes.json();
+        const questionJson = await questionRes.json();
+        if (!cancelled) {
+          if (branchJson.success && Array.isArray(branchJson.data)) setBranches(branchJson.data);
+          if (categoryJson.success && Array.isArray(categoryJson.data)) setCategories(categoryJson.data);
+          if (questionJson.success && Array.isArray(questionJson.data)) setCustomQuestions(questionJson.data);
+        }
+      } catch (e) {
+        if (!cancelled) toast.error('Gagal memuat opsi branch/category/question');
+      } finally {
+        if (!cancelled) setOptionsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const setApplicantChecked = useCallback((id: string, checked: boolean | 'indeterminate') => {
     setApplicant((prev) =>
@@ -92,35 +123,46 @@ export function JobCreateContent() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addJob({
-      title: formData.title,
-      branch: formData.branch,
-      category: formData.category,
-      positions: parseInt(formData.positions, 10) || 0,
-      status: formData.status,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      description: formData.description || undefined,
-    });
-    toast.success('Job berhasil dibuat');
-    setFormData({
-      title: '',
-      branch: '',
-      category: '',
-      positions: '',
-      status: 'active',
-      startDate: '',
-      endDate: '',
-      description: '',
-      requirement: '',
-      skillInput: '',
-    });
-    setSkills([]);
-    setApplicant([]);
-    setVisibility([]);
-    setCustomQuestionIds([]);
+    if (!formData.branchId || !formData.jobCategoryId) {
+      toast.error('Branch dan Job category wajib dipilih');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/hrm/recruitment/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          branchId: formData.branchId,
+          jobCategoryId: formData.jobCategoryId,
+          positions: parseInt(formData.positions, 10) || 0,
+          status: formData.status,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          description: formData.description || undefined,
+          requirement: formData.requirement || undefined,
+          skill: skills.length ? skills : undefined,
+          applicant: applicant.length ? applicant : undefined,
+          visibility: visibility.length ? visibility : undefined,
+          questionIds: customQuestionIds.length ? customQuestionIds : undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.id) {
+        toast.success(json.message ?? 'Job berhasil dibuat');
+        router.push(`/hrm/recruitment/jobs/${json.data.id}`);
+      } else {
+        toast.error(json.message ?? 'Gagal membuat job');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal membuat job');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -149,14 +191,14 @@ export function JobCreateContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="branch">Branch</Label>
-                    <Select value={formData.branch} onValueChange={(v) => setFormData({ ...formData, branch: v })}>
+                    <Select value={formData.branchId} onValueChange={(v) => setFormData({ ...formData, branchId: v })}>
                       <SelectTrigger id="branch" className="h-9">
                         <SelectValue placeholder="Select branch" />
                       </SelectTrigger>
                       <SelectContent>
                         {branches.map((b) => (
-                          <SelectItem key={b} value={b}>
-                            {b}
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -164,14 +206,14 @@ export function JobCreateContent() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Job Category</Label>
-                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                    <Select value={formData.jobCategoryId} onValueChange={(v) => setFormData({ ...formData, jobCategoryId: v })}>
                       <SelectTrigger id="category" className="h-9">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((c) => (
-                          <SelectItem key={c.id} value={c.title}>
-                            {c.title}
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -339,47 +381,41 @@ export function JobCreateContent() {
           </Card>
         </div>
 
-        {/* Row 2: Job Description (kiri) + Job Requirement (kanan) */}
+        {/* Row 2: Job Description (kiri) + Job Requirement (kanan) - Rich HTML */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className={cardClass}>
             <CardContent className="px-6 py-4 pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="description">Job Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={8}
-                  placeholder="Enter Job Description"
-                  className="resize-none"
-                />
-              </div>
+              <RichTextEditor
+                id="description"
+                label="Job Description"
+                value={formData.description}
+                onChange={(html) => setFormData((prev) => ({ ...prev, description: html }))}
+                placeholder="Enter Job Description (bold, list, link, dll.)"
+                minHeight="220px"
+              />
             </CardContent>
           </Card>
           <Card className={cardClass}>
             <CardContent className="px-6 py-4 pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="requirement">Job Requirement</Label>
-                <Textarea
-                  id="requirement"
-                  value={formData.requirement}
-                  onChange={(e) => setFormData({ ...formData, requirement: e.target.value })}
-                  rows={8}
-                  placeholder="Enter Job Requirement"
-                  className="resize-none"
-                />
-              </div>
+              <RichTextEditor
+                id="requirement"
+                label="Job Requirement"
+                value={formData.requirement}
+                onChange={(html) => setFormData((prev) => ({ ...prev, requirement: html }))}
+                placeholder="Enter Job Requirement (bold, list, link, dll.)"
+                minHeight="220px"
+              />
             </CardContent>
           </Card>
         </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" className="h-9" onClick={handleCancel}>
+          <Button type="button" variant="outline" className="h-9" onClick={handleCancel} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-none">
-            Create
+          <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-none" disabled={submitting || optionsLoading}>
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
           </Button>
         </div>
       </form>

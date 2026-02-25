@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,11 +20,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Download, FileText, X } from 'lucide-react';
-import { getCandidatesList } from '@/lib/recruitment-data';
+import { Search, Eye, Download, FileText, X, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]';
+
+type CandidateItem = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  skills: string[];
+  status: string;
+  rating?: number;
+  appliedAt?: string;
+  resume?: string;
+};
 
 function formatDate(value: string | undefined): string {
   if (!value) return '-';
@@ -60,13 +72,43 @@ export function CandidatesContent() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterJob, setFilterJob] = useState<string>('all');
+  const [candidates, setCandidates] = useState<CandidateItem[]>([]);
+  const [jobs, setJobs] = useState<{ id: string; title: string }[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const candidates = useMemo(() => getCandidatesList(), []);
+  const fetchCandidates = useCallback(async (jobId: string) => {
+    try {
+      const params = jobId ? `?jobId=${encodeURIComponent(jobId)}` : '';
+      const res = await fetch(`/api/hrm/recruitment/candidates${params}`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setCandidates(json.data);
+      else toast.error(json.message ?? 'Gagal memuat kandidat');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat kandidat');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const jobsRes = await fetch('/api/hrm/recruitment/jobs');
+      const jobsJson = await jobsRes.json();
+      if (!cancelled && jobsJson.success && Array.isArray(jobsJson.data)) setJobs(jobsJson.data);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchCandidates(filterJob === 'all' ? '' : filterJob);
+  }, [filterJob, fetchCandidates]);
 
   const jobOptions = useMemo(() => {
-    const jobs = Array.from(new Set(candidates.map((c) => c.position))).sort();
-    return ['All Jobs', ...jobs];
-  }, [candidates]);
+    return [{ id: 'all', title: 'All Jobs' }, ...jobs];
+  }, [jobs]);
 
   const filteredData = useMemo(
     () =>
@@ -77,10 +119,10 @@ export function CandidatesContent() {
           c.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
           c.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesJob =
-          filterJob === 'all' || filterJob === 'All Jobs' || c.position === filterJob;
+          filterJob === 'all' || !filterJob || c.position === jobs.find((j) => j.id === filterJob)?.title;
         return matchesSearch && matchesJob;
       }),
-    [candidates, searchTerm, filterJob]
+    [candidates, searchTerm, filterJob, jobs]
   );
 
   const handleView = (id: string) => {
@@ -102,17 +144,47 @@ export function CandidatesContent() {
       return;
     }
     toast.info(`Preview: ${resume}`);
-    // Bisa buka tab baru atau modal preview
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Filter - sesuai reference-erp (filter by job) */}
+      {/* Summary card - konsisten dengan tab Applications / Onboarding */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Candidates</p>
+                <p className="text-2xl font-bold">{candidates.length}</p>
+              </div>
+              <Users className="w-8 h-8 text-muted-foreground shrink-0" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={cardClass}>
+          <CardContent className="px-6 py-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Filtered (tampilan)</p>
+              <p className="text-2xl font-bold text-blue-600">{filteredData.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabel kandidat - header: judul kiri, search + filter kanan */}
       <Card className={cardClass}>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 pb-4">
-          <CardTitle className="text-base font-semibold">Job Candidate</CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full min-w-[200px] max-w-xs">
+          <CardTitle className="text-base font-semibold shrink-0">Job Candidate</CardTitle>
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap min-w-0">
+            <div className="relative shrink-0 w-[200px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search candidates..."
@@ -134,13 +206,13 @@ export function CandidatesContent() {
               )}
             </div>
             <Select value={filterJob} onValueChange={setFilterJob}>
-              <SelectTrigger className="h-9 w-[180px]">
+              <SelectTrigger className="h-9 w-[180px] shrink-0">
                 <SelectValue placeholder="Job" />
               </SelectTrigger>
               <SelectContent>
                 {jobOptions.map((job) => (
-                  <SelectItem key={job} value={job === 'All Jobs' ? 'all' : job}>
-                    {job}
+                  <SelectItem key={job.id} value={job.id}>
+                    {job.title}
                   </SelectItem>
                 ))}
               </SelectContent>

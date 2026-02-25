@@ -63,6 +63,7 @@ model Branch {
   leads           Lead[]
   pipelines       Pipeline[]
   deals           Deal[]
+  jobs            Job[]
 
   @@map("branch")
 }
@@ -166,18 +167,132 @@ model JobCategory {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  jobs      Job[]
 
   @@map("job_category")
 }
 
+model RecruitmentQuestion {
+  id         String        @id @default(cuid())
+  question   String
+  isRequired Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  jobQuestions JobQuestion[]
+
+  @@map("recruitment_question")
+}
+
+model Job {
+  id            String   @id @default(cuid())
+  title         String
+  branchId      String
+  jobCategoryId String
+  positions     Int      @default(1)
+  status        String   @default("active") // active, in_active
+  startDate     DateTime
+  endDate       DateTime
+  description   String?
+  requirement   String?
+  skill         Json?    // string[]
+  applicant     Json?    // string[]
+  visibility    Json?    // string[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  jobCategory  JobCategory      @relation(fields: [jobCategoryId], references: [id], onDelete: Restrict)
+  jobQuestions JobQuestion[]
+  applications JobApplication[]
+
+  @@map("job")
+}
+
+model JobQuestion {
+  jobId      String
+  questionId String
+  order      Int     @default(0)
+  job        Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  question   RecruitmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, questionId])
+  @@map("job_question")
+}
+
+model JobApplication {
+  id             String    @id @default(cuid())
+  jobId          String
+  stageId        String
+  applicantName  String
+  email          String
+  phone          String
+  appliedDate    DateTime
+  rating         Int       @default(0) // 1-5
+  resume         String?
+  coverLetter    String?
+  isArchive      Boolean   @default(false)
+  dob            String?
+  gender         String?
+  country        String?
+  state          String?
+  city           String?
+  profile        String?
+  skill          String?
+  customQuestion Json?     // Record<string, string>
+  notes          Json?     // { id, note, createdAt, noteCreatedName }[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  job         Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  stage       JobStage              @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  interviews  RecruitmentInterview[]
+  onboarding  JobOnboarding?
+
+  @@map("job_application")
+}
+
+model RecruitmentInterview {
+  id             String   @id @default(cuid())
+  applicationId  String
+  interviewDate  DateTime
+  interviewTime  String   // e.g. "10:00"
+  interviewer    String
+  location       String
+  status         String   @default("Scheduled") // Scheduled, Completed, Cancelled, Rescheduled
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("recruitment_interview")
+}
+
 model JobStage {
-  id        String   @id @default(cuid())
-  name      String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String          @id @default(cuid())
+  name         String
+  order        Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  applications JobApplication[]
 
   @@map("job_stage")
+}
+
+/// Onboarding untuk kandidat yang sudah Hired. Link ke Application, optional ke Employee saat "convert to employee".
+model JobOnboarding {
+  id             String    @id @default(cuid())
+  applicationId String    @unique
+  employeeId    String?   @unique // di-set saat "convert to employee"
+  status        String    @default("pending") // pending | in_progress | completed | converted
+  onboardingDate DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employee    Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@map("job_onboarding")
 }
 
 model PerformanceType {
@@ -237,7 +352,8 @@ model Employee {
   leaves               LeaveRequest[]
   attendances          Attendance[]
 
-  user User? @relation(fields: [userId], references: [id])
+  user       User?          @relation(fields: [userId], references: [id])
+  onboarding JobOnboarding?
 
   @@map("employee")
 }

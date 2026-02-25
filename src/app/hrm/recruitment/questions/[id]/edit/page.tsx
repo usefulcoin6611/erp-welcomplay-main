@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -12,24 +12,76 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft } from 'lucide-react'
-import { getQuestionById, updateQuestion } from '@/lib/recruitment-data'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
 
 export default function QuestionEditPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { id } = use(params)
-  const q = getQuestionById(id)
-  const [question, setQuestion] = useState(q?.question ?? '')
-  const [isRequired, setIsRequired] = useState(q?.isRequired ?? 'yes')
+  const [loaded, setLoaded] = useState(false)
+  const [found, setFound] = useState(false)
+  const [question, setQuestion] = useState('')
+  const [isRequired, setIsRequired] = useState('yes')
+  const [submitting, setSubmitting] = useState(false)
 
-  if (!q) notFound()
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/hrm/recruitment/questions/${id}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled) {
+          setLoaded(true)
+          if (json.success && json.data) {
+            setFound(true)
+            setQuestion(json.data.question)
+            setIsRequired(json.data.isRequired ?? 'yes')
+          }
+        }
+      })
+    return () => { cancelled = true }
+  }, [id])
 
-  function handleSubmit(e: React.FormEvent) {
+  if (!loaded) {
+    return (
+      <SidebarProvider style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
+  if (loaded && !found) notFound()
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    updateQuestion(id, { question, isRequired })
-    router.push(`/hrm/recruitment/questions/${id}`)
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/hrm/recruitment/questions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, isRequired }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success(json.message ?? 'Pertanyaan berhasil diperbarui')
+        router.push(`/hrm/recruitment/questions/${id}`)
+      } else {
+        toast.error(json.message ?? 'Gagal memperbarui')
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Gagal memperbarui')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -69,8 +121,10 @@ export default function QuestionEditPage({ params }: { params: Promise<{ id: str
                     </Select>
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 shadow-none">Simpan</Button>
-                    <Button type="button" variant="outline" className="h-9" onClick={() => router.push('/hrm/recruitment?tab=questions')}>Batal</Button>
+                    <Button type="submit" className="h-9 bg-blue-600 hover:bg-blue-700 shadow-none" disabled={submitting}>
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
+                    </Button>
+                    <Button type="button" variant="outline" className="h-9" onClick={() => router.push('/hrm/recruitment?tab=questions')} disabled={submitting}>Batal</Button>
                   </div>
                 </form>
               </CardContent>

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Search, Eye, Link2 } from 'lucide-react';
+import { Pencil, Trash2, Search, Eye, Link2, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,19 +18,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { getJobsList, removeJobById } from '@/lib/recruitment-data';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+
+type JobItem = {
+  id: string;
+  title: string;
+  branch: string;
+  category: string;
+  positions: number;
+  status: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+};
 
 export function JobsContent() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
-  const [jobs, setJobs] = useState(() => getJobsList());
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
-  const refreshJobs = () => setJobs([...getJobsList()]);
+  const fetchJobs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/recruitment/jobs');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setJobs(json.data);
+      } else {
+        toast.error(json.message ?? 'Gagal memuat job');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat data job');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  const refreshJobs = () => fetchJobs();
 
   const handleView = (id: string) => {
     router.push(`/hrm/recruitment/jobs/${id}`);
@@ -49,11 +83,25 @@ export function JobsContent() {
     setDeleteAlertOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    removeJobById(id);
-    refreshJobs();
-    setDeleteJobId(null);
-    setDeleteAlertOpen(false);
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/jobs/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Job berhasil dihapus');
+        refreshJobs();
+        setDeleteJobId(null);
+        setDeleteAlertOpen(false);
+      } else {
+        toast.error(json.message ?? 'Gagal menghapus job');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus job');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleCopyLink = (jobId: string) => {
@@ -78,6 +126,14 @@ export function JobsContent() {
   };
 
   const statusLabel = (status: string) => (status === 'active' ? 'Active' : 'In Active');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -225,9 +281,10 @@ export function JobsContent() {
             <AlertDialogCancel type="button">Batal</AlertDialogCancel>
             <AlertDialogAction
               type="button"
+              disabled={deleting}
               onClick={() => deleteJobId && handleDelete(deleteJobId)}
             >
-              <span>Hapus</span>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Hapus</span>}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

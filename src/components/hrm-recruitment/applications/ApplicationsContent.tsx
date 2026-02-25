@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, FileText, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Search, FileText, Eye, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
@@ -21,51 +21,78 @@ interface Application {
   phone: string;
   appliedDate: string;
   stage: string;
+  stageId?: string;
   rating: number;
 }
+
+type JobOption = { id: string; title: string };
+type StageOption = { id: string; name: string };
 
 export function ApplicationsContent() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterJob, setFilterJob] = useState('all');
   const [filterStage, setFilterStage] = useState('all');
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [jobs, setJobs] = useState<JobOption[]>([]);
+  const [stages, setStages] = useState<StageOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Mock data - mutable agar Accept/Reject bisa update stage
-  const [applications, setApplications] = useState<Application[]>([
-    {
-      id: '1',
-      jobTitle: 'Senior Software Engineer',
-      applicantName: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+62 812-3456-7890',
-      appliedDate: '2024-02-15',
-      stage: 'Applied',
-      rating: 4,
-    },
-    {
-      id: '2',
-      jobTitle: 'Marketing Manager',
-      applicantName: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '+62 813-9876-5432',
-      appliedDate: '2024-02-10',
-      stage: 'Phone Screen',
-      rating: 5,
-    },
-    {
-      id: '3',
-      jobTitle: 'Senior Software Engineer',
-      applicantName: 'Mike Brown',
-      email: 'mike.brown@email.com',
-      phone: '+62 821-1234-5678',
-      appliedDate: '2024-02-18',
-      stage: 'Interview',
-      rating: 3,
-    },
-  ]);
+  const mapApp = (a: { jobTitle: string; stage: string; stageId?: string } & Application) => ({
+    id: a.id,
+    jobTitle: a.jobTitle,
+    applicantName: a.applicantName,
+    email: a.email,
+    phone: a.phone,
+    appliedDate: a.appliedDate,
+    stage: a.stage,
+    stageId: a.stageId,
+    rating: a.rating,
+  });
 
-  const jobs = ['All Jobs', 'Senior Software Engineer', 'Marketing Manager', 'Accountant'];
-  const stages = ['All Stages', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired', 'Rejected'];
+  const fetchApplications = useCallback(async (jobIdFilter: string, stageIdFilter: string) => {
+    const params = new URLSearchParams();
+    if (jobIdFilter !== 'all') params.set('jobId', jobIdFilter);
+    if (stageIdFilter !== 'all') params.set('stageId', stageIdFilter);
+    const res = await fetch(`/api/hrm/recruitment/applications?${params.toString()}`);
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data)) {
+      setApplications(json.data.map(mapApp));
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [jobsRes, stagesRes] = await Promise.all([
+        fetch('/api/hrm/recruitment/jobs'),
+        fetch('/api/job-stages'),
+      ]);
+      const jobsJson = await jobsRes.json();
+      const stagesJson = await stagesRes.json();
+      if (!cancelled) {
+        if (jobsJson.success && Array.isArray(jobsJson.data)) setJobs(jobsJson.data);
+        if (stagesJson.success && Array.isArray(stagesJson.data)) setStages(stagesJson.data);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const stageId =
+      filterStage === 'all' ? 'all' : stages.find((s) => s.name === filterStage)?.id ?? 'all';
+    fetchApplications(filterJob, stageId)
+      .catch(() => toast.error('Gagal memuat lamaran'))
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterJob, filterStage, stages, fetchApplications]);
 
   const filteredData = applications.filter((app) => {
     const matchesSearch =
@@ -81,18 +108,61 @@ export function ApplicationsContent() {
     router.push(`/hrm/recruitment/applications/${id}`);
   };
 
-  const handleAccept = (app: Application) => {
-    setApplications((prev) =>
-      prev.map((a) => (a.id === app.id ? { ...a, stage: 'Hired' as const } : a))
-    );
-    toast.success(`${app.applicantName} diterima (Hired)`);
+  const hiredStageId = stages.find((s) => s.name === 'Hired')?.id;
+  const rejectedStageId = stages.find((s) => s.name === 'Rejected')?.id;
+
+  const handleAccept = async (app: Application) => {
+    if (!hiredStageId) {
+      toast.error('Stage "Hired" tidak ditemukan. Tambah di Setup → Job Stage.');
+      return;
+    }
+    setUpdatingId(app.id);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${app.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stageId: hiredStageId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === app.id ? { ...a, stage: 'Hired', stageId: hiredStageId } : a))
+        );
+        toast.success(`${app.applicantName} diterima (Hired)`);
+      } else toast.error(json.message ?? 'Gagal mengubah stage');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengubah stage');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
-  const handleReject = (app: Application) => {
-    setApplications((prev) =>
-      prev.map((a) => (a.id === app.id ? { ...a, stage: 'Rejected' as const } : a))
-    );
-    toast.error(`${app.applicantName} ditolak (Rejected)`);
+  const handleReject = async (app: Application) => {
+    if (!rejectedStageId) {
+      toast.error('Stage "Rejected" tidak ditemukan. Tambah di Setup → Job Stage.');
+      return;
+    }
+    setUpdatingId(app.id);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${app.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stageId: rejectedStageId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === app.id ? { ...a, stage: 'Rejected', stageId: rejectedStageId } : a))
+        );
+        toast.error(`${app.applicantName} ditolak (Rejected)`);
+      } else toast.error(json.message ?? 'Gagal mengubah stage');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengubah stage');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const getStageBadgeColor = (stage: string) => {
@@ -121,6 +191,14 @@ export function ApplicationsContent() {
       </span>
     ));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -195,9 +273,9 @@ export function ApplicationsContent() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Jobs</SelectItem>
-                {jobs.slice(1).map((job) => (
-                  <SelectItem key={job} value={job}>
-                    {job}
+                {jobs.map((j) => (
+                  <SelectItem key={j.id} value={j.id}>
+                    {j.title}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -208,9 +286,9 @@ export function ApplicationsContent() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
-                {stages.slice(1).map((stage) => (
-                  <SelectItem key={stage} value={stage}>
-                    {stage}
+                {stages.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -261,9 +339,9 @@ export function ApplicationsContent() {
                     title="Accept"
                     className="h-7 shadow-none bg-green-100 text-green-800 hover:bg-green-200 border-green-200"
                     onClick={() => handleAccept(app)}
-                    disabled={app.stage === 'Hired' || app.stage === 'Rejected'}
+                    disabled={app.stage === 'Hired' || app.stage === 'Rejected' || updatingId === app.id}
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    {updatingId === app.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   </Button>
                   <Button
                     size="sm"
@@ -271,7 +349,7 @@ export function ApplicationsContent() {
                     title="Reject"
                     className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                     onClick={() => handleReject(app)}
-                    disabled={app.stage === 'Hired' || app.stage === 'Rejected'}
+                    disabled={app.stage === 'Hired' || app.stage === 'Rejected' || updatingId === app.id}
                   >
                     <XCircle className="w-4 h-4" />
                   </Button>
