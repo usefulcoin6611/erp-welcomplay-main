@@ -1,6 +1,18 @@
 export async function seedCrmPipelines(prisma: any) {
   console.log("Seeding CRM Pipelines configuration (stages, sources, labels, contract types)...");
 
+  const hasPipelineModel = Boolean((prisma as any).pipeline);
+  const hasLeadStageModel = Boolean((prisma as any).leadStage);
+  const hasDealStageModel = Boolean((prisma as any).dealStage);
+  const hasSourceModel = Boolean((prisma as any).source);
+  const hasPipelineLabelModel = Boolean((prisma as any).pipelineLabel);
+  const hasContractTypeModel = Boolean((prisma as any).contractType);
+
+  if (!hasPipelineModel) {
+    console.log("Skipping CRM pipeline seed: Pipeline model not available in Prisma client.");
+    return;
+  }
+
   const user = await prisma.user.findFirst({
     where: {
       role: {
@@ -55,27 +67,29 @@ export async function seedCrmPipelines(prisma: any) {
 
   let leadStageCreated = 0;
 
-  for (const def of leadStageDefinitions) {
-    const existing = await prisma.leadStage.findFirst({
-      where: {
-        pipelineId: pipeline.id,
-        name: def.name,
-      },
-    });
+  if (hasLeadStageModel) {
+    for (const def of leadStageDefinitions) {
+      const existing = await prisma.leadStage.findFirst({
+        where: {
+          pipelineId: pipeline.id,
+          name: def.name,
+        },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      await prisma.leadStage.create({
+        data: {
+          name: def.name,
+          order: def.order,
+          pipelineId: pipeline.id,
+        },
+      });
+      leadStageCreated++;
+      console.log(`Lead stage created: ${def.name}`);
     }
-
-    await prisma.leadStage.create({
-      data: {
-        name: def.name,
-        order: def.order,
-        pipelineId: pipeline.id,
-      },
-    });
-    leadStageCreated++;
-    console.log(`Lead stage created: ${def.name}`);
   }
 
   console.log(
@@ -91,27 +105,29 @@ export async function seedCrmPipelines(prisma: any) {
 
   let dealStageCreated = 0;
 
-  for (const def of dealStageDefinitions) {
-    const existing = await prisma.dealStage.findFirst({
-      where: {
-        pipelineId: pipeline.id,
-        name: def.name,
-      },
-    });
+  if (hasDealStageModel) {
+    for (const def of dealStageDefinitions) {
+      const existing = await prisma.dealStage.findFirst({
+        where: {
+          pipelineId: pipeline.id,
+          name: def.name,
+        },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      await prisma.dealStage.create({
+        data: {
+          name: def.name,
+          order: def.order,
+          pipelineId: pipeline.id,
+        },
+      });
+      dealStageCreated++;
+      console.log(`Deal stage created: ${def.name}`);
     }
-
-    await prisma.dealStage.create({
-      data: {
-        name: def.name,
-        order: def.order,
-        pipelineId: pipeline.id,
-      },
-    });
-    dealStageCreated++;
-    console.log(`Deal stage created: ${def.name}`);
   }
 
   console.log(
@@ -128,31 +144,35 @@ export async function seedCrmPipelines(prisma: any) {
 
   let sourceCreated = 0;
 
-  for (const name of sourceNames) {
-    const existing = await prisma.source.findFirst({
-      where: {
-        name,
-        branchId,
-      },
-    });
+  if (hasSourceModel) {
+    for (const name of sourceNames) {
+      const existing = await prisma.source.findFirst({
+        where: {
+          name,
+          branchId,
+        },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      await prisma.source.create({
+        data: {
+          name,
+          branchId,
+        },
+      });
+      sourceCreated++;
+      console.log(`Source created: ${name}`);
     }
 
-    await prisma.source.create({
-      data: {
-        name,
-        branchId,
-      },
-    });
-    sourceCreated++;
-    console.log(`Source created: ${name}`);
+    console.log(
+      `Sources seeding completed for branch. New records: ${sourceCreated}`,
+    );
+  } else {
+    console.log("Skipping Sources seeding: Source model not available.");
   }
-
-  console.log(
-    `Sources seeding completed for branch. New records: ${sourceCreated}`,
-  );
 
   const labelDefinitions: { name: string; color: string }[] = [
     { name: "Hot", color: "#ef4444" },
@@ -164,32 +184,36 @@ export async function seedCrmPipelines(prisma: any) {
 
   let labelCreated = 0;
 
-  for (const def of labelDefinitions) {
-    const existing = await prisma.pipelineLabel.findFirst({
-      where: {
-        pipelineId: pipeline.id,
-        name: def.name,
-      },
-    });
+  if (hasPipelineLabelModel) {
+    for (const def of labelDefinitions) {
+      const existing = await prisma.pipelineLabel.findFirst({
+        where: {
+          pipelineId: pipeline.id,
+          name: def.name,
+        },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      await prisma.pipelineLabel.create({
+        data: {
+          pipelineId: pipeline.id,
+          name: def.name,
+          color: def.color,
+        },
+      });
+      labelCreated++;
+      console.log(`Pipeline label created: ${def.name}`);
     }
 
-    await prisma.pipelineLabel.create({
-      data: {
-        pipelineId: pipeline.id,
-        name: def.name,
-        color: def.color,
-      },
-    });
-    labelCreated++;
-    console.log(`Pipeline label created: ${def.name}`);
+    console.log(
+      `Pipeline labels seeding completed for pipeline "${pipelineName}". New records: ${labelCreated}`,
+    );
+  } else {
+    console.log("Skipping pipeline labels seeding: PipelineLabel model not available.");
   }
-
-  console.log(
-    `Pipeline labels seeding completed for pipeline "${pipelineName}". New records: ${labelCreated}`,
-  );
 
   const contractTypeNames: string[] = [
     "Implementation",
@@ -204,25 +228,29 @@ export async function seedCrmPipelines(prisma: any) {
 
   let contractTypeCreated = 0;
 
-  for (const name of contractTypeNames) {
-    const existing = await prisma.contractType.findFirst({
-      where: { name },
-    });
+  if (hasContractTypeModel) {
+    for (const name of contractTypeNames) {
+      const existing = await prisma.contractType.findFirst({
+        where: { name },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      await prisma.contractType.create({
+        data: { name },
+      });
+      contractTypeCreated++;
+      console.log(`Contract type created: ${name}`);
     }
 
-    await prisma.contractType.create({
-      data: { name },
-    });
-    contractTypeCreated++;
-    console.log(`Contract type created: ${name}`);
+    console.log(
+      `Contract types seeding completed. New records: ${contractTypeCreated}`,
+    );
+  } else {
+    console.log("Skipping contract types seeding: ContractType model not available.");
   }
-
-  console.log(
-    `Contract types seeding completed. New records: ${contractTypeCreated}`,
-  );
 
   const salesPipelineName = "Sales";
 
@@ -333,30 +361,34 @@ export async function seedCrmPipelines(prisma: any) {
 
   let salesLabelCreated = 0;
 
-  for (const def of salesLabelDefinitions) {
-    const existing = await prisma.pipelineLabel.findFirst({
-      where: {
-        pipelineId: salesPipeline.id,
-        name: def.name,
-      },
-    });
+  if (hasPipelineLabelModel) {
+    for (const def of salesLabelDefinitions) {
+      const existing = await prisma.pipelineLabel.findFirst({
+        where: {
+          pipelineId: salesPipeline.id,
+          name: def.name,
+        },
+      });
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      await prisma.pipelineLabel.create({
+        data: {
+          pipelineId: salesPipeline.id,
+          name: def.name,
+          color: def.color,
+        },
+      });
+      salesLabelCreated++;
+      console.log(`Sales pipeline label created: ${def.name}`);
     }
 
-    await prisma.pipelineLabel.create({
-      data: {
-        pipelineId: salesPipeline.id,
-        name: def.name,
-        color: def.color,
-      },
-    });
-    salesLabelCreated++;
-    console.log(`Sales pipeline label created: ${def.name}`);
+    console.log(
+      `Pipeline labels seeding completed for pipeline "${salesPipelineName}". New records: ${salesLabelCreated}`,
+    );
+  } else {
+    console.log("Skipping Sales pipeline labels seeding: PipelineLabel model not available.");
   }
-
-  console.log(
-    `Pipeline labels seeding completed for pipeline "${salesPipelineName}". New records: ${salesLabelCreated}`,
-  );
 }

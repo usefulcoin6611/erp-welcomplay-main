@@ -9,7 +9,7 @@ CREATE TABLE "termination_type" (
 );
 
 -- CreateTable
-CREATE TABLE "job_category" (
+CREATE TABLE IF NOT EXISTS "job_category" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

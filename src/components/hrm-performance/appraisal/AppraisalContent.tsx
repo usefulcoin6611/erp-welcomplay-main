@@ -9,7 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Search, Star, Eye, Loader2 } from 'lucide-react';
 import { StarRatingDisplay } from '../StarRatingDisplay';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
@@ -23,6 +39,7 @@ interface Appraisal {
   targetRating: number;
   overallRating: number;
   appraisalDate: string;
+  period?: string;
 }
 
 export function AppraisalContent() {
@@ -46,13 +63,22 @@ export function AppraisalContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
-  const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<
+    { id: string; name: string; branch: string; department: string; designation: string }[]
+  >([]);
+  const [viewItem, setViewItem] = useState<Appraisal | null>(null);
 
   const fetchAppraisals = useCallback(async () => {
     try {
       const res = await fetch('/api/hrm/performance/appraisals');
       const json = await res.json();
-      if (json.success && Array.isArray(json.data)) setAppraisals(json.data.map((a: { employee?: string; employeeId: string } & Appraisal) => ({ ...a, employee: a.employee ?? '' })));
+      if (json.success && Array.isArray(json.data))
+        setAppraisals(
+          json.data.map((a: { employee?: string; employeeId: string } & Appraisal) => ({
+            ...a,
+            employee: a.employee ?? '',
+          }))
+        );
       else toast.error(json.message ?? 'Gagal memuat appraisal');
     } catch (e) {
       console.error(e);
@@ -95,11 +121,17 @@ export function AppraisalContent() {
     e.preventDefault();
     setSubmitting(true);
     try {
-    const payload = {
+      const selectedEmployee = employees.find((emp) => emp.id === formData.employee);
+      const existingAppraisal = editingId ? appraisals.find((a) => a.id === editingId) : undefined;
+
+      const department = selectedEmployee?.department ?? existingAppraisal?.department ?? '';
+      const designation = selectedEmployee?.designation ?? existingAppraisal?.designation ?? '';
+
+      const payload = {
         employeeId: formData.employee,
-        branch: formData.branch,
-        department: (appraisals.find((a) => a.id === editingId)?.department) ?? 'IT',
-        designation: (appraisals.find((a) => a.id === editingId)?.designation) ?? 'Staff',
+        branch: formData.branch || selectedEmployee?.branch || '',
+        department,
+        designation,
         targetRating: 4,
         appraisalDate: formData.appraisalDate,
         technicalRating: formData.technicalRating ? parseFloat(formData.technicalRating) : undefined,
@@ -160,7 +192,14 @@ export function AppraisalContent() {
     }
   };
 
-  const handleView = (_id: string) => toast.info('Detail appraisal akan tersedia di versi berikutnya.');
+  const handleView = (id: string) => {
+    const item = appraisals.find((appraisal) => appraisal.id === id);
+    if (!item) {
+      toast.error('Appraisal tidak ditemukan');
+      return;
+    }
+    setViewItem(item);
+  };
 
   if (loading) {
     return (
@@ -240,146 +279,223 @@ export function AppraisalContent() {
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4 pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Appraisal</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.name}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employee">Employee</Label>
-                  <Select
-                    value={formData.employee}
-                    onValueChange={(value) => setFormData({ ...formData, employee: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.id}>
-                          {emp.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="appraisalDate">Appraisal Date</Label>
-                  <Input
-                    id="appraisalDate"
-                    type="date"
-                    value={formData.appraisalDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, appraisalDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="technicalRating">Technical Skills (1-5)</Label>
-                  <Input
-                    id="technicalRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.technicalRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, technicalRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="leadershipRating">Leadership (1-5)</Label>
-                  <Input
-                    id="leadershipRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.leadershipRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, leadershipRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="teamworkRating">Teamwork (1-5)</Label>
-                  <Input
-                    id="teamworkRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.teamworkRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, teamworkRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="communicationRating">Communication (1-5)</Label>
-                  <Input
-                    id="communicationRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.communicationRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, communicationRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
+      {/* Add/Edit Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (submitting) return;
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({
+              branch: '',
+              employee: '',
+              appraisalDate: '',
+              technicalRating: '',
+              leadershipRating: '',
+              teamworkRating: '',
+              communicationRating: '',
+              remarks: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit' : 'Create New'} Appraisal</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
+                <Label htmlFor="branch">Branch</Label>
+                <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="employee">Employee</Label>
+                <Select
+                  value={formData.employee}
+                  onValueChange={(value) => {
+                    const emp = employees.find((e) => e.id === value);
+                    setFormData({
+                      ...formData,
+                      employee: value,
+                      branch: emp?.branch ?? formData.branch,
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="appraisalDate">Appraisal Date</Label>
                 <Input
-                  id="remarks"
-                  value={formData.remarks}
+                  id="appraisalDate"
+                  type="date"
+                  value={formData.appraisalDate}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, remarks: e.target.value })
+                    setFormData({ ...formData, appraisalDate: e.target.value })
                   }
+                  required
                 />
               </div>
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
-                  Cancel
-                </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="technicalRating">Technical Skills (1-5)</Label>
+                <Input
+                  id="technicalRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.technicalRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, technicalRating: e.target.value })
+                  }
+                  required
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              <div className="space-y-2">
+                <Label htmlFor="leadershipRating">Leadership (1-5)</Label>
+                <Input
+                  id="leadershipRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.leadershipRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, leadershipRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teamworkRating">Teamwork (1-5)</Label>
+                <Input
+                  id="teamworkRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.teamworkRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, teamworkRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="communicationRating">Communication (1-5)</Label>
+                <Input
+                  id="communicationRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.communicationRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, communicationRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="remarks">Remarks</Label>
+              <Input
+                id="remarks"
+                value={formData.remarks}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, remarks: e.target.value })
+                }
+              />
+            </div>
+
+            <DialogFooter className="flex gap-2 pt-2">
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update' : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Detail Modal */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>Appraisal Detail</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Branch</p>
+                  <p className="text-sm font-medium">{viewItem.branch}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Department</p>
+                  <p className="text-sm font-medium">{viewItem.department}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Designation</p>
+                  <p className="text-sm font-medium">{viewItem.designation}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Employee</p>
+                  <p className="text-sm font-medium">{viewItem.employee}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Appraisal Date</p>
+                  <p className="text-sm font-medium">{viewItem.appraisalDate}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Period</p>
+                  <p className="text-sm font-medium">{viewItem.period ?? '-'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Overall Rating</p>
+                <StarRatingDisplay rating={viewItem.overallRating} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Target Rating</p>
+                <p className="text-sm font-medium">{viewItem.targetRating.toFixed(1)}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

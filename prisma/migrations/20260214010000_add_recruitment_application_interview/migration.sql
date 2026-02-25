@@ -45,7 +45,4 @@ CREATE TABLE "recruitment_interview" (
 ALTER TABLE "job_application" ADD CONSTRAINT "job_application_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "job_application" ADD CONSTRAINT "job_application_stageId_fkey" FOREIGN KEY ("stageId") REFERENCES "job_stage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "recruitment_interview" ADD CONSTRAINT "recruitment_interview_applicationId_fkey" FOREIGN KEY ("applicationId") REFERENCES "job_application"("id") ON DELETE CASCADE ON UPDATE CASCADE;

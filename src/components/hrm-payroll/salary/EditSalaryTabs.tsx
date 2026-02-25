@@ -350,17 +350,22 @@ export default function EditSalaryCards({ employee }: { employee: any }) {
 
   // Preselect bank account berdasarkan data employee (accountNumber) jika ada
   useEffect(() => {
-    if (bankAccount || !employee?.accountNumber || bankAccounts.length === 0) {
+    if (bankAccount || bankAccounts.length === 0) {
       return
     }
 
-    const matched = bankAccounts.find(
-      (acc) => acc.accountNumber === String(employee.accountNumber),
-    )
-
-    if (matched) {
-      setBankAccount(matched.id)
+    if (employee?.accountNumber) {
+      const matched = bankAccounts.find(
+        (acc) => acc.accountNumber === String(employee.accountNumber),
+      )
+      if (matched) {
+        setBankAccount(matched.id)
+        return
+      }
     }
+
+    // Fallback: select first payroll bank when employee has no account
+    setBankAccount(bankAccounts[0]?.id ?? '')
   }, [bankAccounts, bankAccount, employee?.accountNumber])
 
   const handleAddAllowance = () => {

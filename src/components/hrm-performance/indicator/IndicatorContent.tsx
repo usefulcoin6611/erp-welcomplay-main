@@ -9,10 +9,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Search, TrendingUp, Eye, Loader2 } from 'lucide-react';
 import { StarRatingDisplay } from '../StarRatingDisplay';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+
+const ALL_YEAR_VALUE = 'all';
+const YEAR_OPTIONS = Array.from({ length: 10 }, (_v, i) => new Date().getFullYear() - i);
 
 interface Indicator {
   id: string;
@@ -22,6 +41,10 @@ interface Indicator {
   overallRating: number;
   addedBy: string;
   createdAt: string;
+  periodYear?: number | null;
+  periodQuarter?: number | null;
+  appraisalCount?: number;
+  avgAppraisalRating?: number | null;
 }
 
 export function IndicatorContent() {
@@ -35,6 +58,8 @@ export function IndicatorContent() {
     technicalRating: '',
     organizationalRating: '',
     customerExperienceRating: '',
+    periodYear: '',
+    periodQuarter: '',
   });
 
   const [indicators, setIndicators] = useState<Indicator[]>([]);
@@ -45,10 +70,17 @@ export function IndicatorContent() {
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [designations, setDesignations] = useState<{ id: string; name: string }[]>([]);
+  const [viewItem, setViewItem] = useState<Indicator | null>(null);
+  const [filterYear, setFilterYear] = useState<string>('');
+  const [filterQuarter, setFilterQuarter] = useState<string>('');
 
   const fetchIndicators = useCallback(async () => {
     try {
-      const res = await fetch('/api/hrm/performance/indicators');
+      const params = new URLSearchParams();
+      if (filterYear) params.set('year', filterYear);
+      if (filterQuarter) params.set('quarter', filterQuarter);
+      const qs = params.toString();
+      const res = await fetch(`/api/hrm/performance/indicators${qs ? `?${qs}` : ''}`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) setIndicators(json.data);
       else toast.error(json.message ?? 'Gagal memuat indikator');
@@ -58,7 +90,7 @@ export function IndicatorContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterYear, filterQuarter]);
 
   useEffect(() => {
     fetchIndicators();
@@ -83,6 +115,9 @@ export function IndicatorContent() {
   }, []);
 
   const handleAdd = () => {
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const quarter = (Math.floor(now.getMonth() / 3) + 1).toString();
     setShowForm(true);
     setEditingId(null);
     setFormData({
@@ -92,6 +127,8 @@ export function IndicatorContent() {
       technicalRating: '',
       organizationalRating: '',
       customerExperienceRating: '',
+      periodYear: year,
+      periodQuarter: quarter,
     });
   };
 
@@ -107,6 +144,8 @@ export function IndicatorContent() {
         organizationalRating: parseFloat(formData.organizationalRating),
         customerExperienceRating: parseFloat(formData.customerExperienceRating),
         addedBy: 'Admin',
+        periodYear: parseInt(formData.periodYear, 10),
+        periodQuarter: parseInt(formData.periodQuarter, 10),
       };
       const url = editingId ? `/api/hrm/performance/indicators/${editingId}` : '/api/hrm/performance/indicators';
       const method = editingId ? 'PUT' : 'POST';
@@ -136,6 +175,8 @@ export function IndicatorContent() {
       technicalRating: '',
       organizationalRating: '',
       customerExperienceRating: '',
+      periodYear: item.periodYear ? String(item.periodYear) : '',
+      periodQuarter: item.periodQuarter ? String(item.periodQuarter) : '',
     });
   };
 
@@ -159,7 +200,14 @@ export function IndicatorContent() {
     }
   };
 
-  const handleView = (_id: string) => toast.info('Detail indikator akan tersedia di versi berikutnya.');
+  const handleView = (id: string) => {
+    const item = indicators.find((indicator) => indicator.id === id);
+    if (!item) {
+      toast.error('Indikator tidak ditemukan');
+      return;
+    }
+    setViewItem(item);
+  };
 
   if (loading) {
     return (
@@ -178,53 +226,82 @@ export function IndicatorContent() {
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Indicators</p>
-                <p className="text-2xl font-bold">{indicators.length}</p>
+      {/* Summary + Filters */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_minmax(0,1fr)] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+          <Card className={cardClass}>
+            <CardContent className="px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Indicators</p>
+                  <p className="text-2xl font-bold">{indicators.length}</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-muted-foreground" />
               </div>
-              <TrendingUp className="w-8 h-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Average Rating</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {indicators.length > 0
-                    ? (indicators.reduce((sum, ind) => sum + ind.overallRating, 0) / indicators.length).toFixed(1)
-                    : '0.0'}
-                </p>
+            </CardContent>
+          </Card>
+          <Card className={cardClass}>
+            <CardContent className="px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Average Rating</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {indicators.length > 0
+                      ? (indicators.reduce((sum, ind) => sum + ind.overallRating, 0) / indicators.length).toFixed(1)
+                      : '0.0'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
         <Card className={cardClass}>
           <CardContent className="px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">High Performers</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {indicators.filter((ind) => ind.overallRating >= 4.5).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Needs Improvement</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {indicators.filter((ind) => ind.overallRating < 3.5).length}
-                </p>
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Filter Periode</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Year</Label>
+                  <Select
+                    value={filterYear || ALL_YEAR_VALUE}
+                    onValueChange={(value) => {
+                      if (value === ALL_YEAR_VALUE) {
+                        setFilterYear('');
+                      } else {
+                        setFilterYear(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Years" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_YEAR_VALUE}>All Years</SelectItem>
+                      {YEAR_OPTIONS.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Quarter</Label>
+                  <Select
+                    value={filterQuarter}
+                    onValueChange={(value) => setFilterQuarter(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Q1</SelectItem>
+                      <SelectItem value="2">Q2</SelectItem>
+                      <SelectItem value="3">Q3</SelectItem>
+                      <SelectItem value="4">Q4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -239,126 +316,180 @@ export function IndicatorContent() {
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Indicator</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.name}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value) => setFormData({ ...formData, department: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.name}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="designation">Designation</Label>
-                  <Select
-                    value={formData.designation}
-                    onValueChange={(value) => setFormData({ ...formData, designation: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select designation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {designations.map((g) => (
-                        <SelectItem key={g.id} value={g.name}>
-                          {g.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* Add/Edit Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (submitting) return;
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({
+              branch: '',
+              department: '',
+              designation: '',
+              technicalRating: '',
+              organizationalRating: '',
+              customerExperienceRating: '',
+              periodYear: '',
+              periodQuarter: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit' : 'Create New'} Indicator</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation">Designation</Label>
+                <Select
+                  value={formData.designation}
+                  onValueChange={(value) => setFormData({ ...formData, designation: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select designation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {designations.map((g) => (
+                      <SelectItem key={g.id} value={g.name}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="periodYear">Period Year</Label>
+                <Input
+                  id="periodYear"
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  value={formData.periodYear}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, periodYear: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="periodQuarter">Quarter</Label>
+                <Select
+                  value={formData.periodQuarter}
+                  onValueChange={(value) => setFormData({ ...formData, periodQuarter: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select quarter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Q1</SelectItem>
+                    <SelectItem value="2">Q2</SelectItem>
+                    <SelectItem value="3">Q3</SelectItem>
+                    <SelectItem value="4">Q4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="technicalRating">Technical Rating (1-5)</Label>
-                  <Input
-                    id="technicalRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.technicalRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, technicalRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="organizationalRating">Organizational Rating (1-5)</Label>
-                  <Input
-                    id="organizationalRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.organizationalRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, organizationalRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerExperienceRating">Customer Experience Rating (1-5)</Label>
-                  <Input
-                    id="customerExperienceRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.customerExperienceRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, customerExperienceRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="technicalRating">Technical Rating (1-5)</Label>
+                <Input
+                  id="technicalRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.technicalRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, technicalRating: e.target.value })
+                  }
+                  required
+                />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="organizationalRating">Organizational Rating (1-5)</Label>
+                <Input
+                  id="organizationalRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.organizationalRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, organizationalRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customerExperienceRating">Customer Experience Rating (1-5)</Label>
+                <Input
+                  id="customerExperienceRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.customerExperienceRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, customerExperienceRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+            <DialogFooter className="flex gap-2 pt-2">
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update' : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Indicator List - reference: indicator/index */}
       <Card className={cardClass}>
@@ -443,6 +574,63 @@ export function IndicatorContent() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Detail Modal */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Indicator Detail</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Branch</p>
+                  <p className="text-sm font-medium">{viewItem.branch}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Department</p>
+                  <p className="text-sm font-medium">{viewItem.department}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Designation</p>
+                  <p className="text-sm font-medium">{viewItem.designation}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Created At</p>
+                  <p className="text-sm font-medium">{viewItem.createdAt}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Period</p>
+                  <p className="text-sm font-medium">
+                    {viewItem.periodYear ? `${viewItem.periodYear} Q${viewItem.periodQuarter ?? "-"}` : "-"}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Overall Rating</p>
+                <StarRatingDisplay rating={viewItem.overallRating} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Added By</p>
+                <p className="text-sm font-medium">{viewItem.addedBy}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Linked Appraisals</p>
+                  <p className="text-sm font-medium">{viewItem.appraisalCount ?? 0}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Avg Employee Overall Rating</p>
+                  <p className="text-sm font-medium">
+                    {viewItem.avgAppraisalRating != null ? viewItem.avgAppraisalRating.toFixed(1) : "-"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

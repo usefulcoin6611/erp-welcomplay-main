@@ -7,10 +7,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, Target, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Target, Loader2, Eye } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { StarRatingDisplay } from '../StarRatingDisplay';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
@@ -25,6 +41,7 @@ interface GoalTracking {
   endDate: string;
   rating: number;
   progress: number;
+  status?: string;
 }
 
 export function GoalTrackingContent() {
@@ -49,6 +66,7 @@ export function GoalTrackingContent() {
   const [deleting, setDeleting] = useState(false);
   const [goalTypes, setGoalTypes] = useState<{ id: string; name: string }[]>([]);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [viewItem, setViewItem] = useState<GoalTracking | null>(null);
 
   const fetchGoals = useCallback(async () => {
     try {
@@ -162,6 +180,15 @@ export function GoalTrackingContent() {
     }
   };
 
+  const handleView = (id: string) => {
+    const item = goalTrackings.find((goal) => goal.id === id);
+    if (!item) {
+      toast.error('Goal tracking tidak ditemukan');
+      return;
+    }
+    setViewItem(item);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -182,6 +209,21 @@ export function GoalTrackingContent() {
     if (progress >= 60) return 'bg-blue-500';
     if (progress >= 40) return 'bg-yellow-500';
     return 'bg-red-500';
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'In Progress':
+        return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'Planned':
+        return 'bg-slate-50 text-slate-700 border-slate-100';
+      case 'Overdue':
+        return 'bg-red-50 text-red-700 border-red-100';
+      default:
+        return 'bg-slate-50 text-slate-700 border-slate-100';
+    }
   };
 
   return (
@@ -248,142 +290,219 @@ export function GoalTrackingContent() {
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4 pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Goal Tracking</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="goalType">Goal Type</Label>
-                  <Select
-                    value={formData.goalType}
-                    onValueChange={(value) => setFormData({ ...formData, goalType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select goal type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {goalTypes.map((g) => (
-                        <SelectItem key={g.id} value={g.name}>
-                          {g.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.name}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
+      {/* Add/Edit Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (submitting) return;
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({
+              goalType: '',
+              subject: '',
+              branch: '',
+              targetAchievement: '',
+              startDate: '',
+              endDate: '',
+              rating: '',
+              progress: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit' : 'Create New'} Goal Tracking</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
+                <Label htmlFor="goalType">Goal Type</Label>
+                <Select
+                  value={formData.goalType}
+                  onValueChange={(value) => setFormData({ ...formData, goalType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select goal type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {goalTypes.map((g) => (
+                      <SelectItem key={g.id} value={g.name}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="branch">Branch</Label>
+                <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject</Label>
+              <Input
+                id="subject"
+                value={formData.subject}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, subject: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="targetAchievement">Target Achievement</Label>
                 <Input
-                  id="subject"
-                  value={formData.subject}
+                  id="targetAchievement"
+                  value={formData.targetAchievement}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, subject: e.target.value })
+                    setFormData({ ...formData, targetAchievement: e.target.value })
                   }
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="progress">Progress (%)</Label>
+                <Input
+                  id="progress"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.progress}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, progress: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-3">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rating">Rating (1-5)</Label>
+                <Select value={formData.rating} onValueChange={(value) => setFormData({ ...formData, rating: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((r) => (
+                      <SelectItem key={r} value={r.toString()}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2 pt-2">
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update' : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Detail Modal */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>Goal Tracking Detail</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="targetAchievement">Target Achievement</Label>
-                  <Input
-                    id="targetAchievement"
-                    value={formData.targetAchievement}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, targetAchievement: e.target.value })
-                    }
-                    required
-                  />
+                <div>
+                  <p className="text-xs text-muted-foreground">Goal Type</p>
+                  <p className="text-sm font-medium">{viewItem.goalType}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="progress">Progress (%)</Label>
-                  <Input
-                    id="progress"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.progress}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, progress: e.target.value })
-                    }
-                    required
-                  />
+                <div>
+                  <p className="text-xs text-muted-foreground">Subject</p>
+                  <p className="text-sm font-medium">{viewItem.subject}</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-3">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, startDate: e.target.value })
-                    }
-                    required
-                  />
+                <div>
+                  <p className="text-xs text-muted-foreground">Branch</p>
+                  <p className="text-sm font-medium">{viewItem.branch}</p>
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, endDate: e.target.value })
-                    }
-                    required
-                  />
+                <div>
+                  <p className="text-xs text-muted-foreground">Target Achievement</p>
+                  <p className="text-sm font-medium">{viewItem.targetAchievement}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rating">Rating (1-5)</Label>
-                  <Select value={formData.rating} onValueChange={(value) => setFormData({ ...formData, rating: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select rating" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map((r) => (
-                        <SelectItem key={r} value={r.toString()}>
-                          {r}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <p className="text-xs text-muted-foreground">Start Date</p>
+                  <p className="text-sm font-medium">{viewItem.startDate}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">End Date</p>
+                  <p className="text-sm font-medium">{viewItem.endDate}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium">{viewItem.status ?? '-'}</p>
                 </div>
               </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
-                  Cancel
-                </Button>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Rating</p>
+                <StarRatingDisplay rating={viewItem.rating} />
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Progress</p>
+                <p className="text-sm font-medium">{viewItem.progress}%</p>
+                <div className="w-full max-w-[200px] mt-2">
+                  <Progress value={viewItem.progress} className={`h-2 ${getProgressColor(viewItem.progress)}`} />
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
@@ -424,6 +543,7 @@ export function GoalTrackingContent() {
                 <TableHead className="px-4 py-3">Target Achievement</TableHead>
                 <TableHead className="px-4 py-3">Start Date</TableHead>
                 <TableHead className="px-4 py-3">End Date</TableHead>
+                <TableHead className="px-4 py-3">Status</TableHead>
                 <TableHead className="px-4 py-3 text-center">Rating</TableHead>
                 <TableHead className="px-4 py-3">Progress</TableHead>
                 <TableHead className="px-4 py-3 text-right">Action</TableHead>
@@ -445,6 +565,15 @@ export function GoalTrackingContent() {
                     <TableCell className="px-4 py-3">{goal.targetAchievement}</TableCell>
                     <TableCell className="px-4 py-3">{goal.startDate}</TableCell>
                     <TableCell className="px-4 py-3">{goal.endDate}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
+                          goal.status
+                        )}`}
+                      >
+                        {goal.status ?? '-'}
+                      </span>
+                    </TableCell>
                     <TableCell className="px-4 py-3 text-center">
                       <StarRatingDisplay rating={goal.rating} />
                     </TableCell>
@@ -458,6 +587,15 @@ export function GoalTrackingContent() {
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleView(goal.id)}
+                          title="View"
+                          className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

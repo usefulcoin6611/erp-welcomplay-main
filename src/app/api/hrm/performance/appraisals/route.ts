@@ -18,6 +18,12 @@ const createSchema = z.object({
   remarks: z.string().trim().optional().nullable(),
 });
 
+function getHalfYearLabel(date: Date) {
+  const year = date.getUTCFullYear();
+  const half = date.getUTCMonth() < 6 ? "H1" : "H2";
+  return `${year} ${half}`;
+}
+
 function toResponse(a: { id: string; employeeId: string; branch: string; department: string; designation: string; targetRating: number; overallRating: number; appraisalDate: Date; employee?: { name: string } }) {
   return {
     id: a.id,
@@ -29,6 +35,7 @@ function toResponse(a: { id: string; employeeId: string; branch: string; departm
     targetRating: a.targetRating,
     overallRating: a.overallRating,
     appraisalDate: a.appraisalDate.toISOString().split("T")[0],
+    period: getHalfYearLabel(a.appraisalDate),
   };
 }
 
@@ -57,12 +64,42 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, message: parsed.error.errors[0]?.message ?? "Data tidak valid" }, { status: 400 });
     const { technicalRating, leadershipRating, teamworkRating, communicationRating, appraisalDate, ...rest } = parsed.data;
+    const appraisalDateObj = new Date(appraisalDate + "T00:00:00.000Z");
+
+    // Prevent multiple appraisals for the same employee in the same half-year period
+    const startOfHalf =
+      appraisalDateObj.getUTCMonth() < 6
+        ? new Date(Date.UTC(appraisalDateObj.getUTCFullYear(), 0, 1))
+        : new Date(Date.UTC(appraisalDateObj.getUTCFullYear(), 6, 1));
+    const startOfNextHalf =
+      appraisalDateObj.getUTCMonth() < 6
+        ? new Date(Date.UTC(appraisalDateObj.getUTCFullYear(), 6, 1))
+        : new Date(Date.UTC(appraisalDateObj.getUTCFullYear() + 1, 0, 1));
+
+    const duplicate = await prisma.performanceAppraisal.findFirst({
+      where: {
+        employeeId: rest.employeeId,
+        appraisalDate: {
+          gte: startOfHalf,
+          lt: startOfNextHalf,
+        },
+      },
+    });
+    if (duplicate) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Appraisal untuk karyawan ini pada periode ${getHalfYearLabel(appraisalDateObj)} sudah ada`,
+        },
+        { status: 409 }
+      );
+    }
     const ratings = [technicalRating, leadershipRating, teamworkRating, communicationRating].filter((r): r is number => r != null);
     const overallRating = ratings.length > 0 ? ratings.reduce((s, r) => s + r, 0) / ratings.length : rest.targetRating;
     const created = await prisma.performanceAppraisal.create({
       data: {
         ...rest,
-        appraisalDate: new Date(appraisalDate + "T00:00:00.000Z"),
+        appraisalDate: appraisalDateObj,
         technicalRating: technicalRating ?? null,
         leadershipRating: leadershipRating ?? null,
         teamworkRating: teamworkRating ?? null,

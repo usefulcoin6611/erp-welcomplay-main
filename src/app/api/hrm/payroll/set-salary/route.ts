@@ -40,15 +40,14 @@ export async function GET(request: NextRequest) {
 
     const data = employees.map((emp: any) => {
       const basicSalary = emp.basicSalary || 0;
-      
-      const totalAllowances = emp.allowances.reduce((sum: number, item: any) => sum + item.amount, 0) +
-                              emp.commissions.reduce((sum: number, item: any) => sum + item.amount, 0) +
-                              emp.otherPayments.reduce((sum: number, item: any) => sum + item.amount, 0) +
-                              emp.overtimes.reduce((sum: number, item: any) => sum + (item.rate * item.hours * item.days), 0); // Simplified overtime calc
-
-      const totalDeductions = emp.saturationDeductions.reduce((sum: number, item: any) => sum + item.amount, 0) +
-                              emp.loans.reduce((sum: number, item: any) => sum + item.amount, 0); // Loan monthly deduction? Assuming amount is deduction amount for now.
-
+      const totalAllowances =
+        (emp.allowances?.reduce((s: number, a: any) => s + Number(a.amount ?? 0), 0) ?? 0) +
+        (emp.commissions?.reduce((s: number, c: any) => s + Number(c.amount ?? 0), 0) ?? 0) +
+        (emp.otherPayments?.reduce((s: number, o: any) => s + Number(o.amount ?? 0), 0) ?? 0) +
+        (emp.overtimes?.reduce((s: number, o: any) => s + (Number(o.days ?? 0) * Number(o.hours ?? 0) * Number(o.rate ?? 0)), 0) ?? 0);
+      const totalDeductions =
+        (emp.saturationDeductions?.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0) ?? 0) +
+        (emp.loans?.reduce((s: number, l: any) => s + Number(l.amount ?? 0), 0) ?? 0);
       const netSalary = basicSalary + totalAllowances - totalDeductions;
 
       return {

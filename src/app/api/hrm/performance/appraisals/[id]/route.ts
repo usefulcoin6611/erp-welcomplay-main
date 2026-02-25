@@ -18,6 +18,12 @@ const updateSchema = z.object({
   remarks: z.string().trim().optional().nullable(),
 });
 
+function getHalfYearLabel(date: Date) {
+  const year = date.getUTCFullYear();
+  const half = date.getUTCMonth() < 6 ? "H1" : "H2";
+  return `${year} ${half}`;
+}
+
 function toResponse(a: { id: string; employeeId: string; branch: string; department: string; designation: string; targetRating: number; overallRating: number; appraisalDate: Date; employee?: { name: string } }) {
   return {
     id: a.id,
@@ -29,6 +35,7 @@ function toResponse(a: { id: string; employeeId: string; branch: string; departm
     targetRating: a.targetRating,
     overallRating: a.overallRating,
     appraisalDate: a.appraisalDate.toISOString().split("T")[0],
+    period: getHalfYearLabel(a.appraisalDate),
   };
 }
 
@@ -59,7 +66,43 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, message: parsed.error.errors[0]?.message ?? "Data tidak valid" }, { status: 400 });
     const data: Record<string, unknown> = { ...parsed.data };
-    if (parsed.data.appraisalDate != null) (data as Record<string, unknown>).appraisalDate = new Date(parsed.data.appraisalDate + "T00:00:00.000Z");
+    let effectiveEmployeeId = parsed.data.employeeId ?? existing.employeeId;
+    let effectiveAppraisalDate = existing.appraisalDate;
+
+    if (parsed.data.appraisalDate != null) {
+      effectiveAppraisalDate = new Date(parsed.data.appraisalDate + "T00:00:00.000Z");
+      (data as Record<string, unknown>).appraisalDate = effectiveAppraisalDate;
+    }
+
+    // Prevent multiple appraisals for same employee and half-year period on update
+    const startOfHalf =
+      effectiveAppraisalDate.getUTCMonth() < 6
+        ? new Date(Date.UTC(effectiveAppraisalDate.getUTCFullYear(), 0, 1))
+        : new Date(Date.UTC(effectiveAppraisalDate.getUTCFullYear(), 6, 1));
+    const startOfNextHalf =
+      effectiveAppraisalDate.getUTCMonth() < 6
+        ? new Date(Date.UTC(effectiveAppraisalDate.getUTCFullYear(), 6, 1))
+        : new Date(Date.UTC(effectiveAppraisalDate.getUTCFullYear() + 1, 0, 1));
+
+    const duplicate = await prisma.performanceAppraisal.findFirst({
+      where: {
+        employeeId: effectiveEmployeeId,
+        appraisalDate: {
+          gte: startOfHalf,
+          lt: startOfNextHalf,
+        },
+        NOT: { id },
+      },
+    });
+    if (duplicate) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Appraisal untuk karyawan ini pada periode ${getHalfYearLabel(effectiveAppraisalDate)} sudah ada`,
+        },
+        { status: 409 }
+      );
+    }
     const t = parsed.data.technicalRating ?? existing.technicalRating;
     const l = parsed.data.leadershipRating ?? existing.leadershipRating;
     const tw = parsed.data.teamworkRating ?? existing.teamworkRating;

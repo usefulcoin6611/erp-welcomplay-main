@@ -8,3 +8,9 @@ CREATE TABLE "job_stage" (
 
     CONSTRAINT "job_stage_pkey" PRIMARY KEY ("id")
 );
+
+-- AddForeignKey
+ALTER TABLE "job_application"
+ADD CONSTRAINT "job_application_stageId_fkey"
+FOREIGN KEY ("stageId") REFERENCES "job_stage"("id")
+ON DELETE RESTRICT ON UPDATE CASCADE;

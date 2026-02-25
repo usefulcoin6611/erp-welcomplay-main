@@ -1,3 +1,30 @@
+-- Ensure base project table exists for foreign key references.
+-- In the live database this table is created by an earlier migration;
+-- here we recreate the minimal structure for the shadow database.
+CREATE TABLE IF NOT EXISTS "project" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "branchId" TEXT,
+    "name" TEXT NOT NULL,
+    "clientName" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'not_started',
+    "startDate" TIMESTAMP(3),
+    "endDate" TIMESTAMP(3),
+    "budget" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "estimatedHrs" DOUBLE PRECISION DEFAULT 0,
+    "progress" INTEGER NOT NULL DEFAULT 0,
+    "description" TEXT,
+    "tags" TEXT,
+    "users" JSONB,
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "project_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "project_projectId_key" ON "project"("projectId");
+
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "project_task" (
     "id" TEXT NOT NULL,

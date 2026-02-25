@@ -155,6 +155,17 @@ export async function seedEmployees(prisma: any) {
   ];
 
   const hasEmployeeDocumentModel = Boolean((prisma as any).employeeDocument);
+  const hasEmployeeAllowanceModel = Boolean((prisma as any).employeeAllowance);
+  const hasEmployeeCommissionModel = Boolean((prisma as any).employeeCommission);
+  const hasEmployeeLoanModel = Boolean((prisma as any).employeeLoan);
+  const hasEmployeeSaturationDeductionModel = Boolean(
+    (prisma as any).employeeSaturationDeduction,
+  );
+  const hasEmployeeOtherPaymentModel = Boolean(
+    (prisma as any).employeeOtherPayment,
+  );
+  const hasEmployeeOvertimeModel = Boolean((prisma as any).employeeOvertime);
+  const hasLeaveRequestModel = Boolean((prisma as any).leaveRequest);
 
   const documentTypes = hasEmployeeDocumentModel
     ? await prisma.documentType.findMany({
@@ -324,107 +335,133 @@ export async function seedEmployees(prisma: any) {
     const deductionOption = deductionOptionsAll[0] ?? null;
 
     // Allowances
-    await prisma.employeeAllowance.deleteMany({ where: { employeeId: employee.id } });
-    if (allowanceOption && baseSalary > 0) {
-      await prisma.employeeAllowance.createMany({
-        data: [
-          {
-            employeeId: employee.id,
-            allowanceOptionId: allowanceOption.id,
-            title: `${allowanceOption.name} Default`,
-            amount: Math.round(baseSalary * 0.1),
-            type: "Fixed",
-          },
-        ],
+    if (hasEmployeeAllowanceModel) {
+      await prisma.employeeAllowance.deleteMany({
+        where: { employeeId: employee.id },
       });
+      if (allowanceOption && baseSalary > 0) {
+        await prisma.employeeAllowance.createMany({
+          data: [
+            {
+              employeeId: employee.id,
+              allowanceOptionId: allowanceOption.id,
+              title: `${allowanceOption.name} Default`,
+              amount: Math.round(baseSalary * 0.1),
+              type: "Fixed",
+            },
+          ],
+        });
+      }
     }
 
     // Commissions
-    await prisma.employeeCommission.deleteMany({ where: { employeeId: employee.id } });
-    if (baseSalary > 0) {
-      await prisma.employeeCommission.createMany({
-        data: [
-          {
-            employeeId: employee.id,
-            title: "Sales Commission",
-            amount: Math.round(baseSalary * 0.05),
-            type: "Percentage",
-          },
-        ],
+    if (hasEmployeeCommissionModel) {
+      await prisma.employeeCommission.deleteMany({
+        where: { employeeId: employee.id },
       });
+      if (baseSalary > 0) {
+        await prisma.employeeCommission.createMany({
+          data: [
+            {
+              employeeId: employee.id,
+              title: "Sales Commission",
+              amount: Math.round(baseSalary * 0.05),
+              type: "Percentage",
+            },
+          ],
+        });
+      }
     }
 
     // Loans
-    await prisma.employeeLoan.deleteMany({ where: { employeeId: employee.id } });
-    if (loanOption && baseSalary > 0) {
-      const now = new Date("2024-01-01T00:00:00.000Z");
-      const end = new Date("2024-12-31T00:00:00.000Z");
-      await prisma.employeeLoan.createMany({
-        data: [
-          {
-            employeeId: employee.id,
-            loanOptionId: loanOption.id,
-            title: `${loanOption.name} Seed`,
-            amount: Math.round(baseSalary * 0.3),
-            startDate: now,
-            endDate: end,
-            reason: "Seeded demo loan for Set Salary.",
-          },
-        ],
+    if (hasEmployeeLoanModel) {
+      await prisma.employeeLoan.deleteMany({
+        where: { employeeId: employee.id },
       });
+      if (loanOption && baseSalary > 0) {
+        const now = new Date("2024-01-01T00:00:00.000Z");
+        const end = new Date("2024-12-31T00:00:00.000Z");
+        await prisma.employeeLoan.createMany({
+          data: [
+            {
+              employeeId: employee.id,
+              loanOptionId: loanOption.id,
+              title: `${loanOption.name} Seed`,
+              amount: Math.round(baseSalary * 0.3),
+              startDate: now,
+              endDate: end,
+              reason: "Seeded demo loan for Set Salary.",
+            },
+          ],
+        });
+      }
     }
 
     // Saturation Deductions
-    await prisma.employeeSaturationDeduction.deleteMany({ where: { employeeId: employee.id } });
-    if (deductionOption && baseSalary > 0) {
-      await prisma.employeeSaturationDeduction.createMany({
-        data: [
-          {
-            employeeId: employee.id,
-            deductionOptionId: deductionOption.id,
-            title: `${deductionOption.name} Seed`,
-            amount: Math.round(baseSalary * 0.05),
-            type: "Fixed",
-          },
-        ],
+    if (hasEmployeeSaturationDeductionModel) {
+      await prisma.employeeSaturationDeduction.deleteMany({
+        where: { employeeId: employee.id },
       });
+      if (deductionOption && baseSalary > 0) {
+        await prisma.employeeSaturationDeduction.createMany({
+          data: [
+            {
+              employeeId: employee.id,
+              deductionOptionId: deductionOption.id,
+              title: `${deductionOption.name} Seed`,
+              amount: Math.round(baseSalary * 0.05),
+              type: "Fixed",
+            },
+          ],
+        });
+      }
     }
 
     // Other Payments
-    await prisma.employeeOtherPayment.deleteMany({ where: { employeeId: employee.id } });
-    if (baseSalary > 0) {
-      await prisma.employeeOtherPayment.createMany({
-        data: [
-          {
-            employeeId: employee.id,
-            title: "Performance Bonus",
-            amount: Math.round(baseSalary * 0.15),
-            type: "Fixed",
-          },
-        ],
+    if (hasEmployeeOtherPaymentModel) {
+      await prisma.employeeOtherPayment.deleteMany({
+        where: { employeeId: employee.id },
       });
+      if (baseSalary > 0) {
+        await prisma.employeeOtherPayment.createMany({
+          data: [
+            {
+              employeeId: employee.id,
+              title: "Performance Bonus",
+              amount: Math.round(baseSalary * 0.15),
+              type: "Fixed",
+            },
+          ],
+        });
+      }
     }
 
     // Overtimes
-    await prisma.employeeOvertime.deleteMany({ where: { employeeId: employee.id } });
-    if (baseSalary > 0) {
-      await prisma.employeeOvertime.createMany({
-        data: [
-          {
-            employeeId: employee.id,
-            title: "Weekend Overtime",
-            days: 2,
-            hours: 4,
-            rate: Math.round(baseSalary / 160 / 2), // kira-kira setengah hourly rate
-          },
-        ],
+    if (hasEmployeeOvertimeModel) {
+      await prisma.employeeOvertime.deleteMany({
+        where: { employeeId: employee.id },
       });
+      if (baseSalary > 0) {
+        await prisma.employeeOvertime.createMany({
+          data: [
+            {
+              employeeId: employee.id,
+              title: "Weekend Overtime",
+              days: 2,
+              hours: 4,
+              rate: Math.round(baseSalary / 160 / 2), // kira-kira setengah hourly rate
+            },
+          ],
+        });
+      }
     }
 
     // Seed contoh data LeaveRequest agar halaman Manage Leave terisi
-    await prisma.leaveRequest.deleteMany({
-      where: { employeeId: employee.id },
-    });
+    if (hasLeaveRequestModel) {
+      await prisma.leaveRequest.deleteMany({
+        where: { employeeId: employee.id },
+      });
+    }
 
     const annualLeaveType =
       leaveTypesAll.find((lt: any) => lt.name === "Annual Leave") ??
@@ -438,7 +475,7 @@ export async function seedEmployees(prisma: any) {
 
     const baseYear = 2024;
 
-    if (annualLeaveType) {
+    if (hasLeaveRequestModel && annualLeaveType) {
       await prisma.leaveRequest.create({
         data: {
           employeeId: employee.id,
@@ -451,7 +488,7 @@ export async function seedEmployees(prisma: any) {
       });
     }
 
-    if (sickLeaveType) {
+    if (hasLeaveRequestModel && sickLeaveType) {
       await prisma.leaveRequest.create({
         data: {
           employeeId: employee.id,

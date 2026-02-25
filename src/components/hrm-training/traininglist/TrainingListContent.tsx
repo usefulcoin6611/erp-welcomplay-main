@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -44,11 +45,14 @@ interface Training {
   endDate: string;
   cost: number;
   description?: string;
+  trainingTypeId?: string;
+  employeeId?: string;
+  trainerId?: string;
+  createdAt?: string;
 }
 
 export function TrainingListContent() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTraining, setEditTraining] = useState<Training | null>(null);
@@ -57,135 +61,157 @@ export function TrainingListContent() {
   const [formData, setFormData] = useState({
     branch: '',
     trainerOption: 'Internal',
-    trainingType: '',
-    employee: '',
-    trainer: '',
+    trainingTypeId: '',
+    employeeId: '',
+    trainerId: '',
     startDate: '',
     endDate: '',
     cost: '',
     description: '',
   });
+  const [trainings, setTrainings] = useState<Training[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Mock data - reference-erp Training model fields
-  const [trainings, setTrainings] = useState<Training[]>([
-    {
-      id: '1',
-      branch: 'Head Office',
-      trainerOption: 'Internal',
-      trainingType: 'Technical Skills',
-      status: 'Completed',
-      employee: 'John Doe',
-      trainer: 'Sarah Johnson',
-      startDate: '2024-01-15',
-      endDate: '2024-01-19',
-      cost: 5000000,
-      description: 'Pelatihan technical skills.',
-    },
-    {
-      id: '2',
-      branch: 'Branch A',
-      trainerOption: 'External',
-      trainingType: 'Leadership Development',
-      status: 'In Progress',
-      employee: 'Jane Smith',
-      trainer: 'Michael Brown',
-      startDate: '2024-02-01',
-      endDate: '2024-02-28',
-      cost: 7500000,
-      description: 'Program pengembangan kepemimpinan.',
-    },
-    {
-      id: '3',
-      branch: 'Head Office',
-      trainerOption: 'Internal',
-      trainingType: 'Customer Service',
-      status: 'Pending',
-      employee: 'Bob Wilson',
-      trainer: 'Emily Davis',
-      startDate: '2024-03-01',
-      endDate: '2024-03-05',
-      cost: 3000000,
-      description: '',
-    },
-  ]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [trainingTypes, setTrainingTypes] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
+  const [trainers, setTrainers] = useState<{ id: string; fullName: string }[]>([]);
 
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
-  const trainerOptions = ['Internal', 'External']; // reference-erp Training::$options
-  const trainingTypes = ['Technical Skills', 'Leadership Development', 'Customer Service', 'Sales Training', 'Communication'];
-  const employees = ['John Doe', 'Jane Smith', 'Bob Wilson'];
-  const trainers = ['Sarah Johnson', 'Michael Brown', 'Emily Davis'];
+  const trainerOptions = ['Internal', 'External'];
+
+  const fetchTrainings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/training/trainings');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setTrainings(json.data);
+      } else {
+        toast.error(json.message ?? 'Gagal memuat training');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat training');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTrainings();
+  }, [fetchTrainings]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [bRes, tRes, eRes, trRes] = await Promise.all([
+          fetch('/api/branches'),
+          fetch('/api/training-types'),
+          fetch('/api/hrm/assets/employees'),
+          fetch('/api/hrm/training/trainers'),
+        ]);
+        const [bJson, tJson, eJson, trJson] = await Promise.all([
+          bRes.json(),
+          tRes.json(),
+          eRes.json(),
+          trRes.json(),
+        ]);
+        if (bJson.success && Array.isArray(bJson.data)) setBranches(bJson.data);
+        if (tJson.success && Array.isArray(tJson.data)) setTrainingTypes(tJson.data);
+        if (eJson.success && Array.isArray(eJson.data))
+          setEmployees(eJson.data.map((emp: any) => ({ id: emp.id, name: emp.name })));
+        if (trJson.success && Array.isArray(trJson.data))
+          setTrainers(
+            trJson.data.map((tr: any) => ({
+              id: tr.id,
+              fullName: `${tr.firstName} ${tr.lastName}`.trim(),
+            })),
+          );
+      } catch {
+        // silently ignore, UI will just have empty dropdowns
+      }
+    })();
+  }, []);
 
   const handleAdd = () => {
-    setShowForm(true);
+    setEditTraining(null);
     setEditingId(null);
     setFormData({
       branch: '',
       trainerOption: 'Internal',
-      trainingType: '',
-      employee: '',
-      trainer: '',
+      trainingTypeId: '',
+      employeeId: '',
+      trainerId: '',
       startDate: '',
       endDate: '',
       cost: '',
       description: '',
     });
+    setEditDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const idToUpdate = editTraining?.id ?? editingId;
 
-    if (idToUpdate) {
-      setTrainings(
-        trainings.map((item) =>
-          item.id === idToUpdate
-            ? {
-                ...item,
-                branch: formData.branch,
-                trainerOption: formData.trainerOption,
-                trainingType: formData.trainingType,
-                employee: formData.employee,
-                trainer: formData.trainer,
-                startDate: formData.startDate,
-                endDate: formData.endDate,
-                cost: parseFloat(formData.cost),
-                description: formData.description || undefined,
-              }
-            : item
-        )
-      );
-      setEditDialogOpen(false);
-      setEditTraining(null);
-      setShowForm(false);
-      setEditingId(null);
-    } else {
-      const newItem: Training = {
-        id: Date.now().toString(),
-        branch: formData.branch,
-        trainerOption: formData.trainerOption,
-        trainingType: formData.trainingType,
-        status: 'Pending',
-        employee: formData.employee,
-        trainer: formData.trainer,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        cost: parseFloat(formData.cost),
-        description: formData.description || undefined,
-      };
-      setTrainings([...trainings, newItem]);
-      setShowForm(false);
+    if (!formData.trainingTypeId || !formData.employeeId || !formData.trainerId) {
+      toast.error('Training Type, Employee, dan Trainer wajib diisi');
+      return;
     }
-    setFormData({
-      branch: '',
-      trainerOption: 'Internal',
-      trainingType: '',
-      employee: '',
-      trainer: '',
-      startDate: '',
-      endDate: '',
-      cost: '',
-      description: '',
-    });
+
+    const payload = {
+      branch: formData.branch,
+      trainerOption: formData.trainerOption,
+      trainingTypeId: formData.trainingTypeId,
+      employeeId: formData.employeeId,
+      trainerId: formData.trainerId,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      cost: parseFloat(formData.cost || '0'),
+      description: formData.description || undefined,
+    };
+
+    setSubmitting(true);
+    try {
+      const url = idToUpdate
+        ? `/api/hrm/training/trainings/${idToUpdate}`
+        : '/api/hrm/training/trainings';
+      const method = idToUpdate ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(
+          json.message ?? (idToUpdate ? 'Training berhasil diperbarui' : 'Training berhasil dibuat'),
+        );
+        setEditDialogOpen(false);
+        setEditTraining(null);
+        setEditingId(null);
+        setFormData({
+          branch: '',
+          trainerOption: 'Internal',
+          trainingTypeId: '',
+          employeeId: '',
+          trainerId: '',
+          startDate: '',
+          endDate: '',
+          cost: '',
+          description: '',
+        });
+        fetchTrainings();
+      } else {
+        toast.error(json.message ?? 'Gagal menyimpan training');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan training');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (item: Training) => {
@@ -193,9 +219,9 @@ export function TrainingListContent() {
     setFormData({
       branch: item.branch,
       trainerOption: item.trainerOption ?? 'Internal',
-      trainingType: item.trainingType,
-      employee: item.employee,
-      trainer: item.trainer,
+      trainingTypeId: item.trainingTypeId ?? '',
+      employeeId: item.employeeId ?? '',
+      trainerId: item.trainerId ?? '',
       startDate: item.startDate,
       endDate: item.endDate,
       cost: item.cost.toString(),
@@ -209,10 +235,25 @@ export function TrainingListContent() {
     setDeleteAlertOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setTrainings(trainings.filter((item) => item.id !== id));
-    setDeleteTrainingId(null);
-    setDeleteAlertOpen(false);
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/training/trainings/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Training berhasil dihapus');
+        setDeleteTrainingId(null);
+        setDeleteAlertOpen(false);
+        fetchTrainings();
+      } else {
+        toast.error(json.message ?? 'Gagal menghapus training');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus training');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filteredData = trainings.filter(
@@ -227,16 +268,26 @@ export function TrainingListContent() {
     switch (status) {
       case 'Completed':
         return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'Started':
       case 'In Progress':
         return 'bg-blue-50 text-blue-700 border-blue-100';
       case 'Pending':
         return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'Terminated':
       case 'Cancelled':
         return 'bg-red-50 text-red-700 border-red-100';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-100';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-sm text-muted-foreground">Loading trainings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -298,163 +349,6 @@ export function TrainingListContent() {
           Create Training
         </Button>
       </div>
-
-      {/* Add/Edit Form - reference-erp training/create & training/edit */}
-      {showForm && (
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4 pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Training' : 'Create New Training'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Branch - col-md-12 */}
-              <div className="space-y-2">
-                <Label htmlFor="branch">Branch <span className="text-destructive">*</span></Label>
-                <Select value={formData.branch} onValueChange={(v) => setFormData({ ...formData, branch: v })} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map((b) => (
-                      <SelectItem key={b} value={b}>{b}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Create branch here. <Link href="/hrm/setup/branch" className="font-semibold text-primary hover:underline">Create branch</Link>
-                </p>
-              </div>
-
-              {/* Trainer Option + Training Type - col-md-6 each */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="trainerOption">Trainer Option <span className="text-destructive">*</span></Label>
-                  <Select value={formData.trainerOption} onValueChange={(v) => setFormData({ ...formData, trainerOption: v })}>
-                    <SelectTrigger id="trainerOption">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {trainerOptions.map((o) => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="trainingType">Training Type <span className="text-destructive">*</span></Label>
-                  <Select value={formData.trainingType} onValueChange={(v) => setFormData({ ...formData, trainingType: v })} required>
-                    <SelectTrigger id="trainingType">
-                      <SelectValue placeholder="Select training type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {trainingTypes.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Create training type here. <Link href="/hrm/setup/training-type" className="font-semibold text-primary hover:underline">Create training type</Link>
-                  </p>
-                </div>
-              </div>
-
-              {/* Trainer + Training Cost - col-md-6 each */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="trainer">Trainer <span className="text-destructive">*</span></Label>
-                  <Select value={formData.trainer} onValueChange={(v) => setFormData({ ...formData, trainer: v })} required>
-                    <SelectTrigger id="trainer">
-                      <SelectValue placeholder="Select trainer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {trainers.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Create trainer here. <Link href="/hrm/training?tab=trainer" className="font-semibold text-primary hover:underline">Create trainer</Link>
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cost">Training Cost <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="cost"
-                    type="number"
-                    step="0.01"
-                    placeholder="Training Cost"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Employee - col-md-12 */}
-              <div className="space-y-2">
-                <Label htmlFor="employee">Employee <span className="text-destructive">*</span></Label>
-                <Select value={formData.employee} onValueChange={(v) => setFormData({ ...formData, employee: v })} required>
-                  <SelectTrigger id="employee">
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((e) => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Create employee here. <Link href="/hrm/employees" className="font-semibold text-primary hover:underline">Create employee</Link>
-                </p>
-              </div>
-
-              {/* Start Date + End Date - col-md-6 each */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Description - col-lg-12 */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="resize-none"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Training List - reference: training/index */}
       <Card className={cardClass}>
@@ -549,95 +443,234 @@ export function TrainingListContent() {
       </Card>
 
       {/* Edit dialog - ringkas, tanpa space kosong */}
-      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditTraining(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-5">
+      <Dialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditTraining(null);
+        }}
+      >
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-5">
           <DialogHeader className="pb-2 space-y-0.5">
-            <DialogTitle className="text-base font-semibold">Edit Training</DialogTitle>
-            {editTraining && (
+            <DialogTitle className="text-base font-semibold">
+              {editTraining ? 'Edit Training' : 'Create Training'}
+            </DialogTitle>
+            {editTraining ? (
               <DialogDescription className="text-xs text-muted-foreground">
                 {editTraining.trainingType} — {editTraining.employee}
               </DialogDescription>
-            )}
+            ) : null}
           </DialogHeader>
-          {editTraining && (
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-sm">Branch <span className="text-destructive">*</span></Label>
-                <Select value={formData.branch} onValueChange={(v) => setFormData((f) => ({ ...f, branch: v }))} required>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Select branch" /></SelectTrigger>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Branch <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.branch}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, branch: v }))}
+                  required
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Belum ada? <Link href="/hrm/setup/branch" className="text-primary hover:underline">Buat branch</Link></p>
+                <p className="text-[11px] text-muted-foreground">
+                  Belum ada?{' '}
+                  <Link href="/hrm/setup/branch" className="text-primary hover:underline">
+                    Buat branch
+                  </Link>
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-sm">Trainer Option <span className="text-destructive">*</span></Label>
-                  <Select value={formData.trainerOption} onValueChange={(v) => setFormData((f) => ({ ...f, trainerOption: v }))}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {trainerOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-sm">Training Type <span className="text-destructive">*</span></Label>
-                  <Select value={formData.trainingType} onValueChange={(v) => setFormData((f) => ({ ...f, trainingType: v }))} required>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>
-                      {trainingTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-muted-foreground">Belum ada? <Link href="/hrm/setup/training-type" className="text-primary hover:underline">Buat tipe</Link></p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-sm">Trainer <span className="text-destructive">*</span></Label>
-                  <Select value={formData.trainer} onValueChange={(v) => setFormData((f) => ({ ...f, trainer: v }))} required>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Select trainer" /></SelectTrigger>
-                    <SelectContent>
-                      {trainers.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-muted-foreground">Belum ada? <Link href="/hrm/training?tab=trainer" className="text-primary hover:underline">Buat trainer</Link></p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-sm">Training Cost <span className="text-destructive">*</span></Label>
-                  <Input type="number" step="0.01" placeholder="0" value={formData.cost} onChange={(e) => setFormData((f) => ({ ...f, cost: e.target.value }))} required className="h-9" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-sm">Employee <span className="text-destructive">*</span></Label>
-                <Select value={formData.employee} onValueChange={(v) => setFormData((f) => ({ ...f, employee: v }))} required>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Select employee" /></SelectTrigger>
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Employee <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.employeeId}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, employeeId: v }))}
+                  required
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {employees.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                    {employees.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Belum ada? <Link href="/hrm/employees" className="text-primary hover:underline">Buat employee</Link></p>
+                <p className="text-[11px] text-muted-foreground">
+                  Belum ada?{' '}
+                  <Link href="/hrm/employees" className="text-primary hover:underline">
+                    Buat employee
+                  </Link>
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-sm">Start Date <span className="text-destructive">*</span></Label>
-                  <Input type="date" value={formData.startDate} onChange={(e) => setFormData((f) => ({ ...f, startDate: e.target.value }))} required className="h-9" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-sm">End Date <span className="text-destructive">*</span></Label>
-                  <Input type="date" value={formData.endDate} onChange={(e) => setFormData((f) => ({ ...f, endDate: e.target.value }))} required className="h-9" />
-                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Trainer Option <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.trainerOption}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, trainerOption: v }))}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainerOptions.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-sm">Description</Label>
-                <Textarea placeholder="Description (opsional)" value={formData.description} onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))} rows={2} className="resize-none min-h-[60px] text-sm" />
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Training Type <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.trainingTypeId}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, trainingTypeId: v }))}
+                  required
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainingTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Belum ada?{' '}
+                  <Link href="/hrm/setup/training-type" className="text-primary hover:underline">
+                    Buat tipe
+                  </Link>
+                </p>
               </div>
-              <DialogFooter className="gap-2 pt-3 mt-1 border-t border-border">
-                <Button type="button" variant="outline" size="sm" onClick={() => setEditDialogOpen(false)} className="h-8">Cancel</Button>
-                <Button type="submit" size="sm" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none h-8">Update</Button>
-              </DialogFooter>
-            </form>
-          )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Trainer <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.trainerId}
+                  onValueChange={(v) => setFormData((f) => ({ ...f, trainerId: v }))}
+                  required
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select trainer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainers.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Belum ada?{' '}
+                  <Link href="/hrm/training?tab=trainer" className="text-primary hover:underline">
+                    Buat trainer
+                  </Link>
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Training Cost <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0"
+                  value={formData.cost}
+                  onChange={(e) => setFormData((f) => ({ ...f, cost: e.target.value }))}
+                  required
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Start Date <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData((f) => ({ ...f, startDate: e.target.value }))}
+                  required
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  End Date <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData((f) => ({ ...f, endDate: e.target.value }))}
+                  required
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm">Description</Label>
+              <Textarea
+                placeholder="Description (opsional)"
+                value={formData.description}
+                onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
+                rows={2}
+                className="resize-none min-h-[60px] text-sm"
+              />
+            </div>
+            <DialogFooter className="gap-2 pt-3 mt-1 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditDialogOpen(false)}
+                  className="h-8"
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-blue-600 text-white hover:bg-blue-700 shadow-none h-8"
+                  disabled={submitting}
+                >
+                  {submitting ? 'Saving...' : editTraining ? 'Update' : 'Create'}
+                </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -655,8 +688,9 @@ export function TrainingListContent() {
             <AlertDialogAction
               type="button"
               onClick={() => deleteTrainingId && handleDelete(deleteTrainingId)}
+              disabled={deleting}
             >
-              <span>Hapus</span>
+              <span>{deleting ? 'Menghapus...' : 'Hapus'}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

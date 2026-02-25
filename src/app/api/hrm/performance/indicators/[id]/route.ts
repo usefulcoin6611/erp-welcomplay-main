@@ -12,9 +12,11 @@ const updateSchema = z.object({
   organizationalRating: z.coerce.number().min(0).max(5).optional(),
   customerExperienceRating: z.coerce.number().min(0).max(5).optional(),
   addedBy: z.string().trim().optional(),
+  periodYear: z.coerce.number().int().min(2000).max(2100).optional(),
+  periodQuarter: z.coerce.number().int().min(1).max(4).optional(),
 });
 
-function toResponse(ind: {
+type IndicatorRow = {
   id: string;
   branch: string;
   department: string;
@@ -22,7 +24,11 @@ function toResponse(ind: {
   overallRating: number;
   addedBy: string;
   createdAt: Date;
-}) {
+  periodYear: number | null;
+  periodQuarter: number | null;
+};
+
+function toResponse(ind: IndicatorRow) {
   return {
     id: ind.id,
     branch: ind.branch,
@@ -31,6 +37,8 @@ function toResponse(ind: {
     overallRating: ind.overallRating,
     addedBy: ind.addedBy,
     createdAt: ind.createdAt.toISOString().split("T")[0],
+    periodYear: ind.periodYear ?? null,
+    periodQuarter: ind.periodQuarter ?? null,
   };
 }
 
@@ -44,7 +52,7 @@ export async function GET(
     const { id } = await params;
     const item = await prisma.performanceIndicator.findUnique({ where: { id } });
     if (!item) return NextResponse.json({ success: false, message: "Indikator tidak ditemukan" }, { status: 404 });
-    return NextResponse.json({ success: true, data: toResponse(item) });
+    return NextResponse.json({ success: true, data: toResponse(item as IndicatorRow) });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ success: false, message: "Gagal memuat indikator" }, { status: 500 });
@@ -82,6 +90,8 @@ export async function PUT(
       customerExperienceRating?: number;
       addedBy?: string;
       overallRating?: number;
+      periodYear?: number | null;
+      periodQuarter?: number | null;
     };
     const data: UpdateData = { ...parsed.data };
     if (
@@ -95,10 +105,10 @@ export async function PUT(
       data.overallRating = Math.round(((t + o + c) / 3) * 10) / 10;
     }
 
-    const updated = await prisma.performanceIndicator.update({
+    const updated = (await prisma.performanceIndicator.update({
       where: { id },
       data,
-    });
+    })) as IndicatorRow;
     return NextResponse.json({
       success: true,
       message: "Indikator berhasil diperbarui",

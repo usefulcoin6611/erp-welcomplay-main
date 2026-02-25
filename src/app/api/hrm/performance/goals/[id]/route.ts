@@ -21,6 +21,14 @@ const updateSchema = z.object({
   progress: z.coerce.number().int().min(0).max(100).optional(),
 });
 
+function getGoalStatus(g: { startDate: Date; endDate: Date; progress: number }) {
+  const today = new Date();
+  if (g.progress >= 100) return "Completed";
+  if (today < g.startDate) return "Planned";
+  if (today > g.endDate) return "Overdue";
+  return "In Progress";
+}
+
 function toResponse(g: {
   id: string;
   goalTypeId: string;
@@ -44,6 +52,7 @@ function toResponse(g: {
     endDate: g.endDate.toISOString().split("T")[0],
     rating: g.rating,
     progress: g.progress,
+    status: getGoalStatus(g),
   };
 }
 
@@ -78,8 +87,22 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, message: parsed.error.errors[0]?.message ?? "Data tidak valid" }, { status: 400 });
     const data: Record<string, unknown> = { ...parsed.data };
-    if (parsed.data.startDate != null) (data as Record<string, unknown>).startDate = new Date(parsed.data.startDate + "T00:00:00.000Z");
-    if (parsed.data.endDate != null) (data as Record<string, unknown>).endDate = new Date(parsed.data.endDate + "T00:00:00.000Z");
+
+    // Recompute effective dates for validation
+    const current = existing as { startDate: Date; endDate: Date };
+    const newStart =
+      parsed.data.startDate != null ? new Date(parsed.data.startDate + "T00:00:00.000Z") : current.startDate;
+    const newEnd = parsed.data.endDate != null ? new Date(parsed.data.endDate + "T00:00:00.000Z") : current.endDate;
+
+    if (newEnd < newStart) {
+      return NextResponse.json(
+        { success: false, message: "End date tidak boleh lebih kecil dari start date" },
+        { status: 400 },
+      );
+    }
+
+    if (parsed.data.startDate != null) (data as Record<string, unknown>).startDate = newStart;
+    if (parsed.data.endDate != null) (data as Record<string, unknown>).endDate = newEnd;
     const updated = await delegate.update({ where: { id }, data, include: { goalType: { select: { name: true } } } });
     return NextResponse.json({ success: true, message: "Goal berhasil diperbarui", data: toResponse(updated as Parameters<typeof toResponse>[0]) });
   } catch (e) {

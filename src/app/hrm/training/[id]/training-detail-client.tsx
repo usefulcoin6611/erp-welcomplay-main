@@ -10,11 +10,24 @@ import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowLeft } from 'lucide-react'
-import {
-  type Training,
-  TRAINING_STATUS_OPTIONS,
-  TRAINING_PERFORMANCE_OPTIONS,
-} from '@/lib/training-data'
+import { TRAINING_STATUS_OPTIONS, TRAINING_PERFORMANCE_OPTIONS } from '@/lib/training-data'
+
+type Training = {
+  id: string
+  branch: string
+  trainerOption: string
+  trainingType: string
+  employee: string
+  trainer: string
+  status: string
+  startDate: string
+  endDate: string
+  cost: number
+  description?: string | null
+  performance?: string | null
+  remarks?: string | null
+  createdAt?: string | null
+}
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]'
 

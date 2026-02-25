@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Search, Users } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -44,12 +38,14 @@ interface Trainer {
 
 export function TrainerContent() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTrainer, setEditTrainer] = useState<Trainer | null>(null);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteTrainerId, setDeleteTrainerId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     branch: '',
     firstName: '',
@@ -60,44 +56,45 @@ export function TrainerContent() {
     address: '',
   });
 
-  // Mock data
-  const [trainers, setTrainers] = useState<Trainer[]>([
-    {
-      id: '1',
-      branch: 'Head Office',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      contact: '+62 812-3456-7890',
-      email: 'sarah.johnson@company.com',
-      expertise: 'Technical Skills, Programming',
-      address: 'Jakarta Pusat',
-    },
-    {
-      id: '2',
-      branch: 'Branch A',
-      firstName: 'Michael',
-      lastName: 'Brown',
-      contact: '+62 813-9876-5432',
-      email: 'michael.brown@company.com',
-      expertise: 'Leadership, Management',
-      address: 'Bandung',
-    },
-    {
-      id: '3',
-      branch: 'Head Office',
-      firstName: 'Emily',
-      lastName: 'Davis',
-      contact: '+62 821-1234-5678',
-      email: 'emily.davis@company.com',
-      expertise: 'Customer Service, Communication',
-      address: 'Jakarta Selatan',
-    },
-  ]);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
 
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
+  const fetchTrainers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/training/trainers');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setTrainers(json.data);
+      } else {
+        toast.error(json.message ?? 'Gagal memuat trainer');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal memuat trainer');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTrainers();
+  }, [fetchTrainers]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/branches');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setBranches(json.data);
+        }
+      } catch {
+        // ignore, dropdown will be empty
+      }
+    })();
+  }, []);
 
   const handleAdd = () => {
-    setShowForm(true);
     setEditingId(null);
     setFormData({
       branch: '',
@@ -108,56 +105,62 @@ export function TrainerContent() {
       expertise: '',
       address: '',
     });
+    setEditTrainer(null);
+    setEditDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const idToUpdate = editTrainer?.id ?? editingId;
 
-    if (idToUpdate) {
-      setTrainers(
-        trainers.map((item) =>
-          item.id === idToUpdate
-            ? {
-                ...item,
-                branch: formData.branch,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                contact: formData.contact,
-                email: formData.email,
-                expertise: formData.expertise,
-                address: formData.address,
-              }
-            : item
-        )
-      );
-      setEditDialogOpen(false);
-      setEditTrainer(null);
-      setShowForm(false);
-      setEditingId(null);
-    } else {
-      const newItem: Trainer = {
-        id: Date.now().toString(),
-        branch: formData.branch,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        contact: formData.contact,
-        email: formData.email,
-        expertise: formData.expertise,
-        address: formData.address,
-      };
-      setTrainers([...trainers, newItem]);
-      setShowForm(false);
+    const payload = {
+      branch: formData.branch,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      contact: formData.contact,
+      email: formData.email,
+      expertise: formData.expertise || undefined,
+      address: formData.address || undefined,
+    };
+
+    setSubmitting(true);
+    try {
+      const url = idToUpdate
+        ? `/api/hrm/training/trainers/${idToUpdate}`
+        : '/api/hrm/training/trainers';
+      const method = idToUpdate ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(
+          json.message ?? (idToUpdate ? 'Trainer berhasil diperbarui' : 'Trainer berhasil dibuat'),
+        );
+        setEditDialogOpen(false);
+        setEditTrainer(null);
+        setEditingId(null);
+        setFormData({
+          branch: '',
+          firstName: '',
+          lastName: '',
+          contact: '',
+          email: '',
+          expertise: '',
+          address: '',
+        });
+        fetchTrainers();
+      } else {
+        toast.error(json.message ?? 'Gagal menyimpan trainer');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menyimpan trainer');
+    } finally {
+      setSubmitting(false);
     }
-    setFormData({
-      branch: '',
-      firstName: '',
-      lastName: '',
-      contact: '',
-      email: '',
-      expertise: '',
-      address: '',
-    });
   };
 
   const handleEdit = (item: Trainer) => {
@@ -179,10 +182,27 @@ export function TrainerContent() {
     setDeleteAlertOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setTrainers(trainers.filter((item) => item.id !== id));
-    setDeleteTrainerId(null);
-    setDeleteAlertOpen(false);
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/training/trainers/${id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Trainer berhasil dihapus');
+        setDeleteTrainerId(null);
+        setDeleteAlertOpen(false);
+        fetchTrainers();
+      } else {
+        toast.error(json.message ?? 'Gagal menghapus trainer');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menghapus trainer');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filteredData = trainers.filter(
@@ -192,6 +212,14 @@ export function TrainerContent() {
       trainer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trainer.branch.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-sm text-muted-foreground">Loading trainers...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -241,116 +269,6 @@ export function TrainerContent() {
           Create Trainer
         </Button>
       </div>
-
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card className={cardClass}>
-          <CardContent className="px-4 py-4 pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Trainer</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="branch">Branch</Label>
-                <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map((branch) => (
-                      <SelectItem key={branch} value={branch}>
-                        {branch}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, firstName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, lastName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contact">Contact</Label>
-                  <Input
-                    id="contact"
-                    value={formData.contact}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, contact: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="expertise">Expertise</Label>
-                <Textarea
-                  id="expertise"
-                  value={formData.expertise}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setFormData({ ...formData, expertise: e.target.value })
-                  }
-                  placeholder="e.g., Technical Skills, Leadership, Communication"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={formData.address}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  placeholder="Alamat trainer"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Trainer List - reference: support */}
       <Card className={cardClass}>
@@ -422,23 +340,35 @@ export function TrainerContent() {
       </Card>
 
       {/* Edit dialog - reference-erp: Branch, First/Last Name, Contact, Email, Expertise (optional), Address */}
-      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditTrainer(null); }}>
+      <Dialog
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditTrainer(null);
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-5">
           <DialogHeader>
-            <DialogTitle>Edit Trainer</DialogTitle>
+            <DialogTitle>{editTrainer ? 'Edit Trainer' : 'Create Trainer'}</DialogTitle>
             <DialogDescription>
-              {editTrainer ? `${editTrainer.firstName} ${editTrainer.lastName}` : ''}
+              {editTrainer ? `${editTrainer.firstName} ${editTrainer.lastName}` : 'Create new trainer'}
             </DialogDescription>
           </DialogHeader>
-          {editTrainer && (
-            <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid gap-3">
                 <div className="space-y-1.5">
                   <Label>Branch</Label>
-                  <Select value={formData.branch} onValueChange={(v) => setFormData((f) => ({ ...f, branch: v }))}>
+                  <Select
+                    value={formData.branch}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, branch: v }))}
+                  >
                     <SelectTrigger className="h-9"><SelectValue placeholder="Select branch" /></SelectTrigger>
                     <SelectContent>
-                      {branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <p className="text-[11px] text-muted-foreground">Belum ada branch? <Link href="/hrm/branch" className="underline">Create branch</Link></p>
@@ -482,17 +412,35 @@ export function TrainerContent() {
                   />
                 </div>
               </div>
-              <DialogFooter className="pt-3 mt-1">
-                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">Update</Button>
-              </DialogFooter>
-            </form>
-          )}
+            <DialogFooter className="pt-3 mt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+                disabled={submitting}
+              >
+                {submitting ? 'Saving...' : editTrainer ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Delete confirmation - reference-erp */}
-      <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDeleteTrainerId(null); }}>
+      <AlertDialog
+        open={deleteAlertOpen}
+        onOpenChange={(open) => {
+          setDeleteAlertOpen(open);
+          if (!open) setDeleteTrainerId(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus trainer?</AlertDialogTitle>
@@ -505,8 +453,9 @@ export function TrainerContent() {
             <AlertDialogAction
               type="button"
               onClick={() => deleteTrainerId && handleDelete(deleteTrainerId)}
+              disabled={deleting}
             >
-              <span>Hapus</span>
+              <span>{deleting ? 'Menghapus...' : 'Hapus'}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

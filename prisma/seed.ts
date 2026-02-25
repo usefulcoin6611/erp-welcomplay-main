@@ -25,6 +25,8 @@ import { seedJobStages } from "./seeds/job-stages";
 import { seedProjectTaskStages } from "./seeds/project-task-stages";
 import { seedBugStatuses } from "./seeds/bug-statuses";
 import { seedPerformanceTypes } from "./seeds/performance-types";
+import { seedTrainers } from "./seeds/trainers";
+import { seedTrainings } from "./seeds/trainings";
 import { seedCompetencies } from "./seeds/competencies";
 import { seedEmployees, seedDevEmployeeUserLink } from "./seeds/employees";
 import { seedCustomers } from "./seeds/customers";
@@ -56,6 +58,11 @@ import { seedProjectTasks } from "./seeds/project-tasks";
 import { seedTimesheets } from "./seeds/timesheets";
 import { seedBugs } from "./seeds/bugs";
 import { seedTimeTrackers } from "./seeds/time-trackers";
+import { ensureLeaveRequestSchema } from "./seeds/schema-leave-request";
+import { ensureTrainingSchema } from "./seeds/schema-training";
+import { seedLeaveRequests } from "./seeds/leave-requests";
+import { seedSetSalary } from "./seeds/set-salary";
+import { ensurePayrollEmployeeSchema } from "./seeds/schema-payroll-employee";
 
 dotenv.config();
 
@@ -66,6 +73,9 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   try {
+    await ensureLeaveRequestSchema(prisma);
+    await ensureTrainingSchema(prisma);
+    await ensurePayrollEmployeeSchema(prisma);
     await seedBranches(prisma);
     await seedCompanyPolicies(prisma);
     await seedDocumentUploads(prisma);
@@ -87,9 +97,13 @@ async function main() {
     await seedBugStatuses(prisma);
     await seedPerformanceTypes(prisma);
     await seedCompetencies(prisma);
-    await seedEmployees(prisma);
-    await seedHrmAssets(prisma);
     await seedCOA(prisma);
+    await seedBankAccounts(prisma);
+    await seedEmployees(prisma);
+    await seedLeaveRequests(prisma);
+    await seedTrainers(prisma);
+    await seedTrainings(prisma);
+    await seedHrmAssets(prisma);
     await seedUsers(prisma);
     await seedJournals(prisma);
     await seedCustomers(prisma);
@@ -108,7 +122,7 @@ async function main() {
     await seedBills(prisma);
     await seedExpenses(prisma);
     await seedCreditNotes(prisma);
-    await seedBankAccounts(prisma);
+    await seedSetSalary(prisma);
     await seedBankTransfers(prisma);
     await seedPayments(prisma);
     await seedDebitNotes(prisma);

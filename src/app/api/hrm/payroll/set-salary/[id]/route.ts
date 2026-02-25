@@ -21,10 +21,10 @@ export async function GET(
     const employee = await prisma.employee.findUnique({
       where: { id },
       include: {
-        allowances: true,
+        allowances: { include: { allowanceOption: true } },
         commissions: true,
-        loans: true,
-        saturationDeductions: true,
+        loans: { include: { loanOption: true } },
+        saturationDeductions: { include: { deductionOption: true } },
         otherPayments: true,
         overtimes: true,
       },
@@ -37,7 +37,53 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ success: true, data: employee });
+    const data = {
+      ...employee,
+      allowances: (employee as any).allowances?.map((a: any) => ({
+        id: a.id,
+        allowanceOptionId: a.allowanceOptionId,
+        title: a.title,
+        amount: a.amount,
+        type: a.type,
+      })) ?? [],
+      commissions: (employee as any).commissions?.map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        amount: c.amount,
+        type: c.type,
+      })) ?? [],
+      loans: (employee as any).loans?.map((l: any) => ({
+        id: l.id,
+        loanOptionId: l.loanOptionId,
+        title: l.title,
+        amount: l.amount,
+        startDate: l.startDate?.toISOString?.()?.split("T")[0] ?? "",
+        endDate: l.endDate?.toISOString?.()?.split("T")[0] ?? "",
+        reason: l.reason ?? "",
+      })) ?? [],
+      saturationDeductions: (employee as any).saturationDeductions?.map((s: any) => ({
+        id: s.id,
+        deductionOptionId: s.deductionOptionId,
+        title: s.title,
+        amount: s.amount,
+        type: s.type,
+      })) ?? [],
+      otherPayments: (employee as any).otherPayments?.map((o: any) => ({
+        id: o.id,
+        title: o.title,
+        amount: o.amount,
+        type: o.type,
+      })) ?? [],
+      overtimes: (employee as any).overtimes?.map((o: any) => ({
+        id: o.id,
+        title: o.title,
+        days: o.days,
+        hours: o.hours,
+        rate: o.rate,
+      })) ?? [],
+    };
+
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     console.error("Error fetching employee salary details:", error);
     return NextResponse.json(
@@ -78,6 +124,23 @@ export async function PUT(
       );
     }
 
+    const employeeUpdateData: any = {
+      basicSalary: Number(body.basicSalary),
+      salaryType: body.salaryType,
+    };
+
+    if (body.bankAccountId) {
+      const bank = await prisma.bankAccount.findUnique({
+        where: { id: String(body.bankAccountId) },
+        include: { chartAccount: true },
+      });
+      if (bank) {
+        employeeUpdateData.accountNumber = bank.accountNumber;
+        employeeUpdateData.bankName = bank.bank;
+        employeeUpdateData.bankIdentifierCode = bank.chartAccount?.code ?? null;
+      }
+    }
+
     const allowances = Array.isArray(body.allowances) ? body.allowances : [];
     const commissions = Array.isArray(body.commissions) ? body.commissions : [];
     const loans = Array.isArray(body.loans) ? body.loans : [];
@@ -86,109 +149,88 @@ export async function PUT(
     const overtimes = Array.isArray(body.overtimes) ? body.overtimes : [];
 
     await prisma.$transaction(async (tx) => {
-      // Update Basic Info + optional bank account mapping
-      const employeeUpdateData: any = {
-        basicSalary: Number(body.basicSalary),
-        salaryType: body.salaryType,
-      };
-
-      if (body.bankAccountId) {
-        const bank = await tx.bankAccount.findUnique({
-          where: { id: String(body.bankAccountId) },
-          include: { chartAccount: true },
-        });
-        if (bank) {
-          employeeUpdateData.accountNumber = bank.accountNumber;
-          employeeUpdateData.bankName = bank.bank;
-          employeeUpdateData.bankIdentifierCode = bank.chartAccount?.code ?? null;
-        }
-      }
-
       await tx.employee.update({
         where: { id },
         data: employeeUpdateData,
       });
 
-      // Update Allowances
       await tx.employeeAllowance.deleteMany({ where: { employeeId: id } });
       if (allowances.length > 0) {
         await tx.employeeAllowance.createMany({
-          data: allowances.map((item: any) => ({
+          data: allowances.map((a: any) => ({
             employeeId: id,
-            allowanceOptionId: String(item.allowanceOptionId ?? ""),
-            title: String(item.title ?? ""),
-            amount: Number(item.amount ?? 0),
-            type: String(item.type ?? "Fixed"),
+            allowanceOptionId: String(a.allowanceOptionId ?? ""),
+            title: String(a.title ?? ""),
+            amount: Number(a.amount ?? 0),
+            type: String(a.type ?? "Fixed"),
           })),
         });
       }
 
-      // Update Commissions
       await tx.employeeCommission.deleteMany({ where: { employeeId: id } });
       if (commissions.length > 0) {
         await tx.employeeCommission.createMany({
-          data: commissions.map((item: any) => ({
+          data: commissions.map((c: any) => ({
             employeeId: id,
-            title: String(item.title ?? ""),
-            amount: Number(item.amount ?? 0),
-            type: String(item.type ?? "Fixed"),
+            title: String(c.title ?? ""),
+            amount: Number(c.amount ?? 0),
+            type: String(c.type ?? "Fixed"),
           })),
         });
       }
 
-      // Update Loans
       await tx.employeeLoan.deleteMany({ where: { employeeId: id } });
       if (loans.length > 0) {
+        const now = new Date();
+        const endDefault = new Date(now);
+        endDefault.setMonth(endDefault.getMonth() + 6);
         await tx.employeeLoan.createMany({
-          data: loans.map((item: any) => ({
+          data: loans.map((l: any) => ({
             employeeId: id,
-            loanOptionId: String(item.loanOptionId ?? ""),
-            title: String(item.title ?? ""),
-            amount: Number(item.amount ?? 0),
-            startDate: item.startDate ? new Date(item.startDate) : new Date(),
-            endDate: item.endDate ? new Date(item.endDate) : new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-            reason: item.reason != null ? String(item.reason) : null,
+            loanOptionId: String(l.loanOptionId ?? ""),
+            title: String(l.title ?? ""),
+            amount: Number(l.amount ?? 0),
+            startDate: l.startDate ? new Date(l.startDate) : now,
+            endDate: l.endDate ? new Date(l.endDate) : endDefault,
+            reason: l.reason != null ? String(l.reason) : null,
           })),
         });
       }
 
-      // Update Saturation Deductions
       await tx.employeeSaturationDeduction.deleteMany({ where: { employeeId: id } });
       if (saturationDeductions.length > 0) {
         await tx.employeeSaturationDeduction.createMany({
-          data: saturationDeductions.map((item: any) => ({
+          data: saturationDeductions.map((s: any) => ({
             employeeId: id,
-            deductionOptionId: String(item.deductionOptionId ?? ""),
-            title: String(item.title ?? ""),
-            amount: Number(item.amount ?? 0),
-            type: String(item.type ?? "Fixed"),
+            deductionOptionId: String(s.deductionOptionId ?? ""),
+            title: String(s.title ?? ""),
+            amount: Number(s.amount ?? 0),
+            type: String(s.type ?? "Fixed"),
           })),
         });
       }
 
-      // Update Other Payments
       await tx.employeeOtherPayment.deleteMany({ where: { employeeId: id } });
       if (otherPayments.length > 0) {
         await tx.employeeOtherPayment.createMany({
-          data: otherPayments.map((item: any) => ({
+          data: otherPayments.map((o: any) => ({
             employeeId: id,
-            title: String(item.title ?? ""),
-            amount: Number(item.amount ?? 0),
-            type: String(item.type ?? "Fixed"),
+            title: String(o.title ?? ""),
+            amount: Number(o.amount ?? 0),
+            type: String(o.type ?? "Fixed"),
           })),
         });
       }
 
-      // Update Overtimes
       await tx.employeeOvertime.deleteMany({ where: { employeeId: id } });
       if (overtimes.length > 0) {
         await tx.employeeOvertime.createMany({
-          data: overtimes.map((item: any) => ({
+          data: overtimes.map((o: any) => ({
             employeeId: id,
-            title: String(item.title ?? ""),
-            days: Number(item.days ?? 0),
-            hours: Number(item.hours ?? 0),
-            rate: Number(item.rate ?? 0),
+            title: String(o.title ?? ""),
+            days: Number(o.days ?? 0),
+            hours: Number(o.hours ?? 0),
+            rate: Number(o.rate ?? 0),
           })),
         });
       }

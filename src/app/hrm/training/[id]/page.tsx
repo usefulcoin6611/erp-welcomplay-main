@@ -7,8 +7,8 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
-import { getTrainingById } from '@/lib/training-data'
 import { TrainingDetailClient } from './training-detail-client'
+import { notFound } from 'next/navigation'
 
 type TrainingDetailPageProps = {
   params: Promise<{ id: string }>
@@ -16,7 +16,20 @@ type TrainingDetailPageProps = {
 
 export default async function TrainingDetailPage({ params }: TrainingDetailPageProps) {
   const { id } = await params
-  const training = getTrainingById(id)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? ''
+  const res = await fetch(`${baseUrl}/api/hrm/training/trainings/${id}`, {
+    // Training detail is not sensitive beyond existing auth; cookies are forwarded automatically on server
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      notFound()
+    }
+  }
+
+  const json = await res.json().catch(() => null as unknown)
+  const training = json && json.success ? json.data : null
 
   if (!training) {
     return (

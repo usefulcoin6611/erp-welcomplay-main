@@ -1,3 +1,16 @@
+-- Ensure bug_status table exists for foreign key reference from bug.statusId.
+-- In the live database this table is created by an earlier migration;
+-- here we recreate the minimal structure for the shadow database.
+CREATE TABLE IF NOT EXISTS "bug_status" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "bug_status_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "bug" (
     "id" TEXT NOT NULL,

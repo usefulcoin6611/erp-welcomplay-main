@@ -10,6 +10,18 @@ CREATE TABLE "recruitment_question" (
 );
 
 -- CreateTable
+-- Added to satisfy foreign key constraint from "job" to "job_category" in shadow database.
+-- In the live database this table already exists.
+CREATE TABLE "job_category" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "job_category_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "job" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,

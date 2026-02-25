@@ -13,13 +13,27 @@ const connectionString =
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
+function createPrismaClient() {
+  return new PrismaClient({ adapter });
+}
+
+// Invalidate cached client if it lacks new models (schema was updated)
+const requiredModels = ["leaveRequest", "employeeAllowance"];
+if (globalForPrisma.prisma) {
+  const missing = requiredModels.filter((m) => !(m in (globalForPrisma.prisma as any)));
+  if (missing.length > 0) {
+    void (globalForPrisma.prisma as any).$disconnect?.();
+    globalForPrisma.prisma = undefined;
+  }
+}
+
 if (
   !globalForPrisma.prisma ||
   !("employee" in (globalForPrisma.prisma as any)) ||
   !("job" in (globalForPrisma.prisma as any)) ||
   !("jobApplication" in (globalForPrisma.prisma as any))
 ) {
-  globalForPrisma.prisma = new PrismaClient({ adapter });
+  globalForPrisma.prisma = createPrismaClient();
 }
 
 export const prisma = globalForPrisma.prisma;
