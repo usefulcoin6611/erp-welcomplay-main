@@ -64,6 +64,7 @@ model Branch {
   leads           Lead[]
   pipelines       Pipeline[]
   deals           Deal[]
+  jobs            Job[]
 
   @@map("branch")
 }
@@ -276,6 +277,23 @@ model JobStage {
   applications JobApplication[]
 
   @@map("job_stage")
+}
+
+/// Onboarding untuk kandidat yang sudah Hired. Link ke Application, optional ke Employee saat "convert to employee".
+model JobOnboarding {
+  id             String    @id @default(cuid())
+  applicationId String    @unique
+  employeeId    String?   @unique // di-set saat "convert to employee"
+  status        String    @default("pending") // pending | in_progress | completed | converted
+  onboardingDate DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employee    Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@map("job_onboarding")
 }
 
 model PerformanceType {
