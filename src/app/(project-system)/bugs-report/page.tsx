@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from "next/link"
 import {
   Card,
@@ -53,20 +53,20 @@ import { SimplePagination } from '@/components/ui/simple-pagination'
 import { useAuth } from "@/contexts/auth-context"
 
 const projectOptions = [
-  { id: 1, name: "Implementasi ERP PT Maju Jaya" },
-  { id: 2, name: "CRM Upgrade CV Kreatif Digital" },
-  { id: 3, name: "Website Redesign PT Teknologi" },
-  { id: 4, name: "Mobile App Development" },
-  { id: 5, name: "Cloud Migration Project" },
+  { id: "PRJ-001", name: "Implementasi ERP PT Maju Jaya" },
+  { id: "PRJ-002", name: "CRM Upgrade CV Kreatif Digital" },
+  { id: "PRJ-003", name: "Website Redesign PT Teknologi Nusantara" },
+  { id: "PRJ-004", name: "Mobile App Development" },
+  { id: "PRJ-005", name: "Cloud Migration Project" },
 ]
 
 const assignUserOptions = ["Budi", "Sari", "Ahmad", "Dewi", "Fauzi"]
 
 interface Bug {
-  id: number
+  id: string
   title: string
   projectName: string
-  projectId: number
+  projectId: string
   bugStatus: string
   priority: string
   dueDate: string
@@ -77,120 +77,7 @@ interface Bug {
   isOwner?: boolean
 }
 
-const bugs: Bug[] = [
-  {
-    id: 1,
-    title: "Login page not loading",
-    projectName: "Implementasi ERP PT Maju Jaya",
-    projectId: 1,
-    bugStatus: "Confirmed",
-    priority: "high",
-    dueDate: "2025-12-15",
-    createdBy: "Budi Santoso",
-    assignedTo: ["Sari", "Ahmad"],
-    attachments: 2,
-    comments: 5,
-    isOwner: true,
-  },
-  {
-    id: 2,
-    title: "Database connection timeout",
-    projectName: "CRM Upgrade CV Kreatif Digital",
-    projectId: 2,
-    bugStatus: "In Progress",
-    priority: "critical",
-    dueDate: "2025-12-10",
-    createdBy: "Dewi Lestari",
-    assignedTo: ["Fauzi"],
-    attachments: 1,
-    comments: 3,
-    isOwner: false,
-  },
-  {
-    id: 3,
-    title: "Button alignment issue",
-    projectName: "Website Redesign PT Teknologi",
-    projectId: 3,
-    bugStatus: "Resolved",
-    priority: "low",
-    dueDate: "2025-11-30",
-    createdBy: "Ahmad Fauzi",
-    assignedTo: ["Budi"],
-    attachments: 0,
-    comments: 1,
-    isOwner: true,
-  },
-  {
-    id: 4,
-    title: "API endpoint returning 500 error",
-    projectName: "Mobile App Development",
-    projectId: 4,
-    bugStatus: "Confirmed",
-    priority: "high",
-    dueDate: "2025-12-20",
-    createdBy: "Sari Wijaya",
-    assignedTo: ["Ahmad", "Dewi"],
-    attachments: 3,
-    comments: 8,
-    isOwner: false,
-  },
-  {
-    id: 5,
-    title: "Memory leak in dashboard",
-    projectName: "Implementasi ERP PT Maju Jaya",
-    projectId: 1,
-    bugStatus: "In Progress",
-    priority: "medium",
-    dueDate: "2025-12-18",
-    createdBy: "Fauzi Rahman",
-    assignedTo: ["Sari"],
-    attachments: 1,
-    comments: 2,
-    isOwner: true,
-  },
-  {
-    id: 6,
-    title: "Missing validation on form",
-    projectName: "Cloud Migration Project",
-    projectId: 5,
-    bugStatus: "New",
-    priority: "medium",
-    dueDate: "2026-01-05",
-    createdBy: "Budi Santoso",
-    assignedTo: ["Dewi", "Fauzi"],
-    attachments: 0,
-    comments: 0,
-    isOwner: false,
-  },
-  {
-    id: 7,
-    title: "Export function not working",
-    projectName: "CRM Upgrade CV Kreatif Digital",
-    projectId: 2,
-    bugStatus: "Resolved",
-    priority: "low",
-    dueDate: "2025-12-01",
-    createdBy: "Ahmad Fauzi",
-    assignedTo: ["Budi", "Sari"],
-    attachments: 2,
-    comments: 4,
-    isOwner: true,
-  },
-  {
-    id: 8,
-    title: "Slow query performance",
-    projectName: "Website Redesign PT Teknologi",
-    projectId: 3,
-    bugStatus: "Confirmed",
-    priority: "critical",
-    dueDate: "2025-12-12",
-    createdBy: "Dewi Lestari",
-    assignedTo: ["Ahmad"],
-    attachments: 4,
-    comments: 6,
-    isOwner: false,
-  },
-]
+const initialBugs: Bug[] = []
 
 const bugStatusMap: Record<string, { label: string; color: string }> = {
   New: { label: "New", color: "bg-gray-100 text-gray-700" },
@@ -246,6 +133,9 @@ export default function BugsReportPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [bugs, setBugs] = useState<Bug[]>(initialBugs)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>("")
   const [createForm, setCreateForm] = useState({
     projectId: "",
     title: "",
@@ -257,22 +147,72 @@ export default function BugsReportPage() {
     description: "",
   })
 
-  // Filtered data
+  useEffect(() => {
+    let ignore = false
+
+    async function loadBugs() {
+      try {
+        setLoading(true)
+        setError("")
+
+        const res = await fetch("/api/projects/bugs")
+        if (!res.ok) {
+          throw new Error("Gagal memuat data bug")
+        }
+
+        const json = await res.json()
+        const data = Array.isArray(json.data) ? json.data : []
+
+        if (!ignore) {
+          setBugs(
+            data.map((b: any) => ({
+              id: String(b.id),
+              title: String(b.title),
+              projectName: String(b.projectName ?? ""),
+              projectId: String(b.projectId ?? ""),
+              bugStatus: String(b.bugStatus ?? ""),
+              priority: String(b.priority ?? ""),
+              dueDate: String(b.dueDate ?? ""),
+              createdBy: String(b.createdBy ?? ""),
+              assignedTo: Array.isArray(b.assignedTo) ? b.assignedTo : [],
+              attachments: typeof b.attachments === "number" ? b.attachments : 0,
+              comments: typeof b.comments === "number" ? b.comments : 0,
+              isOwner: Boolean(b.isOwner),
+            })),
+          )
+        }
+      } catch (e: any) {
+        if (!ignore) {
+          setError(e.message || "Terjadi kesalahan saat memuat data bug")
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadBugs()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
   const filteredData = useMemo(() => {
     let filtered = bugs
 
-    // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       filtered = filtered.filter(
         (bug) =>
           bug.title.toLowerCase().includes(q) ||
-          bug.projectName.toLowerCase().includes(q)
+          bug.projectName.toLowerCase().includes(q),
       )
     }
 
     return filtered
-  }, [search])
+  }, [bugs, search])
 
   // Paginated data
   const paginatedData = useMemo(() => {
@@ -353,146 +293,6 @@ export default function BugsReportPage() {
                       <IconLayoutGrid className="h-3 w-3" />
                     </Button>
                   </div>
-                  {/* Create Bug Report */}
-                  <Dialog open={createDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="blue" className="shadow-none h-7">
-                        <IconPlus className="mr-2 h-3 w-3" /> Create Bug Report
-                      </Button>
-                    </DialogTrigger>
-                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Create Bug Report</DialogTitle>
-                      <DialogDescription>
-                        Masukkan informasi bug report sesuai reference ERP. Field bertanda * wajib diisi.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleCreateBugSubmit}>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="create-project">Project <span className="text-red-500">*</span></Label>
-                          <Select
-                            value={createForm.projectId}
-                            onValueChange={(v) => setCreateForm({ ...createForm, projectId: v })}
-                            required
-                          >
-                            <SelectTrigger id="create-project">
-                              <SelectValue placeholder="Pilih project" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {projectOptions.map((p) => (
-                                <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="create-title">Title <span className="text-red-500">*</span></Label>
-                          <Input
-                            id="create-title"
-                            value={createForm.title}
-                            onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
-                            placeholder="Enter title"
-                            required
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="create-priority">Priority <span className="text-red-500">*</span></Label>
-                            <Select
-                              value={createForm.priority}
-                              onValueChange={(v) => setCreateForm({ ...createForm, priority: v })}
-                              required
-                            >
-                              <SelectTrigger id="create-priority">
-                                <SelectValue placeholder="Pilih priority" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {PRIORITY_OPTIONS.map((p) => (
-                                  <SelectItem key={p} value={p}>{priorityMap[p]?.label ?? p}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="create-status">Bug Status <span className="text-red-500">*</span></Label>
-                            <Select
-                              value={createForm.bugStatus}
-                              onValueChange={(v) => setCreateForm({ ...createForm, bugStatus: v })}
-                              required
-                            >
-                              <SelectTrigger id="create-status">
-                                <SelectValue placeholder="Pilih status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {BUG_STATUS_OPTIONS.map((s) => (
-                                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="create-start">Start Date <span className="text-red-500">*</span></Label>
-                            <Input
-                              id="create-start"
-                              type="date"
-                              value={createForm.startDate}
-                              onChange={(e) => setCreateForm({ ...createForm, startDate: e.target.value })}
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="create-due">Due Date <span className="text-red-500">*</span></Label>
-                            <Input
-                              id="create-due"
-                              type="date"
-                              value={createForm.dueDate}
-                              onChange={(e) => setCreateForm({ ...createForm, dueDate: e.target.value })}
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="create-assign">Assigned To <span className="text-red-500">*</span></Label>
-                          <Select
-                            value={createForm.assignTo}
-                            onValueChange={(v) => setCreateForm({ ...createForm, assignTo: v })}
-                            required
-                          >
-                            <SelectTrigger id="create-assign">
-                              <SelectValue placeholder="Pilih user" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {assignUserOptions.map((u) => (
-                                <SelectItem key={u} value={u}>{u}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="create-desc">Description</Label>
-                          <Textarea
-                            id="create-desc"
-                            value={createForm.description}
-                            onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                            placeholder="Enter description"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => handleCreateDialogOpenChange(false)}>
-                          Cancel
-                        </Button>
-                        <Button type="submit" size="sm" variant="blue" className="shadow-none h-7">
-                          Create
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                  </Dialog>
                   {/* Back button (only for company users) */}
                   {isCompany && (
                     <Button

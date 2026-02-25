@@ -35,6 +35,7 @@ model User {
   createdContracts Contract[]
   ownedLeads       Lead[]      @relation("LeadOwner")
   createdLeads     Lead[]      @relation("LeadCreatedBy")
+  createdProjects  Project[]   @relation("UserCreatedProjects")
 
   @@map("user")
 }
@@ -63,6 +64,8 @@ model Branch {
   leads           Lead[]
   pipelines       Pipeline[]
   deals           Deal[]
+  sources         Source[]
+  projects        Project[]   @relation("BranchProjects")
 
   @@map("branch")
 }
@@ -175,6 +178,135 @@ model JobStage {
   updatedAt DateTime @updatedAt
 
   @@map("job_stage")
+}
+
+model ProjectTaskStage {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("project_task_stage")
+}
+
+model BugStatus {
+  id        String   @id @default(cuid())
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bugs      Bug[]
+
+  @@map("bug_status")
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  branchId      String?
+  name          String
+  clientName    String?
+  status        String   @default("not_started")
+  startDate     DateTime?
+  endDate       DateTime?
+  budget        Float    @default(0)
+  estimatedHrs  Float?   @default(0)
+  progress      Int      @default(0)
+  description   String?
+  tags          String?
+  users         Json?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branch    Branch? @relation("BranchProjects", fields: [branchId], references: [id])
+  createdBy User?   @relation("UserCreatedProjects", fields: [createdById], references: [id])
+
+  tasks       ProjectTask[]
+  timesheets  Timesheet[]
+  bugs        Bug[]
+  trackers    TimeTracker[]
+
+  @@map("project")
+}
+
+model ProjectTask {
+  id           String   @id @default(cuid())
+  taskKey      String   @unique
+  projectId    String
+  name         String
+  description  String?
+  estimatedHrs Float?   @default(0)
+  startDate    DateTime?
+  endDate      DateTime?
+  priority     String   @default("medium")
+  stage        String   @default("To Do")
+  assignedTo   Json?
+  completion   Int      @default(0)
+  attachments  Int      @default(0)
+  comments     Int      @default(0)
+  checklists   Int      @default(0)
+  isOwner      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project    Project      @relation(fields: [projectId], references: [projectId])
+  timesheets Timesheet[]
+  trackers   TimeTracker[]
+}
+
+model Timesheet {
+  id          String   @id @default(cuid())
+  projectId   String
+  taskId      String?
+  date        DateTime
+  minutes     Int
+  userName    String
+  description String?
+  createdAt   DateTime @default(now())
+
+  project Project     @relation(fields: [projectId], references: [projectId])
+  task    ProjectTask? @relation(fields: [taskId], references: [id])
+}
+
+model Bug {
+  id          String   @id @default(cuid())
+  bugKey      String   @unique
+  projectId   String
+  title       String
+  priority    String
+  startDate   DateTime?
+  dueDate     DateTime?
+  description String?
+  statusId    String?
+  createdBy   String?
+  assignedTo  Json?
+  attachments Int      @default(0)
+  comments    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project   @relation(fields: [projectId], references: [projectId])
+  status  BugStatus? @relation(fields: [statusId], references: [id])
+}
+
+model TimeTracker {
+  id           String   @id @default(cuid())
+  projectId    String
+  taskId       String?
+  name         String
+  isActive     Boolean  @default(false)
+  isBillable   Boolean  @default(false)
+  startTime    DateTime
+  endTime      DateTime?
+  totalSeconds Int      @default(0)
+  userName     String?
+  createdAt    DateTime @default(now())
+
+  project Project     @relation(fields: [projectId], references: [projectId])
+  task    ProjectTask? @relation(fields: [taskId], references: [id])
 }
 
 model PerformanceType {
@@ -842,6 +974,15 @@ model Contract {
   @@map("contract")
 }
 
+model ContractType {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contract_type")
+}
+
 model Pipeline {
   id        String   @id @default(cuid())
   branchId  String?
@@ -849,13 +990,26 @@ model Pipeline {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branch     Branch?     @relation(fields: [branchId], references: [id])
+  branch     Branch?        @relation(fields: [branchId], references: [id])
   leadStages LeadStage[]
   leads      Lead[]
   deals      Deal[]
   dealStages DealStage[]
+  labels     PipelineLabel[]
 
   @@map("pipeline")
+}
+
+model Source {
+  id        String   @id @default(cuid())
+  branchId  String?
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  @@map("source")
 }
 
 model LeadStage {
@@ -923,6 +1077,7 @@ model Deal {
   branchId       String?
   name           String
   client         String?
+  phone          String?
   price          Float    @default(0)
   pipelineId     String?
   stageId        String?
@@ -942,6 +1097,19 @@ model Deal {
   stage    LeadStage? @relation(fields: [stageId], references: [id])
 
   @@map("deal")
+}
+
+model PipelineLabel {
+  id         String   @id @default(cuid())
+  pipelineId String
+  name       String
+  color      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@map("pipeline_label")
 }
 
 model FormBuilder {

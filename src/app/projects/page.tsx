@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import React from "react"
 import Link from "next/link"
 import {
@@ -61,7 +61,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface Project {
-  id: number
+  id: string
   name: string
   status: string
   users: string[]
@@ -73,16 +73,7 @@ interface Project {
 
 const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
-const initialProjects: Project[] = [
-  { id: 1, name: "Implementasi ERP PT Maju Jaya", status: "on_hold", users: ["Budi", "Sari", "Ahmad"], completion: 68, description: "Implementasi sistem ERP lengkap.", startDate: "2025-10-01", endDate: "2026-01-31" },
-  { id: 2, name: "CRM Upgrade CV Kreatif Digital", status: "not_started", users: ["Dewi", "Fauzi"], completion: 25, description: "Upgrade modul CRM dengan pipeline.", startDate: "2025-11-10", endDate: "2026-03-15" },
-  { id: 3, name: "Website Redesign PT Teknologi", status: "on_hold", users: ["Budi", "Sari"], completion: 45, description: "Redesign website UI/UX.", startDate: "2025-09-15", endDate: "2026-02-28" },
-  { id: 4, name: "Mobile App Development", status: "in_progress", users: ["Ahmad", "Dewi", "Fauzi", "Budi"], completion: 75, description: "Pengembangan aplikasi mobile.", startDate: "2025-08-01", endDate: "2026-05-31" },
-  { id: 5, name: "Cloud Migration Project", status: "finished", users: ["Sari", "Ahmad"], completion: 100, description: "Migrasi infrastruktur ke cloud.", startDate: "2025-01-01", endDate: "2025-12-31" },
-  { id: 6, name: "Database Optimization", status: "in_progress", users: ["Budi", "Dewi"], completion: 55, startDate: "2025-07-01", endDate: "2025-12-31" },
-  { id: 7, name: "Security Audit", status: "cancel", users: ["Ahmad"], completion: 10 },
-  { id: 8, name: "E-Commerce Platform", status: "in_progress", users: ["Sari", "Fauzi", "Budi", "Ahmad", "Dewi"], completion: 60, description: "Platform e-commerce.", startDate: "2025-06-01", endDate: "2026-04-30" },
-]
+const initialProjects: Project[] = []
 
 const statusMap: Record<string, { label: string; color: string }> = {
   not_started: { label: "Not Started", color: "bg-gray-100 text-gray-700" },
@@ -112,6 +103,67 @@ export default function ProjectsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>("")
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProjects() {
+      try {
+        setLoading(true)
+        setError("")
+
+        const params = new URLSearchParams()
+        if (statusFilter) {
+          params.set("status", statusFilter)
+        }
+        if (search.trim()) {
+          params.set("search", search.trim())
+        }
+
+        const res = await fetch(`/api/projects?${params.toString()}`, {
+          method: "GET",
+        })
+
+        if (!res.ok) {
+          throw new Error("Gagal memuat data project")
+        }
+
+        const json = await res.json()
+
+        if (!ignore) {
+          const data = Array.isArray(json.data) ? json.data : []
+          setProjects(
+            data.map((p: any) => ({
+              id: String(p.id),
+              name: String(p.name),
+              status: String(p.status),
+              users: Array.isArray(p.users) ? p.users : [],
+              completion: typeof p.completion === "number" ? p.completion : 0,
+              description: p.description ?? "",
+              startDate: p.startDate ?? undefined,
+              endDate: p.endDate ?? undefined,
+            })),
+          )
+        }
+      } catch (e: any) {
+        if (!ignore) {
+          setError(e.message || "Terjadi kesalahan saat memuat data project")
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadProjects()
+
+    return () => {
+      ignore = true
+    }
+  }, [statusFilter, search])
 
   const openDeleteConfirm = (project: Project) => {
     setProjectToDelete(project)

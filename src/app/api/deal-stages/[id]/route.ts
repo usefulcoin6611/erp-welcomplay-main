@@ -66,3 +66,55 @@ export async function PUT(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userRole = (session.user as any).role
+    if (userRole !== "super admin" && userRole !== "company") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden: Akses ditolak" },
+        { status: 403 },
+      )
+    }
+
+    // Check if stage is used by any deals
+    const dealsCount = await prisma.deal.count({
+      where: { stageId: id },
+    })
+
+    if (dealsCount > 0) {
+      return NextResponse.json(
+        { success: false, message: "Gagal menghapus: Stage sedang digunakan oleh data lain" },
+        { status: 400 },
+      )
+    }
+
+    await prisma.dealStage.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true, message: "Deal stage berhasil dihapus" })
+  } catch (error: any) {
+    if (error.code === 'P2003') {
+       return NextResponse.json(
+        { success: false, message: "Gagal menghapus: Stage sedang digunakan oleh data lain" },
+        { status: 400 },
+      )
+    }
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus deal stage" },
+      { status: 500 },
+    )
+  }
+}

@@ -1,12 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { MainContentWrapper } from "@/components/main-content-wrapper"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Card, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,6 +17,28 @@ import {
   IconSend,
 } from "@tabler/icons-react"
 import { Slider } from "@/components/ui/slider"
+
+type TaskDetail = {
+  id: string
+  projectId: string
+  name: string
+  projectName: string
+  stage: string
+  priority: string
+  endDate: string
+  startDate: string
+  estimatedHrs: number | null
+  milestone: string | null
+  progress: number
+  description: string
+  assignedTo: string[]
+  attachments: number
+  comments: number
+  checklists: { id: string; name: string; done: boolean }[]
+  files: { id: string; name: string; size: string }[]
+  activity: { user: string; type: string; remark: string; time: string }[]
+  commentList: { user: string; text: string; time: string }[]
+}
 
 // Mock data – sesuaikan dengan taskboard
 const tasksData: Record<string, {
@@ -252,52 +270,111 @@ export default function TaskDetailPage() {
   const params = useParams()
   const projectId = params?.projectId as string
   const taskId = params?.taskId as string
+  const [task, setTask] = useState<TaskDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const task = useMemo(() => {
-    const t = tasksData[taskId]
-    if (!t || String(t.projectId) !== String(projectId)) return null
-    return t
+  useEffect(() => {
+    let ignore = false
+
+    async function loadTask() {
+      try {
+        setLoading(true)
+        setError("")
+
+        const res = await fetch(`/api/projects/tasks/${taskId}`)
+        if (!res.ok) {
+          throw new Error("Gagal memuat detail task")
+        }
+
+        const json = await res.json()
+        const data = json?.data
+        if (!data) {
+          throw new Error("Task tidak ditemukan")
+        }
+
+        if (!ignore) {
+          const mapped: TaskDetail = {
+            id: String(data.id ?? ""),
+            projectId: String(data.projectId ?? ""),
+            name: String(data.name ?? ""),
+            projectName: String(data.projectName ?? ""),
+            stage: String(data.stage ?? ""),
+            priority: String(data.priority ?? ""),
+            startDate: String(data.startDate ?? ""),
+            endDate: String(data.endDate ?? ""),
+            estimatedHrs:
+              typeof data.estimatedHrs === "number" ? data.estimatedHrs : null,
+            milestone: data.milestone ?? null,
+            progress:
+              typeof data.progress === "number" ? data.progress : 0,
+            description: String(data.description ?? ""),
+            assignedTo: Array.isArray(data.assignedTo)
+              ? (data.assignedTo as string[])
+              : [],
+            attachments:
+              typeof data.attachments === "number" ? data.attachments : 0,
+            comments:
+              typeof data.comments === "number" ? data.comments : 0,
+            checklists: Array.isArray(data.checklists)
+              ? data.checklists
+              : [],
+            files: Array.isArray(data.files) ? data.files : [],
+            activity: Array.isArray(data.activity) ? data.activity : [],
+            commentList: Array.isArray(data.commentList)
+              ? data.commentList
+              : [],
+          }
+
+          if (mapped.projectId !== projectId) {
+            throw new Error("Task tidak ditemukan")
+          }
+
+          setTask(mapped)
+        }
+      } catch (e: any) {
+        if (!ignore) {
+          setError(e.message || "Terjadi kesalahan saat memuat detail task")
+          setTask(null)
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    if (taskId) {
+      loadTask()
+    }
+
+    return () => {
+      ignore = true
+    }
   }, [projectId, taskId])
 
-  if (!task) {
+  if (loading) {
     return (
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" />
-        <SidebarInset>
-          <SiteHeader />
-          <MainContentWrapper>
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-              <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
-                Task tidak ditemukan.
-              </div>
-            </div>
-          </MainContentWrapper>
-        </SidebarInset>
-      </SidebarProvider>
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
+          Memuat detail task...
+        </div>
+      </div>
+    )
+  }
+
+  if (!task || error) {
+    return (
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
+          {error || "Task tidak ditemukan."}
+        </div>
+      </div>
     )
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-5">
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-5">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 mb-0">
               <div className="min-w-0 space-y-1">
@@ -479,9 +556,6 @@ export default function TaskDetailPage() {
                 </div>
               </Card>
             </div>
-          </div>
-        </MainContentWrapper>
-      </SidebarInset>
-    </SidebarProvider>
+    </div>
   )
 }

@@ -12,6 +12,7 @@ const createContractSchema = z.object({
   startDate: z.string().min(1),
   endDate: z.string().min(1),
   description: z.string().optional(),
+  projectId: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
         contractNumber,
         subject: c.subject,
         client: c.clientName,
-        project: "",
+        project: c.projectId ?? "",
         type: c.type,
         value: c.value,
         startDate: c.startDate.toISOString().slice(0, 10),
@@ -73,8 +74,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { subject, clientName, value, type, startDate, endDate, description } =
-      parsed.data
+    const {
+      subject,
+      clientName,
+      value,
+      type,
+      startDate,
+      endDate,
+      description,
+      projectId,
+    } = parsed.data
 
     const last = await prisma.contract.findFirst({
       orderBy: { createdAt: "desc" },
@@ -102,6 +111,7 @@ export async function POST(request: NextRequest) {
         description,
         status: "accept",
         createdById: session.user.id,
+        projectId: projectId || null,
       },
     })
 
@@ -113,7 +123,7 @@ export async function POST(request: NextRequest) {
       contractNumber,
       subject: created.subject,
       client: created.clientName,
-      project: "",
+      project: created.projectId ?? "",
       type: created.type,
       value: created.value,
       startDate: created.startDate.toISOString().slice(0, 10),

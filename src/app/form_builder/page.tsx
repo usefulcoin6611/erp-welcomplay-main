@@ -12,6 +12,8 @@ import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -37,16 +39,6 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
   IconDownload,
   IconFileImport,
   IconPlus,
@@ -63,66 +55,19 @@ type FormItem = {
   responses: number
 }
 
-const formsData: FormItem[] = [
-  {
-    id: 'FRM-LEAD-01',
-    name: 'Website Lead Form',
-    code: 'lead_web_01',
-    isActive: true,
-    isLeadActive: true,
-    responses: 125,
-  },
-  {
-    id: 'FRM-FEEDBACK-01',
-    name: 'Customer Feedback',
-    code: 'cust_fb_01',
-    isActive: true,
-    isLeadActive: false,
-    responses: 48,
-  },
-  {
-    id: 'FRM-CONTACT-01',
-    name: 'Contact Us',
-    code: 'contact_01',
-    isActive: true,
-    isLeadActive: true,
-    responses: 89,
-  },
-  {
-    id: 'FRM-SURVEY-01',
-    name: 'Product Survey',
-    code: 'survey_01',
-    isActive: false,
-    isLeadActive: false,
-    responses: 32,
-  },
-]
-
-function getFormPublicUrl(code: string) {
-  if (typeof window === 'undefined') return `/form/${code}`
-  return `${window.location.origin}/form/${code}`
-}
-
-function getFormIframeHtml(name: string, code: string) {
-  const url = typeof window === 'undefined' ? `/form/${code}` : `${window.location.origin}/form/${code}`
-  return `<iframe src='${url}' title='${name.replace(/'/g, "\\'")}'></iframe>`
-}
+const formsData: FormItem[] = []
 
 export default function FormBuilderPage() {
   const [forms, setForms] = useState<FormItem[]>(formsData)
   const [loading, setLoading] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [createFormName, setCreateFormName] = useState('')
-  const [createFormCode, setCreateFormCode] = useState('')
+  const [createFormActive, setCreateFormActive] = useState(true)
   const [creating, setCreating] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
-  const [deleteFormId, setDeleteFormId] = useState<string | null>(null)
-  const [convertDialogOpen, setConvertDialogOpen] = useState(false)
-  const [convertForm, setConvertForm] = useState<FormItem | null>(null)
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -145,33 +90,19 @@ export default function FormBuilderPage() {
     fetchForms()
   }, [])
 
-  const handleCopyLink = (form: FormItem) => {
-    const url = getFormPublicUrl(form.code)
-    navigator.clipboard.writeText(url).then(() => toast.success('Link copied to clipboard'))
-  }
-
-  const handleCopyIframe = (form: FormItem) => {
-    const html = getFormIframeHtml(form.name, form.code)
-    navigator.clipboard.writeText(html).then(() => toast.success('Iframe link copied to clipboard'))
-  }
-
-  const openConvertDialog = (form: FormItem) => {
-    setConvertForm(form)
-    setConvertDialogOpen(true)
-  }
-
   const handleSearchChange = (value: string) => {
     setSearch(value)
     setCurrentPage(1)
   }
 
   const handleCreateForm = async () => {
-    if (!createFormName.trim() || !createFormCode.trim() || creating) {
+    if (!createFormName.trim() || creating) {
       return
     }
 
     try {
       setCreating(true)
+      const code = `frm_${Date.now()}` // Generate code automatically
       const response = await fetch('/api/form-builder', {
         method: 'POST',
         headers: {
@@ -179,7 +110,8 @@ export default function FormBuilderPage() {
         },
         body: JSON.stringify({
           name: createFormName.trim(),
-          code: createFormCode.trim(),
+          code: code,
+          isActive: createFormActive
         }),
       })
 
@@ -193,7 +125,7 @@ export default function FormBuilderPage() {
       const created: FormItem = result.data
       setForms((prev) => [created, ...prev])
       setCreateFormName('')
-      setCreateFormCode('')
+      setCreateFormActive(true)
       setCreateDialogOpen(false)
       toast.success('Form berhasil dibuat')
     } catch (error) {
@@ -201,17 +133,6 @@ export default function FormBuilderPage() {
     } finally {
       setCreating(false)
     }
-  }
-
-  const handleDelete = (id: string) => {
-    setForms((prev) => prev.filter((f) => f.id !== id))
-    setDeleteFormId(null)
-    setDeleteAlertOpen(false)
-  }
-
-  const openDeleteConfirm = (id: string) => {
-    setDeleteFormId(id)
-    setDeleteAlertOpen(true)
   }
 
   const filteredData = useMemo(() => {
@@ -246,61 +167,70 @@ export default function FormBuilderPage() {
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex rounded-md bg-muted p-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 ${
-                      viewMode === 'list'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('list')}
-                    title="List view"
-                  >
-                    <List className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                      viewMode === 'grid'
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-blue-600 hover:bg-blue-50'
-                    }`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid view"
-                  >
-                    <LayoutGrid className="h-3 w-3" />
-                  </Button>
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <CardTitle className="text-lg font-semibold">Form Builder</CardTitle>
+                  <CardDescription>
+                    Kelola dan buat form kustom Anda.
+                  </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="inline-flex rounded-md bg-muted p-0.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 ${
+                        viewMode === 'list'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('list')}
+                      title="List view"
+                    >
+                      <List className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
+                        viewMode === 'grid'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('grid')}
+                      title="Grid view"
+                    >
+                      <LayoutGrid className="h-3 w-3" />
+                    </Button>
+                  </div>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Import"
                     disabled
                   >
-                    <IconFileImport className="h-3 w-3" />
+                    <IconFileImport className="mr-2 h-3 w-3" />
+                    Import
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="shadow-none h-7"
+                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
                     title="Export"
                     disabled
                   >
-                    <IconDownload className="h-3 w-3" />
+                    <IconDownload className="mr-2 h-3 w-3" />
+                    Export
                   </Button>
                   <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="blue" className="shadow-none h-7">
-                        <IconPlus className="mr-2 h-4 w-4" />
+                      <Button size="sm" variant="blue" className="shadow-none h-7 px-4">
+                        <IconPlus className="mr-2 h-3 w-3" />
                         Create Form
                       </Button>
                     </DialogTrigger>
@@ -308,7 +238,7 @@ export default function FormBuilderPage() {
                       <DialogHeader>
                         <DialogTitle>Create Form</DialogTitle>
                         <DialogDescription>
-                          Definisikan form baru untuk menangkap data lead atau feedback.
+                          Buat form baru.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
@@ -322,24 +252,42 @@ export default function FormBuilderPage() {
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="formCode">Form Code</Label>
-                          <Input
-                            id="formCode"
-                            placeholder="lead_web_01"
-                            value={createFormCode}
-                            onChange={(e) => setCreateFormCode(e.target.value)}
-                          />
+                          <Label>Status</Label>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                type="radio" 
+                                id="on" 
+                                name="status" 
+                                className="w-4 h-4"
+                                checked={createFormActive} 
+                                onChange={() => setCreateFormActive(true)} 
+                              />
+                              <Label htmlFor="on" className="font-normal cursor-pointer">On</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                type="radio" 
+                                id="off" 
+                                name="status" 
+                                className="w-4 h-4"
+                                checked={!createFormActive} 
+                                onChange={() => setCreateFormActive(false)} 
+                              />
+                              <Label htmlFor="off" className="font-normal cursor-pointer">Off</Label>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button type="button" variant="outline" className="shadow-none">
+                        <Button type="button" variant="outline" className="shadow-none" onClick={() => setCreateDialogOpen(false)}>
                           Cancel
                         </Button>
                         <Button
                           type="button"
                           className="bg-blue-500 hover:bg-blue-600 shadow-none"
                           onClick={handleCreateForm}
-                          disabled={!createFormName.trim() || !createFormCode.trim() || creating}
+                          disabled={!createFormName.trim() || creating}
                         >
                           Save Form
                         </Button>
@@ -347,53 +295,43 @@ export default function FormBuilderPage() {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
 
-            {/* List view - tanpa statistics cards, langsung card list */}
+            {/* List view */}
             {viewMode === 'list' ? (
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-0">
-                  <div className="px-4 py-3 border-b flex items-center justify-between gap-4">
-                    <CardTitle className="text-base font-medium">Form List</CardTitle>
-                    <div className="relative w-full max-w-sm">
-                      <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                  <CardTitle>Form List</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search forms..."
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                       />
-                      {search.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                          onClick={() => handleSearchChange('')}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-4 py-3 font-normal">Form</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Code</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Status</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Convert to Lead</TableHead>
-                          <TableHead className="px-4 py-3 font-normal text-right">Responses</TableHead>
-                          <TableHead className="px-4 py-3 font-normal">Action</TableHead>
+                          <TableHead className="px-6 font-medium">Nama form</TableHead>
+                          <TableHead className="px-6 font-medium">On/Off</TableHead>
+                          <TableHead className="px-6 font-medium text-right">Jumlah Response</TableHead>
+                          <TableHead className="px-6 font-medium text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loading ? (
                           <TableRow>
                             <TableCell
-                              colSpan={6}
-                              className="px-4 py-8 text-center text-muted-foreground"
+                              colSpan={4}
+                              className="px-6 py-8 text-center text-muted-foreground"
                             >
                               Loading...
                             </TableCell>
@@ -401,111 +339,49 @@ export default function FormBuilderPage() {
                         ) : paginatedData.length > 0 ? (
                           paginatedData.map((form) => (
                             <TableRow key={form.id}>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <div>
                                   <Link
                                     href={`/form_builder/${form.id}`}
-                                    className="font-normal text-sm hover:underline block"
+                                    className="font-medium text-sm text-blue-600 hover:underline block"
                                   >
                                     {form.name}
                                   </Link>
-                                  <span className="text-xs text-muted-foreground">{form.id}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-4 py-3">{form.code}</TableCell>
-                              <TableCell className="px-4 py-3">
+                              <TableCell className="px-6">
                                 <Badge
+                                  variant="outline"
                                   className={
                                     form.isActive
                                       ? 'bg-green-100 text-green-700 border-none'
                                       : 'bg-gray-100 text-gray-700 border-none'
                                   }
                                 >
-                                  {form.isActive ? 'Active' : 'Inactive'}
+                                  {form.isActive ? 'On' : 'Off'}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="px-4 py-3">
-                                <Badge
-                                  className={
-                                    form.isLeadActive
-                                      ? 'bg-blue-100 text-blue-700 border-none'
-                                      : 'bg-gray-100 text-gray-700 border-none'
-                                  }
-                                >
-                                  {form.isLeadActive ? 'Enabled' : 'Disabled'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="px-4 py-3 text-right">{form.responses}</TableCell>
-                              <TableCell className="px-4 py-3">
-                                <div className="flex flex-wrap items-center justify-end gap-1">
+                              <TableCell className="px-6 text-right">{form.responses}</TableCell>
+                              <TableCell className="px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                                    title="Copy iframe link"
-                                    onClick={() => handleCopyIframe(form)}
-                                  >
-                                    <Frame className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                    title="Convert into Lead Setting"
-                                    onClick={() => openConvertDialog(form)}
-                                  >
-                                    <ArrowLeftRight className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
-                                    title="Copy link"
-                                    onClick={() => handleCopyLink(form)}
-                                  >
-                                    <Copy className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
-                                    title="Form field"
+                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="Form Field"
                                     asChild
                                   >
                                     <Link href={`/form_builder/${form.id}`}>
-                                      <LayoutList className="h-3.5 w-3.5" />
+                                      <LayoutList className="h-3 w-3" />
                                     </Link>
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                                    title="View Response"
-                                    asChild
-                                  >
-                                    <Link href={`/form_builder/${form.id}/response`}>
-                                      <Eye className="h-3.5 w-3.5" />
-                                    </Link>
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                    title="Edit"
-                                    asChild
-                                  >
-                                    <Link href={`/form_builder/${form.id}/edit`}>
-                                      <Pencil className="h-3.5 w-3.5" />
-                                    </Link>
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                    className="shadow-none h-7 bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-100"
                                     title="Delete"
-                                    onClick={() => openDeleteConfirm(form.id)}
                                   >
-                                    <Trash className="h-3.5 w-3.5" />
+                                    <Trash className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </TableCell>
@@ -514,8 +390,8 @@ export default function FormBuilderPage() {
                         ) : (
                           <TableRow>
                             <TableCell
-                              colSpan={6}
-                              className="px-4 py-8 text-center text-muted-foreground"
+                              colSpan={4}
+                              className="px-6 py-8 text-center text-muted-foreground"
                             >
                               No forms found
                             </TableCell>
@@ -525,7 +401,7 @@ export default function FormBuilderPage() {
                     </Table>
                   </div>
                   {totalRecords > 0 && (
-                    <div className="px-4 py-3 border-t">
+                    <div className="px-6 pb-6 pt-4">
                       <SimplePagination
                         totalCount={totalRecords}
                         currentPage={currentPage}
@@ -543,240 +419,11 @@ export default function FormBuilderPage() {
             ) : (
               /* Grid view */
               <>
-                <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between mb-4 border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                  <CardTitle className="text-base font-medium mb-0">Form List</CardTitle>
-                  <div className="relative w-full max-w-sm">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search forms..."
-                      value={search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
-                    />
-                    {search.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                        onClick={() => handleSearchChange('')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {paginatedData.length > 0 ? (
-                    paginatedData.map((form) => (
-                      <Card
-                        key={form.id}
-                        className="flex flex-col rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
-                      >
-                        <CardContent className="p-4 flex flex-col flex-1">
-                          <div className="flex flex-1 items-start gap-3 border-b pb-3 mb-3">
-                            <div className="min-w-0 flex-1">
-                              <Link
-                                href={`/form_builder/${form.id}`}
-                                className="font-medium text-sm hover:underline block truncate"
-                              >
-                                {form.name}
-                              </Link>
-                              <span className="text-xs text-muted-foreground">{form.id}</span>
-                              <span className="text-xs text-muted-foreground block">{form.code}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-b pb-3 mb-3 text-sm">
-                            <span className="text-muted-foreground">Status:</span>
-                            <Badge
-                              className={
-                                form.isActive
-                                  ? 'bg-green-100 text-green-700 border-none'
-                                  : 'bg-gray-100 text-gray-700 border-none'
-                              }
-                            >
-                              {form.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                            <span className="text-muted-foreground">Lead:</span>
-                            <Badge
-                              className={
-                                form.isLeadActive
-                                  ? 'bg-blue-100 text-blue-700 border-none'
-                                  : 'bg-gray-100 text-gray-700 border-none'
-                              }
-                            >
-                              {form.isLeadActive ? 'Enabled' : 'Disabled'}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-b pb-3 mb-3 text-sm">
-                            <span className="text-muted-foreground">Responses:</span>
-                            <span className="font-medium">{form.responses}</span>
-                          </div>
-                          <div className="flex flex-wrap items-center justify-end gap-1 mt-auto">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                              title="Copy iframe link"
-                              onClick={() => handleCopyIframe(form)}
-                            >
-                              <Frame className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                              title="Convert into Lead Setting"
-                              onClick={() => openConvertDialog(form)}
-                            >
-                              <ArrowLeftRight className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
-                              title="Copy link"
-                              onClick={() => handleCopyLink(form)}
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
-                              title="Form field"
-                              asChild
-                            >
-                              <Link href={`/form_builder/${form.id}`}>
-                                <LayoutList className="h-3.5 w-3.5" />
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                              title="View Response"
-                              asChild
-                            >
-                              <Link href={`/form_builder/${form.id}/response`}>
-                                <Eye className="h-3.5 w-3.5" />
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                              title="Edit"
-                              asChild
-                            >
-                              <Link href={`/form_builder/${form.id}/edit`}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                              title="Delete"
-                              onClick={() => openDeleteConfirm(form.id)}
-                            >
-                              <Trash className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
-                      No forms found
-                    </div>
-                  )}
-                </div>
-                {totalRecords > 0 && (
-                  <div className="mt-4">
-                    <SimplePagination
-                      totalCount={totalRecords}
-                      currentPage={currentPage}
-                      pageSize={pageSize}
-                      onPageChange={setCurrentPage}
-                      onPageSizeChange={(size) => {
-                        setPageSize(size)
-                        setCurrentPage(1)
-                      }}
-                    />
-                  </div>
-                )}
+                 <div className="p-8 text-center text-muted-foreground">
+                    Grid view not supported in this simplified version. Please switch to List view.
+                 </div>
               </>
             )}
-
-            {/* Convert into Lead Setting dialog */}
-            <Dialog open={convertDialogOpen} onOpenChange={(open) => { setConvertDialogOpen(open); if (!open) setConvertForm(null) }}>
-              <DialogContent className="sm:max-w-[480px]">
-                <DialogHeader>
-                  <DialogTitle>Convert into Lead Setting</DialogTitle>
-                  <DialogDescription>
-                    {convertForm ? `Form: ${convertForm.name}` : ''} — Atur mapping field ke lead dan pipeline.
-                  </DialogDescription>
-                </DialogHeader>
-                {convertForm && (
-                  <div className="grid gap-4 py-4">
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                      <Label htmlFor="convert-lead" className="cursor-pointer flex-1">Enable Convert to Lead</Label>
-                      <input
-                        id="convert-lead"
-                        type="checkbox"
-                        defaultChecked={convertForm.isLeadActive}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Pilih field form yang akan di-map ke Subject, Name, Email, Phone. Pilih User dan Pipeline untuk lead baru.
-                    </p>
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setConvertDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    className="bg-blue-500 hover:bg-blue-600 shadow-none"
-                    onClick={() => {
-                      if (convertForm) {
-                        setForms((prev) => prev.map((f) => f.id === convertForm.id ? { ...f, isLeadActive: !f.isLeadActive } : f))
-                        toast.success('Setting saved successfully!')
-                      }
-                      setConvertDialogOpen(false)
-                      setConvertForm(null)
-                    }}
-                  >
-                    Save
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Delete confirmation */}
-            <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Form</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Apakah Anda yakin ingin menghapus form ini? Tindakan ini tidak dapat dibatalkan.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setDeleteFormId(null)}>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={() => deleteFormId && handleDelete(deleteFormId)}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
         </MainContentWrapper>
       </SidebarInset>

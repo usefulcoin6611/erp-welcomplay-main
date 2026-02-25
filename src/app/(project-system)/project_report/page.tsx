@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from "next/link"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -39,7 +40,7 @@ import { SimplePagination } from '@/components/ui/simple-pagination'
 import { X } from 'lucide-react'
 
 interface Project {
-  id: number
+  id: string
   name: string
   startDate: string
   endDate: string
@@ -48,13 +49,7 @@ interface Project {
   status: string
 }
 
-const projects: Project[] = [
-  { id: 1, name: "Implementasi ERP PT Maju Jaya", startDate: "2025-10-01", endDate: "2026-01-31", users: ["Budi", "Sari", "Ahmad"], completion: 68, status: "on_hold" },
-  { id: 2, name: "CRM Upgrade CV Kreatif Digital", startDate: "2025-11-10", endDate: "2026-03-15", users: ["Dewi", "Fauzi"], completion: 25, status: "not_started" },
-  { id: 3, name: "Website Redesign PT Teknologi", startDate: "2025-09-15", endDate: "2026-02-28", users: ["Budi", "Sari", "Ahmad", "Dewi"], completion: 45, status: "on_hold" },
-  { id: 4, name: "Mobile App Development", startDate: "2025-08-01", endDate: "2026-05-31", users: ["Ahmad", "Dewi", "Fauzi"], completion: 75, status: "in_progress" },
-  { id: 5, name: "Cloud Migration Project", startDate: "2025-01-01", endDate: "2025-12-31", users: ["Sari", "Ahmad"], completion: 100, status: "finished" },
-]
+const initialProjects: Project[] = []
 
 const statusMap: Record<string, { label: string; color: string }> = {
   not_started: { label: "Not Started", color: "bg-gray-100 text-gray-700" },
@@ -100,6 +95,7 @@ function formatDate(dateString: string) {
 export default function ProjectReportPage() {
   const { user } = useAuth()
   const isCompany = user?.type === 'company'
+  const [projects, setProjects] = useState<Project[]>(initialProjects)
   const [selectedUser, setSelectedUser] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [startDate, setStartDate] = useState<string>('')
@@ -107,6 +103,60 @@ export default function ProjectReportPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>("")
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProjects() {
+      try {
+        setLoading(true)
+        setError("")
+
+        const params = new URLSearchParams()
+        if (isCompany && selectedStatus && selectedStatus !== "all") {
+          params.set("status", selectedStatus)
+        }
+
+        const res = await fetch(`/api/projects?${params.toString()}`)
+        if (!res.ok) {
+          throw new Error("Gagal memuat data project")
+        }
+
+        const json = await res.json()
+        const data = Array.isArray(json.data) ? json.data : []
+
+        if (!ignore) {
+          setProjects(
+            data.map((p: any) => ({
+              id: String(p.id),
+              name: String(p.name),
+              startDate: p.startDate ?? "",
+              endDate: p.endDate ?? "",
+              users: Array.isArray(p.users) ? p.users : [],
+              completion: typeof p.completion === "number" ? p.completion : 0,
+              status: String(p.status),
+            })),
+          )
+        }
+      } catch (e: any) {
+        if (!ignore) {
+          setError(e.message || "Terjadi kesalahan saat memuat data project")
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadProjects()
+
+    return () => {
+      ignore = true
+    }
+  }, [isCompany, selectedStatus])
 
   const filteredData = useMemo(() => {
     let filtered = projects
@@ -115,14 +165,11 @@ export default function ProjectReportPage() {
       filtered = filtered.filter((project) => project.name.toLowerCase().includes(q))
     }
     if (isCompany) {
-      if (selectedStatus && selectedStatus !== 'all') {
-        filtered = filtered.filter((project) => project.status === selectedStatus)
-      }
       if (startDate) filtered = filtered.filter((project) => project.startDate >= startDate)
       if (endDate) filtered = filtered.filter((project) => project.endDate <= endDate)
     }
     return filtered
-  }, [isCompany, selectedUser, selectedStatus, startDate, endDate, search])
+  }, [projects, isCompany, selectedUser, selectedStatus, startDate, endDate, search])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
@@ -144,15 +191,29 @@ export default function ProjectReportPage() {
   }
 
   return (
-    <>
+    <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1 flex-1">
+            <CardTitle className="text-lg font-semibold">Project Reports</CardTitle>
+            <CardDescription>
+              Pantau laporan dan progres proyek Anda.
+            </CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
+
       {isCompany && (
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+          <CardHeader className="px-6 py-4">
+            <CardTitle className="text-base font-medium">Filter Projects</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="users">Users</Label>
                 <Select value={selectedUser} onValueChange={setSelectedUser}>
-                  <SelectTrigger id="users" className="h-9">
+                  <SelectTrigger id="users" className="h-9 bg-white">
                     <SelectValue placeholder="All Users" />
                   </SelectTrigger>
                   <SelectContent>
@@ -166,7 +227,7 @@ export default function ProjectReportPage() {
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger id="status" className="h-9">
+                  <SelectTrigger id="status" className="h-9 bg-white">
                     <SelectValue placeholder="Select Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -176,116 +237,139 @@ export default function ProjectReportPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Label htmlFor="start_date">Start Date</Label>
-                <Input id="start_date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9" />
+                <Input 
+                  id="start_date" 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  className="h-9 bg-white" 
+                />
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Label htmlFor="end_date">End Date</Label>
-                <Input id="end_date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9" />
+                <div className="flex gap-2">
+                  <Input 
+                    id="end_date" 
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => setEndDate(e.target.value)} 
+                    className="h-9 bg-white" 
+                  />
+                  <Button 
+                    variant="blue" 
+                    size="sm" 
+                    className="h-9 w-9 p-0 shadow-none shrink-0" 
+                    onClick={() => {}}
+                  >
+                    <IconSearch className="h-4 w-4" /> 
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 w-9 p-0 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200 shadow-none shrink-0" 
+                    onClick={handleReset}
+                    title="Reset"
+                  >
+                    <IconRefresh className="h-4 w-4" /> 
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 mt-4">
-              <Button variant="blue" size="sm" className="shadow-none h-7" onClick={() => {}}>
-                <IconSearch className="h-3 w-3 mr-2" /> Apply
-              </Button>
-              <Button variant="destructive" size="sm" className="shadow-none h-7" onClick={handleReset} asChild>
-                <Link href="/project_report"><IconRefresh className="h-3 w-3 mr-2" /> Reset</Link>
-              </Button>
             </div>
           </CardContent>
         </Card>
       )}
-      <Card>
-        <CardContent className="p-0">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <CardTitle className="text-base font-medium">Project Reports</CardTitle>
-            <div className="relative w-full max-w-sm">
-              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4 space-y-0 py-3.5">
+          <CardTitle className="text-base font-medium">Project List</CardTitle>
+          <div className="flex w-full max-w-md items-center gap-2">
+            <div className="relative flex-1">
+              <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search projects..."
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
+                className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
-              {search.length > 0 && (
-                <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0" onClick={() => handleSearchChange('')}>
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4 py-3 font-medium">Projects</TableHead>
-                  <TableHead className="px-4 py-3 font-medium">Start Date</TableHead>
-                  <TableHead className="px-4 py-3 font-medium">Due Date</TableHead>
-                  <TableHead className="px-4 py-3 font-medium">Projects Members</TableHead>
-                  <TableHead className="px-4 py-3 font-medium">Completion</TableHead>
-                  <TableHead className="px-4 py-3 font-medium">Status</TableHead>
-                  <TableHead className="px-4 py-3 font-medium">Actions</TableHead>
+                  <TableHead className="px-6 font-medium">Projects</TableHead>
+                  <TableHead className="px-6 font-medium">Start Date</TableHead>
+                  <TableHead className="px-6 font-medium">Due Date</TableHead>
+                  <TableHead className="px-6 font-medium">Projects Members</TableHead>
+                  <TableHead className="px-6 font-medium">Completion</TableHead>
+                  <TableHead className="px-6 font-medium">Status</TableHead>
+                  <TableHead className="px-6 font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
                   paginatedData.map((project) => (
                     <TableRow key={project.id}>
-                      <TableCell className="px-4 py-3">
-                        <Link href={`/project_report/${project.id}`} className="text-sm font-medium text-primary hover:underline">{project.name}</Link>
+                      <TableCell className="px-6 font-medium">
+                        <Link href={`/project_report/${project.id}`} className="hover:underline text-blue-600">{project.name}</Link>
                       </TableCell>
-                      <TableCell className="px-4 py-3"><span className="text-sm font-normal">{formatDate(project.startDate)}</span></TableCell>
-                      <TableCell className="px-4 py-3"><span className="text-sm font-normal">{formatDate(project.endDate)}</span></TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell className="px-6">{formatDate(project.startDate)}</TableCell>
+                      <TableCell className="px-6">{formatDate(project.endDate)}</TableCell>
+                      <TableCell className="px-6">
                         <div className="flex -space-x-2">
                           {project.users.slice(0, 3).map((user, idx) => (
-                            <Avatar key={idx} className="h-9 w-9 border-2 border-white">
-                              <AvatarFallback className="text-xs">{user.charAt(0)}</AvatarFallback>
+                            <Avatar key={idx} className="h-8 w-8 border-2 border-white">
+                              <AvatarFallback className="text-xs bg-slate-100">{user.charAt(0)}</AvatarFallback>
                             </Avatar>
                           ))}
                           {project.users.length > 3 && (
-                            <div className="h-9 w-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                            <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
                               <span className="text-xs font-medium">+{project.users.length - 3}</span>
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="space-y-1">
-                          <div className="text-sm font-normal text-green-600">{project.completion}%</div>
-                          <div className="h-2 w-full rounded-full bg-slate-100">
-                            <div className={`h-2 rounded-full ${getCompletionColor(project.completion)}`} style={{ width: `${project.completion}%` }} />
+                      <TableCell className="px-6">
+                        <div className="space-y-1 w-[120px]">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">{project.completion}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                            <div className={`h-full rounded-full ${getCompletionColor(project.completion)}`} style={{ width: `${project.completion}%` }} />
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <Badge className={getStatusClasses(project.status)}>{statusMap[project.status]?.label || project.status}</Badge>
+                      <TableCell className="px-6">
+                        <Badge variant="outline" className={getStatusClasses(project.status)}>{statusMap[project.status]?.label || project.status}</Badge>
                       </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="flex items-center gap-2 justify-start">
-                          <Button variant="secondary" size="sm" className="shadow-none h-7 bg-yellow-500 hover:bg-yellow-600 text-white" title="View Project Report" asChild>
-                            <Link href={`/project_report/${project.id}`}><IconEye className="h-3 w-3" /></Link>
+                      <TableCell className="px-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" 
+                            title="View Project Report" 
+                            asChild
+                          >
+                            <Link href={`/project_report/${project.id}`}><IconEye className="h-4 w-4" /></Link>
                           </Button>
-                          {isCompany && (
-                            <Button variant="secondary" size="sm" className="shadow-none h-7 bg-cyan-500 hover:bg-cyan-600 text-white" title="Edit">
-                              <IconPencil className="h-3 w-3" />
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No projects found</TableCell>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No projects found</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
           {totalRecords > 0 && (
-            <div className="px-4 py-3 border-t">
+            <div className="px-6 pb-6 pt-4 border-t">
               <SimplePagination
                 totalCount={totalRecords}
                 currentPage={currentPage}
@@ -297,6 +381,6 @@ export default function ProjectReportPage() {
           )}
         </CardContent>
       </Card>
-    </>
+    </div>
   )
 }

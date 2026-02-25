@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from "next/link"
 import {
   Card,
@@ -22,71 +22,13 @@ import { EventCalendar } from "@/components/event-calendar"
 import { IconCalendarEvent } from "@tabler/icons-react"
 
 interface Task {
-  id: number
+  id: string
   title: string
   start: string
   end: string
-  projectName?: string
+  projectId: string
+  projectName: string
 }
-
-const tasks: Task[] = [
-  {
-    id: 1,
-    title: "Setup Database Schema",
-    start: "2025-12-01",
-    end: "2025-12-10",
-    projectName: "Implementasi ERP PT Maju Jaya",
-  },
-  {
-    id: 2,
-    title: "Migrasi Data Awal",
-    start: "2025-12-05",
-    end: "2025-12-20",
-    projectName: "Implementasi ERP PT Maju Jaya",
-  },
-  {
-    id: 3,
-    title: "Desain Pipeline CRM",
-    start: "2025-12-10",
-    end: "2025-12-25",
-    projectName: "CRM Upgrade CV Kreatif Digital",
-  },
-  {
-    id: 4,
-    title: "Implement Authentication",
-    start: "2025-12-15",
-    end: "2025-12-30",
-    projectName: "Website Redesign PT Teknologi",
-  },
-  {
-    id: 5,
-    title: "Write API Documentation",
-    start: "2025-12-20",
-    end: "2026-01-05",
-    projectName: "Mobile App Development",
-  },
-  {
-    id: 6,
-    title: "Fix Bug in Payment Module",
-    start: "2025-12-18",
-    end: "2025-12-28",
-    projectName: "Implementasi ERP PT Maju Jaya",
-  },
-  {
-    id: 7,
-    title: "Optimize Database Queries",
-    start: "2026-01-01",
-    end: "2026-01-15",
-    projectName: "Cloud Migration Project",
-  },
-  {
-    id: 8,
-    title: "Create Test Cases",
-    start: "2025-12-25",
-    end: "2026-01-10",
-    projectName: "CRM Upgrade CV Kreatif Digital",
-  },
-]
 
 // Convert tasks to calendar events format
 const convertTasksToEvents = (tasks: Task[]) => {
@@ -111,7 +53,46 @@ function formatDate(dateString: string) {
 
 export default function TaskCalendarPage() {
   const [calendarType, setCalendarType] = useState<string>('local')
-  const calendarEvents = useMemo(() => convertTasksToEvents(tasks), [])
+  const [tasks, setTasks] = useState<Task[]>([])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadCalendarTasks() {
+      try {
+        const res = await fetch("/api/projects/calendar")
+        if (!res.ok) {
+          throw new Error("Gagal memuat data kalender")
+        }
+        const json = await res.json()
+        const data = Array.isArray(json.data) ? json.data : []
+        if (!ignore) {
+          setTasks(
+            data.map((t: any) => ({
+              id: String(t.id),
+              title: String(t.title ?? ""),
+              start: String(t.start ?? ""),
+              end: String(t.end ?? ""),
+              projectId: String(t.projectId ?? ""),
+              projectName: String(t.projectName ?? ""),
+            })),
+          )
+        }
+      } catch {
+        if (!ignore) {
+          setTasks([])
+        }
+      }
+    }
+
+    loadCalendarTasks()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const calendarEvents = useMemo(() => convertTasksToEvents(tasks), [tasks])
 
   return (
     <>

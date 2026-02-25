@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from "next/link"
 import {
   Card,
@@ -41,10 +41,10 @@ import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 
 interface Task {
-  id: number
+  id: string
   name: string
   projectName: string
-  projectId: number
+  projectId: string
   stage: string
   priority: string
   endDate: string
@@ -56,128 +56,7 @@ interface Task {
   isOwner?: boolean
 }
 
-const tasks: Task[] = [
-  {
-    id: 1,
-    name: "Setup Database Schema",
-    projectName: "Implementasi ERP PT Maju Jaya",
-    projectId: 1,
-    stage: "In Progress",
-    priority: "high",
-    endDate: "2025-12-15",
-    assignedTo: ["Budi", "Sari"],
-    completion: 75,
-    attachments: 3,
-    comments: 5,
-    checklists: 2,
-    isOwner: true,
-  },
-  {
-    id: 2,
-    name: "Design User Interface",
-    projectName: "CRM Upgrade CV Kreatif Digital",
-    projectId: 2,
-    stage: "To Do",
-    priority: "medium",
-    endDate: "2025-12-20",
-    assignedTo: ["Dewi"],
-    completion: 30,
-    attachments: 1,
-    comments: 2,
-    checklists: 1,
-    isOwner: false,
-  },
-  {
-    id: 3,
-    name: "Implement Authentication",
-    projectName: "Website Redesign PT Teknologi",
-    projectId: 3,
-    stage: "Review",
-    priority: "critical",
-    endDate: "2025-12-10",
-    assignedTo: ["Ahmad", "Budi", "Sari"],
-    completion: 90,
-    attachments: 5,
-    comments: 8,
-    checklists: 4,
-    isOwner: true,
-  },
-  {
-    id: 4,
-    name: "Write API Documentation",
-    projectName: "Mobile App Development",
-    projectId: 4,
-    stage: "Done",
-    priority: "low",
-    endDate: "2025-11-30",
-    assignedTo: ["Fauzi"],
-    completion: 100,
-    attachments: 2,
-    comments: 1,
-    checklists: 0,
-    isOwner: false,
-  },
-  {
-    id: 5,
-    name: "Fix Bug in Payment Module",
-    projectName: "Implementasi ERP PT Maju Jaya",
-    projectId: 1,
-    stage: "In Progress",
-    priority: "high",
-    endDate: "2025-12-18",
-    assignedTo: ["Ahmad"],
-    completion: 50,
-    attachments: 0,
-    comments: 3,
-    checklists: 1,
-    isOwner: true,
-  },
-  {
-    id: 6,
-    name: "Optimize Database Queries",
-    projectName: "Cloud Migration Project",
-    projectId: 5,
-    stage: "To Do",
-    priority: "medium",
-    endDate: "2026-01-05",
-    assignedTo: ["Sari", "Dewi"],
-    completion: 20,
-    attachments: 1,
-    comments: 0,
-    checklists: 0,
-    isOwner: false,
-  },
-  {
-    id: 7,
-    name: "Create Test Cases",
-    projectName: "CRM Upgrade CV Kreatif Digital",
-    projectId: 2,
-    stage: "In Progress",
-    priority: "medium",
-    endDate: "2025-12-25",
-    assignedTo: ["Budi"],
-    completion: 60,
-    attachments: 2,
-    comments: 4,
-    checklists: 3,
-    isOwner: true,
-  },
-  {
-    id: 8,
-    name: "Deploy to Production",
-    projectName: "Website Redesign PT Teknologi",
-    projectId: 3,
-    stage: "Review",
-    priority: "critical",
-    endDate: "2025-12-12",
-    assignedTo: ["Ahmad", "Fauzi"],
-    completion: 85,
-    attachments: 4,
-    comments: 6,
-    checklists: 2,
-    isOwner: false,
-  },
-]
+const initialTasks: Task[] = []
 
 const priorityMap: Record<string, { label: string; color: string }> = {
   critical: { label: "Critical", color: "bg-red-100 text-red-700" },
@@ -223,6 +102,62 @@ export default function TaskboardPage() {
   const [pageSize, setPageSize] = useState(10)
   const [sortBy, setSortBy] = useState<string>('created_at-desc')
   const [statusFilter, setStatusFilter] = useState<string[]>(['see_my_tasks'])
+  const [tasks, setTasks] = useState<Task[]>(initialTasks)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>("")
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadTasks() {
+      try {
+        setLoading(true)
+        setError("")
+
+        const res = await fetch("/api/projects/tasks")
+        if (!res.ok) {
+          throw new Error("Gagal memuat data task")
+        }
+
+        const json = await res.json()
+        const data = Array.isArray(json.data) ? json.data : []
+
+        if (!ignore) {
+          setTasks(
+            data.map((t: any) => ({
+              id: String(t.id),
+              name: String(t.name),
+              projectName: String(t.projectName ?? ""),
+              projectId: String(t.projectId ?? ""),
+              stage: String(t.stage ?? ""),
+              priority: String(t.priority ?? ""),
+              endDate: String(t.endDate ?? ""),
+              assignedTo: Array.isArray(t.assignedTo) ? t.assignedTo : [],
+              completion: typeof t.completion === "number" ? t.completion : 0,
+              attachments: typeof t.attachments === "number" ? t.attachments : 0,
+              comments: typeof t.comments === "number" ? t.comments : 0,
+              checklists: typeof t.checklists === "number" ? t.checklists : 0,
+              isOwner: Boolean(t.isOwner),
+            })),
+          )
+        }
+      } catch (e: any) {
+        if (!ignore) {
+          setError(e.message || "Terjadi kesalahan saat memuat data task")
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadTasks()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   // Filtered and sorted data
   const filteredData = useMemo(() => {
@@ -301,7 +236,7 @@ export default function TaskboardPage() {
     })
 
     return filtered
-  }, [search, statusFilter, sortBy])
+  }, [tasks, search, statusFilter, sortBy])
 
   // Paginated data
   const paginatedData = useMemo(() => {

@@ -51,6 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
   IconCalendar,
   IconPlus,
@@ -64,6 +65,7 @@ import {
   IconFileImport,
   IconBookmark,
   IconDotsVertical,
+  IconPhone,
 } from '@tabler/icons-react'
 import { X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
@@ -85,7 +87,9 @@ type Deal = {
   id: string
   name: string
   client: string
+  phone: string
   pipeline: string
+  pipelineId: string
   stage: string
   price: number
   status: string
@@ -147,32 +151,58 @@ export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [search, setSearch] = useState('')
-  const [selectedPipeline, setSelectedPipeline] = useState('sales-pipeline')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [pipelines, setPipelines] = useState<{ id: string; name: string }[]>([])
+  const [selectedPipeline, setSelectedPipeline] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newDealName, setNewDealName] = useState("")
   const [newClient, setNewClient] = useState("")
   const [newPrice, setNewPrice] = useState("")
+  const [newPhone, setNewPhone] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  
-  // Mock pipelines data - replace with actual data from API
-  // Only show Sales and Marketing (without "Pipeline" text)
-  const pipelines = [
-    { id: 'sales-pipeline', name: 'Sales' },
-    { id: 'marketing-pipeline', name: 'Marketing' },
-  ]
 
+  const loadPipelines = async () => {
+    try {
+      const res = await fetch('/api/pipelines', { cache: 'no-store' })
+      const json = await res.json().catch(() => null)
+      if (json?.success && Array.isArray(json.data)) {
+        setPipelines(json.data)
+        if (json.data.length > 0 && !selectedPipeline) {
+          setSelectedPipeline(json.data[0].id)
+        }
+      }
+    } catch {}
+  }
+  
   const filteredDeals = useMemo(() => {
-    if (!search.trim()) return deals
+    let data = deals
+    
+    if (selectedPipeline) {
+        data = data.filter(d => d.pipelineId === selectedPipeline)
+    }
+
+    if (!search.trim()) return data
     const q = search.trim().toLowerCase()
-    return deals.filter((deal) =>
+    return data.filter((deal) =>
       deal.name.toLowerCase().includes(q) ||
       deal.client.toLowerCase().includes(q) ||
       deal.stage.toLowerCase().includes(q) ||
       deal.id.toLowerCase().includes(q),
     )
-  }, [search, deals])
+  }, [search, deals, selectedPipeline])
 
-  const stageOrder = ['Proposal Sent', 'Negotiation', 'Won', 'Lost']
+  const paginatedDeals = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    return filteredDeals.slice(startIndex, startIndex + pageSize)
+  }, [filteredDeals, currentPage, pageSize])
+
+  const totalRecords = filteredDeals.length
+
+  // Dynamic stages based on filtered deals to avoid hardcoded mismatch
+  const stageOrder = useMemo(() => {
+      return Array.from(new Set(filteredDeals.map(d => d.stage)))
+  }, [filteredDeals])
 
   const dealsByStage = useMemo(() => {
     const map: Record<string, Deal[]> = {}
@@ -180,7 +210,7 @@ export default function DealsPage() {
       map[stage] = []
     }
     filteredDeals.forEach((deal) => {
-      const key = stageOrder.includes(deal.stage) ? deal.stage : 'Proposal Sent'
+      const key = stageOrder.includes(deal.stage) ? deal.stage : stageOrder[0] || 'Unassigned'
       ;(map[key] ?? (map[key] = [])).push(deal)
     })
     return map
@@ -208,6 +238,7 @@ export default function DealsPage() {
   }
 
   useEffect(() => {
+    loadPipelines()
     loadDeals()
   }, [])
 
@@ -225,7 +256,9 @@ export default function DealsPage() {
         body: JSON.stringify({
           name: newDealName,
           client: newClient || null,
+          phone: newPhone || null,
           price: newPrice || null,
+          pipelineId: selectedPipeline || null,
         }),
       })
 
@@ -242,10 +275,18 @@ export default function DealsPage() {
       setNewDealName("")
       setNewClient("")
       setNewPrice("")
+      setNewPhone("")
       toast.success("Deal berhasil dibuat")
     } catch {
       toast.error("Terjadi kesalahan sistem")
     }
+  }
+
+  const resetForm = () => {
+      setNewDealName("")
+      setNewClient("")
+      setNewPrice("")
+      setNewPhone("")
   }
 
   return (
@@ -272,10 +313,9 @@ export default function DealsPage() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {viewMode === 'kanban' && (
                     <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
-                      <SelectTrigger className="h-7 w-[120px] shadow-none">
-                        <SelectValue placeholder="Select" />
+                      <SelectTrigger className="h-7 w-[160px] shadow-none">
+                        <SelectValue placeholder="Select Pipeline" />
                       </SelectTrigger>
                       <SelectContent>
                         {pipelines.map((pipeline) => (
@@ -285,7 +325,6 @@ export default function DealsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
                   <div className="inline-flex rounded-md bg-muted p-0.5">
                     <Button
                       type="button"
@@ -334,286 +373,172 @@ export default function DealsPage() {
                     <IconDownload className="mr-2 h-3 w-3" />
                     Export
                   </Button>
-                  {user?.type !== 'client' && (
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Add Deal">
-                          <IconPlus className="mr-2 h-3 w-3" />
-                          Add Deal
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[560px]">
-                        <DialogHeader>
-                          <DialogTitle>Create Deal</DialogTitle>
-                          <DialogDescription>
-                            Masukkan informasi deal baru seperti di modul Deals ERP.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="dealName">Deal Name</Label>
-                            <Input
-                              id="dealName"
-                              placeholder="Implementasi ERP PT Maju Jaya"
-                              value={newDealName}
-                              onChange={(e) => setNewDealName(e.target.value)}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                              <Label htmlFor="client">Client</Label>
-                              <Input
-                                id="client"
-                                placeholder="PT Maju Jaya"
-                                value={newClient}
-                                onChange={(e) => setNewClient(e.target.value)}
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="price">Price</Label>
-                              <Input
-                                id="price"
-                                type="number"
-                                placeholder="350000000"
-                                value={newPrice}
-                                onChange={(e) => setNewPrice(e.target.value)}
-                              />
-                            </div>
-                          </div>
+                  <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                      setIsDialogOpen(open)
+                      if (!open) resetForm()
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="blue" className="shadow-none h-7 px-4">
+                        <IconPlus className="mr-2 h-3 w-3" />
+                        Create Deal
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[560px]">
+                    <DialogHeader>
+                      <DialogTitle>Create Deal</DialogTitle>
+                      <DialogDescription>
+                        Masukkan informasi deal baru seperti di modul Deals ERP.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="name">Deal Name</Label>
+                        <Input
+                          id="name"
+                          placeholder="Penawaran Proyek Website"
+                          value={newDealName}
+                          onChange={(e) => setNewDealName(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="client">Client Name</Label>
+                          <Input
+                            id="client"
+                            placeholder="PT Maju Jaya"
+                            value={newClient}
+                            onChange={(e) => setNewClient(e.target.value)}
+                          />
                         </div>
-                        <DialogFooter>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="shadow-none"
-                            onClick={() => setIsDialogOpen(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            className="bg-blue-500 hover:bg-blue-600 shadow-none"
-                            onClick={handleSaveDeal}
-                          >
-                            Save Deal
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                        <div className="grid gap-2">
+                          <Label htmlFor="phone">Phone</Label>
+                          <Input
+                            id="phone"
+                            placeholder="08123456789"
+                            value={newPhone}
+                            onChange={(e) => setNewPhone(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="price">Price</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          placeholder="0"
+                          value={newPrice}
+                          onChange={(e) => setNewPrice(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                          <Label>Pipeline</Label>
+                          <Input 
+                            value={pipelines.find(p => p.id === selectedPipeline)?.name || "Default"}
+                            disabled
+                            className="bg-muted"
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            Deal akan dibuat pada pipeline yang sedang aktif.
+                          </p>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button variant="blue" onClick={handleSaveDeal}>
+                        Create Deal
+                      </Button>
+                    </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
             </Card>
 
-            {/* Summary Cards - 4 cards like reference */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">Total Deals</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-cyan-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">This Month Total Deals</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">This Week Total Deals</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-yellow-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">Last 30 Days Total Deals</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalDeals}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-red-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Deals content: Kanban or List view */}
+            {/* Content */}
             {viewMode === 'kanban' ? (
-              <div className="flex gap-4 overflow-x-auto pb-1">
-                {stageOrder.map((stage) => {
-                  const stageDeals = dealsByStage[stage] ?? []
-                  return (
-                    <Card key={stage} className="min-w-[260px] max-w-sm flex flex-col">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div>
-                            <CardTitle className="text-sm font-medium">{stage}</CardTitle>
-                            <CardDescription className="text-xs">
-                              {stageDeals.length} deal
-                              {stageDeals.length !== 1 ? 's' : ''}
-                            </CardDescription>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={getStageBadge(stage) + ' text-[10px] px-2 py-0.5'}
-                          >
-                            {stageDeals.length}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0 pb-3 space-y-2 flex-1">
-                        {stageDeals.length === 0 ? (
-                          <p className="text-xs text-muted-foreground py-3 text-center border border-dashed rounded-md">
-                            No deals in this stage
-                          </p>
-                        ) : (
-                          stageDeals.map((deal) => (
-                            <div
-                              key={deal.id}
-                              className="rounded-md border bg-white p-3 space-y-3 shadow-xs"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="space-y-1">
-                                  <Link
-                                    href={`/deals/${deal.id}`}
-                                    className="text-sm font-medium leading-tight line-clamp-2 hover:underline"
-                                  >
-                                    {deal.name}
-                                  </Link>
-                                  <p className="text-[11px] text-muted-foreground">
-                                    {deal.client}
-                                  </p>
-                                </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="shadow-none h-7 w-7 p-0"
-                                      title="More options"
-                                    >
-                                      <IconDotsVertical className="h-3 w-3" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>
-                                      <IconBookmark className="mr-2 h-4 w-4" />
-                                      Labels
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <IconPencil className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive">
-                                      <IconTrash className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+              <div className="flex-1 overflow-x-auto">
+                <div className="flex gap-4 min-w-max pb-4">
+                  {stageOrder.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground w-full">
+                          Belum ada deal atau stage pada pipeline ini.
+                      </div>
+                  ) : (
+                  dealsByStage && Object.entries(dealsByStage).map(([stage, items]) => (
+                    <div key={stage} className="w-72 flex-shrink-0 flex flex-col gap-3">
+                      <div className="flex items-center justify-between px-1">
+                        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
+                          {stage}
+                        </h3>
+                        <Badge variant="secondary" className="rounded-full px-2">
+                          {items.length}
+                        </Badge>
+                      </div>
+                      {items.map((deal) => (
+                        <Card key={deal.id} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                          <CardContent className="p-3 space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <Link href={`/deals/${deal.id}`} className="font-medium hover:underline block truncate">
+                                  {deal.name}
+                                </Link>
+                                <p className="text-xs text-muted-foreground truncate">{deal.client}</p>
                               </div>
-                              {deal.labels.length > 0 && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {deal.labels.map((label) => (
-                                    <span
-                                      key={label.id}
-                                      className={`text-[10px] font-medium px-2 py-0.5 rounded border ${getLabelBadge(
-                                        label.color,
-                                      )}`}
-                                    >
-                                      {label.name}
-                                    </span>
-                                  ))}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 -mr-2">
+                                    <IconDotsVertical className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            <div className="space-y-2 pt-2 border-t">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium">Rp {deal.price.toLocaleString('id-ID')}</span>
+                                <span className="text-muted-foreground">{formatDate(deal.createdAt)}</span>
+                              </div>
+                              {deal.phone && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <IconPhone className="h-3 w-3" />
+                                  <span>{deal.phone}</span>
                                 </div>
                               )}
-                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                  Tasks {deal.tasks.completed}/{deal.tasks.total}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                  Rp {deal.price.toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                  <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                    Product {deal.productsCount}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                    Source {deal.sourcesCount}
-                                  </span>
-                                </div>
-                                <div className="flex -space-x-1.5">
-                                  {deal.users.map((user) => (
-                                    <Avatar
-                                      key={user.id}
-                                      className="h-6 w-6 border-2 border-background"
-                                      title={user.name}
-                                    >
-                                      <AvatarImage src={user.avatar} />
-                                      <AvatarFallback className="text-[10px]">
-                                        {getInitials(user.name)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  ))}
-                                </div>
-                              </div>
                             </div>
-                          ))
-                        )}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                            <div className="flex items-center justify-between pt-2">
+                                <div className="flex gap-1">
+                                    {deal.labels.map(l => (
+                                        <Badge key={l.id} variant="outline" className={`text-[10px] px-1 h-4 ${getLabelBadge(l.color)}`}>
+                                            {l.name}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ))
+                  )}
+                </div>
               </div>
             ) : (
-              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] flex-1">
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
                   <CardTitle>Deals List</CardTitle>
-                  <div className="flex w-full max-w-md items-center gap-2">
-                    <div className="relative flex-1">
-                      <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <IconSearch className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search deals..."
+                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                       />
-                      {search.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
-                          onClick={() => setSearch('')}
-                          aria-label="Clear search"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -622,61 +547,58 @@ export default function DealsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6">Name</TableHead>
+                          <TableHead className="px-6 w-[200px]">Deal Name</TableHead>
+                          <TableHead className="px-6">Client</TableHead>
                           <TableHead className="px-6">Price</TableHead>
                           <TableHead className="px-6">Stage</TableHead>
-                          <TableHead className="px-6">Tasks</TableHead>
-                          <TableHead className="px-6">Users</TableHead>
-                          <TableHead className="px-6">Actions</TableHead>
+                          <TableHead className="px-6">Phone</TableHead>
+                          <TableHead className="px-6 w-[100px] text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredDeals.length > 0 ? (
-                          filteredDeals.map((deal) => (
+                        {isLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center">
+                              Loading...
+                            </TableCell>
+                          </TableRow>
+                        ) : paginatedDeals.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                              No deals found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          paginatedDeals.map((deal) => (
                             <TableRow key={deal.id}>
                               <TableCell className="px-6 font-medium">
-                                {deal.name}
+                                <Link href={`/deals/${deal.id}`} className="hover:underline text-blue-600">
+                                  {deal.name}
+                                </Link>
+                              </TableCell>
+                              <TableCell className="px-6">{deal.client}</TableCell>
+                              <TableCell className="px-6">
+                                {new Intl.NumberFormat('id-ID', {
+                                  style: 'currency',
+                                  currency: 'IDR',
+                                  minimumFractionDigits: 0,
+                                }).format(deal.price)}
                               </TableCell>
                               <TableCell className="px-6">
-                                Rp {deal.price.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="px-6">
-                                <Badge className={getStageBadge(deal.stage)}>
+                                <Badge variant="outline" className={getStageBadge(deal.stage)}>
                                   {deal.stage}
                                 </Badge>
                               </TableCell>
                               <TableCell className="px-6">
-                                {deal.tasks.completed}/{deal.tasks.total}
+                                {deal.phone ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <IconPhone className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-sm">{deal.phone}</span>
+                                  </div>
+                                ) : '-'}
                               </TableCell>
-                              <TableCell className="px-6">
-                                <div className="flex -space-x-2">
-                                  {deal.users.map((user) => (
-                                    <Avatar
-                                      key={user.id}
-                                      className="h-9 w-9 border-2 border-white"
-                                      title={user.name}
-                                    >
-                                      <AvatarImage src={user.avatar} />
-                                      <AvatarFallback className="text-xs">
-                                        {getInitials(user.name)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  ))}
-                                </div>
-                              </TableCell>
-                              <TableCell className="px-6">
-                                <div className="flex items-center gap-2 justify-start">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                    title="View"
-                                    asChild
-                                  >
-                                    <Link href={`/deals/${deal.id}`}>
-                                      <IconEye className="h-3 w-3" />
-                                    </Link>
-                                  </Button>
+                              <TableCell className="px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -688,7 +610,7 @@ export default function DealsPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                    className="shadow-none h-7 bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-100"
                                     title="Delete"
                                   >
                                     <IconTrash className="h-3 w-3" />
@@ -697,16 +619,24 @@ export default function DealsPage() {
                               </TableCell>
                             </TableRow>
                           ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={6} className="px-6 text-center py-8 text-muted-foreground">
-                              No deals found
-                            </TableCell>
-                          </TableRow>
                         )}
                       </TableBody>
                     </Table>
                   </div>
+                  {totalRecords > 0 && (
+                    <div className="px-6 pb-6 pt-4">
+                      <SimplePagination
+                        totalCount={totalRecords}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(size) => {
+                          setPageSize(size)
+                          setCurrentPage(1)
+                        }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -717,3 +647,11 @@ export default function DealsPage() {
   )
 }
 
+function formatDate(dateString: string) {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('id-ID', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}

@@ -20,6 +20,8 @@ import { seedAwardTypes } from "./seeds/award-types";
 import { seedTerminationTypes } from "./seeds/termination-types";
 import { seedJobCategories } from "./seeds/job-categories";
 import { seedJobStages } from "./seeds/job-stages";
+import { seedProjectTaskStages } from "./seeds/project-task-stages";
+import { seedBugStatuses } from "./seeds/bug-statuses";
 import { seedPerformanceTypes } from "./seeds/performance-types";
 import { seedCompetencies } from "./seeds/competencies";
 import { seedEmployees, seedDevEmployeeUserLink } from "./seeds/employees";
@@ -45,6 +47,12 @@ import { seedLeads } from "./seeds/leads";
 import { seedDeals } from "./seeds/deals";
 import { seedFormBuilder } from "./seeds/form-builder";
 import { seedContracts } from "./seeds/contracts";
+import { seedProjects } from "./seeds/projects";
+import { seedCrmPipelines } from "./seeds/crm-pipelines";
+import { seedProjectTasks } from "./seeds/project-tasks";
+import { seedTimesheets } from "./seeds/timesheets";
+import { seedBugs } from "./seeds/bugs";
+import { seedTimeTrackers } from "./seeds/time-trackers";
 
 dotenv.config();
 
@@ -70,6 +78,8 @@ async function main() {
     await seedTerminationTypes(prisma);
     await seedJobCategories(prisma);
     await seedJobStages(prisma);
+    await seedProjectTaskStages(prisma);
+    await seedBugStatuses(prisma);
     await seedPerformanceTypes(prisma);
     await seedCompetencies(prisma);
     await seedEmployees(prisma);
@@ -100,8 +110,14 @@ async function main() {
     await seedBudgets(prisma);
     await seedLeads(prisma);
     await seedDeals(prisma);
+    await seedCrmPipelines(prisma);
     await seedFormBuilder(prisma);
     await seedContracts(prisma);
+    await seedProjects(prisma);
+    await seedProjectTasks(prisma);
+    await seedTimesheets(prisma);
+    await seedBugs(prisma);
+    await seedTimeTrackers(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

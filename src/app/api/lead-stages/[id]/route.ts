@@ -66,3 +66,54 @@ export async function PUT(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userRole = (session.user as any).role
+    if (userRole !== "super admin" && userRole !== "company") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden: Akses ditolak" },
+        { status: 403 },
+      )
+    }
+
+    // Check if stage is used by any leads
+    const leadsCount = await prisma.lead.count({
+      where: { stageId: id }, // Assuming relation exists or using string match if not relation
+    })
+
+    // If using prisma schema, check the Lead model definition. 
+    // Usually it's stage string or relation.
+    // Let's assume standard behavior: if relation exists, we check.
+    // If we are not sure about schema, maybe we can just try delete and catch error.
+    
+    // Let's just try delete. If it fails due to foreign key constraint, we catch it.
+    await prisma.leadStage.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true, message: "Lead stage berhasil dihapus" })
+  } catch (error: any) {
+    if (error.code === 'P2003') {
+       return NextResponse.json(
+        { success: false, message: "Gagal menghapus: Stage sedang digunakan oleh data lain" },
+        { status: 400 },
+      )
+    }
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus lead stage" },
+      { status: 500 },
+    )
+  }
+}

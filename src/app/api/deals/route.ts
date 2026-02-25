@@ -8,6 +8,8 @@ const dealSchema = z.object({
   name: z.string().min(1, "Nama deal wajib diisi"),
   client: z.string().optional().nullable(),
   price: z.union([z.number(), z.string()]).optional(),
+  phone: z.string().optional().nullable(),
+  pipelineId: z.string().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -36,7 +38,9 @@ export async function GET(request: NextRequest) {
         id: d.dealId,
         name: d.name,
         client: d.client ?? "",
+        phone: d.phone ?? "",
         pipeline: d.pipeline?.name ?? "",
+        pipelineId: d.pipelineId ?? "",
         stage: d.stage?.name ?? "",
         price: d.price ?? 0,
         status: d.status ?? "",
@@ -87,104 +91,98 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, client, price } = validation.data;
+    const { name, client, price, phone, pipelineId } = validation.data;
 
     const numericPrice =
       typeof price === "string" ? parseFloat(price || "0") : price ?? 0;
 
-    const pipelineName = "Default Pipeline";
+    let pipeline;
 
-    let pipeline = await prisma.pipeline.findFirst({
-      where: {
-        name: pipelineName,
-        branchId,
-      },
-    });
+    if (pipelineId) {
+      pipeline = await prisma.pipeline.findUnique({
+        where: { id: pipelineId },
+      });
+    }
 
     if (!pipeline) {
-      pipeline = await prisma.pipeline.create({
-        data: {
+      const pipelineName = "Default Pipeline";
+      pipeline = await prisma.pipeline.findFirst({
+        where: {
           name: pipelineName,
           branchId,
         },
       });
-    }
 
-    let stage = await prisma.leadStage.findFirst({
-      where: {
-        name: "Proposal Sent",
-        pipelineId: pipeline.id,
-      },
-    });
-
-    if (!stage) {
-      stage = await prisma.leadStage.create({
-        data: {
-          name: "Proposal Sent",
-          order: 0,
-          pipelineId: pipeline.id,
-        },
-      });
-    }
-
-    const lastDeal = await prisma.deal.findFirst({
-      where: branchId ? { branchId } : undefined,
-      orderBy: { createdAt: "desc" },
-    });
-
-    let nextNumber = 1;
-    if (lastDeal?.dealId) {
-      const match = lastDeal.dealId.match(/(\d+)$/);
-      if (match) {
-        nextNumber = parseInt(match[1], 10) + 1;
+      if (!pipeline) {
+        pipeline = await prisma.pipeline.create({
+          data: {
+            name: pipelineName,
+            branchId,
+          },
+        });
       }
     }
 
-    const dealId = `DEAL-${String(nextNumber).padStart(3, "0")}`;
-
-    const created = await prisma.deal.create({
-      data: {
-        dealId,
-        branchId,
-        name,
-        client: client ?? null,
-        price: numericPrice,
+    const stage = await prisma.leadStage.findFirst({
+      where: {
         pipelineId: pipeline.id,
-        stageId: stage.id,
-        status: "Open",
-        isActive: true,
+      },
+      orderBy: {
+        order: "asc",
       },
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          id: created.dealId,
-          name: created.name,
-          client: created.client ?? "",
-          pipeline: pipeline.name,
-          stage: stage.name,
-          price: created.price ?? 0,
-          status: created.status ?? "",
-          createdAt: created.createdAt.toISOString(),
-          tasks: {
-            total: created.tasksTotal ?? 0,
-            completed: created.tasksCompleted ?? 0,
-          },
-          productsCount: created.productsCount ?? 0,
-          sourcesCount: created.sourcesCount ?? 0,
-          labels: [],
-          users: [],
-        },
+    const newDeal = await prisma.deal.create({
+      data: {
+        dealId: `DEAL-${Date.now()}`,
+        name,
+        client,
+        phone,
+        price: numericPrice,
+        branchId,
+        pipelineId: pipeline.id,
+        stageId: stage?.id,
       },
-      { status: 201 }
-    );
+      include: {
+        pipeline: true,
+        stage: true,
+      },
+    });
+
+    const labels = (newDeal.labels as any) ?? [];
+    const users = (newDeal.users as any) ?? [];
+
+    const responseData = {
+      id: newDeal.dealId,
+      name: newDeal.name,
+      client: newDeal.client ?? "",
+      phone: newDeal.phone ?? "",
+      pipeline: newDeal.pipeline?.name ?? "",
+      pipelineId: newDeal.pipelineId ?? "",
+      stage: newDeal.stage?.name ?? "",
+      price: newDeal.price ?? 0,
+      status: newDeal.status ?? "",
+      createdAt: newDeal.createdAt.toISOString(),
+      tasks: {
+        total: newDeal.tasksTotal ?? 0,
+        completed: newDeal.tasksCompleted ?? 0,
+      },
+      productsCount: newDeal.productsCount ?? 0,
+      sourcesCount: newDeal.sourcesCount ?? 0,
+      labels: Array.isArray(labels) ? labels : [],
+      users: Array.isArray(users) ? users : [],
+    };
+
+    return NextResponse.json({
+      success: true,
+      message: "Deal berhasil dibuat",
+      data: responseData,
+    });
   } catch (error) {
+    console.error("Error creating deal:", error);
     return NextResponse.json(
-      { success: false, message: "Terjadi kesalahan internal" },
+      { success: false, message: "Gagal membuat deal" },
       { status: 500 }
     );
   }
 }
-

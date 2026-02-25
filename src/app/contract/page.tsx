@@ -78,6 +78,16 @@ type ContractTypeOption = {
   name: string
 }
 
+type CustomerOption = {
+  id: string
+  name: string
+}
+
+type ProjectOption = {
+  id: string
+  name: string
+}
+
 export default function ContractPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
@@ -87,6 +97,10 @@ export default function ContractPage() {
   const [loading, setLoading] = useState(false)
   const [contractTypes, setContractTypes] = useState<ContractTypeOption[]>([])
   const [loadingContractTypes, setLoadingContractTypes] = useState(false)
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [projects, setProjects] = useState<ProjectOption[]>([])
+  const [loadingProjects, setLoadingProjects] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editContract, setEditContract] = useState<ContractItem | null>(null)
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
@@ -94,11 +108,13 @@ export default function ContractPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [createSubject, setCreateSubject] = useState("")
   const [createClientName, setCreateClientName] = useState("")
+  const [createCustomerId, setCreateCustomerId] = useState("")
   const [createValue, setCreateValue] = useState("")
   const [createStartDate, setCreateStartDate] = useState("")
   const [createEndDate, setCreateEndDate] = useState("")
   const [createType, setCreateType] = useState("")
   const [createDescription, setCreateDescription] = useState("")
+  const [createProjectId, setCreateProjectId] = useState("")
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
@@ -143,6 +159,52 @@ export default function ContractPage() {
     }
 
     fetchContractTypes()
+  }, [])
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setLoadingCustomers(true)
+        const res = await fetch("/api/customers", { cache: "no-store" })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.success || !Array.isArray(json.data)) {
+          return
+        }
+        const items = (json.data as any[]).map((c) => ({
+          id: c.id as string,
+          name: c.name as string,
+        }))
+        setCustomers(items)
+      } catch {
+      } finally {
+        setLoadingCustomers(false)
+      }
+    }
+
+    fetchCustomers()
+  }, [])
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoadingProjects(true)
+        const res = await fetch("/api/projects", { cache: "no-store" })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json?.success || !Array.isArray(json.data)) {
+          return
+        }
+        const items = (json.data as any[]).map((p) => ({
+          id: p.id as string,
+          name: p.name as string,
+        }))
+        setProjects(items)
+      } catch {
+      } finally {
+        setLoadingProjects(false)
+      }
+    }
+
+    fetchProjects()
   }, [])
 
   // Filtered data
@@ -219,6 +281,7 @@ export default function ContractPage() {
           startDate: createStartDate,
           endDate: createEndDate,
           description: createDescription.trim() || undefined,
+          projectId: createProjectId.trim() || undefined,
         }),
       })
 
@@ -232,11 +295,13 @@ export default function ContractPage() {
       setContracts((prev) => [created, ...prev])
       setCreateSubject("")
       setCreateClientName("")
+      setCreateCustomerId("")
       setCreateValue("")
       setCreateStartDate("")
       setCreateEndDate("")
       setCreateType("")
       setCreateDescription("")
+      setCreateProjectId("")
       setCreateDialogOpen(false)
       toast.success("Kontrak berhasil dibuat")
     } catch {
@@ -347,12 +412,26 @@ export default function ContractPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="grid gap-2">
                             <Label htmlFor="client">Client</Label>
-                            <Input
-                              id="client"
-                              placeholder="PT Maju Jaya"
-                              value={createClientName}
-                              onChange={(e) => setCreateClientName(e.target.value)}
-                            />
+                            <Select
+                              value={createCustomerId}
+                              onValueChange={(value) => {
+                                setCreateCustomerId(value)
+                                const selected = customers.find((c) => c.id === value)
+                                setCreateClientName(selected?.name ?? "")
+                              }}
+                              disabled={loadingCustomers}
+                            >
+                              <SelectTrigger id="client" className="h-9">
+                                <SelectValue placeholder={loadingCustomers ? "Loading..." : "Select client"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {customers.map((customer) => (
+                                  <SelectItem key={customer.id} value={customer.id}>
+                                    {customer.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="value">Value</Label>
@@ -366,6 +445,25 @@ export default function ContractPage() {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="project">Project</Label>
+                            <Select
+                              value={createProjectId}
+                              onValueChange={setCreateProjectId}
+                              disabled={loadingProjects}
+                            >
+                              <SelectTrigger id="project" className="h-9">
+                                <SelectValue placeholder={loadingProjects ? "Loading..." : "Select project"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {projects.map((project) => (
+                                  <SelectItem key={project.id} value={project.id}>
+                                    {project.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <div className="space-y-3">
                             <Label htmlFor="startDate">Start Date</Label>
                             <Input
@@ -375,6 +473,8 @@ export default function ContractPage() {
                               onChange={(e) => setCreateStartDate(e.target.value)}
                             />
                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-3">
                             <Label htmlFor="endDate">End Date</Label>
                             <Input
@@ -450,150 +550,113 @@ export default function ContractPage() {
 
             {/* Contract List / Grid */}
             {viewMode === 'list' ? (
-            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
-                <CardTitle>Contract List</CardTitle>
-                <div className="flex w-full max-w-md items-center gap-2">
-                  <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                    <Input
-                      placeholder="Search contracts..."
-                      value={search}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
-                    />
-                    {search.length > 0 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
-                        onClick={() => handleSearchChange('')}
-                        aria-label="Clear search"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                  <CardTitle>Contract List</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search contracts..."
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                      />
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="px-6">#</TableHead>
-                        <TableHead className="px-6">Subject</TableHead>
-                        <TableHead className="px-6">Client</TableHead>
-                        <TableHead className="px-6">Project</TableHead>
-                        <TableHead className="px-6">Contract Type</TableHead>
-                        <TableHead className="px-6">Contract Value</TableHead>
-                        <TableHead className="px-6">Start Date</TableHead>
-                        <TableHead className="px-6">End Date</TableHead>
-                        <TableHead className="px-6">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loading ? (
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell
-                            colSpan={9}
-                            className="px-6 text-center py-8 text-muted-foreground"
-                          >
-                            Loading...
-                          </TableCell>
+                          <TableHead className="px-6 w-[120px]">Contract ID</TableHead>
+                          <TableHead className="px-6">Subject</TableHead>
+                          <TableHead className="px-6">Client</TableHead>
+                          <TableHead className="px-6">Project</TableHead>
+                          <TableHead className="px-6">Type</TableHead>
+                          <TableHead className="px-6 text-right">Value</TableHead>
+                          <TableHead className="px-6">Start Date</TableHead>
+                          <TableHead className="px-6">End Date</TableHead>
+                          <TableHead className="px-6">Status</TableHead>
+                          <TableHead className="px-6 w-[100px] text-right">Action</TableHead>
                         </TableRow>
-                      ) : paginatedData.length > 0 ? (
-                        paginatedData.map((contract) => (
-                          <TableRow key={contract.id}>
-                            <TableCell className="px-6 font-medium">
-                              <Button
-                                asChild
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none"
-                              >
-                                <Link href={`/contract/${contract.id}`}>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={10} className="h-24 text-center">
+                              Loading...
+                            </TableCell>
+                          </TableRow>
+                        ) : paginatedData.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={10} className="h-24 text-center">
+                              No contracts found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          paginatedData.map((contract) => (
+                            <TableRow key={contract.id}>
+                              <TableCell className="px-6 font-medium">
+                                <Link href={`/contract/${contract.id}`} className="text-blue-600 hover:underline">
                                   {contract.contractNumber}
                                 </Link>
-                              </Button>
-                            </TableCell>
-                            <TableCell className="px-6">{contract.subject}</TableCell>
-                            <TableCell className="px-6">{contract.client}</TableCell>
-                            <TableCell className="px-6">{contract.project}</TableCell>
-                            <TableCell className="px-6">{contract.type}</TableCell>
-                            <TableCell className="px-6">
-                              Rp {contract.value.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="px-6">
-                              <div className="flex items-center gap-1 text-sm font-normal">
-                                <IconCalendar className="h-3 w-3" />
-                                <span>{contract.startDate}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-6">
-                              <div className="flex items-center gap-1 text-sm font-normal">
-                                <IconCalendar className="h-3 w-3" />
-                                <span>{contract.endDate}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-6">
-                              <div className="flex items-center gap-2 justify-start">
-                                {contract.status === 'accept' && (
+                              </TableCell>
+                              <TableCell className="px-6">{contract.subject}</TableCell>
+                              <TableCell className="px-6">{contract.client}</TableCell>
+                              <TableCell className="px-6">{contract.project}</TableCell>
+                              <TableCell className="px-6">
+                                <Badge variant="outline" className="bg-gray-50">
+                                  {contract.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-6 text-right">
+                                {new Intl.NumberFormat('id-ID', {
+                                  style: 'currency',
+                                  currency: 'IDR',
+                                  minimumFractionDigits: 0,
+                                }).format(contract.value)}
+                              </TableCell>
+                              <TableCell className="px-6">{contract.startDate}</TableCell>
+                              <TableCell className="px-6">{contract.endDate}</TableCell>
+                              <TableCell className="px-6">
+                                <Badge
+                                  variant="secondary"
+                                  className={contract.status === 'accept' ? 'bg-green-100 text-green-700 hover:bg-green-100/80 border-0' : ''}
+                                >
+                                  {contract.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="shadow-none h-7 w-7 p-0 bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
-                                    title="Duplicate"
+                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="Edit"
+                                    onClick={() => openEditDialog(contract)}
                                   >
-                                    <IconCopy className="h-3 w-3" />
+                                    <IconPencil className="h-3 w-3" />
                                   </Button>
-                                )}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
-                                  title="View"
-                                  asChild
-                                >
-                                  <Link href={`/contract/${contract.id}`}>
-                                    <IconEye className="h-3 w-3" />
-                                  </Link>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                  title="Edit"
-                                  onClick={() => openEditDialog(contract)}
-                                >
-                                  <IconPencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                  title="Delete"
-                                  onClick={() => openDeleteConfirm(contract.id)}
-                                >
-                                  <IconTrash className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={9} className="px-6 text-center py-8 text-muted-foreground">
-                            No contracts found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                {totalRecords > 0 && (
-                  <div className="px-6 pb-6 pt-4">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                    title="Delete"
+                                    onClick={() => openDeleteConfirm(contract.id)}
+                                  >
+                                    <IconTrash className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="px-6 pb-6 pt-4 border-t">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
@@ -605,155 +668,94 @@ export default function ContractPage() {
                       }}
                     />
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
             ) : (
-                /* Grid view: card ringkas & modern */
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {paginatedData.length > 0 ? (
-                      paginatedData.map((contract) => (
-                        <Card key={contract.id} className="overflow-hidden rounded-xl border-0 p-0 bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] transition-shadow">
-                          <div className="bg-blue-50 px-4 py-3">
-                            <Link href={`/contract/${contract.id}`} className="text-base font-normal leading-snug line-clamp-2 hover:text-primary block text-foreground">
-                              {contract.subject}
-                            </Link>
-                          </div>
-                          <div className="px-4 py-3">
-                            <dl className="grid grid-cols-1 gap-2.5 text-xs">
-                              <div className="flex justify-between gap-2">
-                                <dt className="shrink-0 font-normal text-muted-foreground">Client</dt>
-                                <dd className="truncate text-right font-normal text-foreground" title={contract.client}>{contract.client}</dd>
-                              </div>
-                              <div className="flex justify-between gap-2">
-                                <dt className="shrink-0 font-normal text-muted-foreground">Project</dt>
-                                <dd className="truncate text-right font-normal text-foreground/90" title={contract.project}>{contract.project === '-' ? '–' : contract.project}</dd>
-                              </div>
-                              <div className="flex justify-between gap-2">
-                                <dt className="shrink-0 font-normal text-muted-foreground">Value</dt>
-                                <dd className="text-right font-normal text-foreground">Rp {contract.value.toLocaleString()}</dd>
-                              </div>
-                              <div className="flex justify-between gap-2 pt-2 border-t border-border/50">
-                                <dt className="shrink-0 font-normal text-muted-foreground">Period</dt>
-                                <dd className="text-right font-normal text-foreground/85">{contract.startDate} → {contract.endDate}</dd>
-                              </div>
-                            </dl>
-                            <div className="flex items-center justify-between mt-3 gap-1 flex-wrap">
-                              <Badge variant="secondary" className="text-xs px-1.5 py-0 shrink-0 rounded bg-muted/80 text-muted-foreground font-medium">
-                                {contract.type}
-                              </Badge>
-                              <div className="flex items-center gap-1">
-                                {contract.status === 'accept' && (
-                                  <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-blue-500 text-white hover:bg-blue-600 border-blue-500" title="Duplicate">
-                                    <IconCopy className="h-3 w-3" />
-                                  </Button>
-                                )}
-                                <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100" asChild title="View">
-                                  <Link href={`/contract/${contract.id}`}>
-                                    <IconEye className="h-3 w-3" />
-                                  </Link>
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" title="Edit" onClick={() => openEditDialog(contract)}>
-                                  <IconPencil className="h-3 w-3" />
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-6 w-6 p-0 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100" title="Delete" onClick={() => openDeleteConfirm(contract.id)}>
-                                  <IconTrash className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      ))
-                    ) : (
-                      <div className="col-span-full py-12 text-center text-muted-foreground rounded-lg border border-dashed">
-                        No contracts found
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {paginatedData.map((contract) => (
+                  <Card key={contract.id} className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-md transition-shadow">
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                      <div className="space-y-1">
+                        <CardTitle className="text-base font-semibold">
+                          <Link href={`/contract/${contract.id}`} className="hover:underline">
+                            {contract.subject}
+                          </Link>
+                        </CardTitle>
+                        <CardDescription className="font-mono text-xs">
+                          {contract.contractNumber}
+                        </CardDescription>
                       </div>
-                    )}
-                  </div>
-                  {totalRecords > 0 && (
-                    <div className="mt-4">
-                      <SimplePagination
-                        totalCount={totalRecords}
-                        currentPage={currentPage}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                        onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
-                      />
-                    </div>
-                  )}
-                </>
+                      <Badge
+                        variant="secondary"
+                        className={contract.status === 'accept' ? 'bg-green-100 text-green-700 hover:bg-green-100/80 border-0' : ''}
+                      >
+                        {contract.status}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <IconCalendar className="h-4 w-4" />
+                          <span>{contract.startDate} - {contract.endDate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Client:</span>
+                          <span className="font-medium">{contract.client}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Value:</span>
+                          <span className="font-medium">
+                            {new Intl.NumberFormat('id-ID', {
+                              style: 'currency',
+                              currency: 'IDR',
+                              minimumFractionDigits: 0,
+                            }).format(contract.value)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:bg-blue-50 h-8 w-8 p-0"
+                          onClick={() => openEditDialog(contract)}
+                        >
+                          <IconPencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                          onClick={() => openDeleteConfirm(contract.id)}
+                        >
+                          <IconTrash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
-
-            {/* Edit Contract dialog */}
-            <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditContract(null) }}>
-              <DialogContent className="sm:max-w-[560px]">
-                <DialogHeader>
-                  <DialogTitle>Edit Contract</DialogTitle>
-                  <DialogDescription>
-                    {editContract ? `Edit kontrak ${editContract.contractNumber}` : ''}
-                  </DialogDescription>
-                </DialogHeader>
-                {editContract && (
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="edit-subject">Subject</Label>
-                      <Input id="edit-subject" defaultValue={editContract.subject} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="edit-client">Client</Label>
-                        <Input id="edit-client" defaultValue={editContract.client} />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="edit-value">Value</Label>
-                        <Input id="edit-value" type="number" defaultValue={editContract.value} />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <Label htmlFor="edit-startDate">Start Date</Label>
-                        <Input id="edit-startDate" type="date" defaultValue={editContract.startDate} />
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor="edit-endDate">End Date</Label>
-                        <Input id="edit-endDate" type="date" defaultValue={editContract.endDate} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => setEditDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="button" variant="blue" size="sm" className="shadow-none h-7">
-                    Save
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Delete confirmation */}
-            <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setDeleteContractId(null) }}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Hapus kontrak?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tindakan ini tidak dapat dibatalkan. Kontrak akan dihapus secara permanen.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="shadow-none">Batal</AlertDialogCancel>
-                  <AlertDialogAction className="bg-red-600 hover:bg-red-700 shadow-none" onClick={() => deleteContractId && handleDelete()}>
-                    Hapus
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
         </MainContentWrapper>
       </SidebarInset>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the contract.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteContractId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   )
 }
-

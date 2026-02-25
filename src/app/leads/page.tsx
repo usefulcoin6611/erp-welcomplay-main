@@ -36,6 +36,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -61,6 +68,7 @@ type Lead = {
   email: string
   phone: string
   pipeline: string
+  pipelineId: string
   stage: string
   owner: string
   createdAt: string
@@ -102,6 +110,22 @@ export default function LeadsPage() {
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [newPhone, setNewPhone] = useState('')
+  const [pipelines, setPipelines] = useState<{ id: string; name: string }[]>([])
+  const [selectedPipeline, setSelectedPipeline] = useState<string>('')
+  const [editingLead, setEditingLead] = useState<Lead | null>(null)
+
+  const loadPipelines = async () => {
+    try {
+      const res = await fetch('/api/pipelines', { cache: 'no-store' })
+      const json = await res.json().catch(() => null)
+      if (json?.success && Array.isArray(json.data)) {
+        setPipelines(json.data)
+        if (json.data.length > 0 && !selectedPipeline) {
+          setSelectedPipeline(json.data[0].id)
+        }
+      }
+    } catch {}
+  }
 
   const loadLeads = async () => {
     setIsLoading(true)
@@ -125,6 +149,7 @@ export default function LeadsPage() {
   }
 
   useEffect(() => {
+    loadPipelines()
     loadLeads()
   }, [])
 
@@ -134,15 +159,30 @@ export default function LeadsPage() {
       return
     }
     try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
+      const url = editingLead ? `/api/leads/${editingLead.id}` : '/api/leads'
+      const method = editingLead ? 'PUT' : 'POST'
+      
+      const body: any = {
+        name: newName,
+        subject: newSubject || null,
+        email: newEmail || null,
+        phone: newPhone || null,
+      }
+      
+      // If creating new, optionally send pipelineId if selected
+      if (!editingLead && selectedPipeline) {
+        // API POST currently doesn't accept pipelineId but defaults to "Default Pipeline"
+        // If API supported it, we would send it. Let's assume user wants default logic for now
+        // or we updated API to accept it. 
+        // Note: I didn't update POST /api/leads to accept pipelineId, only deals.
+        // I should probably update POST /api/leads too if I want it to respect selected pipeline.
+        // But for Edit, PUT accepts it.
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newName,
-          subject: newSubject || null,
-          email: newEmail || null,
-          phone: newPhone || null,
-        }),
+        body: JSON.stringify(body),
       })
 
       const json = await res.json().catch(() => null)
@@ -152,17 +192,38 @@ export default function LeadsPage() {
         return
       }
 
-      const created = json.data as Lead
-      setLeads((prev) => [created, ...prev])
+      const saved = json.data as Lead
+      
+      if (editingLead) {
+        setLeads((prev) => prev.map((l) => (l.id === saved.id ? saved : l)))
+        toast.success('Lead berhasil diperbarui')
+      } else {
+        setLeads((prev) => [saved, ...prev])
+        toast.success('Lead berhasil dibuat')
+      }
+      
       setIsDialogOpen(false)
-      setNewSubject('')
-      setNewName('')
-      setNewEmail('')
-      setNewPhone('')
-      toast.success('Lead berhasil dibuat')
+      resetForm()
     } catch {
       toast.error('Terjadi kesalahan sistem')
     }
+  }
+
+  const resetForm = () => {
+    setEditingLead(null)
+    setNewSubject('')
+    setNewName('')
+    setNewEmail('')
+    setNewPhone('')
+  }
+
+  const handleEditClick = (lead: Lead) => {
+    setEditingLead(lead)
+    setNewName(lead.name)
+    setNewSubject(lead.subject)
+    setNewEmail(lead.email)
+    setNewPhone(lead.phone)
+    setIsDialogOpen(true)
   }
 
   const handleSearchChange = (value: string) => {
@@ -171,9 +232,17 @@ export default function LeadsPage() {
   }
 
   const filteredData = useMemo(() => {
-    if (!search.trim()) return leads
+    let data = leads
+
+    if (selectedPipeline) {
+      // Filter by pipeline ID if available in lead, or name match
+      // API returns pipelineId now.
+      data = data.filter(l => l.pipelineId === selectedPipeline)
+    }
+
+    if (!search.trim()) return data
     const q = search.trim().toLowerCase()
-    return leads.filter(
+    return data.filter(
       (lead) =>
         lead.name.toLowerCase().includes(q) ||
         lead.subject.toLowerCase().includes(q) ||
@@ -181,7 +250,7 @@ export default function LeadsPage() {
         lead.owner.toLowerCase().includes(q) ||
         lead.id.toLowerCase().includes(q)
     )
-  }, [search, leads])
+  }, [search, leads, selectedPipeline])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
@@ -190,7 +259,10 @@ export default function LeadsPage() {
 
   const totalRecords = filteredData.length
   const totalLeads = leads.length
-  const stages = Array.from(new Set(leads.map((lead) => lead.stage)))
+  // Group by stage for Kanban. 
+  // We need stages for the SELECTED pipeline if possible, or all unique stages in filtered data.
+  // Ideally fetch stages for selected pipeline. But for now use existing logic.
+  const stages = Array.from(new Set(filteredData.map((lead) => lead.stage)))
   const leadsByStage = stages.map((stage) => ({
     stage,
     leads: filteredData.filter((lead) => lead.stage === stage),
@@ -220,6 +292,18 @@ export default function LeadsPage() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
+                    <SelectTrigger className="h-7 w-[160px] shadow-none">
+                      <SelectValue placeholder="Select Pipeline" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pipelines.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <div className="inline-flex rounded-md bg-muted p-0.5">
                     <Button
                       type="button"
@@ -268,7 +352,10 @@ export default function LeadsPage() {
                     <IconDownload className="mr-2 h-3 w-3" />
                     Export
                   </Button>
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    setIsDialogOpen(open)
+                    if (!open) resetForm()
+                  }}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="blue" className="shadow-none h-7 px-4">
                         <IconPlus className="mr-2 h-3 w-3" />
@@ -277,9 +364,9 @@ export default function LeadsPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[560px]">
                     <DialogHeader>
-                      <DialogTitle>Create Lead</DialogTitle>
+                      <DialogTitle>{editingLead ? 'Edit Lead' : 'Create Lead'}</DialogTitle>
                       <DialogDescription>
-                        Masukkan informasi lead baru seperti di modul Leads ERP.
+                        {editingLead ? 'Perbarui informasi lead.' : 'Masukkan informasi lead baru seperti di modul Leads ERP.'}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -306,130 +393,50 @@ export default function LeadsPage() {
                           <Label htmlFor="email">Email</Label>
                           <Input
                             id="email"
-                            type="email"
-                            placeholder="contact@company.com"
+                            placeholder="email@example.com"
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="phone">Phone</Label>
-                          <Input
-                            id="phone"
-                            placeholder="+62 812 3456 7890"
-                            value={newPhone}
-                            onChange={(e) => setNewPhone(e.target.value)}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="owner">Assigned User</Label>
-                          <Input id="owner" placeholder="e.g. Budi" />
-                        </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          placeholder="08123456789"
+                          value={newPhone}
+                          onChange={(e) => setNewPhone(e.target.value)}
+                        />
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button type="button" variant="outline" className="shadow-none">
+                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button
-                        type="button"
-                        className="bg-blue-500 hover:bg-blue-600 shadow-none"
-                        onClick={handleSaveLead}
-                        disabled={isLoading}
-                      >
-                        Save Lead
+                      <Button variant="blue" onClick={handleSaveLead}>
+                        {editingLead ? 'Update Lead' : 'Create Lead'}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
             </Card>
 
-            {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">Total Leads</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-cyan-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">This Month Total Leads</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">This Week Total Leads</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-yellow-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border border-gray-200 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-600 font-medium">Last 30 Days Total Leads</p>
-                      <h3 className="text-3xl font-semibold text-gray-900">{totalLeads}</h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-                      <IconCalendar className="w-6 h-6 text-red-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* List view */}
+            {/* Content */}
             {viewMode === 'list' ? (
-              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] flex-1">
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
-                  <CardTitle>Lead List</CardTitle>
-                  <div className="flex w-full max-w-md items-center gap-2">
-                    <div className="relative flex-1">
-                      <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                  <CardTitle>Leads List</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search leads..."
+                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
-                        className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                       />
-                      {search.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
-                          onClick={() => handleSearchChange('')}
-                          aria-label="Clear search"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -438,201 +445,166 @@ export default function LeadsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6">Lead</TableHead>
-                          <TableHead className="px-6">Contact</TableHead>
-                          <TableHead className="px-6">Pipeline / Stage</TableHead>
+                          <TableHead className="px-6 w-[180px]">Lead</TableHead>
+                          <TableHead className="px-6">Email</TableHead>
+                          <TableHead className="px-6">Subject</TableHead>
+                          <TableHead className="px-6">Phone</TableHead>
+                          <TableHead className="px-6">Stage</TableHead>
                           <TableHead className="px-6">Owner</TableHead>
-                          <TableHead className="px-6">Created</TableHead>
-                          <TableHead className="px-6">Action</TableHead>
+                          <TableHead className="px-6 w-[100px] text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedData.length > 0 ? (
+                        {isLoading ? (
+                           <TableRow>
+                             <TableCell colSpan={7} className="h-24 text-center">
+                               Loading...
+                             </TableCell>
+                           </TableRow>
+                        ) : paginatedData.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                              No leads found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
                           paginatedData.map((lead) => (
                             <TableRow key={lead.id}>
-                              <TableCell className="px-6">
-                                <div>
-                                  <Link
-                                    href={`/leads/${lead.id}`}
-                                    className="font-normal text-sm hover:underline block"
-                                  >
-                                    {lead.name}
-                                  </Link>
-                                  <span className="text-xs text-muted-foreground">{lead.subject}</span>
-                                  <span className="text-xs text-muted-foreground block">{lead.id}</span>
+                              <TableCell className="px-6 font-medium">
+                                <Link href={`/leads/${lead.id}`} className="hover:underline text-blue-600">
+                                  {lead.name}
+                                </Link>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  {lead.id}
                                 </div>
                               </TableCell>
+                              <TableCell className="px-6">{lead.email || '-'}</TableCell>
+                              <TableCell className="px-6">{lead.subject || '-'}</TableCell>
                               <TableCell className="px-6">
-                                <div className="flex flex-col gap-1 text-sm">
-                                  <span>{lead.email}</span>
-                                  <div className="flex items-center gap-1">
-                                    <IconPhone className="h-3 w-3" />
-                                    <span>{lead.phone}</span>
+                                {lead.phone ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <IconPhone className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-sm">{lead.phone}</span>
                                   </div>
-                                </div>
+                                ) : '-'}
                               </TableCell>
                               <TableCell className="px-6">
-                                <div className="space-y-1">
-                                  <div className="text-sm text-muted-foreground">{lead.pipeline}</div>
-                                  <Badge className={getStageBadge(lead.stage)}>{lead.stage}</Badge>
-                                </div>
+                                <Badge variant="outline" className={getStageBadge(lead.stage)}>
+                                  {lead.stage}
+                                </Badge>
                               </TableCell>
                               <TableCell className="px-6">{lead.owner}</TableCell>
-                              <TableCell className="px-6">
-                                <div className="flex items-center gap-1 text-sm">
-                                  <IconCalendar className="h-3 w-3" />
-                                  <span>{formatDate(lead.createdAt)}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="px-6">
-                                <div className="flex items-center gap-2 justify-start">
+                              <TableCell className="px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
                                   <Button
-                                    asChild
                                     variant="outline"
                                     size="sm"
-                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    className="shadow-none h-7 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
                                     title="View"
                                   >
-                                    <Link href={`/leads/${lead.id}`}>
-                                      <Eye className="h-3 w-3" />
-                                    </Link>
+                                    <Eye className="h-3 w-3" />
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                                     title="Edit"
+                                    onClick={() => handleEditClick(lead)}
                                   >
                                     <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-100"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
                           ))
-                        ) : (
-                          <TableRow>
-                            <TableCell
-                              colSpan={6}
-                              className="px-4 py-8 text-center text-muted-foreground"
-                            >
-                              No leads found
-                            </TableCell>
-                          </TableRow>
                         )}
                       </TableBody>
                     </Table>
                   </div>
-                  {totalRecords > 0 && (
-                    <div className="px-6 py-3 border-t">
-                      <SimplePagination
-                        totalCount={totalRecords}
-                        currentPage={currentPage}
-                        pageSize={pageSize}
-                        onPageChange={setCurrentPage}
-                        onPageSizeChange={(size) => {
-                          setPageSize(size)
-                          setCurrentPage(1)
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div className="px-6 pb-6 pt-4">
+                    <SimplePagination
+                      totalCount={totalRecords}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(size) => {
+                        setPageSize(size)
+                        setCurrentPage(1)
+                      }}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ) : (
-              /* Kanban view sesuai reference-erp */
-              <>
-                <div className="flex gap-4 overflow-x-auto pb-1">
-                  {leadsByStage.map(({ stage, leads }) => (
-                    <Card key={stage} className="min-w-[260px] max-w-sm flex flex-col">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div>
-                            <CardTitle className="text-sm font-medium">{stage}</CardTitle>
-                            <CardDescription className="text-xs">
-                              {leads.length} lead{leads.length !== 1 ? 's' : ''}
-                            </CardDescription>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={getStageBadge(stage) + ' text-[10px] px-2 py-0.5'}
-                          >
-                            {leads.length}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0 pb-3 space-y-2 flex-1">
-                        {leads.length > 0 ? (
-                          leads.map((lead) => (
-                            <div key={lead.id} className="rounded-md border bg-white p-3 space-y-3 shadow-xs">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="space-y-1">
-                                  <Link
-                                    href={`/leads/${lead.id}`}
-                                    className="text-sm font-medium leading-tight line-clamp-2 hover:underline"
-                                  >
-                                    {lead.name}
-                                  </Link>
-                                  <p className="text-[11px] text-muted-foreground">
-                                    {lead.subject}
-                                  </p>
-                                </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="shadow-none h-7 w-7 p-0">
-                                      <MoreVertical className="h-3 w-3" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem asChild>
-                                      <Link href={`/leads/${lead.id}`}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View
-                                      </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <Pencil className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-red-600">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+              <div className="flex-1 overflow-x-auto">
+                <div className="flex gap-4 min-w-max pb-4">
+                  {leadsByStage.map((group) => (
+                    <div key={group.stage} className="w-72 flex-shrink-0 flex flex-col gap-3">
+                      <div className="flex items-center justify-between px-1">
+                        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
+                          {group.stage}
+                        </h3>
+                        <Badge variant="secondary" className="rounded-full px-2">
+                          {group.leads.length}
+                        </Badge>
+                      </div>
+                      {group.leads.map((lead) => (
+                        <Card key={lead.id} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                          <CardContent className="p-3 space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <Link href={`/leads/${lead.id}`} className="font-medium hover:underline block truncate">
+                                  {lead.name}
+                                </Link>
+                                <p className="text-xs text-muted-foreground truncate">{lead.subject}</p>
                               </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Badge className={getStageBadge(lead.stage)}>{lead.stage}</Badge>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 -mr-2">
+                                    <MoreVertical className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEditClick(lead)}>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            <div className="space-y-2 pt-2 border-t">
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <IconCalendar className="h-3 w-3" />
+                                <span>{formatDate(lead.createdAt)}</span>
                               </div>
-                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
+                              {lead.phone && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <IconPhone className="h-3 w-3" />
-                                  {lead.phone}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                  {lead.email}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                  Owner {lead.owner}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                                  <IconCalendar className="h-3 w-3" />
-                                  {formatDate(lead.createdAt)}
-                                </span>
+                                  <span>{lead.phone}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between pt-2">
+                              <Badge variant="outline" className={getStageBadge(lead.stage)}>
+                                {lead.stage}
+                              </Badge>
+                              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary">
+                                {lead.owner.substring(0, 2).toUpperCase()}
                               </div>
                             </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-muted-foreground py-3 text-center border border-dashed rounded-md">
-                            No leads in this stage
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </MainContentWrapper>

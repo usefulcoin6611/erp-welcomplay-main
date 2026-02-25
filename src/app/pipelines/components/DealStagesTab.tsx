@@ -52,6 +52,16 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 type DealStage = { id: string; name: string; order: number }
 type PipelineOption = { id: string; name: string }
@@ -109,7 +119,6 @@ export function DealStagesTabCreateButton() {
         body: JSON.stringify({
           pipelineId: selectedPipelineId,
           name: name.trim(),
-          stageType: "deal",
         }),
       })
       const json = await res.json().catch(() => null)
@@ -266,6 +275,9 @@ export default function DealStagesTab() {
   const [editingStage, setEditingStage] = useState<DealStage | null>(null)
   const [editName, setEditName] = useState("")
   const [savingEdit, setSavingEdit] = useState(false)
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
+  const [stageToDelete, setStageToDelete] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
@@ -349,7 +361,7 @@ export default function DealStagesTab() {
     }
   }, [selectedPipelineId])
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
     const activeId = String(active.id)
@@ -357,8 +369,24 @@ export default function DealStagesTab() {
     const oldIndex = dealStages.findIndex((s) => s.id === activeId)
     const newIndex = dealStages.findIndex((s) => s.id === overId)
     if (oldIndex === -1 || newIndex === -1) return
-    const reordered = arrayMove([...dealStages], oldIndex, newIndex)
+    
+    const reordered = arrayMove([...dealStages], oldIndex, newIndex).map((s, i) => ({ ...s, order: i + 1 }))
     setDealStages(reordered)
+
+    try {
+      const ids = reordered.map((s) => s.id)
+      await fetch("/api/deal-stages/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      })
+      toast.success("Urutan deal stage diperbarui")
+    } catch (error) {
+      toast.error("Gagal memperbarui urutan")
+      if (selectedPipelineId) {
+        loadDealStages(selectedPipelineId) // revert
+      }
+    }
   }
 
   const handleEdit = (stage: DealStage) => {
@@ -402,6 +430,34 @@ export default function DealStagesTab() {
       toast.error("Terjadi kesalahan saat memperbarui deal stage")
     } finally {
       setSavingEdit(false)
+    }
+  }
+
+  const openDeleteConfirm = (id: string) => {
+    setStageToDelete(id)
+    setDeleteAlertOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!stageToDelete) return
+    try {
+      setDeleting(true)
+      const res = await fetch(`/api/deal-stages/${stageToDelete}`, {
+        method: "DELETE",
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || "Gagal menghapus deal stage")
+        return
+      }
+      setDealStages((prev) => prev.filter((s) => s.id !== stageToDelete))
+      setDeleteAlertOpen(false)
+      setStageToDelete(null)
+      toast.success("Deal stage berhasil dihapus")
+    } catch {
+      toast.error("Terjadi kesalahan saat menghapus deal stage")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -462,7 +518,7 @@ export default function DealStagesTab() {
                         key={stage.id}
                         stage={stage}
                         onEdit={() => handleEdit(stage)}
-                        onDelete={() => {}}
+                        onDelete={() => openDeleteConfirm(stage.id)}
                       />
                     ))}
                   </SortableContext>
@@ -515,6 +571,22 @@ export default function DealStagesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Deal Stage?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus stage ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteAlertOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

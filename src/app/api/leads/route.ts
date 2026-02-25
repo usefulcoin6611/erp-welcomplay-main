@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       email: l.email ?? "",
       phone: l.phone ?? "",
       pipeline: l.pipeline?.name ?? "",
+      pipelineId: l.pipelineId ?? "",
       stage: l.stage?.name ?? "",
       owner: l.owner?.name ?? "",
       createdAt: (l.date ?? l.createdAt).toISOString(),

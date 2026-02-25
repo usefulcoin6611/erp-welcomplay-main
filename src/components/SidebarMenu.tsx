@@ -191,29 +191,37 @@ function SidebarMenuInner({ items }: SidebarMenuProps) {
 
   // Auto-open ONLY the current active branch (so other menus collapse)
   useEffect(() => {
-    const next: Record<string, boolean> = {}
+    // Only update openItems if we are NOT currently manually interacting
+    // But since this effect depends on pathname, it runs on navigation.
+    // The issue "bouncing back" might happen if this effect resets state too aggressively 
+    // or if the navigation hasn't completed yet.
 
-    const walk = (nodes: MenuItem[], level: number): boolean => {
-      let anyActive = false
-      for (const node of nodes) {
-        const nodeKey = `${level}-${node.title}`
-        const nodeActive = isActiveUrl(pathname, node.url)
+    setOpenItems((prev) => {
+      const next: Record<string, boolean> = { ...prev }
+      
+      const walk = (nodes: MenuItem[], level: number): boolean => {
+        let anyActive = false
+        for (const node of nodes) {
+          const nodeKey = `${level}-${node.title}`
+          const nodeActive = isActiveUrl(pathname, node.url)
 
-        if (node.items && node.items.length > 0) {
-          const childActive = walk(node.items, level + 1)
-          if (childActive || nodeActive) {
-            next[nodeKey] = true
+          if (node.items && node.items.length > 0) {
+            const childActive = walk(node.items, level + 1)
+            // If child is active, parent MUST be open
+            if (childActive || nodeActive) {
+              next[nodeKey] = true
+              anyActive = true
+            }
+          } else if (nodeActive) {
             anyActive = true
           }
-        } else if (nodeActive) {
-          anyActive = true
         }
+        return anyActive
       }
-      return anyActive
-    }
 
-    walk(items, 0)
-    setOpenItems(next)
+      walk(items, 0)
+      return next
+    })
   }, [pathname, items])
 
   return (

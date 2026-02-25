@@ -29,7 +29,7 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 // Data mock sesuai dengan Project Report List
 const projects = [
   {
-    id: 1,
+    id: "PRJ-001",
     name: "Implementasi ERP PT Maju Jaya",
     startDate: "2025-10-01",
     endDate: "2026-01-31",
@@ -61,7 +61,7 @@ const projects = [
     ],
   },
   {
-    id: 2,
+    id: "PRJ-002",
     name: "CRM Upgrade CV Kreatif Digital",
     startDate: "2025-11-10",
     endDate: "2026-03-15",
@@ -79,7 +79,7 @@ const projects = [
     taskList: [{ id: 1, name: "Requirements Analysis", milestone: "Planning Phase", startDate: "2025-11-10", endDate: "2025-11-20", assignedTo: ["Dewi"], loggedHours: 30, priority: "high", stage: "In Progress" }],
   },
   {
-    id: 3,
+    id: "PRJ-003",
     name: "Website Redesign PT Teknologi",
     startDate: "2025-09-15",
     endDate: "2026-02-28",
@@ -99,7 +99,7 @@ const projects = [
     taskList: [],
   },
   {
-    id: 4,
+    id: "PRJ-004",
     name: "Mobile App Development",
     startDate: "2025-08-01",
     endDate: "2026-05-31",
@@ -121,7 +121,7 @@ const projects = [
     taskList: [],
   },
   {
-    id: 5,
+    id: "PRJ-005",
     name: "Cloud Migration Project",
     startDate: "2025-01-01",
     endDate: "2025-12-31",
@@ -168,8 +168,7 @@ function formatDate(dateString: string) {
 export default function ProjectReportDetailPage() {
   const params = useParams()
   const idParam = params?.id as string
-  const id = Number(idParam)
-  const project = projects.find((p) => p.id === id)
+  const project = projects.find((p) => p.id === idParam)
 
   if (!project) {
     return (

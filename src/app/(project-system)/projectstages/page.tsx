@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, createContext, useContext } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import {
   DndContext,
@@ -51,32 +51,64 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
 const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
-const initialProjectStages = [
-  { id: 1, name: "Planning", order: 1 },
-  { id: 2, name: "In Progress", order: 2 },
-  { id: 3, name: "On Hold", order: 3 },
-  { id: 4, name: "Review", order: 4 },
-  { id: 5, name: "Completed", order: 5 },
-]
+type ProjectStage = {
+  id: string
+  name: string
+  order: number
+}
 
-const initialBugStatuses = [
-  { id: 1, title: "New", order: 1 },
-  { id: 2, title: "Confirmed", order: 2 },
-  { id: 3, title: "In Progress", order: 3 },
-  { id: 4, title: "Resolved", order: 4 },
-  { id: 5, title: "Closed", order: 5 },
-]
+type BugStatus = {
+  id: string
+  title: string
+  order: number
+}
 
-type ProjectStage = (typeof initialProjectStages)[number]
-type BugStatus = (typeof initialBugStatuses)[number]
+// Context to share refresh functions
+const ProjectStagesContext = createContext<{
+  refreshTaskStages: () => void
+  refreshBugStatuses: () => void
+}>({
+  refreshTaskStages: () => {},
+  refreshBugStatuses: () => {},
+})
 
 /** Tombol Create Stage untuk action SmoothTab */
 function CreateStageButton() {
+  const { refreshTaskStages } = useContext(ProjectStagesContext)
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return
+
+    try {
+      setIsSubmitting(true)
+      const res = await fetch("/api/project-task-stages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message || "Gagal membuat stage")
+
+      toast.success("Stage berhasil dibuat")
+      setOpen(false)
+      setName("")
+      refreshTaskStages()
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="h-9 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
           <IconPlus className="mr-2 h-4 w-4" />
@@ -93,15 +125,25 @@ function CreateStageButton() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="stageName">Stage Name</Label>
-            <Input id="stageName" placeholder="Planning" />
+            <Input
+              id="stageName"
+              placeholder="Planning"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" className="shadow-none">
+          <Button type="button" variant="outline" className="shadow-none" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
-            Save Stage
+          <Button
+            type="button"
+            className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "Save Stage"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -111,8 +153,37 @@ function CreateStageButton() {
 
 /** Tombol Create Bug Status untuk action SmoothTab */
 function CreateBugStatusButton() {
+  const { refreshBugStatuses } = useContext(ProjectStagesContext)
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return
+
+    try {
+      setIsSubmitting(true)
+      const res = await fetch("/api/bug-statuses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message || "Gagal membuat bug status")
+
+      toast.success("Bug status berhasil dibuat")
+      setOpen(false)
+      setTitle("")
+      refreshBugStatuses()
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="h-9 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
           <IconPlus className="mr-2 h-4 w-4" />
@@ -129,15 +200,25 @@ function CreateBugStatusButton() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="bugStatusTitle">Bug Status Title</Label>
-            <Input id="bugStatusTitle" placeholder="Enter Bug Status Title" />
+            <Input
+              id="bugStatusTitle"
+              placeholder="Enter Bug Status Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" className="shadow-none">
+          <Button type="button" variant="outline" className="shadow-none" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
-            Save
+          <Button
+            type="button"
+            className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -203,37 +284,105 @@ function SortableProjectStageRow({
   )
 }
 
-function ProjectTaskStageContent() {
-  const [stages, setStages] = useState<ProjectStage[]>(() => [...initialProjectStages])
+function ProjectTaskStageContent({ registerRefresh }: { registerRefresh: (fn: () => void) => void }) {
+  const [stages, setStages] = useState<ProjectStage[]>([])
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [editingStage, setEditingStage] = React.useState<ProjectStage | null>(null)
   const [deleteStage, setDeleteStage] = React.useState<ProjectStage | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor, {})
   )
-  const stageIds = stages.map((s) => String(s.id))
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const fetchStages = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch("/api/project-task-stages")
+      const json = await res.json()
+      if (json.success) {
+        setStages(json.data)
+      }
+    } catch (error) {
+      toast.error("Gagal memuat data stage")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchStages()
+    registerRefresh(fetchStages)
+  }, [])
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
+
     const oldIndex = stages.findIndex((s) => String(s.id) === active.id)
     const newIndex = stages.findIndex((s) => String(s.id) === over.id)
     if (oldIndex === -1 || newIndex === -1) return
+
     const reordered = arrayMove([...stages], oldIndex, newIndex).map((s, i) => ({ ...s, order: i + 1 }))
     setStages(reordered)
+
+    try {
+      const ids = reordered.map((s) => s.id)
+      await fetch("/api/project-task-stages/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      })
+      toast.success("Urutan stage diperbarui")
+    } catch (error) {
+      toast.error("Gagal memperbarui urutan")
+      fetchStages() // revert
+    }
   }
 
-  const handleEdit = (stage: ProjectStage) => {
-    setEditingStage(stage)
-    setEditDialogOpen(true)
+  const handleUpdate = async () => {
+    if (!editingStage || !editingStage.name.trim()) return
+
+    try {
+      const res = await fetch(`/api/project-task-stages/${editingStage.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editingStage.name }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message)
+
+      toast.success("Stage berhasil diperbarui")
+      setEditDialogOpen(false)
+      fetchStages()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
   }
 
-  const handleCloseEdit = () => {
-    setEditDialogOpen(false)
-    setEditingStage(null)
+  const handleDelete = async () => {
+    if (!deleteStage) return
+    try {
+      const res = await fetch(`/api/project-task-stages/${deleteStage.id}`, {
+        method: "DELETE",
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message)
+
+      toast.success("Stage berhasil dihapus")
+      setDeleteStage(null)
+      fetchStages()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
+  }
+
+  const stageIds = stages.map((s) => String(s.id))
+
+  if (loading && stages.length === 0) {
+    return <div className="p-4 text-center text-muted-foreground">Memuat data...</div>
   }
 
   return (
@@ -250,7 +399,10 @@ function ProjectTaskStageContent() {
               <SortableProjectStageRow
                 key={stage.id}
                 stage={stage}
-                onEdit={() => handleEdit(stage)}
+                onEdit={() => {
+                  setEditingStage(stage)
+                  setEditDialogOpen(true)
+                }}
                 onDelete={() => setDeleteStage(stage)}
               />
             ))}
@@ -275,15 +427,16 @@ function ProjectTaskStageContent() {
               <Input
                 id="editStageName"
                 placeholder="Planning"
-                defaultValue={editingStage?.name ?? ""}
+                value={editingStage?.name ?? ""}
+                onChange={(e) => setEditingStage(prev => prev ? { ...prev, name: e.target.value } : null)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" className="shadow-none" onClick={handleCloseEdit}>
+            <Button type="button" variant="outline" className="shadow-none" onClick={() => setEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200" onClick={handleCloseEdit}>
+            <Button type="button" className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200" onClick={handleUpdate}>
               Update
             </Button>
           </DialogFooter>
@@ -300,7 +453,7 @@ function ProjectTaskStageContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={() => setDeleteStage(null)}>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={handleDelete}>
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -368,20 +521,40 @@ function SortableBugStatusRow({
   )
 }
 
-function BugStatusContent() {
-  const [statuses, setStatuses] = useState<BugStatus[]>(() => [...initialBugStatuses])
+function BugStatusContent({ registerRefresh }: { registerRefresh: (fn: () => void) => void }) {
+  const [statuses, setStatuses] = useState<BugStatus[]>([])
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [editingStatus, setEditingStatus] = React.useState<BugStatus | null>(null)
   const [deleteStatus, setDeleteStatus] = React.useState<BugStatus | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor, {})
   )
-  const statusIds = statuses.map((s) => String(s.id))
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const fetchStatuses = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch("/api/bug-statuses")
+      const json = await res.json()
+      if (json.success) {
+        setStatuses(json.data)
+      }
+    } catch (error) {
+      toast.error("Gagal memuat data bug status")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchStatuses()
+    registerRefresh(fetchStatuses)
+  }, [])
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = statuses.findIndex((s) => String(s.id) === active.id)
@@ -389,16 +562,62 @@ function BugStatusContent() {
     if (oldIndex === -1 || newIndex === -1) return
     const reordered = arrayMove([...statuses], oldIndex, newIndex).map((s, i) => ({ ...s, order: i + 1 }))
     setStatuses(reordered)
+
+    try {
+      const ids = reordered.map((s) => s.id)
+      await fetch("/api/bug-statuses/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      })
+      toast.success("Urutan bug status diperbarui")
+    } catch (error) {
+      toast.error("Gagal memperbarui urutan")
+      fetchStatuses() // revert
+    }
   }
 
-  const handleEdit = (status: BugStatus) => {
-    setEditingStatus(status)
-    setEditDialogOpen(true)
+  const handleUpdate = async () => {
+    if (!editingStatus || !editingStatus.title.trim()) return
+
+    try {
+      const res = await fetch(`/api/bug-statuses/${editingStatus.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editingStatus.title }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message)
+
+      toast.success("Bug status berhasil diperbarui")
+      setEditDialogOpen(false)
+      fetchStatuses()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
   }
 
-  const handleCloseEdit = () => {
-    setEditDialogOpen(false)
-    setEditingStatus(null)
+  const handleDelete = async () => {
+    if (!deleteStatus) return
+    try {
+      const res = await fetch(`/api/bug-statuses/${deleteStatus.id}`, {
+        method: "DELETE",
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message)
+
+      toast.success("Bug status berhasil dihapus")
+      setDeleteStatus(null)
+      fetchStatuses()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
+  }
+
+  const statusIds = statuses.map((s) => String(s.id))
+
+  if (loading && statuses.length === 0) {
+    return <div className="p-4 text-center text-muted-foreground">Memuat data...</div>
   }
 
   return (
@@ -415,7 +634,10 @@ function BugStatusContent() {
               <SortableBugStatusRow
                 key={status.id}
                 status={status}
-                onEdit={() => handleEdit(status)}
+                onEdit={() => {
+                  setEditingStatus(status)
+                  setEditDialogOpen(true)
+                }}
                 onDelete={() => setDeleteStatus(status)}
               />
             ))}
@@ -440,15 +662,16 @@ function BugStatusContent() {
               <Input
                 id="editBugStatusTitle"
                 placeholder="Enter Bug Status Title"
-                defaultValue={editingStatus?.title ?? ""}
+                value={editingStatus?.title ?? ""}
+                onChange={(e) => setEditingStatus(prev => prev ? { ...prev, title: e.target.value } : null)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" className="shadow-none" onClick={handleCloseEdit}>
+            <Button type="button" variant="outline" className="shadow-none" onClick={() => setEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200" onClick={handleCloseEdit}>
+            <Button type="button" className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200" onClick={handleUpdate}>
               Update
             </Button>
           </DialogFooter>
@@ -465,7 +688,7 @@ function BugStatusContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={() => setDeleteStatus(null)}>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={handleDelete}>
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -480,6 +703,9 @@ function ProjectSystemSetupContent() {
   const router = useRouter()
   const pathname = usePathname()
   const activeTab = searchParams.get("tab") || "task-stage"
+  
+  const [refreshTaskStagesFn, setRefreshTaskStagesFn] = useState<() => void>(() => () => {})
+  const [refreshBugStatusesFn, setRefreshBugStatusesFn] = useState<() => void>(() => () => {})
 
   const handleTabChange = (tabId: string) => {
     router.replace(`${pathname}?tab=${tabId}`, { scroll: false })
@@ -490,12 +716,12 @@ function ProjectSystemSetupContent() {
       {
         id: "task-stage",
         title: "Project Task Stage",
-        content: <ProjectTaskStageContent />,
+        content: <ProjectTaskStageContent registerRefresh={setRefreshTaskStagesFn} />,
       },
       {
         id: "bug-status",
         title: "Bug Status",
-        content: <BugStatusContent />,
+        content: <BugStatusContent registerRefresh={setRefreshBugStatusesFn} />,
       },
     ],
     []
@@ -509,14 +735,19 @@ function ProjectSystemSetupContent() {
     ) : undefined
 
   return (
-    <SmoothTab
-      items={tabs}
-      defaultTabId={activeTab}
-      value={activeTab}
-      activeColor="bg-cyan-600"
-      action={action}
-      onChange={handleTabChange}
-    />
+    <ProjectStagesContext.Provider value={{
+      refreshTaskStages: refreshTaskStagesFn,
+      refreshBugStatuses: refreshBugStatusesFn
+    }}>
+      <SmoothTab
+        items={tabs}
+        defaultTabId={activeTab}
+        value={activeTab}
+        activeColor="bg-cyan-600"
+        action={action}
+        onChange={handleTabChange}
+      />
+    </ProjectStagesContext.Provider>
   )
 }
 

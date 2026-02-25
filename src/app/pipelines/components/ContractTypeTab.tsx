@@ -33,6 +33,16 @@ import {
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 
 type ContractTypeItem = {
@@ -129,6 +139,13 @@ export function ContractTypeTabCreateButton() {
 export default function ContractTypeTab() {
   const [contractTypes, setContractTypes] = useState<ContractTypeItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<ContractTypeItem | null>(null)
+  const [editName, setEditName] = useState("")
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleting, setDeleting] = useState<ContractTypeItem | null>(null)
+  const [deletingLoading, setDeletingLoading] = useState(false)
 
   const loadContractTypes = async () => {
     try {
@@ -159,75 +176,213 @@ export default function ContractTypeTab() {
       }
     }
   }, [])
+
+  const handleEditClick = (type: ContractTypeItem) => {
+    setEditing(type)
+    setEditName(type.name)
+    setEditDialogOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editing) return
+    if (!editName.trim()) {
+      toast.error("Nama contract type wajib diisi")
+      return
+    }
+    try {
+      setSavingEdit(true)
+      const res = await fetch(`/api/contract-types/${editing.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: editName.trim() }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || "Gagal memperbarui contract type")
+        return
+      }
+      const updated = json.data as ContractTypeItem
+      setContractTypes((prev) =>
+        prev.map((ct) => (ct.id === updated.id ? updated : ct)),
+      )
+      setEditDialogOpen(false)
+      setEditing(null)
+      toast.success("Contract type berhasil diperbarui")
+    } catch {
+      toast.error("Terjadi kesalahan saat memperbarui contract type")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleDeleteClick = (type: ContractTypeItem) => {
+    setDeleting(type)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleting) return
+    try {
+      setDeletingLoading(true)
+      const res = await fetch(`/api/contract-types/${deleting.id}`, {
+        method: "DELETE",
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || "Gagal menghapus contract type")
+        return
+      }
+      setContractTypes((prev) =>
+        prev.filter((ct) => ct.id !== deleting.id),
+      )
+      setDeleteDialogOpen(false)
+      setDeleting(null)
+      toast.success("Contract type berhasil dihapus")
+    } catch {
+      toast.error("Terjadi kesalahan saat menghapus contract type")
+    } finally {
+      setDeletingLoading(false)
+    }
+  }
   return (
-    <div className="space-y-4">
-      <Card className="rounded-lg border-0">
-        <CardHeader className="px-4 py-3 border-b">
-          <CardTitle className="text-base font-medium">Contract Type List</CardTitle>
-          <CardDescription className="text-sm">
-            Daftar tipe kontrak yang tersedia.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-4 py-3 font-medium">Name</TableHead>
-                  <TableHead className="px-4 py-3 text-right w-[250px] font-medium">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
+    <>
+      <div className="space-y-4">
+        <Card className="rounded-lg border-0">
+          <CardHeader className="px-4 py-3 border-b">
+            <CardTitle className="text-base font-medium">Contract Type List</CardTitle>
+            <CardDescription className="text-sm">
+              Daftar tipe kontrak yang tersedia.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={2}
-                      className="px-4 py-8 text-center text-muted-foreground"
-                    >
-                      Loading...
-                    </TableCell>
+                    <TableHead className="px-4 py-3 font-medium">Name</TableHead>
+                    <TableHead className="px-4 py-3 text-right w-[250px] font-medium">
+                      Action
+                    </TableHead>
                   </TableRow>
-                ) : contractTypes.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={2}
-                      className="px-4 py-8 text-center text-muted-foreground"
-                    >
-                      No contract types found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  contractTypes.map((type) => (
-                    <TableRow key={type.id}>
-                      <TableCell className="px-4 py-3 font-medium">
-                        {type.name}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                          >
-                            <IconPencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                          >
-                            <IconTrash className="h-4 w-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={2}
+                        className="px-4 py-8 text-center text-muted-foreground"
+                      >
+                        Loading...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-          </Table>
+                  ) : contractTypes.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={2}
+                        className="px-4 py-8 text-center text-muted-foreground"
+                      >
+                        No contract types found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    contractTypes.map((type) => (
+                      <TableRow key={type.id}>
+                        <TableCell className="px-4 py-3 font-medium">
+                          {type.name}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                              onClick={() => handleEditClick(type)}
+                            >
+                              <IconPencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                              onClick={() => handleDeleteClick(type)}
+                            >
+                              <IconTrash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Edit Contract Type</DialogTitle>
+            <DialogDescription>Ubah nama contract type.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="editContractTypeName">Contract Type Name</Label>
+              <Input
+                id="editContractTypeName"
+                placeholder="Service Agreement"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="shadow-none"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={savingEdit}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="bg-blue-500 hover:bg-blue-600 shadow-none"
+              disabled={savingEdit}
+              onClick={handleSaveEdit}
+            >
+              {savingEdit ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus contract type</AlertDialogTitle>
+            <AlertDialogDescription>
+              Contract type akan dihapus secara permanen. Tindakan ini tidak dapat
+              dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingLoading}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingLoading}
+              onClick={handleConfirmDelete}
+            >
+              {deletingLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

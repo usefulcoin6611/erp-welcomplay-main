@@ -1,12 +1,8 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { MainContentWrapper } from "@/components/main-content-wrapper"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
@@ -17,174 +13,70 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { IconArrowLeft, IconCalendar, IconClockHour4, IconUsers, IconListCheck, IconCurrencyDollar, IconReportMoney, IconClipboardList } from "@tabler/icons-react"
+import {
+  IconArrowLeft,
+  IconCalendar,
+  IconClockHour4,
+  IconUsers,
+  IconListCheck,
+  IconCurrencyDollar,
+  IconReportMoney,
+  IconClipboardList,
+  IconBug,
+  IconListDetails,
+  IconClockRecord,
+  IconReportAnalytics,
+  IconShare3,
+  IconDownload,
+  IconTrash,
+} from "@tabler/icons-react"
 import dynamic from "next/dynamic"
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
+const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
-// Data mock sesuai dengan Project List
-const projects = [
-  {
-    id: 1,
-    code: "PRJ-001",
-    name: "Implementasi ERP PT Maju Jaya",
-    client: "PT Maju Jaya",
-    status: "on_hold",
-    users: ["Budi", "Sari", "Ahmad"],
-    completion: 68,
-    description: "Implementasi sistem ERP lengkap untuk mengelola keuangan, HRM, POS, dan CRM.",
-    startDate: "2025-10-01",
-    endDate: "2026-01-31",
-    budget: 450_000_000,
-    progress: 68,
-    tasks: {
-      total: 120,
-      done: 82,
-    },
-    expense: {
-      allocated: 450_000_000,
-      used: 280_000_000,
-    },
-    timesheetHours: 430,
-    milestones: {
-      total: 8,
-      completed: 5,
-    },
-    taskChart: [12, 15, 18, 20, 22, 25, 28],
-    timesheetChart: [8, 10, 12, 15, 18, 20, 22],
-    dayLeft: 92,
-    openTask: 38,
-    userAssigned: 3,
-  },
-  {
-    id: 2,
-    code: "PRJ-002",
-    name: "CRM Upgrade CV Kreatif Digital",
-    client: "CV Kreatif Digital",
-    status: "not_started",
-    users: ["Dewi", "Fauzi"],
-    completion: 25,
-    description: "Upgrade modul CRM dengan fitur pipeline, automation, dan laporan penjualan.",
-    startDate: "2025-11-10",
-    endDate: "2026-03-15",
-    budget: 220_000_000,
-    progress: 25,
-    tasks: {
-      total: 40,
-      done: 10,
-    },
-    expense: {
-      allocated: 220_000_000,
-      used: 45_000_000,
-    },
-    timesheetHours: 96,
-    milestones: {
-      total: 5,
-      completed: 1,
-    },
-    taskChart: [2, 3, 4, 5, 6, 7, 8],
-    timesheetChart: [3, 4, 5, 6, 7, 8, 9],
-    dayLeft: 125,
-    openTask: 30,
-    userAssigned: 2,
-  },
-  {
-    id: 3,
-    code: "PRJ-003",
-    name: "Website Redesign PT Teknologi",
-    client: "PT Teknologi",
-    status: "on_hold",
-    users: ["Budi", "Sari"],
-    completion: 45,
-    description: "Redesign website dengan UI/UX modern dan responsive design.",
-    startDate: "2025-09-15",
-    endDate: "2026-02-28",
-    budget: 180_000_000,
-    progress: 45,
-    tasks: {
-      total: 60,
-      done: 27,
-    },
-    expense: {
-      allocated: 180_000_000,
-      used: 85_000_000,
-    },
-    timesheetHours: 210,
-    milestones: {
-      total: 6,
-      completed: 3,
-    },
-    taskChart: [5, 6, 7, 8, 9, 10, 11],
-    timesheetChart: [4, 5, 6, 7, 8, 9, 10],
-    dayLeft: 165,
-    openTask: 33,
-    userAssigned: 2,
-  },
-  {
-    id: 4,
-    code: "PRJ-004",
-    name: "Mobile App Development",
-    client: "PT Mobile Solutions",
-    status: "in_progress",
-    users: ["Ahmad", "Dewi", "Fauzi", "Budi"],
-    completion: 75,
-    description: "Pengembangan aplikasi mobile untuk iOS dan Android.",
-    startDate: "2025-08-01",
-    endDate: "2026-05-31",
-    budget: 350_000_000,
-    progress: 75,
-    tasks: {
-      total: 150,
-      done: 113,
-    },
-    expense: {
-      allocated: 350_000_000,
-      used: 240_000_000,
-    },
-    timesheetHours: 520,
-    milestones: {
-      total: 10,
-      completed: 7,
-    },
-    taskChart: [20, 22, 24, 26, 28, 30, 32],
-    timesheetChart: [15, 17, 19, 21, 23, 25, 27],
-    dayLeft: 303,
-    openTask: 37,
-    userAssigned: 4,
-  },
-  {
-    id: 5,
-    code: "PRJ-005",
-    name: "Cloud Migration Project",
-    client: "PT Cloud Services",
-    status: "finished",
-    users: ["Sari", "Ahmad"],
-    completion: 100,
-    description: "Migrasi infrastruktur ke cloud dengan AWS.",
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    budget: 500_000_000,
-    progress: 100,
-    tasks: {
-      total: 80,
-      done: 80,
-    },
-    expense: {
-      allocated: 500_000_000,
-      used: 480_000_000,
-    },
-    timesheetHours: 650,
-    milestones: {
-      total: 12,
-      completed: 12,
-    },
-    taskChart: [10, 12, 14, 16, 18, 20, 22],
-    timesheetChart: [8, 10, 12, 14, 16, 18, 20],
-    dayLeft: 0,
-    openTask: 0,
-    userAssigned: 2,
-  },
-] as const
+type ProjectDetail = {
+  id: string
+  code: string
+  name: string
+  client: string
+  status: string
+  users: string[]
+  completion: number
+  description: string
+  startDate: string
+  endDate: string
+  budget: number
+  progress: number
+  tasks: {
+    total: number
+    done: number
+  }
+  expense: {
+    allocated: number
+    used: number
+  }
+  timesheetHours: number
+  milestones: {
+    total: number
+    completed: number
+  }
+  taskChart: (number | null)[]
+  timesheetChart: (number | null)[]
+  dayLeft: number
+  openTask: number
+  userAssigned: number
+  activityLog?: {
+    user: string
+    type: string
+    remark: string
+    time: string
+  }[]
+  attachments?: {
+    name: string
+    size: string
+  }[]
+}
 
 const statusMap: Record<string, { label: string; color: string }> = {
   not_started: { label: "Not Started", color: "bg-gray-100 text-gray-700 border-none" },
@@ -214,68 +106,271 @@ function formatDate(dateString: string) {
 export default function ProjectDetailPage() {
   const params = useParams()
   const idParam = params?.id as string
-  const id = Number(idParam)
-  const project = projects.find((p) => p.id === id)
+  const [project, setProject] = useState<ProjectDetail | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>("")
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProject() {
+      try {
+        setLoading(true)
+        setError("")
+
+        const res = await fetch(`/api/projects/${encodeURIComponent(idParam)}`)
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            if (!ignore) {
+              setProject(null)
+            }
+            setLoading(false)
+            return
+          }
+          throw new Error("Gagal memuat detail project")
+        }
+
+        const json = await res.json()
+        const data = json.data
+
+        if (!ignore && data) {
+          const base: ProjectDetail = {
+            id: String(data.id),
+            code: String(data.id),
+            name: String(data.name),
+            client: data.clientName ? String(data.clientName) : "",
+            status: String(data.status),
+            users: Array.isArray(data.users) ? data.users : [],
+            completion: typeof data.completion === "number" ? data.completion : 0,
+            description: data.description ?? "",
+            startDate: data.startDate ?? "",
+            endDate: data.endDate ?? "",
+            budget: typeof data.budget === "number" ? data.budget : 0,
+            progress: typeof data.completion === "number" ? data.completion : 0,
+            tasks: {
+              total: 0,
+              done: 0,
+            },
+            expense: {
+              allocated: typeof data.budget === "number" ? data.budget : 0,
+              used: 0,
+            },
+            timesheetHours: 0,
+            milestones: {
+              total: 0,
+              completed: 0,
+            },
+            taskChart: [0, 0, 0, 0, 0, 0, 0],
+            timesheetChart: [0, 0, 0, 0, 0, 0, 0],
+            dayLeft: 0,
+            openTask: 0,
+            userAssigned: Array.isArray(data.users) ? data.users.length : 0,
+            activityLog: [],
+            attachments: [],
+          }
+
+          setProject(base)
+        }
+      } catch (e: any) {
+        if (!ignore) {
+          setError(e.message || "Terjadi kesalahan saat memuat detail project")
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    if (idParam) {
+      loadProject()
+    }
+
+    return () => {
+      ignore = true
+    }
+  }, [idParam])
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
+        <p>Memuat detail project...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
+        <h1 className="text-lg font-semibold mb-2">Gagal memuat project</h1>
+        <p className="mb-4">{error}</p>
+        <Button asChild variant="outline" size="sm" className="shadow-none">
+          <Link href="/projects">Back to Projects</Link>
+        </Button>
+      </div>
+    )
+  }
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Project Not Found</h1>
-          <p className="text-muted-foreground mb-4">
-            The project you're looking for doesn't exist.
-          </p>
-          <Button asChild>
-            <Link href="/projects">Back to Projects</Link>
-          </Button>
-        </div>
+      <div className="rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">
+        <h1 className="text-lg font-semibold mb-2">Project Not Found</h1>
+        <p className="mb-4">
+          The project you're looking for doesn't exist.
+        </p>
+        <Button asChild variant="outline" size="sm" className="shadow-none">
+          <Link href="/projects">Back to Projects</Link>
+        </Button>
       </div>
     )
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold leading-tight">
+    <div className="flex flex-1 flex-col gap-4">
+      <div className="@container/main flex flex-1 flex-col gap-4 p-4">
+        <Card className={CARD_STYLE}>
+          <CardHeader className="px-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0 space-y-1 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="text-lg font-semibold">
                   {project.name}
-                </h1>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <span>{project.code}</span>
-                  <Separator orientation="vertical" className="h-4" />
-                  <span>{project.client}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
+                </CardTitle>
                 <Badge className={getStatusClasses(project.status)}>
                   {getStatusLabel(project.status)}
                 </Badge>
-                <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                <span>{project.code}</span>
+                <Separator orientation="vertical" className="h-4" />
+                <span>{project.client}</span>
+                {project.startDate && project.endDate && (
+                  <>
+                    <Separator orientation="vertical" className="h-4" />
+                    <span className="inline-flex items-center gap-1">
+                      <IconCalendar className="h-3.5 w-3.5" />
+                      {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-gray-50 hover:bg-gray-100 border-gray-200"
+                >
+                  <Link href="/projects">
+                    <IconArrowLeft className="h-4 w-4 mr-1" />
+                    Back
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/projects/task">
+                    <IconClipboardList className="h-4 w-4 mr-1" />
+                    Task
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/time-tracker">
+                    <IconClockRecord className="h-4 w-4 mr-1" />
+                    Tracker
+                  </Link>
+                </Button>
+                <Button
+                  variant="blue"
+                  size="sm"
+                  className="h-8 px-4 shadow-none"
+                >
                   Edit Project
                 </Button>
-                <Button asChild variant="outline" size="icon" className="h-8 w-8 shadow-none">
-                  <Link href="/projects">
-                    <IconArrowLeft className="h-4 w-4" />
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/projects/setup">
+                    <IconShare3 className="h-4 w-4 mr-1" />
+                    Shared Settings
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/calendar">
+                    <IconCalendar className="h-4 w-4 mr-1" />
+                    Gantt Chart
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/accounting/purchases?tab=expense">
+                    <IconCurrencyDollar className="h-4 w-4 mr-1" />
+                    Expense
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/timesheet-list">
+                    <IconClockHour4 className="h-4 w-4 mr-1" />
+                    Timesheet
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/bugs-report">
+                    <IconBug className="h-4 w-4 mr-1" />
+                    Bug Report
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                >
+                  <Link href="/project_report">
+                    <IconReportAnalytics className="h-4 w-4 mr-1" />
+                    Report
                   </Link>
                 </Button>
               </div>
             </div>
+          </CardHeader>
+        </Card>
 
-            {/* Stat Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3 mt-4">
               {/* Total Task Card */}
               <Card className="relative overflow-hidden">
                 <div className="absolute bottom-0 right-0 w-32 h-20 opacity-20">
@@ -413,7 +508,7 @@ export default function ProjectDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div id="task_chart" className="h-[60px] mb-4">
-                    <Chart
+                      <Chart
                       options={{
                         chart: {
                           type: "area",
@@ -433,12 +528,14 @@ export default function ProjectDetailPage() {
                           marker: { show: false },
                         },
                       }}
-                      series={[
-                        {
-                          name: "Tasks",
-                          data: project.taskChart,
-                        },
-                      ]}
+                      series={
+                        [
+                          {
+                            name: "Tasks",
+                            data: project.taskChart ?? [],
+                          },
+                        ] as any
+                      }
                       type="area"
                       height={60}
                     />
@@ -513,12 +610,14 @@ export default function ProjectDetailPage() {
                           marker: { show: false },
                         },
                       }}
-                      series={[
-                        {
-                          name: "Hours",
-                          data: project.timesheetChart,
-                        },
-                      ]}
+                      series={
+                        [
+                          {
+                            name: "Hours",
+                            data: project.timesheetChart ?? [],
+                          },
+                        ] as any
+                      }
                       type="area"
                       height={60}
                     />
@@ -559,9 +658,7 @@ export default function ProjectDetailPage() {
               </Card>
             </div>
 
-            {/* Members and Milestones */}
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Members Card */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">Members</CardTitle>
@@ -590,7 +687,6 @@ export default function ProjectDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Milestones Card */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -629,9 +725,94 @@ export default function ProjectDetailPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm font-medium">Activity Log</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Activity log of this project
+                  </p>
+                </CardHeader>
+                <CardContent className="max-h-72 overflow-y-auto space-y-2 pt-2">
+                  {project.activityLog && project.activityLog.length > 0 ? (
+                    project.activityLog.map((a, index) => (
+                      <div key={index} className="border rounded-md px-3 py-2 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-7 w-7 shrink-0 mt-0.5">
+                            <AvatarFallback className="text-xs">
+                              {a.user?.charAt(0) ?? "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 space-y-0.5">
+                            <p className="text-xs font-medium truncate">{a.type}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {a.remark}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {a.time}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Belum ada aktivitas.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm font-medium">Attachments</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Attachment that uploaded in this project
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  {project.attachments && project.attachments.length > 0 ? (
+                    <ul className="space-y-2 max-h-72 overflow-y-auto">
+                      {project.attachments.map((file, index) => (
+                        <li
+                          key={index}
+                          className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{file.name}</p>
+                            <p className="text-muted-foreground">
+                              {file.size}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700"
+                            >
+                              <IconDownload className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            >
+                              <IconTrash className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Belum ada lampiran.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </MainContentWrapper>
-      </SidebarInset>
-    </SidebarProvider>
+    </div>
   )
 }
