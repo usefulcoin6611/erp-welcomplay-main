@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, Target } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Target, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { StarRatingDisplay } from '../StarRatingDisplay';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -40,45 +42,41 @@ export function GoalTrackingContent() {
     progress: '',
   });
 
-  // Mock data
-  const [goalTrackings, setGoalTrackings] = useState<GoalTracking[]>([
-    {
-      id: '1',
-      goalType: 'Revenue',
-      subject: 'Increase Sales by 20%',
-      branch: 'Head Office',
-      targetAchievement: '1000000',
-      startDate: '2024-01-01',
-      endDate: '2024-12-31',
-      rating: 4,
-      progress: 65,
-    },
-    {
-      id: '2',
-      goalType: 'Customer Satisfaction',
-      subject: 'Improve Customer Retention',
-      branch: 'Branch A',
-      targetAchievement: '95%',
-      startDate: '2024-01-01',
-      endDate: '2024-06-30',
-      rating: 5,
-      progress: 80,
-    },
-    {
-      id: '3',
-      goalType: 'Efficiency',
-      subject: 'Reduce Operational Costs',
-      branch: 'Head Office',
-      targetAchievement: '15% Reduction',
-      startDate: '2024-02-01',
-      endDate: '2024-12-31',
-      rating: 3,
-      progress: 45,
-    },
-  ]);
+  const [goalTrackings, setGoalTrackings] = useState<GoalTracking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [goalTypes, setGoalTypes] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
 
-  const goalTypes = ['Revenue', 'Customer Satisfaction', 'Efficiency', 'Product Development', 'Market Expansion'];
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
+  const fetchGoals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/performance/goals');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setGoalTrackings(json.data.map((g: { goalType?: string; goalTypeId: string } & GoalTracking) => ({ ...g, goalType: g.goalType ?? '' })));
+      else toast.error(json.message ?? 'Gagal memuat goal');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat goal');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchGoals(); }, [fetchGoals]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [gRes, bRes] = await Promise.all([fetch('/api/goal-types'), fetch('/api/branches')]);
+        const gJson = await gRes.json();
+        const bJson = await bRes.json();
+        if (gJson.success && Array.isArray(gJson.data)) setGoalTypes(gJson.data);
+        if (bJson.success && Array.isArray(bJson.data)) setBranches(bJson.data);
+      } catch (_e) {}
+    })();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(true);
@@ -95,52 +93,38 @@ export function GoalTrackingContent() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (editingId) {
-      setGoalTrackings(
-        goalTrackings.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                goalType: formData.goalType,
-                subject: formData.subject,
-                branch: formData.branch,
-                targetAchievement: formData.targetAchievement,
-                startDate: formData.startDate,
-                endDate: formData.endDate,
-                rating: parseInt(formData.rating),
-                progress: parseInt(formData.progress),
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: GoalTracking = {
-        id: Date.now().toString(),
-        goalType: formData.goalType,
+    const editingItem = editingId ? goalTrackings.find((g) => g.id === editingId) as GoalTracking & { goalTypeId?: string } : null;
+    const goalTypeId = goalTypes.find((g) => g.name === formData.goalType)?.id ?? editingItem?.goalTypeId ?? formData.goalType;
+    const branchName = branches.find((b) => b.name === formData.branch)?.name ?? formData.branch;
+    setSubmitting(true);
+    try {
+      const payload = {
+        goalTypeId,
         subject: formData.subject,
-        branch: formData.branch,
+        branch: branchName,
         targetAchievement: formData.targetAchievement,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        rating: parseInt(formData.rating),
-        progress: parseInt(formData.progress),
+        rating: parseInt(formData.rating, 10),
+        progress: parseInt(formData.progress, 10),
       };
-      setGoalTrackings([...goalTrackings, newItem]);
+      const url = editingId ? `/api/hrm/performance/goals/${editingId}` : '/api/hrm/performance/goals';
+      const res = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? (editingId ? 'Goal berhasil diperbarui' : 'Goal berhasil dibuat'));
+        setShowForm(false);
+        setEditingId(null);
+        fetchGoals();
+      } else toast.error(json.message ?? 'Gagal menyimpan');
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan');
+    } finally {
+      setSubmitting(false);
     }
-    setShowForm(false);
-    setFormData({
-      goalType: '',
-      subject: '',
-      branch: '',
-      targetAchievement: '',
-      startDate: '',
-      endDate: '',
-      rating: '',
-      progress: '',
-    });
   };
 
   const handleEdit = (item: GoalTracking) => {
@@ -158,11 +142,33 @@ export function GoalTrackingContent() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this goal tracking?')) {
-      setGoalTrackings(goalTrackings.filter((item) => item.id !== id));
+  const openDelete = (id: string) => setDeleteId(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/performance/goals/${deleteId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Goal berhasil dihapus');
+        setDeleteId(null);
+        fetchGoals();
+      } else toast.error(json.message ?? 'Gagal menghapus');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus');
+    } finally {
+      setDeleting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const filteredData = goalTrackings.filter(
     (goal) =>
@@ -259,9 +265,9 @@ export function GoalTrackingContent() {
                       <SelectValue placeholder="Select goal type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {goalTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
+                      {goalTypes.map((g) => (
+                        <SelectItem key={g.id} value={g.name}>
+                          {g.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -274,9 +280,9 @@ export function GoalTrackingContent() {
                       <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>
+                          {b.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -367,10 +373,10 @@ export function GoalTrackingContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
                   Cancel
                 </Button>
               </div>
@@ -378,6 +384,21 @@ export function GoalTrackingContent() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus goal tracking?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini tidak dapat dibatalkan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Goal Tracking List - reference: goaltracking/index */}
       <Card className={cardClass}>
@@ -449,7 +470,7 @@ export function GoalTrackingContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(goal.id)}
+                          onClick={() => openDelete(goal.id)}
                           title="Delete"
                           className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >

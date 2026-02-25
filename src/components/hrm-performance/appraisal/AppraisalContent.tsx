@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, Star, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Star, Eye, Loader2 } from 'lucide-react';
 import { StarRatingDisplay } from '../StarRatingDisplay';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -38,42 +40,41 @@ export function AppraisalContent() {
     remarks: '',
   });
 
-  // Mock data
-  const [appraisals, setAppraisals] = useState<Appraisal[]>([
-    {
-      id: '1',
-      branch: 'Head Office',
-      department: 'IT',
-      designation: 'Senior Developer',
-      employee: 'John Doe',
-      targetRating: 4.0,
-      overallRating: 4.3,
-      appraisalDate: '2024-03-01',
-    },
-    {
-      id: '2',
-      branch: 'Branch A',
-      department: 'HR',
-      designation: 'HR Manager',
-      employee: 'Jane Smith',
-      targetRating: 4.5,
-      overallRating: 4.6,
-      appraisalDate: '2024-03-05',
-    },
-    {
-      id: '3',
-      branch: 'Head Office',
-      department: 'Finance',
-      designation: 'Accountant',
-      employee: 'Bob Wilson',
-      targetRating: 4.0,
-      overallRating: 3.8,
-      appraisalDate: '2024-03-10',
-    },
-  ]);
+  const [appraisals, setAppraisals] = useState<Appraisal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
 
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
-  const employees = ['John Doe', 'Jane Smith', 'Bob Wilson', 'Alice Brown', 'Charlie Davis'];
+  const fetchAppraisals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/performance/appraisals');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setAppraisals(json.data.map((a: { employee?: string; employeeId: string } & Appraisal) => ({ ...a, employee: a.employee ?? '' })));
+      else toast.error(json.message ?? 'Gagal memuat appraisal');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat appraisal');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAppraisals(); }, [fetchAppraisals]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [bRes, eRes] = await Promise.all([fetch('/api/branches'), fetch('/api/hrm/assets/employees')]);
+        const bJson = await bRes.json();
+        const eJson = await eRes.json();
+        if (bJson.success && Array.isArray(bJson.data)) setBranches(bJson.data);
+        if (eJson.success && Array.isArray(eJson.data)) setEmployees(eJson.data);
+      } catch (_e) {}
+    })();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(true);
@@ -90,61 +91,46 @@ export function AppraisalContent() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const overallRating =
-      (parseFloat(formData.technicalRating) +
-        parseFloat(formData.leadershipRating) +
-        parseFloat(formData.teamworkRating) +
-        parseFloat(formData.communicationRating)) /
-      4;
-
-    if (editingId) {
-      setAppraisals(
-        appraisals.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                branch: formData.branch,
-                employee: formData.employee,
-                appraisalDate: formData.appraisalDate,
-                overallRating: parseFloat(overallRating.toFixed(1)),
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: Appraisal = {
-        id: Date.now().toString(),
+    setSubmitting(true);
+    try {
+    const payload = {
+        employeeId: formData.employee,
         branch: formData.branch,
-        department: 'IT',
-        designation: 'Developer',
-        employee: formData.employee,
-        targetRating: 4.0,
-        overallRating: parseFloat(overallRating.toFixed(1)),
+        department: (appraisals.find((a) => a.id === editingId)?.department) ?? 'IT',
+        designation: (appraisals.find((a) => a.id === editingId)?.designation) ?? 'Staff',
+        targetRating: 4,
         appraisalDate: formData.appraisalDate,
+        technicalRating: formData.technicalRating ? parseFloat(formData.technicalRating) : undefined,
+        leadershipRating: formData.leadershipRating ? parseFloat(formData.leadershipRating) : undefined,
+        teamworkRating: formData.teamworkRating ? parseFloat(formData.teamworkRating) : undefined,
+        communicationRating: formData.communicationRating ? parseFloat(formData.communicationRating) : undefined,
+        remarks: formData.remarks || undefined,
       };
-      setAppraisals([...appraisals, newItem]);
+      const url = editingId ? `/api/hrm/performance/appraisals/${editingId}` : '/api/hrm/performance/appraisals';
+      const res = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? (editingId ? 'Appraisal berhasil diperbarui' : 'Appraisal berhasil dibuat'));
+        setShowForm(false);
+        setEditingId(null);
+        fetchAppraisals();
+      } else toast.error(json.message ?? 'Gagal menyimpan');
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan');
+    } finally {
+      setSubmitting(false);
     }
-    setShowForm(false);
-    setFormData({
-      branch: '',
-      employee: '',
-      appraisalDate: '',
-      technicalRating: '',
-      leadershipRating: '',
-      teamworkRating: '',
-      communicationRating: '',
-      remarks: '',
-    });
   };
 
-  const handleEdit = (item: Appraisal) => {
+  const handleEdit = (item: Appraisal & { employeeId?: string }) => {
     setShowForm(true);
     setEditingId(item.id);
     setFormData({
       branch: item.branch,
-      employee: item.employee,
+      employee: (item as { employeeId?: string }).employeeId ?? item.employee ?? '',
       appraisalDate: item.appraisalDate,
       technicalRating: '',
       leadershipRating: '',
@@ -154,16 +140,35 @@ export function AppraisalContent() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this appraisal?')) {
-      setAppraisals(appraisals.filter((item) => item.id !== id));
+  const openDelete = (id: string) => setDeleteId(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/performance/appraisals/${deleteId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Appraisal berhasil dihapus');
+        setDeleteId(null);
+        fetchAppraisals();
+      } else toast.error(json.message ?? 'Gagal menghapus');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleView = (id: string) => {
-    console.log('View appraisal details:', id);
-    alert('View appraisal details - Feature to be implemented');
-  };
+  const handleView = (_id: string) => toast.info('Detail appraisal akan tersedia di versi berikutnya.');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const filteredData = appraisals.filter(
     (appraisal) =>
@@ -249,9 +254,9 @@ export function AppraisalContent() {
                       <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>
+                          {b.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -268,8 +273,8 @@ export function AppraisalContent() {
                     </SelectTrigger>
                     <SelectContent>
                       {employees.map((emp) => (
-                        <SelectItem key={emp} value={emp}>
-                          {emp}
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -364,10 +369,10 @@ export function AppraisalContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
                   Cancel
                 </Button>
               </div>
@@ -375,6 +380,21 @@ export function AppraisalContent() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus appraisal?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini tidak dapat dibatalkan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Appraisal List - reference: appraisal/index */}
       <Card className={cardClass}>
@@ -448,7 +468,7 @@ export function AppraisalContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(appraisal.id)}
+                          onClick={() => openDelete(appraisal.id)}
                           title="Delete"
                           className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >

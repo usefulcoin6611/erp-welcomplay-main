@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, TrendingUp, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, TrendingUp, Eye, Loader2 } from 'lucide-react';
 import { StarRatingDisplay } from '../StarRatingDisplay';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
@@ -35,40 +37,50 @@ export function IndicatorContent() {
     customerExperienceRating: '',
   });
 
-  // Mock data
-  const [indicators, setIndicators] = useState<Indicator[]>([
-    {
-      id: '1',
-      branch: 'Head Office',
-      department: 'IT',
-      designation: 'Senior Developer',
-      overallRating: 4.5,
-      addedBy: 'Admin',
-      createdAt: '2024-01-15',
-    },
-    {
-      id: '2',
-      branch: 'Branch A',
-      department: 'HR',
-      designation: 'HR Manager',
-      overallRating: 4.2,
-      addedBy: 'Admin',
-      createdAt: '2024-01-20',
-    },
-    {
-      id: '3',
-      branch: 'Head Office',
-      department: 'Finance',
-      designation: 'Accountant',
-      overallRating: 4.8,
-      addedBy: 'Admin',
-      createdAt: '2024-02-01',
-    },
-  ]);
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [designations, setDesignations] = useState<{ id: string; name: string }[]>([]);
 
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
-  const departments = ['IT', 'HR', 'Finance', 'Marketing', 'Sales'];
-  const designations = ['Manager', 'Senior Developer', 'Junior Developer', 'Accountant', 'HR Manager'];
+  const fetchIndicators = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/performance/indicators');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) setIndicators(json.data);
+      else toast.error(json.message ?? 'Gagal memuat indikator');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat indikator');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIndicators();
+  }, [fetchIndicators]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [bRes, dRes, gRes] = await Promise.all([
+          fetch('/api/branches'),
+          fetch('/api/departments'),
+          fetch('/api/designations'),
+        ]);
+        const bJson = await bRes.json();
+        const dJson = await dRes.json();
+        const gJson = await gRes.json();
+        if (bJson.success && Array.isArray(bJson.data)) setBranches(bJson.data);
+        if (dJson.success && Array.isArray(dJson.data)) setDepartments(dJson.data);
+        if (gJson.success && Array.isArray(gJson.data)) setDesignations(gJson.data);
+      } catch (_e) {}
+    })();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(true);
@@ -83,49 +95,35 @@ export function IndicatorContent() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const overallRating =
-      (parseFloat(formData.technicalRating) +
-        parseFloat(formData.organizationalRating) +
-        parseFloat(formData.customerExperienceRating)) /
-      3;
-
-    if (editingId) {
-      setIndicators(
-        indicators.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                branch: formData.branch,
-                department: formData.department,
-                designation: formData.designation,
-                overallRating: parseFloat(overallRating.toFixed(1)),
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: Indicator = {
-        id: Date.now().toString(),
+    setSubmitting(true);
+    try {
+      const payload = {
         branch: formData.branch,
         department: formData.department,
         designation: formData.designation,
-        overallRating: parseFloat(overallRating.toFixed(1)),
+        technicalRating: parseFloat(formData.technicalRating),
+        organizationalRating: parseFloat(formData.organizationalRating),
+        customerExperienceRating: parseFloat(formData.customerExperienceRating),
         addedBy: 'Admin',
-        createdAt: new Date().toISOString().split('T')[0],
       };
-      setIndicators([...indicators, newItem]);
+      const url = editingId ? `/api/hrm/performance/indicators/${editingId}` : '/api/hrm/performance/indicators';
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? (editingId ? 'Indikator berhasil diperbarui' : 'Indikator berhasil dibuat'));
+        setShowForm(false);
+        setEditingId(null);
+        fetchIndicators();
+      } else toast.error(json.message ?? 'Gagal menyimpan');
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan');
+    } finally {
+      setSubmitting(false);
     }
-    setShowForm(false);
-    setFormData({
-      branch: '',
-      department: '',
-      designation: '',
-      technicalRating: '',
-      organizationalRating: '',
-      customerExperienceRating: '',
-    });
   };
 
   const handleEdit = (item: Indicator) => {
@@ -141,16 +139,35 @@ export function IndicatorContent() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this indicator?')) {
-      setIndicators(indicators.filter((item) => item.id !== id));
+  const openDelete = (id: string) => setDeleteId(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/performance/indicators/${deleteId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Indikator berhasil dihapus');
+        setDeleteId(null);
+        fetchIndicators();
+      } else toast.error(json.message ?? 'Gagal menghapus');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleView = (id: string) => {
-    console.log('View indicator details:', id);
-    alert('View indicator details - Feature to be implemented');
-  };
+  const handleView = (_id: string) => toast.info('Detail indikator akan tersedia di versi berikutnya.');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const filteredData = indicators.filter(
     (indicator) =>
@@ -236,9 +253,9 @@ export function IndicatorContent() {
                       <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
+                      {branches.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>
+                          {b.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -254,9 +271,9 @@ export function IndicatorContent() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.name}>
+                          {d.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -272,9 +289,9 @@ export function IndicatorContent() {
                       <SelectValue placeholder="Select designation" />
                     </SelectTrigger>
                     <SelectContent>
-                      {designations.map((desig) => (
-                        <SelectItem key={desig} value={desig}>
-                          {desig}
+                      {designations.map((g) => (
+                        <SelectItem key={g.id} value={g.name}>
+                          {g.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -331,10 +348,10 @@ export function IndicatorContent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 shadow-none" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingId ? 'Update' : 'Create')}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
                   Cancel
                 </Button>
               </div>
@@ -411,7 +428,7 @@ export function IndicatorContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(indicator.id)}
+                          onClick={() => openDelete(indicator.id)}
                           title="Delete"
                           className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
@@ -426,6 +443,21 @@ export function IndicatorContent() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus indikator?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini tidak dapat dibatalkan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

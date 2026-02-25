@@ -127,10 +127,11 @@ model PayslipType {
 }
 
 model GoalType {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String           @id @default(cuid())
+  name             String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  performanceGoals PerformanceGoal[]
 
   @@map("goal_type")
 }
@@ -313,6 +314,65 @@ model Competency {
   @@map("competency")
 }
 
+/// Indikator performansi per branch/department/designation (rating teknis, organisasi, customer experience).
+model PerformanceIndicator {
+  id                      String   @id @default(cuid())
+  branch                  String
+  department              String
+  designation             String
+  technicalRating         Float
+  organizationalRating    Float
+  customerExperienceRating Float
+  overallRating           Float
+  addedBy                 String   @default("")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("performance_indicator")
+}
+
+/// Appraisal per karyawan: target rating, overall rating, sub-rating, tanggal, remarks.
+model PerformanceAppraisal {
+  id                  String    @id @default(cuid())
+  employeeId          String
+  branch              String
+  department          String
+  designation         String
+  targetRating        Float
+  overallRating       Float
+  appraisalDate       DateTime
+  technicalRating     Float?
+  leadershipRating    Float?
+  teamworkRating      Float?
+  communicationRating Float?
+  remarks             String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("performance_appraisal")
+}
+
+/// Goal tracking: link ke GoalType, subject, branch, target, periode, rating, progress.
+model PerformanceGoal {
+  id                String   @id @default(cuid())
+  goalTypeId        String
+  subject           String
+  branch            String
+  targetAchievement String
+  startDate         DateTime
+  endDate           DateTime
+  rating            Int      // 1-5
+  progress          Int      // 0-100
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  goalType GoalType @relation(fields: [goalTypeId], references: [id], onDelete: Restrict)
+
+  @@map("performance_goal")
+}
+
 model Employee {
   id                   String             @id @default(cuid())
   employeeId           String             @unique
@@ -352,8 +412,9 @@ model Employee {
   leaves               LeaveRequest[]
   attendances          Attendance[]
 
-  user       User?          @relation(fields: [userId], references: [id])
-  onboarding JobOnboarding?
+  user                User?                 @relation(fields: [userId], references: [id])
+  onboarding          JobOnboarding?
+  performanceAppraisals PerformanceAppraisal[]
 
   @@map("employee")
 }
