@@ -14,6 +14,17 @@ interface CalendarEvent {
   time: string
   type: 'meeting' | 'training' | 'holiday' | 'other'
   description?: string
+  /** Optional color label (blue, green, purple, red, orange, yellow) — used for badge when provided */
+  color?: string
+}
+
+const COLOR_LABEL_TO_BADGE: Record<string, string> = {
+  blue: 'bg-blue-500',
+  green: 'bg-green-500',
+  purple: 'bg-purple-500',
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  yellow: 'bg-yellow-500',
 }
 
 interface EventCalendarProps {
@@ -62,6 +73,13 @@ export function EventCalendar({
       default:
         return 'bg-gray-500'
     }
+  }
+
+  const getEventBadgeColor = (event: CalendarEvent) => {
+    if (event.color && COLOR_LABEL_TO_BADGE[event.color]) {
+      return COLOR_LABEL_TO_BADGE[event.color]
+    }
+    return getEventTypeColor(event.type)
   }
 
   const formatDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -145,7 +163,7 @@ export function EventCalendar({
             {dayEvents.slice(0, 1).map((event) => (
               <div 
                 key={event.id} 
-                className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${getEventTypeColor(event.type)}`}
+                className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${getEventBadgeColor(event)}`}
                 title={`${event.title} - ${event.time}`}
               >
                 {event.title}
@@ -171,7 +189,7 @@ export function EventCalendar({
     startOfWeekMonday,
     addDays,
     getEventsForExactDate,
-    getEventTypeColor,
+    getEventBadgeColor,
   }: {
     dayNames: string[]
     selectedDate: Date
@@ -179,7 +197,7 @@ export function EventCalendar({
     startOfWeekMonday: (d: Date) => Date
     addDays: (d: Date, n: number) => Date
     getEventsForExactDate: (d: Date) => CalendarEvent[]
-    getEventTypeColor: (t: CalendarEvent['type']) => string
+    getEventBadgeColor: (e: CalendarEvent) => string
   }) {
     const start = startOfWeekMonday(selectedDate)
     return (
@@ -205,7 +223,7 @@ export function EventCalendar({
                 <div className={`text-[11px] sm:text-xs font-medium mb-0.5 ${isToday ? 'text-blue-600' : ''}`}>{d.getDate()}</div>
                 <div className="space-y-0.5">
                   {dayEvents.slice(0, 2).map((event) => (
-                    <div key={event.id} className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${getEventTypeColor(event.type)}`} title={`${event.title} - ${event.time}`}>
+                    <div key={event.id} className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${getEventBadgeColor(event)}`} title={`${event.title} - ${event.time}`}>
                       {event.title}
                     </div>
                   ))}
@@ -226,13 +244,13 @@ export function EventCalendar({
     monthNames,
     selectedDate,
     getEventsForExactDate,
-    getEventTypeColor,
+    getEventBadgeColor,
   }: {
     dayNames: string[]
     monthNames: string[]
     selectedDate: Date
     getEventsForExactDate: (d: Date) => CalendarEvent[]
-    getEventTypeColor: (t: CalendarEvent['type']) => string
+    getEventBadgeColor: (e: CalendarEvent) => string
   }) {
     const evs = getEventsForExactDate(selectedDate)
     const dayIndex = (selectedDate.getDay() + 6) % 7
@@ -247,7 +265,7 @@ export function EventCalendar({
           <ul className="space-y-1">
             {evs.map((e) => (
               <li key={e.id} className="flex items-center gap-2 text-sm">
-                <span className={`inline-block w-2.5 h-2.5 rounded ${getEventTypeColor(e.type)}`}></span>
+                <span className={`inline-block w-2.5 h-2.5 rounded ${getEventBadgeColor(e)}`}></span>
                 <span className="font-medium">{e.time}</span>
                 <span className="truncate">{e.title}</span>
               </li>
@@ -318,11 +336,11 @@ export function EventCalendar({
         )}
 
         {viewMode === 'week' && (
-          <WeekView dayNames={dayNames} selectedDate={selectedDate} isFading={isFading} startOfWeekMonday={startOfWeekMonday} addDays={addDays} getEventsForExactDate={getEventsForExactDate} getEventTypeColor={getEventTypeColor} />
+          <WeekView dayNames={dayNames} selectedDate={selectedDate} isFading={isFading} startOfWeekMonday={startOfWeekMonday} addDays={addDays} getEventsForExactDate={getEventsForExactDate} getEventBadgeColor={getEventBadgeColor} />
         )}
 
         {viewMode === 'day' && (
-          <DayView dayNames={dayNames} monthNames={monthNames} selectedDate={selectedDate} getEventsForExactDate={getEventsForExactDate} getEventTypeColor={getEventTypeColor} />
+          <DayView dayNames={dayNames} monthNames={monthNames} selectedDate={selectedDate} getEventsForExactDate={getEventsForExactDate} getEventBadgeColor={getEventBadgeColor} />
         )}
 
         {/* Navigation controls moved here (below the calendar grid) */}

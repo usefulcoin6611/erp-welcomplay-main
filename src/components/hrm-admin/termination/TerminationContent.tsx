@@ -10,6 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Pencil, Trash2, Search, XCircle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -35,9 +42,17 @@ interface Termination {
 const statCardClass = 'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 const tabColor = { iconBg: 'bg-red-100', iconText: 'text-red-600', accent: 'text-red-600' };
 
+const emptyForm = {
+  employeeId: '',
+  terminationTypeId: '',
+  noticeDate: '',
+  terminationDate: '',
+  description: '',
+};
+
 export function TerminationContent() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
@@ -46,13 +61,43 @@ export function TerminationContent() {
   const [data, setData] = useState<Termination[]>([]);
   const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
   const [terminationTypes, setTerminationTypes] = useState<{ id: string; name: string }[]>([]);
-  const [formData, setFormData] = useState({
-    employeeId: '',
-    terminationTypeId: '',
-    noticeDate: '',
-    terminationDate: '',
-    description: '',
-  });
+  const [formData, setFormData] = useState(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.employeeId?.trim()) {
+      errors.employeeId = 'Employee is required';
+    }
+    if (!formData.terminationTypeId?.trim()) {
+      errors.terminationTypeId = 'Termination type is required';
+    }
+    if (!formData.noticeDate?.trim()) {
+      errors.noticeDate = 'Notice date is required';
+    } else {
+      const d = new Date(formData.noticeDate);
+      if (Number.isNaN(d.getTime())) {
+        errors.noticeDate = 'Invalid date';
+      }
+    }
+    if (!formData.terminationDate?.trim()) {
+      errors.terminationDate = 'Termination date is required';
+    } else {
+      const d = new Date(formData.terminationDate);
+      if (Number.isNaN(d.getTime())) {
+        errors.terminationDate = 'Invalid date';
+      }
+    }
+    if (formData.noticeDate && formData.terminationDate) {
+      const notice = new Date(formData.noticeDate);
+      const term = new Date(formData.terminationDate);
+      if (!Number.isNaN(notice.getTime()) && !Number.isNaN(term.getTime()) && term < notice) {
+        errors.terminationDate = 'Termination date must be after notice date';
+      }
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -81,36 +126,51 @@ export function TerminationContent() {
     fetchData();
   }, [fetchData]);
 
+  const handleFormDialogOpenChange = (open: boolean) => {
+    setFormDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData(emptyForm);
+      setFormErrors({});
+    }
+  };
+
+  const clearError = (field: string) => {
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   const handleAdd = () => {
-    setShowForm(true);
     setEditingId(null);
-    setFormData({
-      employeeId: '',
-      terminationTypeId: '',
-      noticeDate: '',
-      terminationDate: '',
-      description: '',
-    });
+    setFormData(emptyForm);
+    setFormDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.employeeId ||
-      !formData.terminationTypeId ||
-      !formData.noticeDate ||
-      !formData.terminationDate
-    ) {
-      toast.error('Please fill all required fields');
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
       return;
     }
     setSaving(true);
     try {
       const url = editingId ? `/api/hrm/admin/terminations/${editingId}` : '/api/hrm/admin/terminations';
+      const body = {
+        employeeId: formData.employeeId.trim(),
+        terminationTypeId: formData.terminationTypeId.trim(),
+        noticeDate: formData.noticeDate.trim(),
+        terminationDate: formData.terminationDate.trim(),
+        description: formData.description?.trim() || undefined,
+      };
       const res = await fetch(url, {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) {
@@ -118,7 +178,7 @@ export function TerminationContent() {
         return;
       }
       toast.success(json?.message ?? 'Saved');
-      setShowForm(false);
+      handleFormDialogOpenChange(false);
       fetchData();
     } catch {
       toast.error('Failed to save');
@@ -128,7 +188,6 @@ export function TerminationContent() {
   };
 
   const handleEdit = (d: Termination) => {
-    setShowForm(true);
     setEditingId(d.id);
     setFormData({
       employeeId: d.employeeId,
@@ -137,6 +196,7 @@ export function TerminationContent() {
       terminationDate: d.terminationDate,
       description: d.description,
     });
+    setFormDialogOpen(true);
   };
 
   const handleDeleteClick = (id: string) => {
@@ -225,93 +285,6 @@ export function TerminationContent() {
         </Card>
       </div>
 
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create'} Termination</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Employee Name</Label>
-                  <Select value={formData.employeeId} onValueChange={(v) => setFormData({ ...formData, employeeId: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((e) => (
-                        <SelectItem key={e.id} value={e.id}>
-                          {e.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Termination Type</Label>
-                  <Select
-                    value={formData.terminationTypeId}
-                    onValueChange={(v) => setFormData({ ...formData, terminationTypeId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {terminationTypes.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Notice Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.noticeDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, noticeDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Termination Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.terminationDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, terminationDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={saving}>
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader className="flex flex-row items-center justify-end space-y-0 px-6 py-3.5">
           <div className="flex items-center gap-3 ml-auto">
@@ -389,6 +362,119 @@ export function TerminationContent() {
         </CardContent>
       </Card>
 
+      <Dialog open={formDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Termination' : 'Create New Termination'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Employee <span className="text-destructive">*</span></Label>
+                <Select
+                  value={formData.employeeId}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, employeeId: v });
+                    clearError('employeeId');
+                  }}
+                >
+                  <SelectTrigger className={formErrors.employeeId ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.employeeId && (
+                  <p className="text-sm text-destructive">{formErrors.employeeId}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Termination Type <span className="text-destructive">*</span></Label>
+                <Select
+                  value={formData.terminationTypeId}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, terminationTypeId: v });
+                    clearError('terminationTypeId');
+                  }}
+                >
+                  <SelectTrigger className={formErrors.terminationTypeId ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {terminationTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.terminationTypeId && (
+                  <p className="text-sm text-destructive">{formErrors.terminationTypeId}</p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Notice Date <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.noticeDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, noticeDate: e.target.value });
+                    clearError('noticeDate');
+                  }}
+                  className={formErrors.noticeDate ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.noticeDate}
+                />
+                {formErrors.noticeDate && (
+                  <p className="text-sm text-destructive">{formErrors.noticeDate}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Termination Date <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.terminationDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, terminationDate: e.target.value });
+                    clearError('terminationDate');
+                  }}
+                  className={formErrors.terminationDate ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.terminationDate}
+                />
+                {formErrors.terminationDate && (
+                  <p className="text-sm text-destructive">{formErrors.terminationDate}</p>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+                placeholder="Optional description"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleFormDialogOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={saving}>
+                {editingId ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setIdToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -398,7 +484,7 @@ export function TerminationContent() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
               onClick={handleDeleteConfirm}
             >
               Delete

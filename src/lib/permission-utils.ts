@@ -16,7 +16,7 @@ export function hasRouteAccess(route: string, userRole: UserRole): boolean {
       '*',
     ],
     'company': [
-      // Company has access to most routes except user management
+      // Company has access to most routes including User Management (per menu-config)
       '/dashboard',
       '/hrm-dashboard',
       '/account-dashboard',
@@ -34,10 +34,11 @@ export function hasRouteAccess(route: string, userRole: UserRole): boolean {
       '/settings',
       '/zoom',
       '/notifications',
-      // Explicitly deny user management routes
-      // '/users',
-      // '/roles',
-      // '/users/clients',
+      // User Management (company can manage users, access profiles, clients per UI requirement)
+      '/users',
+      '/users/',
+      '/access-profiles', // Access Profiles page (permission sets for employees)
+      '/clients',
     ],
     'client': [
       // Client has limited access - only CRM, Project, and Support
@@ -98,13 +99,14 @@ export function hasRouteAccess(route: string, userRole: UserRole): boolean {
 }
 
 /**
- * Check if route is a user management route (restricted to super admin only)
+ * Check if route is a user management route (super admin and company can access)
  */
 export function isUserManagementRoute(route: string): boolean {
   const userManagementRoutes = [
     '/users',
-    '/roles',
+    '/access-profiles', // Access Profiles
     '/users/clients',
+    '/clients',
   ]
   return userManagementRoutes.some((r) => route.startsWith(r))
 }
@@ -127,9 +129,9 @@ export function isSystemSetupRoute(route: string): boolean {
  * Get required role for a route
  */
 export function getRequiredRoleForRoute(route: string): UserRole[] | null {
-  // User management routes - super admin only
+  // User management routes - super admin and company (per menu-config)
   if (isUserManagementRoute(route)) {
-    return ['super admin']
+    return ['super admin', 'company']
   }
 
   // System setup routes - super admin only (some exceptions for company)

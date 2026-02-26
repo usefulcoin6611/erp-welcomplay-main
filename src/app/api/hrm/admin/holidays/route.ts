@@ -6,15 +6,17 @@ import { z } from "zod";
 
 const createSchema = z.object({
   name: z.string().min(1),
-  date: z.string().min(1),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
   description: z.string().optional(),
 });
 
-function toRow(h: { id: string; name: string; date: Date; description: string | null }) {
+function toRow(h: { id: string; name: string; startDate: Date; endDate: Date; description: string | null }) {
   return {
     id: h.id,
     name: h.name,
-    date: h.date.toISOString().split("T")[0],
+    startDate: h.startDate.toISOString().split("T")[0],
+    endDate: h.endDate.toISOString().split("T")[0],
     description: h.description ?? "",
   };
 }
@@ -24,7 +26,7 @@ export async function GET() {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const items = await prisma.hrmHoliday.findMany({
-      orderBy: { date: "asc" },
+      orderBy: { startDate: "asc" },
     });
     return NextResponse.json({ success: true, data: items.map(toRow) });
   } catch (error) {
@@ -45,7 +47,8 @@ export async function POST(request: NextRequest) {
     const item = await prisma.hrmHoliday.create({
       data: {
         name: parsed.data.name,
-        date: new Date(parsed.data.date),
+        startDate: new Date(parsed.data.startDate),
+        endDate: new Date(parsed.data.endDate),
         description: parsed.data.description?.trim() || null,
       },
     });

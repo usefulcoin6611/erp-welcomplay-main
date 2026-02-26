@@ -11,6 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, Megaphone } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -27,6 +34,8 @@ interface Announcement {
   title: string;
   branch: string;
   department: string;
+  employeeId?: string | null;
+  employeeName?: string;
   startDate: string;
   endDate: string;
   description: string;
@@ -36,9 +45,19 @@ interface Announcement {
 const statCardClass = 'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 const tabColor = { iconBg: 'bg-purple-100', iconText: 'text-purple-600', accent: 'text-purple-600' };
 
+const emptyForm = {
+  title: '',
+  branch: '',
+  department: '',
+  employeeId: '',
+  startDate: '',
+  endDate: '',
+  description: '',
+};
+
 export function AnnouncementContent() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
@@ -47,31 +66,57 @@ export function AnnouncementContent() {
   const [data, setData] = useState<Announcement[]>([]);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
-  const [formData, setFormData] = useState({
-    title: '',
-    branch: '',
-    department: '',
-    startDate: '',
-    endDate: '',
-    description: '',
-  });
+  const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
+  const [formData, setFormData] = useState(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.title?.trim()) errors.title = 'Title is required';
+    if (!formData.branch?.trim()) errors.branch = 'Branch is required';
+    if (!formData.department?.trim()) errors.department = 'Department is required';
+    if (!formData.startDate?.trim()) {
+      errors.startDate = 'Start date is required';
+    } else {
+      const d = new Date(formData.startDate);
+      if (Number.isNaN(d.getTime())) errors.startDate = 'Invalid date';
+    }
+    if (!formData.endDate?.trim()) {
+      errors.endDate = 'End date is required';
+    } else {
+      const d = new Date(formData.endDate);
+      if (Number.isNaN(d.getTime())) errors.endDate = 'Invalid date';
+    }
+    if (formData.startDate && formData.endDate) {
+      const s = new Date(formData.startDate);
+      const e = new Date(formData.endDate);
+      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e < s) {
+        errors.endDate = 'End date must be after start date';
+      }
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [announcementsRes, branchesRes, deptsRes] = await Promise.all([
+      const [announcementsRes, branchesRes, deptsRes, employeesRes] = await Promise.all([
         fetch('/api/hrm/admin/announcements'),
         fetch('/api/hrm/admin/branches'),
         fetch('/api/hrm/admin/departments'),
+        fetch('/api/hrm/admin/employees'),
       ]);
-      const [announcementsJson, branchesJson, deptsJson] = await Promise.all([
+      const [announcementsJson, branchesJson, deptsJson, employeesJson] = await Promise.all([
         announcementsRes.json(),
         branchesRes.json(),
         deptsRes.json(),
+        employeesRes.json(),
       ]);
       if (announcementsJson?.success && Array.isArray(announcementsJson.data)) setData(announcementsJson.data);
       if (branchesJson?.success && Array.isArray(branchesJson.data)) setBranches(branchesJson.data);
       if (deptsJson?.success && Array.isArray(deptsJson.data)) setDepartments(deptsJson.data);
+      if (employeesJson?.success && Array.isArray(employeesJson.data)) setEmployees(employeesJson.data);
     } catch {
       toast.error('Failed to load data');
     } finally {
@@ -84,31 +129,33 @@ export function AnnouncementContent() {
   }, [fetchData]);
 
   const handleAdd = () => {
-    setShowForm(true);
     setEditingId(null);
-    setFormData({
-      title: '',
-      branch: '',
-      department: '',
-      startDate: '',
-      endDate: '',
-      description: '',
-    });
+    setFormData(emptyForm);
+    setFormDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.branch || !formData.department || !formData.startDate || !formData.endDate) {
-      toast.error('Please fill all required fields');
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
       return;
     }
     setSaving(true);
     try {
       const url = editingId ? `/api/hrm/admin/announcements/${editingId}` : '/api/hrm/admin/announcements';
+      const body = {
+        title: formData.title.trim(),
+        branch: formData.branch.trim(),
+        department: formData.department.trim(),
+        employeeId: formData.employeeId.trim() || undefined,
+        startDate: formData.startDate.trim(),
+        endDate: formData.endDate.trim(),
+        description: formData.description?.trim() || undefined,
+      };
       const res = await fetch(url, {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) {
@@ -116,7 +163,8 @@ export function AnnouncementContent() {
         return;
       }
       toast.success(json?.message ?? 'Saved');
-      setShowForm(false);
+      setFormDialogOpen(false);
+      setEditingId(null);
       fetchData();
     } catch {
       toast.error('Failed to save');
@@ -126,16 +174,36 @@ export function AnnouncementContent() {
   };
 
   const handleEdit = (d: Announcement) => {
-    setShowForm(true);
     setEditingId(d.id);
     setFormData({
       title: d.title,
       branch: d.branch,
       department: d.department,
+      employeeId: d.employeeId ?? '',
       startDate: d.startDate,
       endDate: d.endDate,
       description: d.description,
     });
+    setFormDialogOpen(true);
+  };
+
+  const handleFormDialogOpenChange = (open: boolean) => {
+    setFormDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData(emptyForm);
+      setFormErrors({});
+    }
+  };
+
+  const clearError = (field: string) => {
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const handleDeleteClick = (id: string) => {
@@ -219,100 +287,6 @@ export function AnnouncementContent() {
           </CardContent>
         </Card>
       </div>
-
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create'} Announcement</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Branch</Label>
-                  <Select value={formData.branch} onValueChange={(v) => setFormData({ ...formData, branch: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.name}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Department</Label>
-                  <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.name}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, startDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, endDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={saving}>
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-end space-y-0 px-6 py-3.5">
@@ -399,6 +373,155 @@ export function AnnouncementContent() {
         </CardContent>
       </Card>
 
+      <Dialog open={formDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Announcement' : 'Create New Announcement'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Announcement Title <span className="text-destructive">*</span></Label>
+                <Input
+                  value={formData.title}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    clearError('title');
+                  }}
+                  className={formErrors.title ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.title}
+                  placeholder="Enter Announcement Title"
+                />
+                {formErrors.title && <p className="text-sm text-destructive">{formErrors.title}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Branch <span className="text-destructive">*</span></Label>
+                <Select
+                  value={formData.branch}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, branch: v });
+                    clearError('branch');
+                  }}
+                >
+                  <SelectTrigger className={formErrors.branch ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.branch && <p className="text-sm text-destructive">{formErrors.branch}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Department <span className="text-destructive">*</span></Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, department: v });
+                    clearError('department');
+                  }}
+                >
+                  <SelectTrigger className={formErrors.department ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.department && (
+                  <p className="text-sm text-destructive">{formErrors.department}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Employee <span className="text-destructive">*</span></Label>
+                <Select
+                  value={formData.employeeId}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, employeeId: v });
+                    clearError('employeeId');
+                  }}
+                >
+                  <SelectTrigger className={formErrors.employeeId ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select Employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.employeeId && (
+                  <p className="text-sm text-destructive">{formErrors.employeeId}</p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, startDate: e.target.value });
+                    clearError('startDate');
+                  }}
+                  className={formErrors.startDate ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.startDate}
+                />
+                {formErrors.startDate && (
+                  <p className="text-sm text-destructive">{formErrors.startDate}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>End Date <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, endDate: e.target.value });
+                    clearError('endDate');
+                  }}
+                  className={formErrors.endDate ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.endDate}
+                />
+                {formErrors.endDate && <p className="text-sm text-destructive">{formErrors.endDate}</p>}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+                placeholder="Optional description"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleFormDialogOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={saving}>
+                {editingId ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setIdToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -408,7 +531,7 @@ export function AnnouncementContent() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
               onClick={handleDeleteConfirm}
             >
               Delete

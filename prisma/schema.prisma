@@ -16,20 +16,40 @@ model User {
   role             String      @default("employee")
   branchId         String?
   departmentId     String?
+  accessProfileId  String?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   accounts         Account[]
   createdContracts Contract[]
   createdCustomers Customer[]  @relation("CreatedBy")
+  accessProfile    AccessProfile? @relation(fields: [accessProfileId], references: [id], onDelete: SetNull)
   employee         Employee?
   createdLeads     Lead[]      @relation("LeadCreatedBy")
   ownedLeads       Lead[]      @relation("LeadOwner")
   sessions         Session[]
+  loginDetails     LoginDetail[]
   branch           Branch?     @relation(fields: [branchId], references: [id])
   department       Department? @relation(fields: [departmentId], references: [id])
   createdVendors   Vendor[]
 
   @@map("user")
+}
+
+/// Access profile per branch: name + permission set. Assignable to users (User.accessProfileId).
+/// Distinct from User.role (user type: super admin, company, employee, client).
+model AccessProfile {
+  id          String   @id @default(cuid())
+  name        String
+  branchId    String
+  permissions Json     @default("[]") // array of permission strings (REFERENCE_PERMISSIONS)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  users       User[]
+
+  @@map("access_profile")
+  @@index([branchId])
 }
 
 model Branch {
@@ -54,6 +74,7 @@ model Branch {
   payments        Payment[]
   pipelines       Pipeline[]
   products        Product[]
+  accessProfiles  AccessProfile[]
   users           User[]
   vendors         Vendor[]
 
@@ -377,25 +398,70 @@ model HrmAnnouncement {
   title       String
   branch      String
   department  String
+  employeeId  String?
   startDate   DateTime
   endDate     DateTime
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
   @@map("hrm_announcement")
+  @@index([employeeId])
 }
 
 /// HR Admin: Holiday records
 model HrmHoliday {
   id          String   @id @default(cuid())
   name        String
-  date        DateTime
+  startDate   DateTime
+  endDate     DateTime
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("hrm_holiday")
+}
+
+/// HR: Company event records
+model HrmEvent {
+  id          String   @id @default(cuid())
+  title       String
+  branch      String
+  department  String
+  employeeId  String?
+  startDate   DateTime
+  endDate     DateTime
+  color       String   @default("blue")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@map("hrm_event")
+  @@index([employeeId])
+}
+
+model HrmMeeting {
+  id           String   @id @default(cuid())
+  title        String
+  branch        String
+  department    String
+  employeeId    String
+  meetingDate   DateTime
+  meetingTime   String
+  note         String?
+  status       String   @default("Scheduled")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("hrm_meeting")
+  @@index([employeeId])
+  @@index([meetingDate])
 }
 
 model JobCategory {
@@ -650,6 +716,9 @@ model Employee {
   hrmResignations          HrmResignation[]
   hrmTravels               HrmTravel[]
   hrmPromotions            HrmPromotion[]
+  hrmEvents                HrmEvent[]
+  hrmMeetings              HrmMeeting[]
+  hrmAnnouncements         HrmAnnouncement[]
   complaintsFrom           HrmComplaint[]  @relation("ComplaintFrom")
   complaintsAgainst        HrmComplaint[]  @relation("ComplaintAgainst")
   warningsReceived         HrmWarning[]     @relation("WarningEmployee")
@@ -943,6 +1012,22 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
+}
+
+/// Login/session log per user (reference: reference-erp login_details). Used by /userlogs.
+model LoginDetail {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  date      DateTime @default(now())
+  details   Json?    // geo, browser, device (country, device_type, os_name, etc.)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_detail")
+  @@index([userId])
+  @@index([date])
 }
 
 model Account {

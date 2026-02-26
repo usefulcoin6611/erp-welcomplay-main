@@ -6,15 +6,17 @@ import { z } from "zod";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
-  date: z.string().min(1).optional(),
+  startDate: z.string().min(1).optional(),
+  endDate: z.string().min(1).optional(),
   description: z.string().optional(),
 });
 
-function toRow(h: { id: string; name: string; date: Date; description: string | null }) {
+function toRow(h: { id: string; name: string; startDate: Date; endDate: Date; description: string | null }) {
   return {
     id: h.id,
     name: h.name,
-    date: h.date.toISOString().split("T")[0],
+    startDate: h.startDate.toISOString().split("T")[0],
+    endDate: h.endDate.toISOString().split("T")[0],
     description: h.description ?? "",
   };
 }
@@ -47,7 +49,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (!existing) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     const data: Record<string, unknown> = {};
     if (parsed.data.name) data.name = parsed.data.name;
-    if (parsed.data.date) data.date = new Date(parsed.data.date);
+    if (parsed.data.startDate) data.startDate = new Date(parsed.data.startDate);
+    if (parsed.data.endDate) data.endDate = new Date(parsed.data.endDate);
     if (parsed.data.description !== undefined) data.description = parsed.data.description?.trim() || null;
     const item = await prisma.hrmHoliday.update({ where: { id }, data });
     return NextResponse.json({ success: true, message: "Updated", data: toRow(item) });

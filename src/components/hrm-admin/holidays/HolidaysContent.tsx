@@ -9,6 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Pencil, Trash2, Search, Calendar } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -23,23 +30,59 @@ import { toast } from 'sonner';
 interface Holiday {
   id: string;
   name: string;
-  date: string;
+  startDate: string;
+  endDate: string;
   description: string;
 }
 
 const statCardClass = 'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 const tabColor = { iconBg: 'bg-teal-100', iconText: 'text-teal-600', accent: 'text-teal-600' };
 
+const emptyForm = { name: '', startDate: '', endDate: '', description: '' };
+
 export function HolidaysContent() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<Holiday[]>([]);
-  const [formData, setFormData] = useState({ name: '', date: '', description: '' });
+  const [formData, setFormData] = useState(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.name?.trim()) {
+      errors.name = 'Holiday name is required';
+    }
+    if (!formData.startDate?.trim()) {
+      errors.startDate = 'Start date is required';
+    } else {
+      const d = new Date(formData.startDate);
+      if (Number.isNaN(d.getTime())) {
+        errors.startDate = 'Invalid date';
+      }
+    }
+    if (!formData.endDate?.trim()) {
+      errors.endDate = 'End date is required';
+    } else {
+      const d = new Date(formData.endDate);
+      if (Number.isNaN(d.getTime())) {
+        errors.endDate = 'Invalid date';
+      }
+    }
+    if (formData.startDate && formData.endDate) {
+      const s = new Date(formData.startDate);
+      const e = new Date(formData.endDate);
+      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e < s) {
+        errors.endDate = 'End date must be after start date';
+      }
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -59,24 +102,30 @@ export function HolidaysContent() {
   }, [fetchData]);
 
   const handleAdd = () => {
-    setShowForm(true);
     setEditingId(null);
-    setFormData({ name: '', date: '', description: '' });
+    setFormData(emptyForm);
+    setFormDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.date) {
-      toast.error('Please fill all required fields');
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
       return;
     }
     setSaving(true);
     try {
       const url = editingId ? `/api/hrm/admin/holidays/${editingId}` : '/api/hrm/admin/holidays';
+      const body = {
+        name: formData.name.trim(),
+        startDate: formData.startDate.trim(),
+        endDate: formData.endDate.trim(),
+        description: formData.description?.trim() || undefined,
+      };
       const res = await fetch(url, {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) {
@@ -84,7 +133,8 @@ export function HolidaysContent() {
         return;
       }
       toast.success(json?.message ?? 'Saved');
-      setShowForm(false);
+      setFormDialogOpen(false);
+      setEditingId(null);
       fetchData();
     } catch {
       toast.error('Failed to save');
@@ -94,9 +144,28 @@ export function HolidaysContent() {
   };
 
   const handleEdit = (d: Holiday) => {
-    setShowForm(true);
     setEditingId(d.id);
-    setFormData({ name: d.name, date: d.date, description: d.description });
+    setFormData({ name: d.name, startDate: d.startDate, endDate: d.endDate, description: d.description });
+    setFormDialogOpen(true);
+  };
+
+  const handleFormDialogOpenChange = (open: boolean) => {
+    setFormDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData(emptyForm);
+      setFormErrors({});
+    }
+  };
+
+  const clearError = (field: string) => {
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const handleDeleteClick = (id: string) => {
@@ -130,8 +199,8 @@ export function HolidaysContent() {
   );
 
   const now = new Date();
-  const upcoming = data.filter((d) => new Date(d.date) > now).length;
-  const past = data.filter((d) => new Date(d.date) < now).length;
+  const upcoming = data.filter((d) => new Date(d.endDate) >= now).length;
+  const past = data.filter((d) => new Date(d.endDate) < now).length;
 
   if (loading) {
     return (
@@ -181,57 +250,6 @@ export function HolidaysContent() {
         </Card>
       </div>
 
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create'} Holiday</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Holiday Name</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, date: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={saving}>
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader className="flex flex-row items-center justify-end space-y-0 px-6 py-3.5">
           <div className="flex items-center gap-3 ml-auto">
@@ -259,7 +277,8 @@ export function HolidaysContent() {
             <TableHeader>
               <TableRow>
                 <TableHead className="px-6">Holiday Name</TableHead>
-                <TableHead className="px-6">Date</TableHead>
+                <TableHead className="px-6">Start Date</TableHead>
+                <TableHead className="px-6">End Date</TableHead>
                 <TableHead className="px-6">Description</TableHead>
                 <TableHead className="px-6 text-right">Actions</TableHead>
               </TableRow>
@@ -267,7 +286,7 @@ export function HolidaysContent() {
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="px-6 text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="px-6 text-center py-8 text-muted-foreground">
                     No holidays found
                   </TableCell>
                 </TableRow>
@@ -275,7 +294,8 @@ export function HolidaysContent() {
                 filteredData.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell className="px-6 font-medium">{d.name}</TableCell>
-                    <TableCell className="px-6">{d.date}</TableCell>
+                    <TableCell className="px-6">{d.startDate}</TableCell>
+                    <TableCell className="px-6">{d.endDate}</TableCell>
                     <TableCell className="px-6 max-w-xs truncate">{d.description}</TableCell>
                     <TableCell className="px-6">
                       <div className="flex justify-end gap-2">
@@ -305,6 +325,78 @@ export function HolidaysContent() {
         </CardContent>
       </Card>
 
+      <Dialog open={formDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Holiday' : 'Create New Holiday'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Holiday Name <span className="text-destructive">*</span></Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    clearError('name');
+                  }}
+                  className={formErrors.name ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.name}
+                />
+                {formErrors.name && <p className="text-sm text-destructive">{formErrors.name}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Start Date <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setFormData({ ...formData, startDate: e.target.value });
+                    clearError('startDate');
+                  }}
+                  className={formErrors.startDate ? 'border-destructive' : ''}
+                  aria-invalid={!!formErrors.startDate}
+                />
+                {formErrors.startDate && <p className="text-sm text-destructive">{formErrors.startDate}</p>}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>End Date <span className="text-destructive">*</span></Label>
+              <Input
+                type="date"
+                value={formData.endDate}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setFormData({ ...formData, endDate: e.target.value });
+                  clearError('endDate');
+                }}
+                className={formErrors.endDate ? 'border-destructive' : ''}
+                aria-invalid={!!formErrors.endDate}
+              />
+              {formErrors.endDate && <p className="text-sm text-destructive">{formErrors.endDate}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+                placeholder="Optional description"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleFormDialogOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none" disabled={saving}>
+                {editingId ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setIdToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -314,7 +406,7 @@ export function HolidaysContent() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
               onClick={handleDeleteConfirm}
             >
               Delete

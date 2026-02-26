@@ -366,7 +366,7 @@ function PayoutRequestContent() {
 
 // GuideLine Component
 function ReferralSettingsContent() {
-  const [referralLink] = useState('https://demo.workdo.io/erpgo-saas/register?ref=672428')
+  const [referralLink] = useState('https://welcomplay.com')
   const [commissionPercent] = useState('10')
   const [commissionAmount] = useState('10')
 
