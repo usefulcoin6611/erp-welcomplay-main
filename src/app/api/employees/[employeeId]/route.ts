@@ -142,7 +142,8 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userRole = (session.user as any).role;
+    const currentUser = session.user as { role?: string; branchId?: string | null; departmentId?: string | null };
+    const userRole = currentUser.role;
     if (userRole !== "super admin" && userRole !== "company") {
       return NextResponse.json(
         { success: false, message: "Forbidden: Akses ditolak" },
@@ -296,13 +297,25 @@ export async function PUT(
           );
         }
 
-        const branchRecord = await (prisma as any).branch.findFirst({
-          where: { name: data.branch },
-        });
+        let branchId: string | null = null;
+        let departmentId: string | null = null;
 
-        const departmentRecord = await (prisma as any).department.findFirst({
-          where: { name: data.department },
-        });
+        if (userRole === "company" && currentUser.branchId) {
+          branchId = currentUser.branchId;
+          const deptInBranch = await (prisma as any).department.findFirst({
+            where: { name: data.department, branchId },
+          });
+          departmentId = deptInBranch?.id ?? currentUser.departmentId ?? null;
+        } else {
+          const branchRecord = await (prisma as any).branch.findFirst({
+            where: { name: data.branch },
+          });
+          const departmentRecord = await (prisma as any).department.findFirst({
+            where: { name: data.department },
+          });
+          branchId = branchRecord?.id ?? null;
+          departmentId = departmentRecord?.id ?? null;
+        }
 
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -313,8 +326,8 @@ export async function PUT(
             role: "employee",
             password: hashedPassword,
             emailVerified: true,
-            branchId: branchRecord?.id ?? null,
-            departmentId: departmentRecord?.id ?? null,
+            branchId,
+            departmentId,
           },
         });
 

@@ -28,7 +28,7 @@ import { seedPerformanceTypes } from "./seeds/performance-types";
 import { seedTrainers } from "./seeds/trainers";
 import { seedTrainings } from "./seeds/trainings";
 import { seedCompetencies } from "./seeds/competencies";
-import { seedEmployees, seedDevEmployeeUserLink } from "./seeds/employees";
+import { seedEmployees, seedDevEmployeeUserLink, seedEmployeeUsers } from "./seeds/employees";
 import { seedCustomers } from "./seeds/customers";
 import { seedVendors } from "./seeds/vendors";
 import { seedEstimates } from "./seeds/estimates";
@@ -108,6 +108,7 @@ async function main() {
     await seedTrainings(prisma);
     await seedHrmAssets(prisma);
     await seedUsers(prisma);
+    await seedEmployeeUsers(prisma);
     await seedJournals(prisma);
     await seedCustomers(prisma);
     await seedVendors(prisma);

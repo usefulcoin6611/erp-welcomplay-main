@@ -1,3 +1,5 @@
+import * as bcrypt from "bcryptjs";
+
 export async function seedEmployees(prisma: any) {
   console.log("Seeding Employees...");
 
@@ -554,4 +556,77 @@ export async function seedDevEmployeeUserLink(prisma: any) {
   console.log(
     `Dev employee link: linked employee ${employee.employeeId} to user ${user.email}.`,
   );
+}
+
+/**
+ * Creates User (login) records for all employees and links Employee.userId.
+ * So employees appear on /users when company filters by branch. Uses branch name
+ * to resolve branchId so seeded employees (e.g. branch "Pusat Jakarta") get the
+ * correct branch and show for that branch's company user.
+ */
+export async function seedEmployeeUsers(prisma: any) {
+  console.log("Seeding User records for employees...");
+  const defaultPassword = "password1234";
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+  const employees = await prisma.employee.findMany({ orderBy: { employeeId: "asc" } });
+  if (employees.length === 0) {
+    console.log("No employees found, skipping employee user seed.");
+    return;
+  }
+
+  for (const emp of employees) {
+    const branch = await prisma.branch.findFirst({
+      where: { name: emp.branch },
+    });
+    const department = branch
+      ? await prisma.department.findFirst({
+          where: { name: emp.department, branchId: branch.id },
+        })
+      : null;
+
+    const user = await prisma.user.upsert({
+      where: { email: emp.email },
+      update: {
+        name: emp.name,
+        role: "employee",
+        branchId: branch?.id ?? null,
+        departmentId: department?.id ?? null,
+        password: hashedPassword,
+        emailVerified: true,
+      },
+      create: {
+        email: emp.email,
+        name: emp.name,
+        role: "employee",
+        password: hashedPassword,
+        emailVerified: true,
+        branchId: branch?.id ?? null,
+        departmentId: department?.id ?? null,
+      },
+    });
+
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: {
+          providerId: "credential",
+          accountId: emp.email,
+        },
+      },
+      update: { userId: user.id, password: hashedPassword },
+      create: {
+        userId: user.id,
+        providerId: "credential",
+        accountId: emp.email,
+        password: hashedPassword,
+      },
+    });
+
+    await prisma.employee.update({
+      where: { id: emp.id },
+      data: { userId: user.id },
+    });
+  }
+
+  console.log(`Employee users seeded: ${employees.length} users created/linked.`);
 }

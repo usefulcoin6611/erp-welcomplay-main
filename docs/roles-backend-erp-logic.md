@@ -61,6 +61,15 @@ Migration: `prisma/migrations/20260225120000_add_role_model/migration.sql` (adds
 
 ---
 
+## Users page (/users) and HRM Employees
+
+- **User Management** (`/users`) lists **User** records (login accounts) with role `employee` (and for super admin, `company`) scoped by **branch**: company sees only users where `User.branchId = currentUser.branchId`.
+- **HRM Employee setup** (`/hrm/employees`, POST/PUT `/api/employees`) can create or update an **Employee** and, when a login is needed, create or update a **User** with role `employee` linked via `Employee.userId`.
+- So the same **User** can be created from (1) **Create User** on `/users` or (2) **Create Employee** (with password) in HRM. For both to show on `/users`, the User must have the correct **branchId**.
+- **Business rule**: When a **company** user creates an employee via HRM, the new User is assigned `branchId = currentUser.branchId` (and department resolved within that branch). When a **super admin** creates an employee, branch/department are resolved by name as before. This way, employees created from HRM appear in the same branch’s user list on `/users`.
+
+---
+
 ## Summary
 
 The Access Profiles backend (API at `/api/roles`, page at `/roles`) is branch-scoped and aligned with multi-tenant ERP logic: companies manage only their branch’s access profiles; super admin can manage any branch’s profiles. **Access Profile** is the link between **Users** (who) and **REFERENCE_PERMISSIONS** (what they can do) within a branch. The name “Access Profile” is used in the UI to avoid confusion with **User type** (the system role: super admin, company, employee, client).

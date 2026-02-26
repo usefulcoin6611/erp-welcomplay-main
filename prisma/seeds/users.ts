@@ -29,8 +29,16 @@ export async function seedUsers(prisma: any) {
     },
   ];
 
+  const branchPusatJakarta = await prisma.branch.findFirst({ where: { name: "Pusat Jakarta" } });
+  const defaultBranch = branchPusatJakarta ?? (await prisma.branch.findFirst());
+
   for (const user of users) {
-    const branch = await prisma.branch.findFirst();
+    const branch =
+      user.role === "company"
+        ? branchPusatJakarta ?? defaultBranch
+        : user.role === "employee"
+          ? defaultBranch
+          : await prisma.branch.findFirst();
     const hashedPassword = await bcrypt.hash(user.password, 10);
 
     const dbUser = await prisma.user.upsert({
