@@ -411,10 +411,11 @@ model HrmAnnouncement {
   @@index([employeeId])
 }
 
-/// HR Admin: Holiday records
+/// HR Admin: Holiday records. DB still has legacy "date" column (NOT NULL) from initial migration.
 model HrmHoliday {
   id          String   @id @default(cuid())
   name        String
+  date        DateTime // legacy column kept for DB compatibility; use startDate/endDate for range
   startDate   DateTime
   endDate     DateTime
   description String?

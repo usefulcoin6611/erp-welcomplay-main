@@ -57,18 +57,21 @@ export async function seedHrmAdmin(prisma: any) {
       data: [
         {
           name: "New Year Day",
+          date: new Date("2024-01-01"),
           startDate: new Date("2024-01-01"),
           endDate: new Date("2024-01-01"),
           description: "New Year celebration",
         },
         {
           name: "Independence Day",
+          date: new Date("2024-08-17"),
           startDate: new Date("2024-08-17"),
           endDate: new Date("2024-08-17"),
           description: "National holiday",
         },
         {
           name: "Christmas",
+          date: new Date("2024-12-25"),
           startDate: new Date("2024-12-25"),
           endDate: new Date("2024-12-25"),
           description: "Christmas celebration",
