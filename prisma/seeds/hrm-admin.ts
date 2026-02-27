@@ -120,46 +120,54 @@ export async function seedHrmAdmin(prisma: any) {
     console.log("HR Admin: Created sample HR events.");
   }
 
-  const existingMeeting = await prisma.hrmMeeting.findFirst();
-  if (!existingMeeting && employees.length >= 2) {
-    const branches = await prisma.branch.findMany({ take: 2, orderBy: { name: "asc" } });
-    const branchName = branches[0]?.name ?? employees[0].branch ?? "Head Office";
-    const deptName = employees[0].department ?? "IT";
-    await prisma.hrmMeeting.createMany({
-      data: [
-        {
-          title: "Weekly Team Standup",
-          branch: branchName,
-          department: deptName,
-          employeeId: employees[0].id,
-          meetingDate: new Date("2024-03-20"),
-          meetingTime: "09:00",
-          note: "Daily sync and blockers",
-          status: "Scheduled",
-        },
-        {
-          title: "Client Presentation",
-          branch: branchName,
-          department: employees[1]?.department ?? "Sales",
-          employeeId: employees[1].id,
-          meetingDate: new Date("2024-03-21"),
-          meetingTime: "14:00",
-          note: "",
-          status: "Scheduled",
-        },
-        {
-          title: "Project Review",
-          branch: branches[1]?.name ?? employees[1]?.branch ?? "Branch Office",
-          department: deptName,
-          employeeId: employees[0].id,
-          meetingDate: new Date("2024-03-18"),
-          meetingTime: "10:00",
-          note: "Q1 deliverables",
-          status: "Completed",
-        },
-      ],
-    });
-    console.log("HR Admin: Created sample meetings.");
+  try {
+    const existingMeeting = await prisma.hrmMeeting.findFirst();
+    if (!existingMeeting && employees.length >= 2) {
+      const branches = await prisma.branch.findMany({ take: 2, orderBy: { name: "asc" } });
+      const branchName = branches[0]?.name ?? employees[0].branch ?? "Head Office";
+      const deptName = employees[0].department ?? "IT";
+      await prisma.hrmMeeting.createMany({
+        data: [
+          {
+            title: "Weekly Team Standup",
+            branch: branchName,
+            department: deptName,
+            employeeId: employees[0].id,
+            meetingDate: new Date("2024-03-20"),
+            meetingTime: "09:00",
+            note: "Daily sync and blockers",
+            status: "Scheduled",
+          },
+          {
+            title: "Client Presentation",
+            branch: branchName,
+            department: employees[1]?.department ?? "Sales",
+            employeeId: employees[1].id,
+            meetingDate: new Date("2024-03-21"),
+            meetingTime: "14:00",
+            note: "",
+            status: "Scheduled",
+          },
+          {
+            title: "Project Review",
+            branch: branches[1]?.name ?? employees[1]?.branch ?? "Branch Office",
+            department: deptName,
+            employeeId: employees[0].id,
+            meetingDate: new Date("2024-03-18"),
+            meetingTime: "10:00",
+            note: "Q1 deliverables",
+            status: "Completed",
+          },
+        ],
+      });
+      console.log("HR Admin: Created sample meetings.");
+    }
+  } catch (err: any) {
+    if (err?.code === "P2021" || err?.message?.includes("does not exist")) {
+      console.log("HR Admin: Skipping meetings (hrm_meeting table not found). Run migration 20260229100000_add_hrm_meetings if needed.");
+    } else {
+      throw err;
+    }
   }
 
   console.log("HR Admin seeding completed.");
