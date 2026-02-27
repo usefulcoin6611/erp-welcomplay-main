@@ -10,10 +10,10 @@
     "lint": "eslint .",
     "start": "next start",
     "postinstall": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:push": "prisma db push",
+    "db:migrate": "pnpm prisma migrate deploy",
+    "db:push": "pnpm prisma db push",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
-    "db:setup": "prisma migrate deploy && ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "db:setup": "pnpm prisma migrate deploy && ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
