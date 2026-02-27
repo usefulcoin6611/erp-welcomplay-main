@@ -880,92 +880,105 @@ export default function POSPurchasePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── View Detail Dialog ───────────────────────────────────────────────── */}
+      {/* ─── View Detail Dialog (same width & style as Create/Edit) ─────────── */}
       <Dialog open={openView} onOpenChange={setOpenView}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-600" />
-              Purchase Detail
-            </DialogTitle>
+            <DialogTitle>{viewDetail?.billId ?? 'Purchase Detail'}</DialogTitle>
           </DialogHeader>
           {loadingDetail ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : viewDetail ? (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Purchase #</p>
-                  <p className="font-semibold text-blue-600">{viewDetail.billId}</p>
+            <div className="space-y-5">
+              {/* Row 1: Vendor + Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Vendor</Label>
+                  <p className="text-sm font-semibold">{viewDetail.vendor?.name ?? '—'}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Vendor</p>
-                  <p className="font-medium">{viewDetail.vendor?.name ?? '—'}</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                  <p className="text-sm">{viewDetail.categoryId ? (categories.find(c => c.id === viewDetail.categoryId)?.name ?? '—') : '—'}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Purchase Date</p>
-                  <p>{formatDate(viewDetail.billDate)}</p>
+              </div>
+
+              {/* Row 2: Dates + Status + Reference */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Purchase Date</Label>
+                  <p className="text-sm">{formatDate(viewDetail.billDate)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Due Date</p>
-                  <p>{formatDate(viewDetail.dueDate)}</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Due Date</Label>
+                  <p className="text-sm">{formatDate(viewDetail.dueDate)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Status</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusConfig(viewDetail.status).color}`}>
                     {getStatusConfig(viewDetail.status).label}
                   </span>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="font-bold text-blue-600">{formatPrice(viewDetail.total)}</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Reference</Label>
+                  <p className="text-sm font-mono">{viewDetail.reference ?? '—'}</p>
                 </div>
-                {viewDetail.reference && (
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Reference</p>
-                    <p className="font-mono text-xs">{viewDetail.reference}</p>
-                  </div>
-                )}
-                {viewDetail.description && (
-                  <div className="col-span-2 space-y-1">
-                    <p className="text-xs text-muted-foreground">Notes</p>
-                    <p className="text-muted-foreground">{viewDetail.description}</p>
-                  </div>
-                )}
               </div>
+
+              {/* Notes */}
+              {viewDetail.description && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                  <p className="text-sm text-muted-foreground">{viewDetail.description}</p>
+                </div>
+              )}
 
               <Separator />
 
-              {/* Items */}
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Items</p>
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="px-3 py-2 text-xs font-medium">Product</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Qty</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Price</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Discount</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Tax</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viewDetail.items?.map((item, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="px-3 py-2 text-xs font-medium">{item.itemName}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{item.quantity}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{formatPrice(item.price)}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{item.discount > 0 ? formatPrice(item.discount) : '—'}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{item.taxRate > 0 ? `${item.taxRate}%` : '—'}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right font-medium">{formatPrice(item.amount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+              {/* Items - same grid layout as create/edit */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Items ({viewDetail.items?.length ?? 0})</Label>
+                <div className="space-y-1">
+                  {/* Column headers */}
+                  <div className="grid grid-cols-[1fr_60px_100px_90px_60px_100px] gap-2 px-1">
+                    <span className="text-xs font-medium text-muted-foreground">Product</span>
+                    <span className="text-xs font-medium text-muted-foreground">Qty</span>
+                    <span className="text-xs font-medium text-muted-foreground">Price</span>
+                    <span className="text-xs font-medium text-muted-foreground">Discount</span>
+                    <span className="text-xs font-medium text-muted-foreground">Tax%</span>
+                    <span className="text-xs font-medium text-muted-foreground text-right">Amount</span>
+                  </div>
+                  {/* Item rows */}
+                  {viewDetail.items?.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_60px_100px_90px_60px_100px] gap-2 items-center rounded-md border border-border bg-muted/10 px-2 py-2">
+                      <span className="text-xs font-medium truncate">{item.itemName}</span>
+                      <span className="text-xs text-center">{item.quantity}</span>
+                      <span className="text-xs">{formatPrice(item.price)}</span>
+                      <span className="text-xs text-red-600">{item.discount > 0 ? `- ${formatPrice(item.discount)}` : '—'}</span>
+                      <span className="text-xs">{item.taxRate > 0 ? `${item.taxRate}%` : '—'}</span>
+                      <span className="text-xs font-semibold text-right">{formatPrice(item.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary - same as create/edit */}
+                <div className="flex justify-end">
+                  <div className="min-w-[220px] space-y-1.5 text-sm border rounded-md p-3 bg-muted/20">
+                    <div className="flex justify-between gap-8">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatPrice(viewDetail.items?.reduce((s, it) => s + it.quantity * it.price, 0) ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between gap-8">
+                      <span className="text-muted-foreground">Discount</span>
+                      <span className="text-red-600">- {formatPrice(viewDetail.items?.reduce((s, it) => s + it.discount, 0) ?? 0)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between gap-8 font-semibold">
+                      <span>Total</span>
+                      <span className="text-blue-600">{formatPrice(viewDetail.total)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -973,7 +986,7 @@ export default function POSPurchasePage() {
 
               {/* Quick status change */}
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Change Status</p>
+                <Label className="text-sm font-medium text-muted-foreground">Change Status</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {STATUS_OPTIONS.map(s => (
                     <Button
