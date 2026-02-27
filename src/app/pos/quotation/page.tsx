@@ -207,8 +207,13 @@ export default function POSQuotationPage() {
     fetch('/api/customers').then(r => r.json()).then(res => {
       if (res.success) setCustomers(res.data.map((c: any) => ({ id: c.id, name: c.name, customerCode: c.customerCode })))
     }).catch(() => {})
-    fetch('/api/categories').then(r => r.json()).then(res => {
-      if (res.success) setCategories(res.data.map((c: any) => ({ id: c.id, name: c.name })))
+    // Fetch all categories (not filtered by branchId) for the quotation form
+    // Use ?all=true to get categories across all branches
+    fetch('/api/categories?all=true').then(r => r.json()).then(res => {
+      if (res.success) {
+        const cats = res.data.map((c: any) => ({ id: c.id, name: c.name }))
+        setCategories(cats)
+      }
     }).catch(() => {})
     fetch('/api/products').then(r => r.json()).then(res => {
       if (res.success) setProducts(res.data.map((p: any) => ({
