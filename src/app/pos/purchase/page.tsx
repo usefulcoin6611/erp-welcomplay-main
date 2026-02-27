@@ -1,5 +1,16 @@
 'use client'
 
+// Sentinel value for "no selection" in Select components (empty string is not allowed as SelectItem value)
+const NO_SELECTION = '__none__'
+
+function toSelectValue(val: string | null | undefined): string {
+  return val && val !== '' ? val : NO_SELECTION
+}
+
+function fromSelectValue(val: string): string | null {
+  return val === NO_SELECTION ? null : val
+}
+
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Plus, Search, X, Eye, Pencil, Trash, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -112,7 +123,7 @@ const STATUS_CLASS: Record<string, string> = {
 }
 
 const EMPTY_ITEM: Omit<PurchaseItem, 'id'> = {
-  productId: '',
+  productId: NO_SELECTION,
   itemName: '',
   quantity: 1,
   price: 0,
@@ -164,8 +175,8 @@ export default function POSPurchasePage() {
   const [openForm, setOpenForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null) // billId
   const [submitting, setSubmitting] = useState(false)
-  const [formVendorId, setFormVendorId] = useState('')
-  const [formCategoryId, setFormCategoryId] = useState('')
+  const [formVendorId, setFormVendorId] = useState(NO_SELECTION)
+  const [formCategoryId, setFormCategoryId] = useState(NO_SELECTION)
   const [formBillDate, setFormBillDate] = useState('')
   const [formDueDate, setFormDueDate] = useState('')
   const [formStatus, setFormStatus] = useState<PurchaseStatus>('draft')
@@ -242,8 +253,8 @@ export default function POSPurchasePage() {
 
   const resetForm = () => {
     setEditingId(null)
-    setFormVendorId('')
-    setFormCategoryId('')
+    setFormVendorId(NO_SELECTION)
+    setFormCategoryId(NO_SELECTION)
     setFormBillDate(new Date().toISOString().slice(0, 10))
     setFormDueDate(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10))
     setFormStatus('draft')
@@ -268,8 +279,8 @@ export default function POSPurchasePage() {
       }
       const bill = data.data
       setEditingId(bill.billId)
-      setFormVendorId(bill.vendorId ?? '')
-      setFormCategoryId(bill.categoryId ?? '')
+      setFormVendorId(toSelectValue(bill.vendorId))
+      setFormCategoryId(toSelectValue(bill.categoryId))
       setFormBillDate(bill.billDate?.slice(0, 10) ?? '')
       setFormDueDate(bill.dueDate?.slice(0, 10) ?? '')
       setFormStatus(bill.status as PurchaseStatus)
@@ -278,7 +289,7 @@ export default function POSPurchasePage() {
       setFormItems(
         bill.items?.length > 0
           ? bill.items.map((it: any) => ({
-              productId: it.productId ?? '',
+              productId: toSelectValue(it.productId),
               itemName: it.itemName ?? '',
               quantity: Number(it.quantity) || 1,
               price: Number(it.price) || 0,
@@ -303,13 +314,17 @@ export default function POSPurchasePage() {
     setFormItems(prev => {
       const updated = [...prev]
       const item = { ...updated[idx], [field]: value }
-      if (field === 'productId') {
+      if (field === 'productId' && value !== NO_SELECTION) {
         const product = products.find(p => p.id === value)
         if (product) {
           item.itemName = product.name
           item.price = product.purchasePrice
           item.taxRate = product.taxRate
         }
+      } else if (field === 'productId' && value === NO_SELECTION) {
+        item.itemName = ''
+        item.price = 0
+        item.taxRate = 0
       }
       item.amount = calcItemAmount(item)
       updated[idx] = item
@@ -333,16 +348,18 @@ export default function POSPurchasePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formVendorId) { toast.error('Please select a vendor'); return }
+    const vendorId = fromSelectValue(formVendorId)
+    const categoryId = fromSelectValue(formCategoryId)
+    if (!vendorId) { toast.error('Please select a vendor'); return }
     if (!formBillDate) { toast.error('Purchase date is required'); return }
     if (!formDueDate) { toast.error('Due date is required'); return }
-    if (formItems.some(it => !it.productId)) { toast.error('All items must have a product selected'); return }
+    if (formItems.some(it => !it.productId || it.productId === NO_SELECTION)) { toast.error('All items must have a product selected'); return }
 
     setSubmitting(true)
     try {
       const body = {
-        vendorId: formVendorId,
-        categoryId: formCategoryId || null,
+        vendorId,
+        categoryId,
         billDate: formBillDate,
         dueDate: formDueDate,
         status: formStatus,
@@ -350,7 +367,7 @@ export default function POSPurchasePage() {
         description: formDescription || null,
         total: formTotal,
         items: formItems.map(it => ({
-          productId: it.productId,
+          productId: fromSelectValue(it.productId) ?? it.productId,
           quantity: it.quantity,
           price: it.price,
           discount: it.discount,
@@ -609,7 +626,7 @@ export default function POSPurchasePage() {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Category</SelectItem>
+                    <SelectItem value={NO_SELECTION}>No Category</SelectItem>
                     {categories.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -708,6 +725,7 @@ export default function POSPurchasePage() {
                               <SelectValue placeholder="Select product" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value={NO_SELECTION}>Select product</SelectItem>
                               {products.map(p => (
                                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                               ))}
