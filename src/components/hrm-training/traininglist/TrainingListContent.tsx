@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Eye, GraduationCap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Eye, GraduationCap, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +78,8 @@ export function TrainingListContent() {
   const [trainingTypes, setTrainingTypes] = useState<{ id: string; name: string }[]>([]);
   const [employees, setEmployees] = useState<{ id: string; name: string }[]>([]);
   const [trainers, setTrainers] = useState<{ id: string; fullName: string }[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const trainerOptions = ['Internal', 'External'];
 
@@ -264,6 +266,17 @@ export function TrainingListContent() {
       training.branch.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -359,7 +372,10 @@ export function TrainingListContent() {
             <Input
               placeholder="Search by employee, training type, trainer, or branch..."
               value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="pl-10 border-0 bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
@@ -379,14 +395,14 @@ export function TrainingListContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length === 0 ? (
+              {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No trainings found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData.map((training) => (
+                paginatedData.map((training) => (
                   <TableRow key={training.id}>
                     <TableCell className="px-4 py-3 font-medium">{training.branch}</TableCell>
                     <TableCell className="px-4 py-3">{training.trainingType}</TableCell>
@@ -439,6 +455,42 @@ export function TrainingListContent() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

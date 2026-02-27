@@ -62,6 +62,10 @@ import {
   Building2,
   X,
   Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -115,6 +119,8 @@ export default function CompanyPolicyPage() {
   const [currentAttachmentPath, setCurrentAttachmentPath] = useState<string | null>(null);
   const [attachmentRemoved, setAttachmentRemoved] = useState(false);
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchPolicies = async () => {
     try {
@@ -282,6 +288,17 @@ export default function CompanyPolicyPage() {
     [policies, branches, searchTerm],
   );
 
+  const totalItems = filteredPolicies.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedPolicies = filteredPolicies.slice(startIndex, endIndex);
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
+
   const totalPolicies = policies.length;
   const withAttachments = policies.filter((p) => p.attachment).length;
   const branchCount = new Set(policies.map((p) => p.branch)).size;
@@ -365,7 +382,10 @@ export default function CompanyPolicyPage() {
                       <Input
                         placeholder="Search policies..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setCurrentPage(1);
+                        }}
                         className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
                       />
                       {searchTerm.length > 0 && (
@@ -374,7 +394,10 @@ export default function CompanyPolicyPage() {
                           variant="ghost"
                           size="sm"
                           className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
-                          onClick={() => setSearchTerm('')}
+                          onClick={() => {
+                            setSearchTerm('');
+                            setCurrentPage(1);
+                          }}
                           aria-label="Clear search"
                         >
                           <X className="h-4 w-4" />
@@ -413,17 +436,17 @@ export default function CompanyPolicyPage() {
                               Loading policies...
                             </TableCell>
                           </TableRow>
-                        ) : filteredPolicies.length === 0 ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={5}
-                              className="px-6 text-center py-8 text-muted-foreground"
-                            >
-                              No policies found
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredPolicies.map((policy) => (
+) : paginatedPolicies.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={5}
+                                className="px-6 text-center py-8 text-muted-foreground"
+                              >
+                                No policies found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedPolicies.map((policy) => (
                             <TableRow key={policy.id}>
                               <TableCell className="px-6">
                                 {getBranchLabel(policy.branch, branches)}
@@ -502,6 +525,42 @@ export default function CompanyPolicyPage() {
                         )}
                       </TableBody>
                     </Table>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Rows per page</span>
+                        <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                          <SelectTrigger className="w-20 px-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="min-w-[60px]">
+                            <SelectItem value="5" className="justify-center">5</SelectItem>
+                            <SelectItem value="10" className="justify-center">10</SelectItem>
+                            <SelectItem value="20" className="justify-center">20</SelectItem>
+                            <SelectItem value="50" className="justify-center">50</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                          <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

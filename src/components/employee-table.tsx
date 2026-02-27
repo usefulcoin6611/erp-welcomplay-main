@@ -48,6 +48,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  UserPlus,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
@@ -82,6 +83,7 @@ interface Employee {
   bankIdentifierCode?: string | null
   branchLocation?: string | null
   taxPayerId?: string | null
+  userId?: string | null
 }
 
 // Employee Table Component
@@ -100,6 +102,7 @@ export function EmployeeTable() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
+  const [creatingUserId, setCreatingUserId] = useState<string | null>(null)
 
   const fetchEmployees = async () => {
     setIsLoading(true)
@@ -196,6 +199,27 @@ export function EmployeeTable() {
   const openDeleteConfirm = (employeeId: string) => {
     setDeleteEmployeeId(employeeId)
     setDeleteAlertOpen(true)
+  }
+
+  const handleCreateSystemUser = async (employeeId: string) => {
+    setCreatingUserId(employeeId)
+    try {
+      const res = await fetch(`/api/employees/${employeeId}/create-user`, {
+        method: "POST",
+      })
+      const json = await res.json().catch(() => null)
+      if (!json?.success) {
+        toast.error(json?.message ?? "Failed to create system user")
+        return
+      }
+      toast.success(json.message ?? "System user created")
+      await fetchEmployees()
+    } catch (error) {
+      console.error("Error creating system user:", error)
+      toast.error("Failed to create system user")
+    } finally {
+      setCreatingUserId(null)
+    }
   }
 
   const handleDeleteEmployee = async (employeeId: string) => {
@@ -544,19 +568,16 @@ export function EmployeeTable() {
               <TableRow>
                 <SortableHeader field="employeeId">{t("employeeId")}</SortableHeader>
                 <SortableHeader field="name">{t("name")}</SortableHeader>
-                <SortableHeader field="email">{t("email")}</SortableHeader>
                 <SortableHeader field="branch">{t("branch")}</SortableHeader>
                 <SortableHeader field="department">{t("department")}</SortableHeader>
                 <SortableHeader field="designation">{t("designation")}</SortableHeader>
-                <SortableHeader field="dateOfJoining">{t("dateOfJoining")}</SortableHeader>
-                <TableHead className="px-4 py-3 font-medium">{t("lastLogin")}</TableHead>
-                <TableHead className="px-4 py-3 font-medium w-[120px]">{t("actions")}</TableHead>
+                <TableHead className="px-4 py-3 font-medium min-w-[140px]">{t("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="px-4 py-8 text-center">
+                  <TableCell colSpan={6} className="px-4 py-8 text-center">
                     {t("loadingEmployees")}
                   </TableCell>
                 </TableRow>
@@ -574,21 +595,28 @@ export function EmployeeTable() {
                       </Button>
                     </TableCell>
                     <TableCell className="px-4 py-3 font-medium">{employee.name}</TableCell>
-                    <TableCell className="px-4 py-3">{employee.email}</TableCell>
                     <TableCell className="px-4 py-3">{employee.branch}</TableCell>
                     <TableCell className="px-4 py-3">{employee.department}</TableCell>
                     <TableCell className="px-4 py-3">{employee.designation}</TableCell>
-                    <TableCell className="px-4 py-3">{formatDate(employee.dateOfJoining)}</TableCell>
-                    <TableCell className="px-4 py-3">
-                      {employee.lastLogin ? formatDateTime(employee.lastLogin) : "-"}
-                    </TableCell>
-                    <TableCell className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center justify-start gap-2 flex-nowrap shrink-0">
+                        {!employee.userId && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="Create system user"
+                            className="shadow-none h-7 w-7 p-0 bg-green-50 text-green-700 hover:bg-green-100 border-green-100 shrink-0"
+                            onClick={() => handleCreateSystemUser(employee.employeeId)}
+                            disabled={creatingUserId === employee.employeeId}
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
                           title={t("view")}
-                          className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                          className="shadow-none h-7 w-7 p-0 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100 shrink-0"
                           asChild
                         >
                           <Link href={`/hrm/employees/${employee.employeeId}`}>
@@ -599,7 +627,7 @@ export function EmployeeTable() {
                           variant="outline"
                           size="sm"
                           title={t("edit")}
-                          className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                          className="shadow-none h-7 w-7 p-0 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 shrink-0"
                           onClick={() => handleEditEmployee(employee.employeeId)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -608,7 +636,7 @@ export function EmployeeTable() {
                           variant="outline"
                           size="sm"
                           title={t("delete")}
-                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                          className="shadow-none h-7 w-7 p-0 bg-red-50 text-red-700 hover:bg-red-100 border-red-100 shrink-0"
                           onClick={() => openDeleteConfirm(employee.employeeId)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -619,7 +647,7 @@ export function EmployeeTable() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="px-4 py-8 text-center">
+                  <TableCell colSpan={6} className="px-4 py-8 text-center">
                     {t("noEmployees")}
                   </TableCell>
                 </TableRow>

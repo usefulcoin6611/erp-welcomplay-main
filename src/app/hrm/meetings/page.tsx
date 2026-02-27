@@ -50,7 +50,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Trash2, Search, Calendar as CalendarIcon, List, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Calendar as CalendarIcon, List, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { EventCalendar } from '@/components/event-calendar';
 import { toast } from 'sonner';
 
@@ -121,6 +121,8 @@ export default function MeetingsPage() {
   const [formData, setFormData] = useState(defaultFormData);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<Meeting | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchInitialData = useCallback(async () => {
     setLoading(true);
@@ -301,6 +303,17 @@ export default function MeetingsPage() {
         (m.employeeName ?? getEmployeeName(m.employeeId)).toLowerCase().includes(q)
     );
   }, [meetings, searchTerm, branches, departments, employees]);
+
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
 
   const upcomingMeetings = useMemo(
     () =>
@@ -652,7 +665,10 @@ export default function MeetingsPage() {
                         <Input
                           placeholder="Search meetings..."
                           value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
+                          onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setCurrentPage(1);
+                        }}
                           className="h-9 border-0 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0"
                         />
                         {searchTerm.length > 0 && (
@@ -661,7 +677,10 @@ export default function MeetingsPage() {
                             variant="ghost"
                             size="sm"
                             className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
-                            onClick={() => setSearchTerm('')}
+                            onClick={() => {
+                            setSearchTerm('');
+                            setCurrentPage(1);
+                          }}
                             aria-label="Clear search"
                           >
                             <X className="h-4 w-4" />
@@ -695,7 +714,7 @@ export default function MeetingsPage() {
                                 Loading meetings...
                               </TableCell>
                             </TableRow>
-                          ) : filteredData.length === 0 ? (
+                          ) : paginatedData.length === 0 ? (
                             <TableRow>
                               <TableCell
                                 colSpan={8}
@@ -705,7 +724,7 @@ export default function MeetingsPage() {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            filteredData.map((meeting) => (
+                            paginatedData.map((meeting) => (
                               <TableRow key={meeting.id}>
                                 <TableCell className="px-6 font-medium">{meeting.title}</TableCell>
                                 <TableCell className="px-6">{getBranchLabel(meeting.branch)}</TableCell>
@@ -747,6 +766,42 @@ export default function MeetingsPage() {
                           )}
                         </TableBody>
                       </Table>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Rows per page</span>
+                          <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                            <SelectTrigger className="w-20 px-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="min-w-[60px]">
+                              <SelectItem value="5" className="justify-center">5</SelectItem>
+                              <SelectItem value="10" className="justify-center">10</SelectItem>
+                              <SelectItem value="20" className="justify-center">20</SelectItem>
+                              <SelectItem value="50" className="justify-center">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                            <ChevronsLeft className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                          <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                            <ChevronsRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

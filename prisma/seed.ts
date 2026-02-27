@@ -29,6 +29,7 @@ import { seedTrainers } from "./seeds/trainers";
 import { seedTrainings } from "./seeds/trainings";
 import { seedCompetencies } from "./seeds/competencies";
 import { seedEmployees, seedDevEmployeeUserLink, seedEmployeeUsers } from "./seeds/employees";
+import { seedAttendance } from "./seeds/attendance";
 import { seedCustomers } from "./seeds/customers";
 import { seedVendors } from "./seeds/vendors";
 import { seedEstimates } from "./seeds/estimates";
@@ -65,6 +66,7 @@ import { seedSetSalary } from "./seeds/set-salary";
 import { ensurePayrollEmployeeSchema } from "./seeds/schema-payroll-employee";
 import { seedHrmAdmin } from "./seeds/hrm-admin";
 import { seedAccessProfiles } from "./seeds/access-profiles";
+import { seedSupport } from "./seeds/support";
 
 dotenv.config();
 
@@ -109,6 +111,8 @@ async function main() {
     await seedHrmAssets(prisma);
     await seedUsers(prisma);
     await seedEmployeeUsers(prisma);
+    await seedSupport(prisma);
+    await seedAttendance(prisma);
     await seedJournals(prisma);
     await seedCustomers(prisma);
     await seedVendors(prisma);

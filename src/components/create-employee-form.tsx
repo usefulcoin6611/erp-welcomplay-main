@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -24,7 +25,6 @@ const defaultFormData = {
   dob: "",
   gender: "Male",
   email: "",
-  password: "",
   address: "",
   employeeId: "",
   branchId: "",
@@ -37,6 +37,7 @@ const defaultFormData = {
   bankIdentifierCode: "",
   branchLocation: "",
   taxPayerId: "",
+  needsUserAccess: false,
 }
 
 export type CreateEmployeeFormInitialData = Partial<typeof defaultFormData> & {
@@ -192,9 +193,10 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
     if (formData.taxPayerId) {
       submitFormData.append("taxPayerId", formData.taxPayerId)
     }
-    if (formData.password) {
-      submitFormData.append("password", formData.password)
-    }
+    submitFormData.append(
+      "needsUserAccess",
+      formData.needsUserAccess ? "true" : "false",
+    )
 
     for (const dt of documentTypes) {
       const file = documentFiles[dt.id]
@@ -501,28 +503,23 @@ export function CreateEmployeeForm({ onClose, initialData, isEditMode, employeeI
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="password" className={labelClass}>
-                  {t("password")}
-                  {!isEditMode && <span className="ml-0.5 text-red-500">*</span>}
+                <Label className={labelClass}>
+                  Needs system access
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  className={inputClass}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder={
-                    isEditMode
-                      ? "Isi hanya jika ingin mengganti password"
-                      : t("enterEmployeePassword")
-                  }
-                  required={!isEditMode}
-                />
-                {isEditMode && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Biarkan kosong jika tidak ingin mengganti password.
+                <div className="flex items-center gap-2 mt-2">
+                  <Switch
+                    checked={formData.needsUserAccess}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        needsUserAccess: checked,
+                      }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If enabled, a system user will be created for this employee.
                   </p>
-                )}
+                </div>
               </div>
             </div>
 

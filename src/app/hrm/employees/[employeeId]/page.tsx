@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, ChevronDown, Download, Eye, Pencil, User, Building2, CreditCard, FileText } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Download, Eye, Pencil, User, UserPlus, Building2, CreditCard, FileText } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter, useParams } from 'next/navigation'
 import {
@@ -19,11 +19,20 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
-function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: string; employeeId: string }) {
+type EmployeeDetailHeaderProps = {
+  employeeName: string
+  employeeId: string
+  userId?: string | null
+  onRefetch: () => Promise<void>
+}
+
+function EmployeeDetailHeader({ employeeName, employeeId, userId, onRefetch }: EmployeeDetailHeaderProps) {
   const t = useTranslations('hrm.employee');
   const router = useRouter();
+  const [creatingUser, setCreatingUser] = useState(false);
 
   const joiningLetterPdf = () => {};
   const joiningLetterDoc = () => {};
@@ -31,6 +40,25 @@ function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: stri
   const expCertDoc = () => {};
   const nocPdf = () => {};
   const nocDoc = () => {};
+
+  const handleCreateSystemUser = async () => {
+    setCreatingUser(true);
+    try {
+      const res = await fetch(`/api/employees/${employeeId}/create-user`, { method: 'POST' });
+      const json = await res.json().catch(() => null);
+      if (!json?.success) {
+        toast.error(json?.message ?? 'Failed to create system user');
+        return;
+      }
+      toast.success(json.message ?? 'System user created');
+      await onRefetch();
+    } catch (error) {
+      console.error('Error creating system user:', error);
+      toast.error('Failed to create system user');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -43,6 +71,19 @@ function EmployeeDetailHeader({ employeeName, employeeId }: { employeeName: stri
         <div className="flex items-center justify-between w-full">
           <h1 className="text-base font-medium">{t('employeeDetail')} - {employeeName}</h1>
           <div className="flex items-center gap-2">
+            {!userId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-none h-7 bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                onClick={handleCreateSystemUser}
+                disabled={creatingUser}
+                title="Create system user"
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                {creatingUser ? 'Creating...' : 'Create system user'}
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="border-0 shadow-none h-7 bg-gray-100 hover:bg-gray-200 text-foreground hover:text-foreground font-normal">
@@ -145,6 +186,7 @@ interface EmployeeDetail {
   bankIdentifierCode: string | null
   branchLocation: string | null
   taxPayerId: string | null
+  userId?: string | null
   documents: {
     documentTypeId: string
     name: string
@@ -163,26 +205,25 @@ export default function EmployeeDetailPage() {
   const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
   const [documentTypes, setDocumentTypes] = useState<{ id: string; name: string; requiredField: boolean }[]>([]);
 
-  useEffect(() => {
-    const fetchEmployee = async () => {
-      try {
-        const res = await fetch(`/api/employees/${employeeId}`);
-        const json = await res.json().catch(() => null);
-        if (!json?.success || !json.data) {
-          router.push('/hrm/employees');
-          return;
-        }
-        setEmployee(json.data as EmployeeDetail);
-      } catch (error) {
-        console.error("Error fetching employee detail:", error);
+  const fetchEmployee = useCallback(async () => {
+    if (!employeeId) return;
+    try {
+      const res = await fetch(`/api/employees/${employeeId}`);
+      const json = await res.json().catch(() => null);
+      if (!json?.success || !json.data) {
         router.push('/hrm/employees');
+        return;
       }
-    };
-
-    if (employeeId) {
-      fetchEmployee();
+      setEmployee(json.data as EmployeeDetail);
+    } catch (error) {
+      console.error("Error fetching employee detail:", error);
+      router.push('/hrm/employees');
     }
   }, [employeeId, router]);
+
+  useEffect(() => {
+    if (employeeId) fetchEmployee();
+  }, [employeeId, fetchEmployee]);
 
   useEffect(() => {
     const fetchDocumentTypes = async () => {
@@ -236,7 +277,12 @@ export default function EmployeeDetailPage() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <EmployeeDetailHeader employeeName={employee.name} employeeId={employeeId} />
+        <EmployeeDetailHeader
+          employeeName={employee.name}
+          employeeId={employeeId}
+          userId={employee.userId}
+          onRefetch={fetchEmployee}
+        />
         <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-5 p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

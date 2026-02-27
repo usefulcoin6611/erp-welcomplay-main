@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, FileText, Eye, Edit, Trash2, Download, Send, DollarSign, Loader2 } from 'lucide-react';
+import { Search, FileText, Eye, Edit, Trash2, Download, Send, DollarSign, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -44,6 +44,8 @@ export function PayslipContent() {
   const [loading, setLoading] = useState(true);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [payslipToDelete, setPayslipToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchPayslips = async () => {
     try {
@@ -78,6 +80,10 @@ export function PayslipContent() {
 
   useEffect(() => {
     fetchPayslips();
+  }, [filterMonth, filterYear]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [filterMonth, filterYear]);
 
   const months = [
@@ -207,6 +213,22 @@ export function PayslipContent() {
       (payslip.employeeId?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
+
   const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
   return (
@@ -303,7 +325,7 @@ export function PayslipContent() {
             <Input
               placeholder="Search by name or employee ID..."
               value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
               className="h-9 border-0 bg-gray-50 pl-9 pr-3 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 w-full"
             />
           </div>
@@ -360,14 +382,14 @@ export function PayslipContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length === 0 ? (
+              {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     No payslips found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData.map((payslip) => (
+                paginatedData.map((payslip) => (
                   <TableRow key={payslip.id}>
                     <TableCell className="px-4 py-3 font-medium">{payslip.employeeId}</TableCell>
                     <TableCell className="px-4 py-3">{payslip.employeeName}</TableCell>
@@ -442,6 +464,44 @@ export function PayslipContent() {
               )}
             </TableBody>
           </Table>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

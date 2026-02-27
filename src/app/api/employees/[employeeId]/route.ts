@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
-import * as bcrypt from "bcryptjs";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -27,7 +26,7 @@ const updateEmployeeSchema = z.object({
   branchLocation: z.string().trim().optional(),
   taxPayerId: z.string().trim().optional(),
   isActive: z.boolean().optional(),
-  password: z.string().trim().min(8, "Password minimal 8 karakter").optional(),
+  needsUserAccess: z.boolean().optional(),
 });
 
 export async function GET(
@@ -116,6 +115,7 @@ export async function GET(
         bankIdentifierCode: employee.bankIdentifierCode,
         branchLocation: employee.branchLocation,
         taxPayerId: employee.taxPayerId,
+        userId: employee.userId ?? null,
         documents,
       },
     });
@@ -185,7 +185,7 @@ export async function PUT(
         isActive: formData.has("isActive")
           ? (formData.get("isActive") as string) === "true"
           : undefined,
-        password: (formData.get("password") as string | null) ?? undefined,
+        needsUserAccess: formData.get("needsUserAccess") === "true",
       };
     } else {
       const body = await request.json();
@@ -249,100 +249,7 @@ export async function PUT(
 
     let userId: string | null = existingEmployee.userId ?? null;
 
-    if (data.password) {
-      if (existingUserForEmployee) {
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-
-        const user = await (prisma as any).user.update({
-          where: { id: existingUserForEmployee.id },
-          data: {
-            email: data.email,
-            name: data.name,
-          },
-        });
-
-        await (prisma as any).account.upsert({
-          where: {
-            providerId_accountId: {
-              providerId: "credential",
-              accountId: existingEmployee.email,
-            },
-          },
-          update: {
-            userId: user.id,
-            accountId: data.email,
-            password: hashedPassword,
-          },
-          create: {
-            userId: user.id,
-            providerId: "credential",
-            accountId: data.email,
-            password: hashedPassword,
-          },
-        });
-
-        userId = user.id;
-      } else {
-        const existingUserWithEmail = await (prisma as any).user.findUnique({
-          where: { email: data.email },
-        });
-
-        if (existingUserWithEmail) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Email sudah digunakan oleh user lain",
-            },
-            { status: 400 },
-          );
-        }
-
-        let branchId: string | null = null;
-        let departmentId: string | null = null;
-
-        if (userRole === "company" && currentUser.branchId) {
-          branchId = currentUser.branchId;
-          const deptInBranch = await (prisma as any).department.findFirst({
-            where: { name: data.department, branchId },
-          });
-          departmentId = deptInBranch?.id ?? currentUser.departmentId ?? null;
-        } else {
-          const branchRecord = await (prisma as any).branch.findFirst({
-            where: { name: data.branch },
-          });
-          const departmentRecord = await (prisma as any).department.findFirst({
-            where: { name: data.department },
-          });
-          branchId = branchRecord?.id ?? null;
-          departmentId = departmentRecord?.id ?? null;
-        }
-
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-
-        const user = await (prisma as any).user.create({
-          data: {
-            email: data.email,
-            name: data.name,
-            role: "employee",
-            password: hashedPassword,
-            emailVerified: true,
-            branchId,
-            departmentId,
-          },
-        });
-
-        await (prisma as any).account.create({
-          data: {
-            userId: user.id,
-            providerId: "credential",
-            accountId: data.email,
-            password: hashedPassword,
-          },
-        });
-
-        userId = user.id;
-      }
-    } else if (existingUserForEmployee) {
+    if (existingUserForEmployee) {
       await (prisma as any).user.update({
         where: { id: existingUserForEmployee.id },
         data: {
@@ -350,6 +257,53 @@ export async function PUT(
           name: data.name,
         },
       });
+    } else if (data.needsUserAccess) {
+      const existingUserWithEmail = await (prisma as any).user.findUnique({
+        where: { email: data.email },
+      });
+
+      if (existingUserWithEmail) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Email sudah digunakan oleh user lain",
+          },
+          { status: 400 },
+        );
+      }
+
+      let branchId: string | null = null;
+      let departmentId: string | null = null;
+
+      if (userRole === "company" && currentUser.branchId) {
+        branchId = currentUser.branchId;
+        const deptInBranch = await (prisma as any).department.findFirst({
+          where: { name: data.department, branchId },
+        });
+        departmentId = deptInBranch?.id ?? currentUser.departmentId ?? null;
+      } else {
+        const branchRecord = await (prisma as any).branch.findFirst({
+          where: { name: data.branch },
+        });
+        const departmentRecord = await (prisma as any).department.findFirst({
+          where: { name: data.department },
+        });
+        branchId = branchRecord?.id ?? null;
+        departmentId = departmentRecord?.id ?? null;
+      }
+
+      const user = await (prisma as any).user.create({
+        data: {
+          email: data.email,
+          name: data.name,
+          role: "employee",
+          emailVerified: false,
+          branchId,
+          departmentId,
+        },
+      });
+
+      userId = user.id;
     }
 
     let nextDocumentsCertificate: string | null | undefined = undefined;

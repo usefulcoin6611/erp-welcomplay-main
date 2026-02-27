@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
@@ -80,6 +80,8 @@ function splitReasonAndRemark(combined: string | null | undefined): {
 
 export function ManageLeaveContent() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -358,6 +360,22 @@ export function ManageLeaveContent() {
       leave.leaveType.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -614,14 +632,14 @@ export function ManageLeaveContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length === 0 ? (
+            {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground px-4 py-3">
-                    No leave requests found
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground px-4 py-3">
+                  No leave requests found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData.map((leave) => (
+                paginatedData.map((leave) => (
                   <TableRow key={leave.id}>
                     <TableCell className="px-4 py-3 font-medium">{leave.employeeId}</TableCell>
                     <TableCell className="px-4 py-3">{leave.employeeName}</TableCell>
@@ -693,8 +711,48 @@ export function ManageLeaveContent() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      
 
       <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
         <AlertDialogContent>

@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, RotateCcw, FileUp, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Search, RotateCcw, FileUp, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
@@ -64,6 +64,8 @@ export function MarkAttendanceContent() {
   const [branch, setBranch] = useState('');
   const [department, setDepartment] = useState('');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
@@ -151,6 +153,23 @@ export function MarkAttendanceContent() {
     fetchBranches();
     fetchDepartments();
   }, []);
+
+  const filteredData = records;
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handleSearchChange = (/* value: string */) => {
+    // search handled by filters; reset page if needed
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
 
   const handleApply = () => {
     fetchAttendance();
@@ -386,14 +405,14 @@ export function MarkAttendanceContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.length === 0 ? (
+              {paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No attendance records found
                   </TableCell>
                 </TableRow>
               ) : (
-                records.map((row) => (
+                paginatedData.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="px-4 py-3 font-medium">{row.employeeName}</TableCell>
                     <TableCell className="px-4 py-3">{row.date}</TableCell>
@@ -430,6 +449,44 @@ export function MarkAttendanceContent() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

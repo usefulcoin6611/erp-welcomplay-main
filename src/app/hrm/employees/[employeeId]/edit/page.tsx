@@ -73,7 +73,6 @@ export default function EmployeeEditPage() {
     dob: employee.dateOfBirth,
     gender: employee.gender as 'Male' | 'Female',
     email: employee.email,
-    password: '',
     address: employee.address,
     employeeId: employee.employeeId,
     branchId: '',
@@ -89,6 +88,7 @@ export default function EmployeeEditPage() {
     bankIdentifierCode: employee.bankIdentifierCode ?? '',
     branchLocation: employee.branchLocation ?? '',
     taxPayerId: employee.taxPayerId ?? '',
+    needsUserAccess: Boolean(employee.userId),
     documents: Array.isArray(employee.documents)
       ? employee.documents.map((d: any) => ({
           documentTypeId: d.documentTypeId,

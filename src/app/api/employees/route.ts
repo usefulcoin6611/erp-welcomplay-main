@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth-server";
 import { headers } from "next/headers";
 import { z } from "zod";
-import * as bcrypt from "bcryptjs";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -28,7 +27,7 @@ const createEmployeeSchema = z.object({
   branchLocation: z.string().trim().optional(),
   taxPayerId: z.string().trim().optional(),
   isActive: z.boolean().optional(),
-  password: z.string().trim().min(8, "Password minimal 8 karakter").optional(),
+  needsUserAccess: z.boolean().optional(),
 });
 
 async function generateNextEmployeeId() {
@@ -86,6 +85,7 @@ export async function GET(request: NextRequest) {
       bankIdentifierCode: e.bankIdentifierCode,
       branchLocation: e.branchLocation,
       taxPayerId: e.taxPayerId,
+      userId: e.userId ?? null,
     }));
 
     return NextResponse.json({ success: true, data });
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
         isActive: formData.has("isActive")
           ? (formData.get("isActive") as string) === "true"
           : undefined,
-        password: (formData.get("password") as string | null) ?? undefined,
+        needsUserAccess: formData.get("needsUserAccess") === "true",
       };
     } else {
       const body = await request.json();
@@ -200,33 +200,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let userId: string | null = null;
     const existingUser = await (prisma as any).user.findUnique({
       where: { email: data.email },
     });
 
-    let userId: string | null = null;
+    // If a system user with this email already exists, allow linking when
+    // HR requested system access; otherwise continue creating the employee
+    // without creating a new user.
+    if (existingUser && data.needsUserAccess) {
+      // Resolve branch/department similar to creation flow so user appears under correct branch
+      let branchId: string | null = null;
+      let departmentId: string | null = null;
 
-    if (existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Email sudah digunakan oleh user lain",
-        },
-        { status: 400 },
-      );
+      if (userRole === "company" && currentUser.branchId) {
+        branchId = currentUser.branchId;
+        const deptInBranch = await (prisma as any).department.findFirst({
+          where: { name: data.department, branchId },
+        });
+        departmentId = deptInBranch?.id ?? currentUser.departmentId ?? null;
+      } else {
+        const branchRecord = await (prisma as any).branch.findFirst({
+          where: { name: data.branch },
+        });
+        const departmentRecord = await (prisma as any).department.findFirst({
+          where: { name: data.department },
+        });
+        branchId = branchRecord?.id ?? null;
+        departmentId = departmentRecord?.id ?? null;
+      }
+
+      try {
+        await (prisma as any).user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: data.name,
+            branchId,
+            departmentId,
+          },
+        });
+      } catch (err) {
+        console.error("Failed updating existing user for branch/department:", err);
+      }
+
+      userId = existingUser.id;
     }
 
-    if (!data.password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Password karyawan wajib diisi",
-        },
-        { status: 400 },
-      );
-    }
-
-    {
+    if (data.needsUserAccess && !userId) {
       // Business logic: /users lists users by branchId. When company creates an employee here,
       // the new User must have the same branchId so they appear on /users. Super admin can
       // assign any branch/department by name.
@@ -250,26 +270,14 @@ export async function POST(request: NextRequest) {
         departmentId = departmentRecord?.id ?? null;
       }
 
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-
       const user = await (prisma as any).user.create({
         data: {
           email: data.email,
           name: data.name,
           role: "employee",
-          password: hashedPassword,
-          emailVerified: true,
+          emailVerified: false,
           branchId,
           departmentId,
-        },
-      });
-
-      await (prisma as any).account.create({
-        data: {
-          userId: user.id,
-          providerId: "credential",
-          accountId: data.email,
-          password: hashedPassword,
         },
       });
 

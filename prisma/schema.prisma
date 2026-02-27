@@ -31,8 +31,43 @@ model User {
   branch           Branch?     @relation(fields: [branchId], references: [id])
   department       Department? @relation(fields: [departmentId], references: [id])
   createdVendors   Vendor[]
+  createdSupportTickets SupportTicket[] @relation("SupportCreatedBy")
+  assignedSupportTickets SupportTicket[] @relation("SupportAssignedTo")
+  supportReplies   SupportReply[]
 
   @@map("user")
+}
+
+model SupportTicket {
+  id          String    @id @default(cuid())
+  ticketCode  String    @unique
+  subject     String
+  description String?
+  attachment  String?
+  status      String    @default("Open") // Open, On Hold, Close
+  priority    String    @default("Medium") // Low, Medium, High, Critical
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String
+  assignUserId String?
+  createdBy   User      @relation("SupportCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  assignUser  User?     @relation("SupportAssignedTo", fields: [assignUserId], references: [id], onDelete: SetNull)
+  replies     SupportReply[]
+
+  @@map("support_ticket")
+}
+
+model SupportReply {
+  id             String        @id @default(cuid())
+  message        String
+  createdAt      DateTime      @default(now())
+  supportTicketId String
+  userId         String
+  supportTicket  SupportTicket @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("support_reply")
 }
 
 /// Access profile per branch: name + permission set. Assignable to users (User.accessProfileId).
@@ -148,12 +183,37 @@ model DocumentType {
 }
 
 model PayslipType {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  payslips  Payslip[]
 
   @@map("payslip_type")
+}
+
+model Payslip {
+  id                  String      @id @default(cuid())
+  employeeId          String
+  salaryMonth         String      // YYYY-MM
+  basicSalary         Float       @default(0)
+  allowance           Float       @default(0)
+  commission          Float       @default(0)
+  loan                Float       @default(0)
+  saturationDeduction Float      @default(0)
+  otherPayment       Float       @default(0)
+  overtime            Float       @default(0)
+  netSalary           Float       @default(0)
+  status              Int         @default(0) // 0 = Unpaid, 1 = Paid
+  payslipTypeId       String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  employee            Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payslipType         PayslipType? @relation(fields: [payslipTypeId], references: [id], onDelete: SetNull)
+
+  @@map("payslip")
+  @@index([employeeId])
+  @@index([salaryMonth])
 }
 
 model GoalType {
@@ -673,6 +733,23 @@ model PerformanceGoal {
   @@map("performance_goal")
 }
 
+model Attendance {
+  id         String    @id @default(cuid())
+  employeeId String
+  date       DateTime
+  status     String    @default("Present")
+  clockIn    DateTime?
+  clockOut   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendance")
+  @@index([employeeId])
+  @@index([date])
+}
+
 model Employee {
   id                    String                 @id @default(cuid())
   employeeId            String                 @unique
@@ -725,6 +802,8 @@ model Employee {
   warningsReceived         HrmWarning[]     @relation("WarningEmployee")
   warningsGiven            HrmWarning[]    @relation("WarningBy")
   hrmTerminations          HrmTermination[]
+  payslips                 Payslip[]
+  attendances              Attendance[]
 
   @@map("employee")
 }
