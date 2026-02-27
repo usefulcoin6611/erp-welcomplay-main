@@ -164,7 +164,6 @@ export default function POSPurchasePage() {
   const [pageSize, setPageSize] = useState(10)
   const [purchases, setPurchases] = useState<Purchase[]>([])
   const [loading, setLoading] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
 
   // Reference data
   const [vendors, setVendors] = useState<Vendor[]>([])
@@ -201,7 +200,6 @@ export default function POSPurchasePage() {
       const data = await res.json()
       if (data.success) {
         setPurchases(data.data)
-        setTotalCount(data.data.length)
       } else {
         toast.error(data.message ?? 'Failed to load purchases')
       }
@@ -214,7 +212,6 @@ export default function POSPurchasePage() {
 
   useEffect(() => {
     fetchPurchases()
-    // Load reference data
     fetch('/api/vendors').then(r => r.json()).then(res => {
       if (res.success) setVendors(res.data.map((v: any) => ({ id: v.id, name: v.name })))
     }).catch(() => {})
@@ -353,7 +350,10 @@ export default function POSPurchasePage() {
     if (!vendorId) { toast.error('Please select a vendor'); return }
     if (!formBillDate) { toast.error('Purchase date is required'); return }
     if (!formDueDate) { toast.error('Due date is required'); return }
-    if (formItems.some(it => !it.productId || it.productId === NO_SELECTION)) { toast.error('All items must have a product selected'); return }
+    if (formItems.some(it => !it.productId || it.productId === NO_SELECTION)) {
+      toast.error('All items must have a product selected')
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -597,44 +597,53 @@ export default function POSPurchasePage() {
         </CardContent>
       </Card>
 
-      {/* ─── Create / Edit Dialog ─────────────────────────────────────────────── */}
+      {/* ─── Create / Edit Dialog (same style as Warehouse modal) ─────────────── */}
       <Dialog open={openForm} onOpenChange={setOpenForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Purchase' : 'Create Purchase'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Header fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Vendor */}
+            <div className="space-y-2">
+              <Label htmlFor="pur-vendor">
+                Vendor <span className="text-red-500">*</span>
+              </Label>
+              <Select value={formVendorId} onValueChange={setFormVendorId}>
+                <SelectTrigger id="pur-vendor" className="h-9">
+                  <SelectValue placeholder="Select vendor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_SELECTION}>Select vendor</SelectItem>
+                  {vendors.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="pur-category">Category</Label>
+              <Select value={formCategoryId} onValueChange={setFormCategoryId}>
+                <SelectTrigger id="pur-category" className="h-9">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_SELECTION}>No Category</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="pur-vendor">Vendor <span className="text-red-500">*</span></Label>
-                <Select value={formVendorId} onValueChange={setFormVendorId}>
-                  <SelectTrigger id="pur-vendor" className="h-9">
-                    <SelectValue placeholder="Select vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendors.map(v => (
-                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pur-category">Category</Label>
-                <Select value={formCategoryId} onValueChange={setFormCategoryId}>
-                  <SelectTrigger id="pur-category" className="h-9">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_SELECTION}>No Category</SelectItem>
-                    {categories.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pur-bill-date">Purchase Date <span className="text-red-500">*</span></Label>
+                <Label htmlFor="pur-bill-date">
+                  Purchase Date <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="pur-bill-date"
                   type="date"
@@ -645,7 +654,9 @@ export default function POSPurchasePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pur-due-date">Due Date <span className="text-red-500">*</span></Label>
+                <Label htmlFor="pur-due-date">
+                  Due Date <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="pur-due-date"
                   type="date"
@@ -655,6 +666,10 @@ export default function POSPurchasePage() {
                   required
                 />
               </div>
+            </div>
+
+            {/* Status & Reference */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="pur-status">Status</Label>
                 <Select value={formStatus} onValueChange={v => setFormStatus(v as PurchaseStatus)}>
@@ -679,6 +694,8 @@ export default function POSPurchasePage() {
                 />
               </div>
             </div>
+
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="pur-description">Description</Label>
               <Textarea
@@ -692,10 +709,12 @@ export default function POSPurchasePage() {
             </div>
 
             {/* Items */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">Items <span className="text-red-500">*</span></Label>
-                <Button type="button" size="sm" variant="outline" className="h-7 shadow-none" onClick={addItem}>
+                <Label className="text-sm font-medium">
+                  Items <span className="text-red-500">*</span>
+                </Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 shadow-none text-xs" onClick={addItem}>
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   Add Item
                 </Button>
@@ -704,19 +723,19 @@ export default function POSPurchasePage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
-                      <TableHead className="px-3 py-2 font-medium text-xs w-[200px]">Product</TableHead>
-                      <TableHead className="px-3 py-2 font-medium text-xs w-20">Qty</TableHead>
-                      <TableHead className="px-3 py-2 font-medium text-xs w-28">Price</TableHead>
-                      <TableHead className="px-3 py-2 font-medium text-xs w-24">Discount</TableHead>
-                      <TableHead className="px-3 py-2 font-medium text-xs w-20">Tax %</TableHead>
-                      <TableHead className="px-3 py-2 font-medium text-xs w-28 text-right">Amount</TableHead>
-                      <TableHead className="px-3 py-2 w-10"></TableHead>
+                      <TableHead className="px-3 py-2 font-medium text-xs">Product</TableHead>
+                      <TableHead className="px-3 py-2 font-medium text-xs w-16">Qty</TableHead>
+                      <TableHead className="px-3 py-2 font-medium text-xs w-24">Price</TableHead>
+                      <TableHead className="px-3 py-2 font-medium text-xs w-20">Disc.</TableHead>
+                      <TableHead className="px-3 py-2 font-medium text-xs w-16">Tax%</TableHead>
+                      <TableHead className="px-3 py-2 font-medium text-xs w-24 text-right">Amount</TableHead>
+                      <TableHead className="px-3 py-2 w-8"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {formItems.map((item, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="px-3 py-2">
+                        <TableCell className="px-3 py-1.5">
                           <Select
                             value={item.productId}
                             onValueChange={v => updateItem(idx, 'productId', v)}
@@ -732,47 +751,47 @@ export default function POSPurchasePage() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="px-3 py-2">
+                        <TableCell className="px-3 py-1.5">
                           <Input
                             type="number"
                             min={1}
                             value={item.quantity}
                             onChange={e => updateItem(idx, 'quantity', Number(e.target.value) || 1)}
-                            className="h-8 text-xs w-16"
+                            className="h-8 text-xs w-14"
                           />
                         </TableCell>
-                        <TableCell className="px-3 py-2">
+                        <TableCell className="px-3 py-1.5">
                           <Input
                             type="number"
                             min={0}
                             value={item.price}
                             onChange={e => updateItem(idx, 'price', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-24"
+                            className="h-8 text-xs w-20"
                           />
                         </TableCell>
-                        <TableCell className="px-3 py-2">
+                        <TableCell className="px-3 py-1.5">
                           <Input
                             type="number"
                             min={0}
                             value={item.discount}
                             onChange={e => updateItem(idx, 'discount', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-20"
+                            className="h-8 text-xs w-16"
                           />
                         </TableCell>
-                        <TableCell className="px-3 py-2">
+                        <TableCell className="px-3 py-1.5">
                           <Input
                             type="number"
                             min={0}
                             max={100}
                             value={item.taxRate}
                             onChange={e => updateItem(idx, 'taxRate', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-16"
+                            className="h-8 text-xs w-14"
                           />
                         </TableCell>
-                        <TableCell className="px-3 py-2 text-right text-xs font-medium">
+                        <TableCell className="px-3 py-1.5 text-right text-xs font-medium">
                           {formatPrice(calcItemAmount(item))}
                         </TableCell>
-                        <TableCell className="px-3 py-2">
+                        <TableCell className="px-3 py-1.5">
                           <Button
                             type="button"
                             variant="ghost"
@@ -788,10 +807,10 @@ export default function POSPurchasePage() {
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex justify-end">
-                <div className="text-sm font-semibold">
+              <div className="flex justify-end pt-1">
+                <span className="text-sm font-semibold">
                   Total: <span className="text-blue-600">{formatPrice(formTotal)}</span>
-                </div>
+                </span>
               </div>
             </div>
 
@@ -809,7 +828,7 @@ export default function POSPurchasePage() {
                 {submitting ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
                 ) : (
-                  editingId ? 'Update Purchase' : 'Create Purchase'
+                  editingId ? 'Update' : 'Create'
                 )}
               </Button>
             </DialogFooter>
@@ -830,49 +849,49 @@ export default function POSPurchasePage() {
           ) : viewDetail ? (
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-muted-foreground text-xs">Purchase #</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Purchase #</p>
                   <p className="font-semibold">{viewDetail.billId}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Vendor</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Vendor</p>
                   <p className="font-medium">{viewDetail.vendor?.name ?? '-'}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Purchase Date</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Purchase Date</p>
                   <p>{formatDate(viewDetail.billDate)}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Due Date</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Due Date</p>
                   <p>{formatDate(viewDetail.dueDate)}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Status</p>
-                  <Badge className={`${STATUS_CLASS[viewDetail.status] ?? 'bg-gray-100 text-gray-700'} border-0 text-xs mt-0.5`}>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <Badge className={`${STATUS_CLASS[viewDetail.status] ?? 'bg-gray-100 text-gray-700'} border-0 text-xs`}>
                     {viewDetail.status}
                   </Badge>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Total</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Total</p>
                   <p className="font-bold text-blue-600">{formatPrice(viewDetail.total)}</p>
                 </div>
                 {viewDetail.reference && (
-                  <div>
-                    <p className="text-muted-foreground text-xs">Reference</p>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Reference</p>
                     <p>{viewDetail.reference}</p>
                   </div>
                 )}
                 {viewDetail.description && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground text-xs">Description</p>
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-xs text-muted-foreground">Description</p>
                     <p>{viewDetail.description}</p>
                   </div>
                 )}
               </div>
 
               {/* Items */}
-              <div>
-                <p className="font-semibold mb-2">Items</p>
+              <div className="space-y-2">
+                <p className="font-semibold text-sm">Items</p>
                 <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -903,7 +922,7 @@ export default function POSPurchasePage() {
 
               {/* Quick status change */}
               <div className="flex items-center gap-3 pt-2 border-t">
-                <span className="text-muted-foreground text-xs">Change Status:</span>
+                <span className="text-xs text-muted-foreground">Change Status:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {STATUS_OPTIONS.map(s => (
                     <Button
