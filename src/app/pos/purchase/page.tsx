@@ -12,14 +12,13 @@ function fromSelectValue(val: string): string | null {
 }
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Plus, Search, X, Eye, Pencil, Trash, Loader2, PackagePlus, ShoppingCart } from 'lucide-react'
+import { Plus, Search, X, Eye, Pencil, Trash, Loader2, ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
 import { POSPageLayout } from '@/components/pos-page-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -38,14 +37,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-  SheetClose,
-} from '@/components/ui/sheet'
 import {
   Dialog,
   DialogContent,
@@ -160,17 +151,6 @@ function getStatusConfig(status: string) {
   return STATUS_OPTIONS.find(s => s.value === status) ?? STATUS_OPTIONS[0]
 }
 
-// ─── Form Section Header ──────────────────────────────────────────────────────
-
-function SectionHeader({ title, description }: { title: string; description?: string }) {
-  return (
-    <div className="mb-3">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
-    </div>
-  )
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function POSPurchasePage() {
@@ -186,7 +166,7 @@ export default function POSPurchasePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
 
-  // Form state (Sheet)
+  // Form state (Dialog)
   const [openForm, setOpenForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -373,8 +353,9 @@ export default function POSPurchasePage() {
     if (formBillDate && formDueDate && formDueDate < formBillDate) {
       errors.dueDate = 'Due date must be after purchase date'
     }
-    const invalidItems = formItems.filter(it => it.productId === NO_SELECTION)
-    if (invalidItems.length > 0) errors.items = 'All items must have a product selected'
+    if (formItems.some(it => it.productId === NO_SELECTION)) {
+      errors.items = 'All items must have a product selected'
+    }
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -506,7 +487,7 @@ export default function POSPurchasePage() {
       actionButton={
         <Button size="sm" variant="blue" className="shadow-none h-7" onClick={openCreateForm}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Purchase
+          Create
         </Button>
       }
     >
@@ -517,7 +498,7 @@ export default function POSPurchasePage() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by purchase #, vendor, or category..."
+              placeholder="Search purchase..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
               className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
@@ -533,100 +514,87 @@ export default function POSPurchasePage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/20">
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Purchase #</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Vendor</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Category</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Purchase Date</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Due Date</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide text-right">Total</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Status</TableHead>
-                  <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase tracking-wide">Action</TableHead>
+                <TableRow>
+                  <TableHead className="px-4 py-3 font-normal">Purchase #</TableHead>
+                  <TableHead className="px-4 py-3 font-normal">Vendor</TableHead>
+                  <TableHead className="px-4 py-3 font-normal">Category</TableHead>
+                  <TableHead className="px-4 py-3 font-normal">Purchase Date</TableHead>
+                  <TableHead className="px-4 py-3 font-normal">Due Date</TableHead>
+                  <TableHead className="px-4 py-3 font-normal text-right">Total</TableHead>
+                  <TableHead className="px-4 py-3 font-normal">Status</TableHead>
+                  <TableHead className="px-4 py-3 font-normal">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                        <span className="text-sm">Loading purchases...</span>
-                      </div>
+                    <TableCell colSpan={8} className="py-8 text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                     </TableCell>
                   </TableRow>
                 ) : paginatedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center">
-                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                        <ShoppingCart className="h-10 w-10 opacity-30" />
-                        <div>
-                          <p className="font-medium text-sm">No purchases found</p>
-                          <p className="text-xs mt-0.5">
-                            {search ? 'Try a different search term' : 'Create your first purchase order'}
-                          </p>
-                        </div>
-                        {!search && (
-                          <Button size="sm" variant="blue" className="shadow-none mt-1" onClick={openCreateForm}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Purchase
-                          </Button>
-                        )}
-                      </div>
+                    <TableCell colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                      {search ? 'No purchase found matching your search' : 'No purchase found'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginatedData.map((row) => {
                     const statusConfig = getStatusConfig(row.status)
                     return (
-                      <TableRow key={row.id} className="hover:bg-muted/30 transition-colors">
+                      <TableRow key={row.id}>
                         <TableCell className="px-4 py-3">
-                          <button
-                            type="button"
-                            className="text-blue-600 hover:text-blue-800 font-medium text-sm hover:underline"
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 shadow-none text-blue-600 border-blue-200 hover:bg-blue-50"
                             onClick={() => handleView(row.billNumber)}
                           >
                             {row.billNumber}
-                          </button>
+                          </Button>
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-sm font-medium">{row.vendorName}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm">{row.vendorName}</TableCell>
                         <TableCell className="px-4 py-3 text-sm text-muted-foreground">{row.category || '—'}</TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">{formatDate(row.billDate)}</TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">{formatDate(row.dueDate)}</TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-right font-semibold">{formatPrice(row.total)}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm">{formatDate(row.billDate)}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm">{formatDate(row.dueDate)}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm text-right font-medium">{formatPrice(row.total)}</TableCell>
                         <TableCell className="px-4 py-3">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.color}`}>
                             {statusConfig.label}
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-3">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            {/* View - yellow (same as warehouse) */}
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-yellow-700 hover:bg-yellow-50"
-                              title="View details"
+                              variant="outline"
+                              size="sm"
+                              className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                              title="View"
                               onClick={() => handleView(row.billNumber)}
                             >
-                              <Eye className="h-3.5 w-3.5" />
+                              <Eye className="h-4 w-4" />
                             </Button>
+                            {/* Edit - blue (same as warehouse) */}
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-blue-700 hover:bg-blue-50"
+                              variant="outline"
+                              size="sm"
+                              className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
                               title="Edit"
                               disabled={loadingDetail}
                               onClick={() => openEditForm(row.billNumber)}
                             >
-                              {loadingDetail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pencil className="h-3.5 w-3.5" />}
+                              {loadingDetail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
                             </Button>
+                            {/* Delete - red (same as warehouse) */}
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-red-700 hover:bg-red-50"
+                              variant="outline"
+                              size="sm"
+                              className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                               title="Delete"
                               onClick={() => setDeleteId(row.billNumber)}
                             >
-                              <Trash className="h-3.5 w-3.5" />
+                              <Trash className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -651,315 +619,282 @@ export default function POSPurchasePage() {
         </CardContent>
       </Card>
 
-      {/* ─── Create / Edit Sheet (Best Practice: Side Panel for Complex Forms) ── */}
-      <Sheet open={openForm} onOpenChange={setOpenForm}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col p-0 gap-0">
-          {/* Sheet Header */}
-          <SheetHeader className="px-6 py-4 border-b shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-50">
-                <PackagePlus className="h-5 w-5 text-blue-600" />
+      {/* ─── Create / Edit Dialog (Shadcn UI Dialog / Popup Modal) ───────────── */}
+      <Dialog open={openForm} onOpenChange={setOpenForm}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Purchase Order' : 'Create Purchase Order'}</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Row 1: Vendor + Category */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pur-vendor" className="text-sm font-medium">
+                  Vendor <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formVendorId}
+                  onValueChange={v => { setFormVendorId(v); setFormErrors(p => ({ ...p, vendor: '' })) }}
+                >
+                  <SelectTrigger
+                    id="pur-vendor"
+                    className={`h-9 ${formErrors.vendor ? 'border-red-400' : ''}`}
+                  >
+                    <SelectValue placeholder="Select vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_SELECTION}>Select vendor</SelectItem>
+                    {vendors.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.vendor && <p className="text-xs text-red-500">{formErrors.vendor}</p>}
               </div>
-              <div>
-                <SheetTitle className="text-base font-semibold">
-                  {editingId ? 'Edit Purchase Order' : 'New Purchase Order'}
-                </SheetTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {editingId ? `Editing ${editingId}` : 'Fill in the details to create a new purchase order'}
-                </p>
+              <div className="space-y-2">
+                <Label htmlFor="pur-category" className="text-sm font-medium">Category</Label>
+                <Select value={formCategoryId} onValueChange={setFormCategoryId}>
+                  <SelectTrigger id="pur-category" className="h-9">
+                    <SelectValue placeholder="Select category (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_SELECTION}>No Category</SelectItem>
+                    {categories.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </SheetHeader>
 
-          {/* Scrollable Form Body */}
-          <form id="purchase-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-            <div className="px-6 py-5 space-y-6">
+            {/* Row 2: Dates + Status + Reference */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pur-bill-date" className="text-sm font-medium">
+                  Purchase Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="pur-bill-date"
+                  type="date"
+                  value={formBillDate}
+                  onChange={e => { setFormBillDate(e.target.value); setFormErrors(p => ({ ...p, billDate: '' })) }}
+                  className={`h-9 ${formErrors.billDate ? 'border-red-400' : ''}`}
+                />
+                {formErrors.billDate && <p className="text-xs text-red-500">{formErrors.billDate}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pur-due-date" className="text-sm font-medium">
+                  Due Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="pur-due-date"
+                  type="date"
+                  value={formDueDate}
+                  onChange={e => { setFormDueDate(e.target.value); setFormErrors(p => ({ ...p, dueDate: '' })) }}
+                  className={`h-9 ${formErrors.dueDate ? 'border-red-400' : ''}`}
+                />
+                {formErrors.dueDate && <p className="text-xs text-red-500">{formErrors.dueDate}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pur-status" className="text-sm font-medium">Status</Label>
+                <Select value={formStatus} onValueChange={v => setFormStatus(v as PurchaseStatus)}>
+                  <SelectTrigger id="pur-status" className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(s => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pur-reference" className="text-sm font-medium">Reference</Label>
+                <Input
+                  id="pur-reference"
+                  value={formReference}
+                  onChange={e => setFormReference(e.target.value)}
+                  placeholder="e.g. PO-001"
+                  className="h-9"
+                />
+              </div>
+            </div>
 
-              {/* Section 1: Vendor & Category */}
-              <div>
-                <SectionHeader title="Supplier Information" description="Select the vendor and category for this purchase" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pur-vendor" className="text-sm font-medium">
-                      Vendor <span className="text-red-500">*</span>
-                    </Label>
-                    <Select value={formVendorId} onValueChange={v => { setFormVendorId(v); setFormErrors(p => ({ ...p, vendor: '' })) }}>
-                      <SelectTrigger
-                        id="pur-vendor"
-                        className={`h-9 ${formErrors.vendor ? 'border-red-400 focus:ring-red-400' : ''}`}
-                      >
-                        <SelectValue placeholder="Select vendor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_SELECTION}>Select vendor</SelectItem>
-                        {vendors.map(v => (
-                          <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formErrors.vendor && <p className="text-xs text-red-500">{formErrors.vendor}</p>}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pur-category" className="text-sm font-medium">Category</Label>
-                    <Select value={formCategoryId} onValueChange={setFormCategoryId}>
-                      <SelectTrigger id="pur-category" className="h-9">
-                        <SelectValue placeholder="Select category (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_SELECTION}>No Category</SelectItem>
-                        {categories.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="pur-description" className="text-sm font-medium">Notes</Label>
+              <Textarea
+                id="pur-description"
+                value={formDescription}
+                onChange={e => setFormDescription(e.target.value)}
+                placeholder="Optional notes..."
+                rows={2}
+                className="resize-none text-sm"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Items */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">
+                  Items <span className="text-red-500">*</span>
+                </Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shadow-none text-xs"
+                  onClick={addItem}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Item
+                </Button>
               </div>
 
-              <Separator />
+              {formErrors.items && (
+                <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">
+                  {formErrors.items}
+                </p>
+              )}
 
-              {/* Section 2: Dates & Status */}
-              <div>
-                <SectionHeader title="Order Details" description="Set the purchase date, due date, and order status" />
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pur-bill-date" className="text-sm font-medium">
-                      Purchase Date <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="pur-bill-date"
-                      type="date"
-                      value={formBillDate}
-                      onChange={e => { setFormBillDate(e.target.value); setFormErrors(p => ({ ...p, billDate: '' })) }}
-                      className={`h-9 ${formErrors.billDate ? 'border-red-400' : ''}`}
-                    />
-                    {formErrors.billDate && <p className="text-xs text-red-500">{formErrors.billDate}</p>}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pur-due-date" className="text-sm font-medium">
-                      Due Date <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="pur-due-date"
-                      type="date"
-                      value={formDueDate}
-                      onChange={e => { setFormDueDate(e.target.value); setFormErrors(p => ({ ...p, dueDate: '' })) }}
-                      className={`h-9 ${formErrors.dueDate ? 'border-red-400' : ''}`}
-                    />
-                    {formErrors.dueDate && <p className="text-xs text-red-500">{formErrors.dueDate}</p>}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pur-status" className="text-sm font-medium">Status</Label>
-                    <Select value={formStatus} onValueChange={v => setFormStatus(v as PurchaseStatus)}>
-                      <SelectTrigger id="pur-status" className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map(s => (
-                          <SelectItem key={s.value} value={s.value}>
-                            <span className="flex items-center gap-2">
-                              <span className={`inline-block w-2 h-2 rounded-full ${s.color.split(' ')[0]}`} />
-                              {s.label}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pur-reference" className="text-sm font-medium">Reference No.</Label>
-                    <Input
-                      id="pur-reference"
-                      value={formReference}
-                      onChange={e => setFormReference(e.target.value)}
-                      placeholder="e.g. PO-2026-001"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div className="mt-4 space-y-1.5">
-                  <Label htmlFor="pur-description" className="text-sm font-medium">Notes</Label>
-                  <Textarea
-                    id="pur-description"
-                    value={formDescription}
-                    onChange={e => setFormDescription(e.target.value)}
-                    placeholder="Add any notes or special instructions..."
-                    rows={2}
-                    className="resize-none text-sm"
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Section 3: Items */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <SectionHeader
-                    title="Order Items"
-                    description="Add products to this purchase order"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 shadow-none text-xs shrink-0"
-                    onClick={addItem}
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Add Item
-                  </Button>
-                </div>
-
-                {formErrors.items && (
-                  <div className="mb-3 px-3 py-2 rounded-md bg-red-50 border border-red-200 text-xs text-red-600">
-                    {formErrors.items}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {formItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-lg border border-border bg-muted/20 p-3 space-y-3"
-                    >
-                      {/* Item header */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">Item {idx + 1}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                          onClick={() => removeItem(idx)}
-                          title="Remove item"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-
-                      {/* Product select */}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Product</Label>
-                        <Select
-                          value={item.productId}
-                          onValueChange={v => updateItem(idx, 'productId', v)}
-                        >
-                          <SelectTrigger className="h-8 text-sm bg-white">
-                            <SelectValue placeholder="Select a product..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={NO_SELECTION}>Select a product...</SelectItem>
-                            {products.map(p => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Qty, Price, Discount, Tax */}
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Qty</Label>
+              {/* Items table */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="px-3 py-2 text-xs font-medium">Product</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-16">Qty</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-28">Price</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-24">Discount</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-16">Tax %</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium text-right w-28">Amount</TableHead>
+                      <TableHead className="px-3 py-2 w-8"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {formItems.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="px-3 py-2">
+                          <Select
+                            value={item.productId}
+                            onValueChange={v => updateItem(idx, 'productId', v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={NO_SELECTION}>Select product</SelectItem>
+                              {products.map(p => (
+                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <Input
                             type="number"
                             min={1}
                             value={item.quantity}
                             onChange={e => updateItem(idx, 'quantity', Number(e.target.value) || 1)}
-                            className="h-8 text-sm bg-white"
+                            className="h-8 text-xs w-14"
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Price (IDR)</Label>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <Input
                             type="number"
                             min={0}
                             value={item.price}
                             onChange={e => updateItem(idx, 'price', Number(e.target.value) || 0)}
-                            className="h-8 text-sm bg-white"
+                            className="h-8 text-xs w-24"
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Discount</Label>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <Input
                             type="number"
                             min={0}
                             value={item.discount}
                             onChange={e => updateItem(idx, 'discount', Number(e.target.value) || 0)}
-                            className="h-8 text-sm bg-white"
+                            className="h-8 text-xs w-20"
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Tax %</Label>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <Input
                             type="number"
                             min={0}
                             max={100}
                             value={item.taxRate}
                             onChange={e => updateItem(idx, 'taxRate', Number(e.target.value) || 0)}
-                            className="h-8 text-sm bg-white"
+                            className="h-8 text-xs w-14"
                           />
-                        </div>
-                      </div>
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right text-xs font-medium">
+                          {formatPrice(calcItemAmount(item))}
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            onClick={() => removeItem(idx)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-                      {/* Item total */}
-                      <div className="flex justify-end">
-                        <span className="text-xs text-muted-foreground">
-                          Amount: <span className="font-semibold text-foreground">{formatPrice(calcItemAmount(item))}</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Order Summary */}
-                <div className="mt-4 rounded-lg border border-border bg-white p-4 space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Order Summary</p>
-                  <div className="flex justify-between text-sm">
+              {/* Order Summary */}
+              <div className="flex justify-end">
+                <div className="min-w-[220px] space-y-1.5 text-sm border rounded-md p-3 bg-muted/20">
+                  <div className="flex justify-between gap-8">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatPrice(formSubtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Discount</span>
+                  <div className="flex justify-between gap-8">
+                    <span className="text-muted-foreground">Discount</span>
                     <span className="text-red-600">- {formatPrice(formTotalDiscount)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between gap-8">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="text-blue-600">+ {formatPrice(Math.max(0, formTotalTax))}</span>
+                    <span>+ {formatPrice(Math.max(0, formTotalTax))}</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between text-sm font-bold">
+                  <div className="flex justify-between gap-8 font-semibold">
                     <span>Total</span>
-                    <span className="text-blue-600 text-base">{formatPrice(formTotal)}</span>
+                    <span className="text-blue-600">{formatPrice(formTotal)}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </form>
 
-          {/* Sticky Footer */}
-          <SheetFooter className="px-6 py-4 border-t bg-white shrink-0 flex-row gap-3 justify-end">
-            <SheetClose asChild>
-              <Button type="button" variant="outline" className="shadow-none" disabled={submitting}>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="shadow-none"
+                onClick={() => setOpenForm(false)}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
-            </SheetClose>
-            <Button
-              type="submit"
-              form="purchase-form"
-              variant="blue"
-              className="shadow-none min-w-[120px]"
-              disabled={submitting}
-            >
-              {submitting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-              ) : (
-                editingId ? 'Update Purchase' : 'Create Purchase'
-              )}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+              <Button type="submit" variant="blue" className="shadow-none" disabled={submitting}>
+                {submitting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+                ) : (
+                  editingId ? 'Update' : 'Create'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── View Detail Dialog ───────────────────────────────────────────────── */}
       <Dialog open={openView} onOpenChange={setOpenView}>
@@ -975,44 +910,43 @@ export default function POSPurchasePage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : viewDetail ? (
-            <div className="space-y-5 text-sm">
-              {/* Info grid */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Purchase #</p>
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Purchase #</p>
                   <p className="font-semibold text-blue-600">{viewDetail.billId}</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Vendor</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Vendor</p>
                   <p className="font-medium">{viewDetail.vendor?.name ?? '—'}</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Purchase Date</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Purchase Date</p>
                   <p>{formatDate(viewDetail.billDate)}</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Due Date</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Due Date</p>
                   <p>{formatDate(viewDetail.dueDate)}</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Status</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Status</p>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusConfig(viewDetail.status).color}`}>
                     {getStatusConfig(viewDetail.status).label}
                   </span>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total</p>
-                  <p className="font-bold text-blue-600 text-base">{formatPrice(viewDetail.total)}</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="font-bold text-blue-600">{formatPrice(viewDetail.total)}</p>
                 </div>
                 {viewDetail.reference && (
-                  <div className="space-y-0.5">
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Reference</p>
-                    <p className="font-mono text-xs bg-muted px-2 py-0.5 rounded w-fit">{viewDetail.reference}</p>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Reference</p>
+                    <p className="font-mono text-xs">{viewDetail.reference}</p>
                   </div>
                 )}
                 {viewDetail.description && (
-                  <div className="col-span-2 space-y-0.5">
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Notes</p>
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-xs text-muted-foreground">Notes</p>
                     <p className="text-muted-foreground">{viewDetail.description}</p>
                   </div>
                 )}
@@ -1021,29 +955,29 @@ export default function POSPurchasePage() {
               <Separator />
 
               {/* Items */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Items ({viewDetail.items?.length ?? 0})</p>
-                <div className="rounded-lg border overflow-hidden">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Items</p>
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
                         <TableHead className="px-3 py-2 text-xs font-medium">Product</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right w-12">Qty</TableHead>
+                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Qty</TableHead>
                         <TableHead className="px-3 py-2 text-xs font-medium text-right">Price</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Disc.</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right w-14">Tax</TableHead>
+                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Discount</TableHead>
+                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Tax</TableHead>
                         <TableHead className="px-3 py-2 text-xs font-medium text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {viewDetail.items?.map((item, idx) => (
-                        <TableRow key={idx} className="hover:bg-muted/20">
+                        <TableRow key={idx}>
                           <TableCell className="px-3 py-2 text-xs font-medium">{item.itemName}</TableCell>
                           <TableCell className="px-3 py-2 text-xs text-right">{item.quantity}</TableCell>
                           <TableCell className="px-3 py-2 text-xs text-right">{formatPrice(item.price)}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right text-red-600">{item.discount > 0 ? `- ${formatPrice(item.discount)}` : '—'}</TableCell>
+                          <TableCell className="px-3 py-2 text-xs text-right">{item.discount > 0 ? formatPrice(item.discount) : '—'}</TableCell>
                           <TableCell className="px-3 py-2 text-xs text-right">{item.taxRate > 0 ? `${item.taxRate}%` : '—'}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right font-semibold">{formatPrice(item.amount)}</TableCell>
+                          <TableCell className="px-3 py-2 text-xs text-right font-medium">{formatPrice(item.amount)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1054,25 +988,20 @@ export default function POSPurchasePage() {
               <Separator />
 
               {/* Quick status change */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Update Status</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Change Status</p>
+                <div className="flex flex-wrap gap-1.5">
                   {STATUS_OPTIONS.map(s => (
-                    <button
+                    <Button
                       key={s.value}
                       type="button"
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all border-2 ${
-                        viewDetail.status === s.value
-                          ? `${s.color} border-current`
-                          : 'bg-white text-muted-foreground border-border hover:border-gray-400'
-                      }`}
+                      size="sm"
+                      variant="outline"
+                      className={`h-7 text-xs shadow-none ${viewDetail.status === s.value ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                       onClick={() => handleStatusChange(viewDetail.billId, s.value)}
                     >
-                      {viewDetail.status === s.value && (
-                        <span className="mr-1.5">✓</span>
-                      )}
                       {s.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -1087,7 +1016,7 @@ export default function POSPurchasePage() {
                 onClick={() => { setOpenView(false); openEditForm(viewDetail.billId) }}
               >
                 <Pencil className="mr-2 h-4 w-4" />
-                Edit Purchase
+                Edit
               </Button>
             )}
           </DialogFooter>
@@ -1098,10 +1027,9 @@ export default function POSPurchasePage() {
       <AlertDialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Purchase Order</AlertDialogTitle>
+            <AlertDialogTitle>Delete Purchase</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong className="text-foreground">{deleteId}</strong>?
-              This action cannot be undone and all associated items will be permanently removed.
+              Are you sure you want to delete <strong>{deleteId}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1109,9 +1037,9 @@ export default function POSPurchasePage() {
             <AlertDialogAction
               onClick={handleDelete}
               disabled={submitting}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-red-600 hover:bg-red-700"
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Purchase'}
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
