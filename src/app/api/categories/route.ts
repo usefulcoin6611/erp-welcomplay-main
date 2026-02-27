@@ -35,16 +35,20 @@ export async function GET(request: NextRequest) {
     }
 
     const branchId = (session.user as any).branchId as string | null;
+    const url = new URL(request.url)
+    const all = url.searchParams.get("all") === "true"
 
     const where: any = {};
-    if (branchId) {
+    // If ?all=true, return all categories (for forms that need cross-branch categories)
+    // Otherwise filter by branchId
+    if (!all && branchId) {
       where.branchId = branchId;
     }
 
     const categories = await prisma.category.findMany({
       where,
       orderBy: {
-        createdAt: "desc",
+        name: "asc",
       },
     });
 
