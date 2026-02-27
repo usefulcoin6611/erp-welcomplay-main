@@ -15,19 +15,8 @@ import { REPORT_CARD_CLASS, REPORT_TAB_TRIGGER_CLASS } from "../shared-styles"
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
-const WAREHOUSES = [
-  { value: "all", label: "All Warehouse" },
-  { value: "jakarta", label: "Jakarta" },
-  { value: "bandung", label: "Bandung" },
-  { value: "surabaya", label: "Surabaya" },
-]
-
-const VENDORS = [
-  { value: "all", label: "All Vendor" },
-  { value: "vendor1", label: "PT. Maju Jaya" },
-  { value: "vendor2", label: "CV. Sumber Makmur" },
-  { value: "vendor3", label: "UD. Berkah Sentosa" },
-]
+type Warehouse = { id: string; name: string }
+type Vendor = { id: string; name: string }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -53,6 +42,8 @@ type ReportTabContentProps = {
   endMonth: string
   warehouse: string
   vendor: string
+  warehouses: Warehouse[]
+  vendors: Vendor[]
   setStartDate: (v: string) => void
   setEndDate: (v: string) => void
   setStartMonth: (v: string) => void
@@ -77,6 +68,8 @@ function ReportTabContent({
   endMonth,
   warehouse,
   vendor,
+  warehouses,
+  vendors,
   setStartDate,
   setEndDate,
   setStartMonth,
@@ -127,8 +120,9 @@ function ReportTabContent({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {WAREHOUSES.map((wh) => (
-                    <SelectItem key={wh.value} value={wh.value}>{wh.label}</SelectItem>
+                  <SelectItem value="all">All Warehouse</SelectItem>
+                  {warehouses.map((wh) => (
+                    <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -140,8 +134,9 @@ function ReportTabContent({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {VENDORS.map((v) => (
-                    <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                  <SelectItem value="all">All Vendor</SelectItem>
+                  {vendors.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -182,7 +177,7 @@ function ReportTabContent({
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-muted-foreground">Warehouse</p>
-                  <h3 className="text-lg font-semibold mt-1">{WAREHOUSES.find((w) => w.value === warehouse)?.label}</h3>
+                  <h3 className="text-lg font-semibold mt-1">{warehouses.find((w) => w.id === warehouse)?.name ?? warehouse}</h3>
                 </div>
               </div>
             </CardContent>
@@ -217,8 +212,22 @@ export function PurchaseTab() {
   const [endMonth, setEndMonth] = useState("")
   const [warehouse, setWarehouse] = useState("all")
   const [vendor, setVendor] = useState("all")
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [vendors, setVendors] = useState<Vendor[]>([])
 
   useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    fetch("/api/pos/warehouses")
+      .then((r) => r.json())
+      .then((res) => { if (res.success) setWarehouses(res.data) })
+      .catch(() => {})
+
+    fetch("/api/vendors")
+      .then((r) => r.json())
+      .then((res) => { if (res.success) setVendors(res.data.map((v: any) => ({ id: v.id, name: v.name }))) })
+      .catch(() => {})
+  }, [])
 
   const handleDownload = () => {
     setIsDownloading(true)
@@ -226,6 +235,7 @@ export function PurchaseTab() {
   }
 
   const handleApply = () => {
+    // Purchase report filtering - uses existing bills/expenses data
     console.log({ startDate, endDate, startMonth, endMonth, warehouse, vendor })
   }
 
@@ -238,18 +248,18 @@ export function PurchaseTab() {
     setVendor("all")
   }
 
-  const dailyData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 300) + 100)
-  const monthlyData = MONTHS.map(() => Math.floor(Math.random() * 5000) + 2000)
+  const dailyData: number[] = []
+  const monthlyData: number[] = []
 
   const dailyChartOptions = {
     ...baseChartOptions,
     xaxis: { categories: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`), title: { text: "Days" } },
-    yaxis: { title: { text: "Amount" } },
+    yaxis: { title: { text: "Amount (IDR)" } },
   }
   const monthlyChartOptions = {
     ...baseChartOptions,
     xaxis: { categories: MONTHS, title: { text: "Months" } },
-    yaxis: { title: { text: "Amount" } },
+    yaxis: { title: { text: "Amount (IDR)" } },
   }
 
   return (
@@ -296,6 +306,8 @@ export function PurchaseTab() {
             endMonth={endMonth}
             warehouse={warehouse}
             vendor={vendor}
+            warehouses={warehouses}
+            vendors={vendors}
             setStartDate={setStartDate}
             setEndDate={setEndDate}
             setStartMonth={setStartMonth}
@@ -306,7 +318,7 @@ export function PurchaseTab() {
             onReset={handleReset}
             reportTitle="Daily Purchase Report"
             chartTitle="Daily Purchase"
-            chartDescription="Purchase trends over the last 30 days"
+            chartDescription="Purchase trends over the selected date range"
             chartOptions={dailyChartOptions}
             chartSeries={[{ name: "Purchase", data: dailyData }]}
             mounted={mounted}
@@ -322,6 +334,8 @@ export function PurchaseTab() {
             endMonth={endMonth}
             warehouse={warehouse}
             vendor={vendor}
+            warehouses={warehouses}
+            vendors={vendors}
             setStartDate={setStartDate}
             setEndDate={setEndDate}
             setStartMonth={setStartMonth}
@@ -332,7 +346,7 @@ export function PurchaseTab() {
             onReset={handleReset}
             reportTitle="Monthly Purchase Report"
             chartTitle="Monthly Purchase"
-            chartDescription="Purchase trends across 12 months"
+            chartDescription="Purchase trends across selected months"
             chartOptions={monthlyChartOptions}
             chartSeries={[{ name: "Purchase", data: monthlyData }]}
             mounted={mounted}

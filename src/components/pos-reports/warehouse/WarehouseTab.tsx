@@ -15,81 +15,68 @@ import {
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
+type WarehouseData = {
+  id: string
+  name: string
+  isActive: boolean
+}
+
 export function WarehouseTab() {
   const [mounted, setMounted] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [warehouses, setWarehouses] = useState<WarehouseData[]>([])
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      fetch("/api/pos/warehouses?active=false").then((r) => r.json()),
+      fetch("/api/products").then((r) => r.json()),
+    ])
+      .then(([warehouseRes, productRes]) => {
+        if (warehouseRes.success) setWarehouses(warehouseRes.data)
+        if (productRes.success) setTotalProducts(productRes.data.length)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
   const handleDownload = () => {
     setIsDownloading(true)
-    // Simulate PDF download
     setTimeout(() => {
       setIsDownloading(false)
     }, 2000)
   }
 
-  // Mock data
-  const warehouses = ['Jakarta', 'Bandung', 'Surabaya', 'Medan']
-  const productData = [150, 90, 160, 80]
   const totalWarehouse = warehouses.length
-  const totalProduct = productData.reduce((a, b) => a + b, 0)
+  const warehouseNames = warehouses.map((w) => w.name)
+  // For chart: show equal distribution as placeholder (no per-warehouse stock tracking yet)
+  const productData = warehouses.map(() => Math.round(totalProducts / Math.max(1, warehouses.length)))
 
   const chartOptions = {
     chart: {
-      type: 'area' as const,
-      toolbar: {
-        show: false
-      },
-      dropShadow: {
-        enabled: true,
-        color: '#000',
-        top: 18,
-        left: 7,
-        blur: 10,
-        opacity: 0.2
-      }
+      type: 'bar' as const,
+      toolbar: { show: false },
     },
-    dataLabels: {
-      enabled: false
-    },
-    stroke: {
-      width: 2,
-      curve: 'smooth' as const
-    },
+    dataLabels: { enabled: false },
+    stroke: { width: 2, curve: 'smooth' as const },
     colors: ['#6fd944'],
     xaxis: {
-      categories: warehouses,
-      title: {
-        text: 'Warehouse'
-      }
+      categories: warehouseNames.length > 0 ? warehouseNames : ['No Warehouses'],
+      title: { text: 'Warehouse' },
     },
-    yaxis: {
-      title: {
-        text: 'Product Count'
-      }
-    },
-    grid: {
-      strokeDashArray: 4
-    },
-    legend: {
-      show: false
-    },
-    tooltip: {
-      y: {
-        formatter: (value: number) => `${value} products`
-      }
-    }
+    yaxis: { title: { text: 'Product Count' } },
+    grid: { strokeDashArray: 4 },
+    legend: { show: false },
+    tooltip: { y: { formatter: (value: number) => `${value} products` } },
   }
 
-  const chartSeries = [
-    {
-      name: 'Product',
-      data: productData
-    }
-  ]
+  const chartSeries = [{ name: 'Product', data: productData.length > 0 ? productData : [0] }]
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -110,19 +97,19 @@ export function WarehouseTab() {
                   disabled={isDownloading}
                   className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
               <TooltipContent>Download report as PDF</TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -157,7 +144,11 @@ export function WarehouseTab() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Warehouse
                 </p>
-                <h3 className="text-3xl font-bold mt-1">{totalWarehouse}</h3>
+                {loading ? (
+                  <Skeleton className="h-8 w-16 mt-1" />
+                ) : (
+                  <h3 className="text-3xl font-bold mt-1">{totalWarehouse}</h3>
+                )}
               </div>
             </div>
           </CardContent>
@@ -173,7 +164,11 @@ export function WarehouseTab() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Product
                 </p>
-                <h3 className="text-3xl font-bold mt-1">{totalProduct}</h3>
+                {loading ? (
+                  <Skeleton className="h-8 w-16 mt-1" />
+                ) : (
+                  <h3 className="text-3xl font-bold mt-1">{totalProducts}</h3>
+                )}
               </div>
             </div>
           </CardContent>
@@ -187,11 +182,11 @@ export function WarehouseTab() {
           <p className="text-sm text-muted-foreground mt-0.5">Product distribution by warehouse location</p>
         </CardHeader>
         <CardContent className="px-5 pb-5 pt-0">
-          {mounted ? (
+          {mounted && !loading ? (
             <Chart
               options={chartOptions}
               series={chartSeries}
-              type="area"
+              type="bar"
               height={320}
             />
           ) : (

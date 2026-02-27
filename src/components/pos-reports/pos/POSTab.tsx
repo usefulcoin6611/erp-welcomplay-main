@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,20 +14,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { REPORT_CARD_CLASS, REPORT_TAB_TRIGGER_CLASS } from "../shared-styles"
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
-
-const WAREHOUSES = [
-  { value: "all", label: "All Warehouse" },
-  { value: "jakarta", label: "Jakarta" },
-  { value: "bandung", label: "Bandung" },
-  { value: "surabaya", label: "Surabaya" },
-]
-
-const CUSTOMERS = [
-  { value: "all", label: "All Customer" },
-  { value: "customer1", label: "PT. Global Tech" },
-  { value: "customer2", label: "CV. Prima Sejahtera" },
-  { value: "customer3", label: "UD. Mitra Usaha" },
-]
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -45,6 +31,10 @@ const baseChartOptions = {
   tooltip: { y: { formatter: (v: number) => `Rp ${v.toLocaleString("id-ID")}` } },
 }
 
+type Warehouse = { id: string; name: string }
+type Customer = { id: string; name: string }
+type ChartDataPoint = { date: string; amount: number }
+
 type ReportTabContentProps = {
   isMonthly: boolean
   startDate: string
@@ -53,6 +43,8 @@ type ReportTabContentProps = {
   endMonth: string
   warehouse: string
   customer: string
+  warehouses: Warehouse[]
+  customers: Customer[]
   setStartDate: (v: string) => void
   setEndDate: (v: string) => void
   setStartMonth: (v: string) => void
@@ -67,6 +59,7 @@ type ReportTabContentProps = {
   chartOptions: object
   chartSeries: { name: string; data: number[] }[]
   mounted: boolean
+  loading: boolean
 }
 
 function ReportTabContent({
@@ -77,6 +70,8 @@ function ReportTabContent({
   endMonth,
   warehouse,
   customer,
+  warehouses,
+  customers,
   setStartDate,
   setEndDate,
   setStartMonth,
@@ -91,6 +86,7 @@ function ReportTabContent({
   chartOptions,
   chartSeries,
   mounted,
+  loading,
 }: ReportTabContentProps) {
   return (
     <div className="space-y-6 mt-6">
@@ -127,8 +123,9 @@ function ReportTabContent({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {WAREHOUSES.map((wh) => (
-                    <SelectItem key={wh.value} value={wh.value}>{wh.label}</SelectItem>
+                  <SelectItem value="all">All Warehouse</SelectItem>
+                  {warehouses.map((wh) => (
+                    <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -140,16 +137,16 @@ function ReportTabContent({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CUSTOMERS.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  <SelectItem value="all">All Customer</SelectItem>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-2">
-              <Button onClick={onApply} className="flex-1 h-10 bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                <Search className="h-4 w-4 mr-2" />
-                Apply
+              <Button onClick={onApply} disabled={loading} className="flex-1 h-10 bg-blue-600 text-white hover:bg-blue-700 shadow-none">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" />Apply</>}
               </Button>
               <Button onClick={onReset} variant="destructive" className="h-10">
                 <RotateCcw className="h-4 w-4" />
@@ -182,7 +179,7 @@ function ReportTabContent({
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-muted-foreground">Warehouse</p>
-                  <h3 className="text-lg font-semibold mt-1">{WAREHOUSES.find((w) => w.value === warehouse)?.label}</h3>
+                  <h3 className="text-lg font-semibold mt-1">{warehouses.find((w) => w.id === warehouse)?.name ?? warehouse}</h3>
                 </div>
               </div>
             </CardContent>
@@ -196,7 +193,7 @@ function ReportTabContent({
           <p className="text-sm text-muted-foreground">{chartDescription}</p>
         </CardHeader>
         <CardContent className="pt-4">
-          {mounted ? (
+          {mounted && !loading ? (
             <Chart options={chartOptions} series={chartSeries} type="area" height={320} />
           ) : (
             <Skeleton className="h-[320px] w-full" />
@@ -217,8 +214,65 @@ export function POSTab() {
   const [endMonth, setEndMonth] = useState("")
   const [warehouse, setWarehouse] = useState("all")
   const [customer, setCustomer] = useState("all")
+  const [loading, setLoading] = useState(false)
+
+  // Data from API
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [dailyChartData, setDailyChartData] = useState<ChartDataPoint[]>([])
+  const [monthlyChartData, setMonthlyChartData] = useState<ChartDataPoint[]>([])
 
   useEffect(() => setMounted(true), [])
+
+  // Load warehouses and customers for filters
+  useEffect(() => {
+    fetch("/api/pos/warehouses")
+      .then((r) => r.json())
+      .then((res) => { if (res.success) setWarehouses(res.data) })
+      .catch(() => {})
+
+    fetch("/api/customers")
+      .then((r) => r.json())
+      .then((res) => { if (res.success) setCustomers(res.data.map((c: any) => ({ id: c.id, name: c.name }))) })
+      .catch(() => {})
+  }, [])
+
+  const fetchReportData = useCallback(async (type: string) => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ type })
+      if (type === "daily") {
+        if (startDate) params.set("startDate", startDate)
+        if (endDate) params.set("endDate", endDate)
+      } else {
+        if (startMonth) params.set("startMonth", startMonth)
+        if (endMonth) params.set("endMonth", endMonth)
+      }
+      if (warehouse !== "all") params.set("warehouseId", warehouse)
+      if (customer !== "all") params.set("customerId", customer)
+
+      const res = await fetch(`/api/pos/reports?${params.toString()}`)
+      const data = await res.json()
+
+      if (data.success) {
+        if (type === "daily") {
+          setDailyChartData(data.data.chartData)
+        } else {
+          setMonthlyChartData(data.data.chartData)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching POS report:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [startDate, endDate, startMonth, endMonth, warehouse, customer])
+
+  // Load initial data
+  useEffect(() => {
+    fetchReportData("daily")
+    fetchReportData("monthly")
+  }, [])
 
   const handleDownload = () => {
     setIsDownloading(true)
@@ -226,7 +280,7 @@ export function POSTab() {
   }
 
   const handleApply = () => {
-    console.log({ startDate, endDate, startMonth, endMonth, warehouse, customer })
+    fetchReportData(activeSubTab)
   }
 
   const handleReset = () => {
@@ -238,18 +292,21 @@ export function POSTab() {
     setCustomer("all")
   }
 
-  const dailyData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 400) + 150)
-  const monthlyData = MONTHS.map(() => Math.floor(Math.random() * 6000) + 3000)
+  // Build chart data from API response
+  const dailyData = dailyChartData.map((d) => d.amount)
+  const dailyCategories = dailyChartData.map((d) => d.date)
+  const monthlyData = monthlyChartData.map((d) => d.amount)
+  const monthlyCategories = monthlyChartData.map((d) => d.date)
 
   const dailyChartOptions = {
     ...baseChartOptions,
-    xaxis: { categories: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`), title: { text: "Days" } },
-    yaxis: { title: { text: "Amount" } },
+    xaxis: { categories: dailyCategories.length > 0 ? dailyCategories : Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`), title: { text: "Days" } },
+    yaxis: { title: { text: "Amount (IDR)" } },
   }
   const monthlyChartOptions = {
     ...baseChartOptions,
-    xaxis: { categories: MONTHS, title: { text: "Months" } },
-    yaxis: { title: { text: "Amount" } },
+    xaxis: { categories: monthlyCategories.length > 0 ? monthlyCategories : MONTHS, title: { text: "Months" } },
+    yaxis: { title: { text: "Amount (IDR)" } },
   }
 
   return (
@@ -281,7 +338,7 @@ export function POSTab() {
         </CardContent>
       </Card>
 
-      <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
+      <Tabs value={activeSubTab} onValueChange={(v) => { setActiveSubTab(v); fetchReportData(v) }}>
         <TabsList className="grid w-full max-w-md grid-cols-2 h-9 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
           <TabsTrigger value="daily" className={REPORT_TAB_TRIGGER_CLASS}>Daily</TabsTrigger>
           <TabsTrigger value="monthly" className={REPORT_TAB_TRIGGER_CLASS}>Monthly</TabsTrigger>
@@ -296,6 +353,8 @@ export function POSTab() {
             endMonth={endMonth}
             warehouse={warehouse}
             customer={customer}
+            warehouses={warehouses}
+            customers={customers}
             setStartDate={setStartDate}
             setEndDate={setEndDate}
             setStartMonth={setStartMonth}
@@ -306,10 +365,11 @@ export function POSTab() {
             onReset={handleReset}
             reportTitle="Daily POS Report"
             chartTitle="Daily POS"
-            chartDescription="Sales trends over the last 30 days"
+            chartDescription="Sales trends over the selected date range"
             chartOptions={dailyChartOptions}
-            chartSeries={[{ name: "POS", data: dailyData }]}
+            chartSeries={[{ name: "POS", data: dailyData.length > 0 ? dailyData : [] }]}
             mounted={mounted}
+            loading={loading}
           />
         </TabsContent>
 
@@ -322,6 +382,8 @@ export function POSTab() {
             endMonth={endMonth}
             warehouse={warehouse}
             customer={customer}
+            warehouses={warehouses}
+            customers={customers}
             setStartDate={setStartDate}
             setEndDate={setEndDate}
             setStartMonth={setStartMonth}
@@ -332,10 +394,11 @@ export function POSTab() {
             onReset={handleReset}
             reportTitle="Monthly POS Report"
             chartTitle="Monthly POS"
-            chartDescription="Sales trends across 12 months"
+            chartDescription="Sales trends across selected months"
             chartOptions={monthlyChartOptions}
-            chartSeries={[{ name: "POS", data: monthlyData }]}
+            chartSeries={[{ name: "POS", data: monthlyData.length > 0 ? monthlyData : [] }]}
             mounted={mounted}
+            loading={loading}
           />
         </TabsContent>
       </Tabs>

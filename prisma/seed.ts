@@ -67,6 +67,7 @@ import { ensurePayrollEmployeeSchema } from "./seeds/schema-payroll-employee";
 import { seedHrmAdmin } from "./seeds/hrm-admin";
 import { seedAccessProfiles } from "./seeds/access-profiles";
 import { seedSupport } from "./seeds/support";
+import { seedWarehouses } from "./seeds/warehouses";
 
 dotenv.config();
 
@@ -147,6 +148,7 @@ async function main() {
     await seedTimesheets(prisma);
     await seedBugs(prisma);
     await seedTimeTrackers(prisma);
+    await seedWarehouses(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

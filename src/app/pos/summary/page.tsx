@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, X, Eye } from 'lucide-react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { Search, X, Eye, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { POSPageLayout } from '@/components/pos-page-layout'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,14 +17,17 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 
-const MOCK_POS_LIST = [
-  { id: '1', pos_id: 'POS-001', pos_date: '2025-01-15', customer: 'Walk-in Customer', warehouse: 'Gudang Utama', amount: 17500000 },
-  { id: '2', pos_id: 'POS-002', pos_date: '2025-01-14', customer: 'PT Pelanggan A', warehouse: 'Gudang Cabang A', amount: 3200000 },
-  { id: '3', pos_id: 'POS-003', pos_date: '2025-01-13', customer: 'CV Mitra B', warehouse: 'Gudang Utama', amount: 850000 },
-  { id: '4', pos_id: 'POS-004', pos_date: '2025-01-12', customer: 'Walk-in Customer', warehouse: 'Gudang Utama', amount: 45000 },
-  { id: '5', pos_id: 'POS-005', pos_date: '2025-01-11', customer: 'PT Pelanggan A', warehouse: 'Gudang Cabang A', amount: 2620000 },
-  { id: '6', pos_id: 'POS-006', pos_date: '2025-01-10', customer: 'CV Mitra B', warehouse: 'Gudang Utama', amount: 520000 },
-]
+type PosOrder = {
+  id: string
+  posId: string
+  customerName: string
+  warehouseName: string
+  total: number
+  discount: number
+  subtotal: number
+  status: string
+  createdAt: string
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -36,30 +39,50 @@ function formatPrice(n: number) {
 
 /**
  * POS Summary (reference-erp pos.report): list transaksi POS.
- * Berbeda dengan Dashboard > POS > Reports yang berisi laporan analitis (Warehouse, Purchase, POS Daily/Monthly, Pos VS Purchase).
+ * Data diambil dari API /api/pos/orders.
  */
 export default function POSSummaryPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [orders, setOrders] = useState<PosOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [totalCount, setTotalCount] = useState(0)
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(pageSize),
+      })
+      const res = await fetch(`/api/pos/orders?${params.toString()}`)
+      const data = await res.json()
+      if (data.success) {
+        setOrders(data.data)
+        setTotalCount(data.meta?.total ?? data.data.length)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false)
+    }
+  }, [currentPage, pageSize])
+
+  useEffect(() => {
+    fetchOrders()
+  }, [fetchOrders])
 
   const filteredData = useMemo(() => {
-    if (!search.trim()) return MOCK_POS_LIST
+    if (!search.trim()) return orders
     const q = search.trim().toLowerCase()
-    return MOCK_POS_LIST.filter(
+    return orders.filter(
       (r) =>
-        r.pos_id.toLowerCase().includes(q) ||
-        r.customer.toLowerCase().includes(q) ||
-        r.warehouse.toLowerCase().includes(q)
+        r.posId.toLowerCase().includes(q) ||
+        r.customerName.toLowerCase().includes(q) ||
+        r.warehouseName.toLowerCase().includes(q)
     )
-  }, [search])
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredData.slice(start, start + pageSize)
-  }, [filteredData, currentPage, pageSize])
-
-  const totalRecords = filteredData.length
+  }, [search, orders])
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
@@ -108,23 +131,29 @@ export default function POSSummaryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-8 text-center text-muted-foreground text-sm">
                       No Data Found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedData.map((row) => (
+                  filteredData.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="px-4 py-3 text-sm font-medium">{row.pos_id}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{formatDate(row.pos_date)}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{row.customer}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{row.warehouse}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm text-right font-medium">{formatPrice(row.amount)}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm font-medium">{row.posId}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{formatDate(row.createdAt)}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{row.customerName}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{row.warehouseName || '-'}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-right font-medium">{formatPrice(row.total)}</TableCell>
                       <TableCell className="px-4 py-3">
                         <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" asChild>
-                          <Link href={`/pos/summary/${row.id}`}>
+                          <Link href={`/pos/summary/${row.posId}`}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -135,17 +164,19 @@ export default function POSSummaryPage() {
               </TableBody>
             </Table>
           </div>
-          {totalRecords > 0 && (
-            <SimplePagination
-              currentPage={currentPage}
-              pageSize={pageSize}
-              totalRecords={totalRecords}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
-            />
+          {totalCount > 0 && (
+            <div className="px-4 py-3 border-t">
+              <SimplePagination
+                totalCount={totalCount}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

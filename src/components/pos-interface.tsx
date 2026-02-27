@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, Home, Minus, Plus, Trash2 } from 'lucide-react'
+import { Search, Home, Minus, Plus, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,37 +40,31 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-// Mock data sesuai reference-erp (pos/index, product categories, search)
-const MOCK_CUSTOMERS = [
-  { id: '1', name: 'Walk-in Customer' },
-  { id: '2', name: 'PT Pelanggan A' },
-  { id: '3', name: 'CV Mitra B' },
-]
-const MOCK_WAREHOUSES = [
-  { id: '1', name: 'Gudang Utama' },
-  { id: '2', name: 'Gudang Cabang A' },
-]
-const MOCK_CATEGORIES = [
-  { id: '0', name: 'All' },
-  { id: '1', name: 'Electronics' },
-  { id: '2', name: 'Accessories' },
-]
-const MOCK_PRODUCTS = [
-  { id: '1', name: 'Laptop Dell XPS', sku: 'SKU-001', price: 15000000, categoryId: '1' },
-  { id: '2', name: 'Mouse Wireless', sku: 'SKU-002', price: 250000, categoryId: '2' },
-  { id: '3', name: 'Monitor LG 24"', sku: 'SKU-003', price: 2100000, categoryId: '1' },
-  { id: '4', name: 'Keyboard Mechanical', sku: 'SKU-004', price: 850000, categoryId: '2' },
-  { id: '5', name: 'USB Cable Type-C', sku: 'SKU-005', price: 45000, categoryId: '2' },
-  { id: '6', name: 'Webcam HD', sku: 'SKU-006', price: 520000, categoryId: '1' },
-]
+type Customer = { id: string; name: string }
+type Warehouse = { id: string; name: string }
+type Category = { id: string; name: string }
+type Product = {
+  id: string
+  name: string
+  sku: string
+  salePrice: number
+  quantity: number
+  categoryId: string | null
+  taxRate: number
+  taxName: string
+  unitName: string
+}
 
 type CartItem = {
   id: string
   productId: string
   name: string
+  sku: string
   qty: number
   tax: string
+  taxRate: number
   price: number
+  discount: number
   subtotal: number
 }
 
@@ -78,49 +72,150 @@ function formatPrice(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 }
 
+const WALK_IN_CUSTOMER: Customer = { id: 'walk-in', name: 'Walk-in Customer' }
+
 export function POSInterface() {
   const [searchProduct, setSearchProduct] = useState('')
   const [searchBarcode, setSearchBarcode] = useState('')
-  const [customerCode, setCustomerCode] = useState('1')
-  const [warehouseId, setWarehouseId] = useState('1')
+  const [customerCode, setCustomerCode] = useState('walk-in')
+  const [warehouseId, setWarehouseId] = useState('')
   const [discount, setDiscount] = useState(0)
   const [cart, setCart] = useState<CartItem[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState('0')
   const [openPayModal, setOpenPayModal] = useState(false)
   const [openEmptyCartAlert, setOpenEmptyCartAlert] = useState(false)
 
+  // Data from API
+  const [customers, setCustomers] = useState<Customer[]>([WALK_IN_CUSTOMER])
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+
+  // Loading states
+  const [loadingCustomers, setLoadingCustomers] = useState(true)
+  const [loadingWarehouses, setLoadingWarehouses] = useState(true)
+  const [loadingCategories, setLoadingCategories] = useState(true)
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [submittingOrder, setSubmittingOrder] = useState(false)
+
   const subtotal = cart.reduce((sum, i) => sum + i.subtotal, 0)
   const total = subtotal - discount
 
-  const customerName = MOCK_CUSTOMERS.find((c) => c.id === customerCode)?.name ?? ''
-  const warehouseName = MOCK_WAREHOUSES.find((w) => w.id === warehouseId)?.name ?? ''
+  const customerName = customers.find((c) => c.id === customerCode)?.name ?? 'Walk-in Customer'
+  const warehouseName = warehouses.find((w) => w.id === warehouseId)?.name ?? ''
+
+  // Load customers
+  useEffect(() => {
+    setLoadingCustomers(true)
+    fetch('/api/customers')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setCustomers([WALK_IN_CUSTOMER, ...res.data.map((c: any) => ({ id: c.id, name: c.name }))])
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCustomers(false))
+  }, [])
+
+  // Load warehouses
+  useEffect(() => {
+    setLoadingWarehouses(true)
+    fetch('/api/pos/warehouses')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setWarehouses(res.data)
+          if (res.data.length > 0 && !warehouseId) {
+            setWarehouseId(res.data[0].id)
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingWarehouses(false))
+  }, [])
+
+  // Load categories
+  useEffect(() => {
+    setLoadingCategories(true)
+    fetch('/api/pos/product-categories')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setCategories(res.data)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCategories(false))
+  }, [])
+
+  // Load products (debounced search)
+  const loadProducts = useCallback(() => {
+    setLoadingProducts(true)
+    const params = new URLSearchParams()
+    if (searchBarcode.trim()) {
+      params.set('sku', searchBarcode.trim())
+      params.set('type', 'sku')
+    } else if (searchProduct.trim()) {
+      params.set('search', searchProduct.trim())
+    }
+    if (selectedCategoryId && selectedCategoryId !== '0') {
+      params.set('cat_id', selectedCategoryId)
+    }
+    if (warehouseId) {
+      params.set('war_id', warehouseId)
+    }
+
+    fetch(`/api/pos/search-products?${params.toString()}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setProducts(res.data)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProducts(false))
+  }, [searchProduct, searchBarcode, selectedCategoryId, warehouseId])
+
+  useEffect(() => {
+    const timer = setTimeout(loadProducts, 300)
+    return () => clearTimeout(timer)
+  }, [loadProducts])
 
   const handleWarehouseChange = (value: string) => {
     setWarehouseId(value)
-    setCart([])
+    setCart([]) // Empty cart when warehouse changes (reference-erp behavior)
   }
 
-  const addToCart = (product: (typeof MOCK_PRODUCTS)[0], qty = 1) => {
+  const addToCart = (product: Product, qty = 1) => {
     const existing = cart.find((c) => c.productId === product.id)
     if (existing) {
       setCart(
         cart.map((c) =>
           c.productId === product.id
-            ? { ...c, qty: c.qty + qty, subtotal: (c.qty + qty) * product.price }
+            ? {
+                ...c,
+                qty: c.qty + qty,
+                subtotal: (c.qty + qty) * product.salePrice * (1 + c.taxRate / 100),
+              }
             : c
         )
       )
     } else {
+      const itemSubtotal = qty * product.salePrice * (1 + product.taxRate / 100)
       setCart([
         ...cart,
         {
           id: product.id,
           productId: product.id,
           name: product.name,
+          sku: product.sku,
           qty,
-          tax: '-',
-          price: product.price,
-          subtotal: qty * product.price,
+          tax: product.taxName || '-',
+          taxRate: product.taxRate,
+          price: product.salePrice,
+          discount: 0,
+          subtotal: Math.round(itemSubtotal * 100) / 100,
         },
       ])
     }
@@ -132,7 +227,11 @@ export function POSInterface() {
         .map((c) => {
           if (c.id !== itemId) return c
           const newQty = Math.max(1, c.qty + delta)
-          return { ...c, qty: newQty, subtotal: newQty * c.price }
+          return {
+            ...c,
+            qty: newQty,
+            subtotal: Math.round(newQty * c.price * (1 + c.taxRate / 100) * 100) / 100,
+          }
         })
         .filter((c) => c.qty > 0)
     )
@@ -147,29 +246,50 @@ export function POSInterface() {
     setOpenEmptyCartAlert(false)
   }
 
-  const handleConfirmPayment = () => {
-    toast.success('Payment completed successfully!')
-    setCart([])
-    setOpenPayModal(false)
-  }
+  const handleConfirmPayment = async () => {
+    if (cart.length === 0) return
+    setSubmittingOrder(true)
+    try {
+      const body = {
+        customerId: customerCode === 'walk-in' ? null : customerCode,
+        warehouseId: warehouseId || null,
+        discount,
+        items: cart.map((item) => ({
+          productId: item.productId,
+          itemName: item.name,
+          sku: item.sku,
+          quantity: item.qty,
+          price: item.price,
+          discount: item.discount,
+          taxRate: item.taxRate,
+        })),
+      }
 
-  const filteredProducts = MOCK_PRODUCTS.filter((p) => {
-    if (selectedCategoryId !== '0' && p.categoryId !== selectedCategoryId) return false
-    const searchByBarcode = searchBarcode.trim()
-    const searchByName = searchProduct.trim()
-    if (searchByBarcode)
-      return p.sku.toLowerCase().includes(searchByBarcode.toLowerCase())
-    if (searchByName)
-      return (
-        p.name.toLowerCase().includes(searchByName.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchByName.toLowerCase())
-      )
-    return true
-  })
+      const res = await fetch('/api/pos/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        toast.success(`Payment completed! Order: ${data.data.posId}`)
+        setCart([])
+        setDiscount(0)
+        setOpenPayModal(false)
+      } else {
+        toast.error(data.message ?? 'Failed to process payment')
+      }
+    } catch (error) {
+      toast.error('Failed to process payment')
+    } finally {
+      setSubmittingOrder(false)
+    }
+  }
 
   return (
     <div className="space-y-5 px-4 py-4">
-      {/* Top bar: POS + Home link (pewarnaan mengikuti support: blue primary) */}
+      {/* Top bar: POS + Home link */}
       <div className="flex items-center justify-between rounded-lg bg-blue-500 px-5 py-2.5 text-white">
         <span className="font-semibold">POS</span>
         <Link
@@ -182,90 +302,116 @@ export function POSInterface() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        {/* Left: col-lg-7 - Search + Categories + Products (reference-erp) */}
+        {/* Left: col-lg-7 - Search + Categories + Products */}
         <div className="lg:col-span-7">
-            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-              <CardHeader className="p-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search Product"
-                      value={searchProduct}
-                      onChange={(e) => setSearchProduct(e.target.value)}
-                      className="pl-9 h-9"
-                    />
-                  </div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by Barcode Scanner"
-                      value={searchBarcode}
-                      onChange={(e) => setSearchBarcode(e.target.value)}
-                      className="pl-9 h-9"
-                    />
-                  </div>
+          <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+            <CardHeader className="p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search Product"
+                    value={searchProduct}
+                    onChange={(e) => setSearchProduct(e.target.value)}
+                    className="pl-9 h-9"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <div className="mb-4 flex flex-wrap gap-2 border-b pb-4">
-                  {MOCK_CATEGORIES.map((cat) => (
-                    <Button
-                      key={cat.id}
-                      size="sm"
-                      variant="outline"
-                      className={`h-8 shadow-none ${
-                        selectedCategoryId === cat.id
-                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100'
-                          : ''
-                      }`}
-                      onClick={() => setSelectedCategoryId(cat.id)}
-                    >
-                      {cat.name}
-                    </Button>
-                  ))}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by Barcode Scanner"
+                    value={searchBarcode}
+                    onChange={(e) => setSearchBarcode(e.target.value)}
+                    className="pl-9 h-9"
+                  />
                 </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {/* Category filter buttons */}
+              <div className="mb-4 flex flex-wrap gap-2 border-b pb-4">
+                <Button
+                  key="all"
+                  size="sm"
+                  variant="outline"
+                  className={`h-8 shadow-none ${
+                    selectedCategoryId === '0'
+                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100'
+                      : ''
+                  }`}
+                  onClick={() => setSelectedCategoryId('0')}
+                >
+                  All
+                </Button>
+                {categories.map((cat) => (
+                  <Button
+                    key={cat.id}
+                    size="sm"
+                    variant="outline"
+                    className={`h-8 shadow-none ${
+                      selectedCategoryId === cat.id
+                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100'
+                        : ''
+                    }`}
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                  >
+                    {cat.name}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Products grid */}
+              {loadingProducts ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : products.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">No products found.</div>
+              ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <button
                       key={product.id}
                       type="button"
                       onClick={() => addToCart(product)}
                       className="flex flex-col items-center rounded-lg border border-gray-200/80 bg-white p-4 text-left transition-colors hover:bg-gray-50"
                     >
-                      <div className="mb-2 h-12 w-12 rounded-full bg-gray-200" />
-                      <span className="text-xs font-medium line-clamp-2">{product.name}</span>
-                      <span className="text-xs text-muted-foreground">{formatPrice(product.price)}</span>
+                      <div className="mb-2 h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500 font-medium">
+                        {product.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-xs font-medium line-clamp-2 text-center">{product.name}</span>
+                      <span className="text-xs text-muted-foreground">{formatPrice(product.salePrice)}</span>
                     </button>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Right: col-lg-5 - Customer, Warehouse, Cart (reference-erp) */}
+        {/* Right: col-lg-5 - Customer, Warehouse, Cart */}
         <div className="lg:col-span-5">
           <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white h-full flex flex-col">
             <CardHeader className="p-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Select value={customerCode} onValueChange={setCustomerCode}>
+                <Select value={customerCode} onValueChange={setCustomerCode} disabled={loadingCustomers}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select Customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {MOCK_CUSTOMERS.map((c) => (
+                    {customers.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={warehouseId} onValueChange={handleWarehouseChange}>
+                <Select value={warehouseId} onValueChange={handleWarehouseChange} disabled={loadingWarehouses}>
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select Warehouse" />
+                    <SelectValue placeholder={loadingWarehouses ? 'Loading...' : 'Select Warehouse'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {MOCK_WAREHOUSES.map((w) => (
+                    {warehouses.map((w) => (
                       <SelectItem key={w.id} value={w.id}>
                         {w.name}
                       </SelectItem>
@@ -299,7 +445,9 @@ export function POSInterface() {
                       cart.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="p-3">
-                            <div className="h-10 w-10 rounded-full bg-gray-200" />
+                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500 font-medium">
+                              {item.name.charAt(0).toUpperCase()}
+                            </div>
                           </TableCell>
                           <TableCell className="p-3 text-sm">{item.name}</TableCell>
                           <TableCell className="p-3">
@@ -417,7 +565,7 @@ export function POSInterface() {
         </div>
       </div>
 
-      {/* Modal POS Invoice (reference-erp pos.create) */}
+      {/* Modal POS Invoice */}
       <Dialog open={openPayModal} onOpenChange={setOpenPayModal}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -430,7 +578,7 @@ export function POSInterface() {
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Warehouse</span>
-              <span className="font-medium">{warehouseName}</span>
+              <span className="font-medium">{warehouseName || '-'}</span>
             </div>
             <div className="border-t pt-3">
               <Table>
@@ -468,10 +616,29 @@ export function POSInterface() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="shadow-none" onClick={() => setOpenPayModal(false)}>
+            <Button
+              variant="outline"
+              className="shadow-none"
+              onClick={() => setOpenPayModal(false)}
+              disabled={submittingOrder}
+            >
               Cancel
             </Button>
-            <Button variant="blue" className="shadow-none" onClick={handleConfirmPayment}>Confirm Payment</Button>
+            <Button
+              variant="blue"
+              className="shadow-none"
+              onClick={handleConfirmPayment}
+              disabled={submittingOrder}
+            >
+              {submittingOrder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Confirm Payment'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,36 +25,95 @@ import {
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+type MonthlyData = {
+  month: string
+  pos: number
+  purchase: number
+  profit: number
+}
+
+function formatCurrency(value: number) {
+  return `Rp ${value.toLocaleString('id-ID')}`
+}
+
 export function POSVsPurchaseTab() {
   const [mounted, setMounted] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  const [selectedYear, setSelectedYear] = useState("2025")
+  const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()))
+  const [loading, setLoading] = useState(false)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  const fetchData = useCallback(async (year: string) => {
+    setLoading(true)
+    try {
+      // Fetch POS data for the year
+      const startDate = `${year}-01-01`
+      const endDate = `${year}-12-31`
+      const posRes = await fetch(`/api/pos/reports?type=monthly&startDate=${startDate}&endDate=${endDate}`)
+      const posData = await posRes.json()
+
+      // Build monthly data from POS orders
+      const posMonthlyMap: Record<string, number> = {}
+      if (posData.success && posData.data?.chartData) {
+        posData.data.chartData.forEach((d: { date: string; amount: number }) => {
+          const month = d.date.slice(5, 7) // Extract month from YYYY-MM
+          posMonthlyMap[month] = (posMonthlyMap[month] || 0) + d.amount
+        })
+      }
+
+      // Build monthly data array
+      const data: MonthlyData[] = MONTHS.map((month, idx) => {
+        const monthKey = String(idx + 1).padStart(2, '0')
+        const pos = posMonthlyMap[monthKey] || 0
+        // Purchase data would come from bills - for now use 0 as placeholder
+        const purchase = 0
+        return {
+          month,
+          pos: Math.round(pos * 100) / 100,
+          purchase,
+          profit: Math.round((pos - purchase) * 100) / 100,
+        }
+      })
+
+      setMonthlyData(data)
+    } catch (error) {
+      console.error("Error fetching POS vs Purchase data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData(selectedYear)
+  }, [fetchData, selectedYear])
+
   const handleDownload = () => {
     setIsDownloading(true)
-    setTimeout(() => {
-      setIsDownloading(false)
-    }, 2000)
+    setTimeout(() => setIsDownloading(false), 2000)
   }
 
   const handleApply = () => {
-    console.log('Apply filters:', { year: selectedYear })
+    fetchData(selectedYear)
   }
 
   const handleReset = () => {
-    setSelectedYear("2025")
+    const currentYear = String(new Date().getFullYear())
+    setSelectedYear(currentYear)
   }
 
-  // Mock data
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  
-  const posData = months.map(() => Math.floor(Math.random() * 4000) + 3000)
-  const purchaseData = months.map((_, i) => Math.floor(posData[i] * 0.6) + Math.floor(Math.random() * 500))
-  const profitData = posData.map((pos, i) => pos - purchaseData[i])
+  const posData = monthlyData.map((d) => d.pos)
+  const purchaseData = monthlyData.map((d) => d.purchase)
+  const profitData = monthlyData.map((d) => d.profit)
+
+  // Generate year options (current year and 4 previous years)
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i))
 
   const chartOptions = {
     chart: {
@@ -70,43 +129,23 @@ export function POSVsPurchaseTab() {
       }
     },
     dataLabels: { enabled: false },
-    stroke: {
-      width: 2,
-      curve: 'smooth' as const
-    },
+    stroke: { width: 2, curve: 'smooth' as const },
     colors: ['#ffa21d'],
     xaxis: {
-      categories: months,
+      categories: MONTHS,
       title: { text: 'Months' }
     },
     yaxis: {
-      title: { text: 'Profit' }
+      title: { text: 'Profit (IDR)' }
     },
     grid: { strokeDashArray: 4 },
     legend: { show: false },
     tooltip: {
-      y: {
-        formatter: (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-      }
+      y: { formatter: (value: number) => `Rp ${value.toLocaleString('id-ID')}` }
     }
   }
 
-  const chartSeries = [
-    {
-      name: 'Profit',
-      data: profitData
-    }
-  ]
-
-  const years = [
-    { value: '2023', label: '2023' },
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' }
-  ]
-
-  const formatCurrency = (value: number) => {
-    return `Rp ${value.toLocaleString('id-ID')}`
-  }
+  const chartSeries = [{ name: 'Profit', data: profitData.length > 0 ? profitData : [] }]
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -128,15 +167,9 @@ export function POSVsPurchaseTab() {
                   className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isDownloading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Downloading...
-                    </>
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Downloading...</>
                   ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </>
+                    <><Download className="h-4 w-4 mr-2" />Download PDF</>
                   )}
                 </Button>
               </TooltipTrigger>
@@ -159,17 +192,14 @@ export function POSVsPurchaseTab() {
                 </SelectTrigger>
                 <SelectContent>
                   {years.map((year) => (
-                    <SelectItem key={year.value} value={year.value}>
-                      {year.label}
-                    </SelectItem>
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleApply} className="flex-1 h-10 bg-blue-600 text-white hover:bg-blue-700 shadow-none">
-                <Search className="h-4 w-4 mr-2" />
-                Apply
+              <Button onClick={handleApply} disabled={loading} className="flex-1 h-10 bg-blue-600 text-white hover:bg-blue-700 shadow-none">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" />Apply</>}
               </Button>
               <Button onClick={handleReset} variant="destructive" className="h-10">
                 <RotateCcw className="h-4 w-4" />
@@ -214,16 +244,11 @@ export function POSVsPurchaseTab() {
       <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
         <CardHeader className="pb-3">
           <h3 className="text-lg font-semibold tracking-tight">Monthly Profit Analysis</h3>
-          <p className="text-sm text-muted-foreground">Profit = POS - Purchase</p>
+          <p className="text-sm text-muted-foreground">Profit = POS Revenue - Purchase Cost</p>
         </CardHeader>
         <CardContent className="pt-4">
-          {mounted ? (
-            <Chart
-              options={chartOptions}
-              series={chartSeries}
-              type="area"
-              height={320}
-            />
+          {mounted && !loading ? (
+            <Chart options={chartOptions} series={chartSeries} type="area" height={320} />
           ) : (
             <Skeleton className="h-[320px] w-full" />
           )}
@@ -237,54 +262,52 @@ export function POSVsPurchaseTab() {
           <p className="text-sm text-muted-foreground">Monthly comparison of POS, Purchase, and Profit</p>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Type</TableHead>
-                  {months.map((month) => (
-                    <TableHead key={month} className="text-center">
-                      {month}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">POS</TableCell>
-                  {posData.map((value, i) => (
-                    <TableCell key={i} className="text-center">
-                      {formatCurrency(value)}
+          {loading ? (
+            <Skeleton className="h-[200px] w-full" />
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Type</TableHead>
+                    {MONTHS.map((month) => (
+                      <TableHead key={month} className="text-center min-w-[80px]">{month}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">POS</TableCell>
+                    {posData.map((value, i) => (
+                      <TableCell key={i} className="text-center text-xs">{formatCurrency(value)}</TableCell>
+                    ))}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Purchase</TableCell>
+                    {purchaseData.map((value, i) => (
+                      <TableCell key={i} className="text-center text-xs">{formatCurrency(value)}</TableCell>
+                    ))}
+                  </TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={13} className="text-sm text-muted-foreground">
+                      Profit = POS - Purchase
                     </TableCell>
-                  ))}
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Purchase</TableCell>
-                  {purchaseData.map((value, i) => (
-                    <TableCell key={i} className="text-center">
-                      {formatCurrency(value)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                <TableRow className="bg-muted/50">
-                  <TableCell colSpan={13} className="text-sm text-muted-foreground">
-                    Profit = POS - Purchase
-                  </TableCell>
-                </TableRow>
-                <TableRow className="font-semibold">
-                  <TableCell>Profit</TableCell>
-                  {profitData.map((value, i) => (
-                    <TableCell 
-                      key={i} 
-                      className={`text-center ${value > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                    >
-                      {formatCurrency(value)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+                  </TableRow>
+                  <TableRow className="font-semibold">
+                    <TableCell>Profit</TableCell>
+                    {profitData.map((value, i) => (
+                      <TableCell
+                        key={i}
+                        className={`text-center text-xs ${value > 0 ? 'text-green-600 dark:text-green-400' : value < 0 ? 'text-red-600 dark:text-red-400' : ''}`}
+                      >
+                        {formatCurrency(value)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
