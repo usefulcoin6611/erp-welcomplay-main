@@ -176,7 +176,22 @@ export default function POSQuotationPage() {
       const res = await fetch('/api/estimates')
       const data = await res.json()
       if (data.success) {
-        setQuotations(data.data)
+        // Map API response fields to Quotation type
+        // API returns: { id (=estimateId), customer (=name), customerCode, category, categoryId, issueDate, status, total, description, items }
+        const mapped: Quotation[] = (data.data ?? []).map((e: any) => ({
+          id: e.id,
+          estimateId: e.id,           // API returns estimateId as 'id'
+          customerId: e.customerId ?? '',
+          customerName: e.customer ?? '—',  // API returns customer name as 'customer'
+          category: e.category ?? '',
+          categoryId: e.categoryId ?? '',
+          issueDate: e.issueDate ?? '',
+          status: e.status as QuotationStatus,
+          total: Number(e.total) || 0,
+          description: e.description ?? '',
+          items: e.items,
+        }))
+        setQuotations(mapped)
       } else {
         toast.error(data.message ?? 'Failed to load quotations')
       }
