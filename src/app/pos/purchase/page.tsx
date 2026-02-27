@@ -621,7 +621,7 @@ export default function POSPurchasePage() {
 
       {/* ─── Create / Edit Dialog (Shadcn UI Dialog / Popup Modal) ───────────── */}
       <Dialog open={openForm} onOpenChange={setOpenForm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Purchase Order' : 'Create Purchase Order'}</DialogTitle>
           </DialogHeader>
@@ -760,18 +760,18 @@ export default function POSPurchasePage() {
                 </p>
               )}
 
-              {/* Items table */}
-              <div className="rounded-md border overflow-x-auto">
+              {/* Items table - no horizontal scroll needed with wider dialog */}
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       <TableHead className="px-3 py-2 text-xs font-medium">Product</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-16">Qty</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-28">Price</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-24">Discount</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-16">Tax %</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium text-right w-28">Amount</TableHead>
-                      <TableHead className="px-3 py-2 w-8"></TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-20">Qty</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-32">Price (IDR)</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-28">Discount</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium w-20">Tax %</TableHead>
+                      <TableHead className="px-3 py-2 text-xs font-medium text-right w-32">Amount</TableHead>
+                      <TableHead className="px-3 py-2 w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -782,7 +782,7 @@ export default function POSPurchasePage() {
                             value={item.productId}
                             onValueChange={v => updateItem(idx, 'productId', v)}
                           >
-                            <SelectTrigger className="h-8 text-xs">
+                            <SelectTrigger className="h-8 text-xs w-full">
                               <SelectValue placeholder="Select product" />
                             </SelectTrigger>
                             <SelectContent>
@@ -799,7 +799,7 @@ export default function POSPurchasePage() {
                             min={1}
                             value={item.quantity}
                             onChange={e => updateItem(idx, 'quantity', Number(e.target.value) || 1)}
-                            className="h-8 text-xs w-14"
+                            className="h-8 text-xs w-full"
                           />
                         </TableCell>
                         <TableCell className="px-3 py-2">
@@ -808,7 +808,7 @@ export default function POSPurchasePage() {
                             min={0}
                             value={item.price}
                             onChange={e => updateItem(idx, 'price', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-24"
+                            className="h-8 text-xs w-full"
                           />
                         </TableCell>
                         <TableCell className="px-3 py-2">
@@ -817,7 +817,7 @@ export default function POSPurchasePage() {
                             min={0}
                             value={item.discount}
                             onChange={e => updateItem(idx, 'discount', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-20"
+                            className="h-8 text-xs w-full"
                           />
                         </TableCell>
                         <TableCell className="px-3 py-2">
@@ -827,7 +827,7 @@ export default function POSPurchasePage() {
                             max={100}
                             value={item.taxRate}
                             onChange={e => updateItem(idx, 'taxRate', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-14"
+                            className="h-8 text-xs w-full"
                           />
                         </TableCell>
                         <TableCell className="px-3 py-2 text-right text-xs font-medium">
