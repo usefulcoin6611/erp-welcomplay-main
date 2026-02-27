@@ -621,7 +621,7 @@ export default function POSPurchasePage() {
 
       {/* ─── Create / Edit Dialog (Shadcn UI Dialog / Popup Modal) ───────────── */}
       <Dialog open={openForm} onOpenChange={setOpenForm}>
-        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Purchase Order' : 'Create Purchase Order'}</DialogTitle>
           </DialogHeader>
@@ -760,94 +760,78 @@ export default function POSPurchasePage() {
                 </p>
               )}
 
-              {/* Items table - no horizontal scroll needed with wider dialog */}
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="px-3 py-2 text-xs font-medium">Product</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-20">Qty</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-32">Price (IDR)</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-28">Discount</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium w-20">Tax %</TableHead>
-                      <TableHead className="px-3 py-2 text-xs font-medium text-right w-32">Amount</TableHead>
-                      <TableHead className="px-3 py-2 w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {formItems.map((item, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="px-3 py-2">
-                          <Select
-                            value={item.productId}
-                            onValueChange={v => updateItem(idx, 'productId', v)}
-                          >
-                            <SelectTrigger className="h-8 text-xs w-full">
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={NO_SELECTION}>Select product</SelectItem>
-                              {products.map(p => (
-                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={e => updateItem(idx, 'quantity', Number(e.target.value) || 1)}
-                            className="h-8 text-xs w-full"
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            value={item.price}
-                            onChange={e => updateItem(idx, 'price', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-full"
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            value={item.discount}
-                            onChange={e => updateItem(idx, 'discount', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-full"
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={item.taxRate}
-                            onChange={e => updateItem(idx, 'taxRate', Number(e.target.value) || 0)}
-                            className="h-8 text-xs w-full"
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2 text-right text-xs font-medium">
-                          {formatPrice(calcItemAmount(item))}
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                            onClick={() => removeItem(idx)}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              {/* Items - card layout, no horizontal scroll */}
+              <div className="space-y-2">
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr_60px_100px_90px_60px_100px_32px] gap-2 px-1">
+                  <span className="text-xs font-medium text-muted-foreground">Product</span>
+                  <span className="text-xs font-medium text-muted-foreground">Qty</span>
+                  <span className="text-xs font-medium text-muted-foreground">Price</span>
+                  <span className="text-xs font-medium text-muted-foreground">Discount</span>
+                  <span className="text-xs font-medium text-muted-foreground">Tax%</span>
+                  <span className="text-xs font-medium text-muted-foreground text-right">Amount</span>
+                  <span></span>
+                </div>
+                {/* Item rows */}
+                {formItems.map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-[1fr_60px_100px_90px_60px_100px_32px] gap-2 items-center rounded-md border border-border bg-muted/10 px-2 py-2">
+                    <Select
+                      value={item.productId}
+                      onValueChange={v => updateItem(idx, 'productId', v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue placeholder="Select product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_SELECTION}>Select product</SelectItem>
+                        {products.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={e => updateItem(idx, 'quantity', Number(e.target.value) || 1)}
+                      className="h-8 text-xs w-full"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={item.price}
+                      onChange={e => updateItem(idx, 'price', Number(e.target.value) || 0)}
+                      className="h-8 text-xs w-full"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={item.discount}
+                      onChange={e => updateItem(idx, 'discount', Number(e.target.value) || 0)}
+                      className="h-8 text-xs w-full"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={item.taxRate}
+                      onChange={e => updateItem(idx, 'taxRate', Number(e.target.value) || 0)}
+                      className="h-8 text-xs w-full"
+                    />
+                    <span className="text-xs font-medium text-right pr-1">
+                      {formatPrice(calcItemAmount(item))}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7 shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                      onClick={() => removeItem(idx)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
               </div>
 
               {/* Order Summary */}
