@@ -531,18 +531,20 @@ export default function LeadsPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="px-6 py-3">
-                    <SimplePagination
-                      totalCount={totalRecords}
-                      currentPage={currentPage}
-                      pageSize={pageSize}
-                      onPageChange={setCurrentPage}
-                      onPageSizeChange={(size) => {
-                        setPageSize(size)
-                        setCurrentPage(1)
-                      }}
-                    />
-                  </div>
+                  {totalRecords > 0 && (
+                    <div className="px-6 pb-6 pt-4">
+                      <SimplePagination
+                        totalCount={totalRecords}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(size) => {
+                          setPageSize(size)
+                          setCurrentPage(1)
+                        }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : (
