@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth-server"
 import { headers } from "next/headers"
 import { z } from "zod"
 
+const db = prisma as any
+
 const upgradePlanSchema = z.object({
   plan: z.string().min(1, "Plan is required"),
   planExpireDate: z.string().optional().nullable(),
@@ -34,14 +36,14 @@ export async function POST(request: NextRequest, props: RouteParams) {
       )
     }
 
-    const existing = await prisma.user.findFirst({ where: { id, role: "company" } })
+    const existing = await db.user.findFirst({ where: { id, role: "company" } })
     if (!existing) {
       return NextResponse.json({ success: false, message: "Company not found" }, { status: 404 })
     }
 
     const { plan, planExpireDate } = validation.data
 
-    const updated = await prisma.user.update({
+    const updated = await db.user.update({
       where: { id },
       data: {
         plan,

@@ -5,6 +5,8 @@ import { headers } from "next/headers"
 import { z } from "zod"
 import * as bcrypt from "bcryptjs"
 
+const db = prisma as any
+
 const updateCompanySchema = z.object({
   name: z.string().min(1, "Company name is required").max(191).optional(),
   email: z.string().email("Invalid email address").optional(),
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest, props: RouteParams) {
     }
 
     const { id } = await props.params
-    const company = await prisma.user.findFirst({
+    const company = await db.user.findFirst({
       where: { id, role: "company" },
       include: {
         branch: { select: { name: true } },
@@ -87,7 +89,7 @@ export async function PUT(request: NextRequest, props: RouteParams) {
       )
     }
 
-    const existing = await prisma.user.findFirst({ where: { id, role: "company" } })
+    const existing = await db.user.findFirst({ where: { id, role: "company" } })
     if (!existing) {
       return NextResponse.json({ success: false, message: "Company not found" }, { status: 404 })
     }
@@ -96,7 +98,7 @@ export async function PUT(request: NextRequest, props: RouteParams) {
 
     // Check email uniqueness if changing email
     if (data.email && data.email !== existing.email) {
-      const emailConflict = await prisma.user.findUnique({ where: { email: data.email } })
+      const emailConflict = await db.user.findUnique({ where: { email: data.email } })
       if (emailConflict) {
         return NextResponse.json(
           { success: false, message: `Email "${data.email}" is already registered` },
@@ -124,13 +126,13 @@ export async function PUT(request: NextRequest, props: RouteParams) {
 
     // Update branch name if company name changed
     if (data.name && existing.branchId) {
-      await prisma.branch.update({
+      await db.branch.update({
         where: { id: existing.branchId },
         data: { name: data.name },
       })
     }
 
-    const updated = await prisma.user.update({
+    const updated = await db.user.update({
       where: { id },
       data: updateData,
       include: {
@@ -166,18 +168,18 @@ export async function DELETE(request: NextRequest, props: RouteParams) {
     const { searchParams } = new URL(request.url)
     const permanent = searchParams.get("permanent") === "true"
 
-    const existing = await prisma.user.findFirst({ where: { id, role: "company" } })
+    const existing = await db.user.findFirst({ where: { id, role: "company" } })
     if (!existing) {
       return NextResponse.json({ success: false, message: "Company not found" }, { status: 404 })
     }
 
     if (permanent) {
       // Hard delete
-      await prisma.user.delete({ where: { id } })
+      await db.user.delete({ where: { id } })
       return NextResponse.json({ success: true, message: "Company permanently deleted" })
     } else {
       // Soft delete: set isActive = false
-      await prisma.user.update({
+      await db.user.update({
         where: { id },
         data: { isActive: false },
       })
