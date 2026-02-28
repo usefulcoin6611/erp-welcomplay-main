@@ -38,11 +38,13 @@ export async function seedLeads(prisma: any) {
     });
   }
 
+  // Updated stage definitions: Draft, Sent, Open, Revised, Declined
   const stageDefinitions = [
-    { name: "New", order: 0 },
-    { name: "Qualified", order: 1 },
-    { name: "Contacted", order: 2 },
-    { name: "Converted", order: 3 },
+    { name: "Draft", order: 0 },
+    { name: "Sent", order: 1 },
+    { name: "Open", order: 2 },
+    { name: "Revised", order: 3 },
+    { name: "Declined", order: 4 },
   ];
 
   const stagesByName: Record<string, string> = {};
@@ -73,10 +75,10 @@ export async function seedLeads(prisma: any) {
       leadId: "LEAD-001",
       name: "PT Maju Jaya",
       subject: "Implementasi ERP",
-      email: "contact@majujara.id",
+      email: "contact@majujaya.id",
       phone: "+62 21 555 1234",
       pipelineId: pipeline.id,
-      stageId: stagesByName["New"],
+      stageId: stagesByName["Draft"],
       ownerId: user.id,
       branchId,
       isActive: true,
@@ -89,7 +91,7 @@ export async function seedLeads(prisma: any) {
       email: "halo@kreatifdigital.co.id",
       phone: "+62 812 3456 7890",
       pipelineId: pipeline.id,
-      stageId: stagesByName["Qualified"],
+      stageId: stagesByName["Sent"],
       ownerId: user.id,
       branchId,
       isActive: true,
@@ -102,7 +104,7 @@ export async function seedLeads(prisma: any) {
       email: "info@sumbermakmur.co.id",
       phone: "+62 31 567 8901",
       pipelineId: pipeline.id,
-      stageId: stagesByName["New"],
+      stageId: stagesByName["Open"],
       ownerId: user.id,
       branchId,
       isActive: true,
@@ -115,11 +117,24 @@ export async function seedLeads(prisma: any) {
       email: "berkah@email.com",
       phone: "+62 812 9876 5432",
       pipelineId: pipeline.id,
-      stageId: stagesByName["Qualified"],
+      stageId: stagesByName["Revised"],
       ownerId: user.id,
       branchId,
       isActive: true,
       date: new Date("2025-11-07"),
+    },
+    {
+      leadId: "LEAD-005",
+      name: "PT Teknologi Nusantara",
+      subject: "Sistem HR Terpadu",
+      email: "info@teknologinusantara.id",
+      phone: "+62 21 888 9999",
+      pipelineId: pipeline.id,
+      stageId: stagesByName["Declined"],
+      ownerId: user.id,
+      branchId,
+      isActive: true,
+      date: new Date("2025-11-09"),
     },
   ];
 

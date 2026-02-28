@@ -78,11 +78,15 @@ const emptyLeads: Lead[] = []
 
 function getStageBadge(stage: string) {
   switch (stage) {
-    case 'New':
+    case 'Draft':
+      return 'bg-gray-100 text-gray-700 border-none'
+    case 'Sent':
       return 'bg-blue-100 text-blue-700 border-none'
-    case 'Qualified':
+    case 'Open':
       return 'bg-emerald-100 text-emerald-700 border-none'
-    case 'Lost':
+    case 'Revised':
+      return 'bg-amber-100 text-amber-700 border-none'
+    case 'Declined':
       return 'bg-red-100 text-red-700 border-none'
     default:
       return 'bg-gray-100 text-gray-700 border-none'
@@ -445,25 +449,23 @@ export default function LeadsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6 w-[180px]">Lead</TableHead>
-                          <TableHead className="px-6">Email</TableHead>
+                          <TableHead className="px-6 w-[220px]">Name</TableHead>
                           <TableHead className="px-6">Subject</TableHead>
-                          <TableHead className="px-6">Phone</TableHead>
-                          <TableHead className="px-6">Stage</TableHead>
-                          <TableHead className="px-6">Owner</TableHead>
-                          <TableHead className="px-6 w-[100px] text-right">Action</TableHead>
+                          <TableHead className="px-6 w-[120px]">Stage</TableHead>
+                          <TableHead className="px-6 w-[160px]">Users</TableHead>
+                          <TableHead className="px-6 w-[120px] text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
                            <TableRow>
-                             <TableCell colSpan={7} className="h-24 text-center">
+                             <TableCell colSpan={5} className="h-24 text-center">
                                Loading...
                              </TableCell>
                            </TableRow>
                         ) : paginatedData.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                               No leads found.
                             </TableCell>
                           </TableRow>
@@ -471,29 +473,29 @@ export default function LeadsPage() {
                           paginatedData.map((lead) => (
                             <TableRow key={lead.id}>
                               <TableCell className="px-6 font-medium">
-                                <Link href={`/leads/${lead.id}`} className="hover:underline text-blue-600">
+                                <Link
+                                  href={`/leads/${lead.id}`}
+                                  className="text-blue-600 hover:text-blue-700 hover:underline underline-offset-2 transition-colors"
+                                >
                                   {lead.name}
                                 </Link>
-                                <div className="text-xs text-muted-foreground mt-0.5">
-                                  {lead.id}
-                                </div>
                               </TableCell>
-                              <TableCell className="px-6">{lead.email || '-'}</TableCell>
-                              <TableCell className="px-6">{lead.subject || '-'}</TableCell>
-                              <TableCell className="px-6">
-                                {lead.phone ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <IconPhone className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-sm">{lead.phone}</span>
-                                  </div>
-                                ) : '-'}
+                              <TableCell className="px-6 text-muted-foreground text-sm">
+                                {lead.subject || '-'}
                               </TableCell>
                               <TableCell className="px-6">
                                 <Badge variant="outline" className={getStageBadge(lead.stage)}>
                                   {lead.stage}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="px-6">{lead.owner}</TableCell>
+                              <TableCell className="px-6">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary shrink-0">
+                                    {lead.owner ? lead.owner.substring(0, 2).toUpperCase() : '??'}
+                                  </div>
+                                  <span className="text-sm text-muted-foreground truncate max-w-[100px]">{lead.owner || '-'}</span>
+                                </div>
+                              </TableCell>
                               <TableCell className="px-6 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <Button
