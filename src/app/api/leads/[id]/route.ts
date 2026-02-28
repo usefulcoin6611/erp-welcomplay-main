@@ -11,6 +11,10 @@ const leadUpdateSchema = z.object({
   phone: z.string().optional().nullable(),
   pipelineId: z.string().optional().nullable(),
   stageId: z.string().optional().nullable(),
+  ownerId: z.string().optional().nullable(),
+  sources: z.string().optional().nullable(),
+  products: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -41,7 +45,7 @@ export async function PUT(request: NextRequest, props: RouteParams) {
       );
     }
 
-    const { name, subject, email, phone, pipelineId, stageId } = validation.data;
+    const { name, subject, email, phone, pipelineId, stageId, ownerId, sources, products, notes } = validation.data;
 
     // Verify lead exists
     const existingLead = await prisma.lead.findUnique({
@@ -59,11 +63,15 @@ export async function PUT(request: NextRequest, props: RouteParams) {
       where: { leadId: id },
       data: {
         name,
-        subject,
-        email,
-        phone,
+        subject: subject ?? null,
+        email: email ?? null,
+        phone: phone ?? null,
         pipelineId: pipelineId || existingLead.pipelineId,
         stageId: stageId || existingLead.stageId,
+        ownerId: ownerId !== undefined ? ownerId : existingLead.ownerId,
+        sources: sources !== undefined ? sources : existingLead.sources,
+        products: products !== undefined ? products : existingLead.products,
+        notes: notes !== undefined ? notes : existingLead.notes,
       },
       include: {
         pipeline: true,
@@ -78,9 +86,15 @@ export async function PUT(request: NextRequest, props: RouteParams) {
       subject: updatedLead.subject ?? "",
       email: updatedLead.email ?? "",
       phone: updatedLead.phone ?? "",
-      pipeline: updatedLead.pipeline?.name ?? "",
-      stage: updatedLead.stage?.name ?? "",
-      owner: updatedLead.owner?.name ?? "",
+      pipeline: (updatedLead as any).pipeline?.name ?? "",
+      pipelineId: updatedLead.pipelineId ?? "",
+      stage: (updatedLead as any).stage?.name ?? "",
+      stageId: updatedLead.stageId ?? "",
+      owner: (updatedLead as any).owner?.name ?? "",
+      ownerId: updatedLead.ownerId ?? "",
+      sources: updatedLead.sources ?? "",
+      products: updatedLead.products ?? "",
+      notes: updatedLead.notes ?? "",
       createdAt: (updatedLead.date ?? updatedLead.createdAt).toISOString(),
     };
 

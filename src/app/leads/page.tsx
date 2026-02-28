@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -70,7 +70,12 @@ type Lead = {
   pipeline: string
   pipelineId: string
   stage: string
+  stageId: string
   owner: string
+  ownerId: string
+  sources: string
+  products: string
+  notes: string
   createdAt: string
 }
 
@@ -110,22 +115,75 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>(emptyLeads)
   const [isLoading, setIsLoading] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [newSubject, setNewSubject] = useState('')
-  const [newName, setNewName] = useState('')
-  const [newEmail, setNewEmail] = useState('')
-  const [newPhone, setNewPhone] = useState('')
-  const [pipelines, setPipelines] = useState<{ id: string; name: string }[]>([])
-  const [selectedPipeline, setSelectedPipeline] = useState<string>('')
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
 
-  const loadPipelines = async () => {
+  // Form fields
+  const [formSubject, setFormSubject] = useState('')
+  const [formName, setFormName] = useState('')
+  const [formEmail, setFormEmail] = useState('')
+  const [formPhone, setFormPhone] = useState('')
+  const [formPipelineId, setFormPipelineId] = useState('')
+  const [formStageId, setFormStageId] = useState('')
+  const [formOwnerId, setFormOwnerId] = useState('')
+  const [formSources, setFormSources] = useState<string[]>([])
+  const [formProducts, setFormProducts] = useState<string[]>([])
+  const [formNotes, setFormNotes] = useState('')
+
+  // Reference data
+  const [pipelines, setPipelines] = useState<{ id: string; name: string }[]>([])
+  const [stages, setStages] = useState<{ id: string; name: string; pipelineId: string }[]>([])
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([])
+  const [products, setProducts] = useState<{ id: string; name: string }[]>([])
+  const [selectedPipeline, setSelectedPipeline] = useState<string>('')
+
+  // Source options (static)
+  const SOURCE_OPTIONS = ['Website', 'Referral', 'Social Media', 'Email Campaign', 'Cold Call', 'Event', 'Partner', 'Other']
+
+  const loadReferenceData = async () => {
     try {
-      const res = await fetch('/api/pipelines', { cache: 'no-store' })
+      const [pipelineRes, userRes, productRes] = await Promise.all([
+        fetch('/api/pipelines', { cache: 'no-store' }),
+        fetch('/api/users', { cache: 'no-store' }),
+        fetch('/api/products', { cache: 'no-store' }),
+      ])
+
+      const [pipelineJson, userJson, productJson] = await Promise.all([
+        pipelineRes.json().catch(() => null),
+        userRes.json().catch(() => null),
+        productRes.json().catch(() => null),
+      ])
+
+      if (pipelineJson?.success && Array.isArray(pipelineJson.data)) {
+        setPipelines(pipelineJson.data)
+        if (pipelineJson.data.length > 0 && !selectedPipeline) {
+          const firstPipeline = pipelineJson.data[0]
+          setSelectedPipeline(firstPipeline.id)
+          setFormPipelineId(firstPipeline.id)
+          // Load stages for first pipeline
+          loadStages(firstPipeline.id)
+        }
+      }
+
+      if (userJson?.success && Array.isArray(userJson.data)) {
+        setUsers(userJson.data.map((u: any) => ({ id: u.id, name: u.name || u.email })))
+      }
+
+      if (productJson?.success && Array.isArray(productJson.data)) {
+        setProducts(productJson.data.map((p: any) => ({ id: p.id, name: p.name })))
+      }
+    } catch {}
+  }
+
+  const loadStages = async (pipelineId: string) => {
+    try {
+      const res = await fetch(`/api/lead-stages?pipelineId=${pipelineId}`, { cache: 'no-store' })
       const json = await res.json().catch(() => null)
       if (json?.success && Array.isArray(json.data)) {
-        setPipelines(json.data)
-        if (json.data.length > 0 && !selectedPipeline) {
-          setSelectedPipeline(json.data[0].id)
+        // Add pipelineId to each stage for filtering in the select
+        const stagesWithPipeline = json.data.map((s: any) => ({ ...s, pipelineId }))
+        setStages(stagesWithPipeline)
+        if (stagesWithPipeline.length > 0) {
+          setFormStageId(stagesWithPipeline[0].id)
         }
       }
     } catch {}
@@ -135,15 +193,9 @@ export default function LeadsPage() {
     setIsLoading(true)
     try {
       const res = await fetch('/api/leads', { cache: 'no-store' })
-      if (!res.ok) {
-        setIsLoading(false)
-        return
-      }
+      if (!res.ok) { setIsLoading(false); return }
       const json = await res.json().catch(() => null)
-      if (!json?.success || !Array.isArray(json.data)) {
-        setIsLoading(false)
-        return
-      }
+      if (!json?.success || !Array.isArray(json.data)) { setIsLoading(false); return }
       setLeads(json.data as Lead[])
     } catch {
       setIsLoading(false)
@@ -153,13 +205,20 @@ export default function LeadsPage() {
   }
 
   useEffect(() => {
-    loadPipelines()
+    loadReferenceData()
     loadLeads()
   }, [])
 
+  // When pipeline changes in form, reload stages
+  const handleFormPipelineChange = (pipelineId: string) => {
+    setFormPipelineId(pipelineId)
+    setFormStageId('')
+    loadStages(pipelineId)
+  }
+
   const handleSaveLead = async () => {
-    if (!newName.trim()) {
-      toast.error('Nama lead wajib diisi')
+    if (!formName.trim()) {
+      toast.error('Name is required')
       return
     }
     try {
@@ -167,20 +226,16 @@ export default function LeadsPage() {
       const method = editingLead ? 'PUT' : 'POST'
       
       const body: any = {
-        name: newName,
-        subject: newSubject || null,
-        email: newEmail || null,
-        phone: newPhone || null,
-      }
-      
-      // If creating new, optionally send pipelineId if selected
-      if (!editingLead && selectedPipeline) {
-        // API POST currently doesn't accept pipelineId but defaults to "Default Pipeline"
-        // If API supported it, we would send it. Let's assume user wants default logic for now
-        // or we updated API to accept it. 
-        // Note: I didn't update POST /api/leads to accept pipelineId, only deals.
-        // I should probably update POST /api/leads too if I want it to respect selected pipeline.
-        // But for Edit, PUT accepts it.
+        name: formName,
+        subject: formSubject || null,
+        email: formEmail || null,
+        phone: formPhone || null,
+        pipelineId: formPipelineId || null,
+        stageId: formStageId || null,
+        ownerId: formOwnerId || null,
+        sources: formSources.length > 0 ? formSources.join(',') : null,
+        products: formProducts.length > 0 ? formProducts.join(',') : null,
+        notes: formNotes || null,
       }
 
       const res = await fetch(url, {
@@ -192,7 +247,7 @@ export default function LeadsPage() {
       const json = await res.json().catch(() => null)
 
       if (!res.ok || !json?.success) {
-        toast.error(json?.message || 'Gagal menyimpan lead')
+        toast.error(json?.message || 'Failed to save lead')
         return
       }
 
@@ -200,34 +255,60 @@ export default function LeadsPage() {
       
       if (editingLead) {
         setLeads((prev) => prev.map((l) => (l.id === saved.id ? saved : l)))
-        toast.success('Lead berhasil diperbarui')
+        toast.success('Lead updated successfully')
       } else {
         setLeads((prev) => [saved, ...prev])
-        toast.success('Lead berhasil dibuat')
+        toast.success('Lead created successfully')
       }
       
       setIsDialogOpen(false)
       resetForm()
     } catch {
-      toast.error('Terjadi kesalahan sistem')
+      toast.error('System error occurred')
     }
   }
 
   const resetForm = () => {
     setEditingLead(null)
-    setNewSubject('')
-    setNewName('')
-    setNewEmail('')
-    setNewPhone('')
+    setFormSubject('')
+    setFormName('')
+    setFormEmail('')
+    setFormPhone('')
+    setFormPipelineId(pipelines[0]?.id || '')
+    setFormStageId('')
+    setFormOwnerId('')
+    setFormSources([])
+    setFormProducts([])
+    setFormNotes('')
   }
 
   const handleEditClick = (lead: Lead) => {
     setEditingLead(lead)
-    setNewName(lead.name)
-    setNewSubject(lead.subject)
-    setNewEmail(lead.email)
-    setNewPhone(lead.phone)
+    setFormName(lead.name)
+    setFormSubject(lead.subject)
+    setFormEmail(lead.email)
+    setFormPhone(lead.phone)
+    setFormPipelineId(lead.pipelineId)
+    setFormStageId(lead.stageId)
+    setFormOwnerId(lead.ownerId)
+    setFormSources(lead.sources ? lead.sources.split(',').filter(Boolean) : [])
+    setFormProducts(lead.products ? lead.products.split(',').filter(Boolean) : [])
+    setFormNotes(lead.notes)
+    // Load stages for this pipeline
+    if (lead.pipelineId) loadStages(lead.pipelineId)
     setIsDialogOpen(true)
+  }
+
+  const toggleSource = (source: string) => {
+    setFormSources(prev =>
+      prev.includes(source) ? prev.filter(s => s !== source) : [...prev, source]
+    )
+  }
+
+  const toggleProduct = (productName: string) => {
+    setFormProducts(prev =>
+      prev.includes(productName) ? prev.filter(p => p !== productName) : [...prev, productName]
+    )
   }
 
   const handleSearchChange = (value: string) => {
@@ -388,61 +469,178 @@ export default function LeadsPage() {
                         Create Lead
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[560px]">
-                    <DialogHeader>
-                      <DialogTitle>{editingLead ? 'Edit Lead' : 'Create Lead'}</DialogTitle>
-                      <DialogDescription>
-                        {editingLead ? 'Perbarui informasi lead.' : 'Masukkan informasi lead baru seperti di modul Leads ERP.'}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="subject">Subject</Label>
-                        <Input
-                          id="subject"
-                          placeholder="Implementasi ERP"
-                          value={newSubject}
-                          onChange={(e) => setNewSubject(e.target.value)}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="name">Lead Name</Label>
+                    <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>{editingLead ? 'Edit Lead' : 'Create Lead'}</DialogTitle>
+                        <DialogDescription>
+                          {editingLead ? 'Update lead information.' : 'Fill in the lead details below.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        {/* Row 1: Subject */}
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="form-subject">Subject <span className="text-red-500">*</span></Label>
                           <Input
-                            id="name"
-                            placeholder="PT Maju Jaya"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
+                            id="form-subject"
+                            placeholder="e.g. ERP Implementation"
+                            value={formSubject}
+                            onChange={(e) => setFormSubject(e.target.value)}
                           />
                         </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="email">Email</Label>
+
+                        {/* Row 2: User (Owner) */}
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="form-owner">User <span className="text-red-500">*</span></Label>
+                          <Select value={formOwnerId} onValueChange={setFormOwnerId}>
+                            <SelectTrigger id="form-owner" className="shadow-none">
+                              <SelectValue placeholder="Select user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {users.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Row 3: Name */}
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="form-name">Name <span className="text-red-500">*</span></Label>
                           <Input
-                            id="email"
+                            id="form-name"
+                            placeholder="e.g. PT Maju Jaya"
+                            value={formName}
+                            onChange={(e) => setFormName(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Row 4: Email */}
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="form-email">Email <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="form-email"
+                            type="email"
                             placeholder="email@example.com"
-                            value={newEmail}
-                            onChange={(e) => setNewEmail(e.target.value)}
+                            value={formEmail}
+                            onChange={(e) => setFormEmail(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Row 5: Phone */}
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="form-phone">Phone <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="form-phone"
+                            type="tel"
+                            placeholder="+62 812 3456 7890"
+                            value={formPhone}
+                            onChange={(e) => setFormPhone(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Row 6: Pipeline + Stage */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="form-pipeline">Pipeline <span className="text-red-500">*</span></Label>
+                            <Select value={formPipelineId} onValueChange={handleFormPipelineChange}>
+                              <SelectTrigger id="form-pipeline" className="shadow-none">
+                                <SelectValue placeholder="Select pipeline" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {pipelines.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="form-stage">Stage <span className="text-red-500">*</span></Label>
+                            <Select value={formStageId} onValueChange={setFormStageId}>
+                              <SelectTrigger id="form-stage" className="shadow-none">
+                                <SelectValue placeholder="Select stage" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {stages.filter(s => !formPipelineId || s.pipelineId === formPipelineId).map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Row 7: Sources (multi-select chips) */}
+                        <div className="grid gap-1.5">
+                          <Label>Sources <span className="text-red-500">*</span></Label>
+                          <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
+                            {SOURCE_OPTIONS.map((source) => (
+                              <button
+                                key={source}
+                                type="button"
+                                onClick={() => toggleSource(source)}
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                                  formSources.includes(source)
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                {source}
+                              </button>
+                            ))}
+                          </div>
+                          {formSources.length > 0 && (
+                            <p className="text-xs text-muted-foreground">Selected: {formSources.join(', ')}</p>
+                          )}
+                        </div>
+
+                        {/* Row 8: Products (multi-select chips) */}
+                        <div className="grid gap-1.5">
+                          <Label>Products <span className="text-red-500">*</span></Label>
+                          <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] max-h-[100px] overflow-y-auto">
+                            {products.length === 0 ? (
+                              <span className="text-xs text-muted-foreground">No products available</span>
+                            ) : (
+                              products.map((product) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => toggleProduct(product.name)}
+                                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                                    formProducts.includes(product.name)
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  {product.name}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                          {formProducts.length > 0 && (
+                            <p className="text-xs text-muted-foreground">Selected: {formProducts.join(', ')}</p>
+                          )}
+                        </div>
+
+                        {/* Row 9: Notes (textarea) */}
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="form-notes">Notes</Label>
+                          <textarea
+                            id="form-notes"
+                            placeholder="Add notes about this lead..."
+                            value={formNotes}
+                            onChange={(e) => setFormNotes(e.target.value)}
+                            rows={3}
+                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                           />
                         </div>
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="phone">Phone</Label>
-                        <Input
-                          id="phone"
-                          placeholder="08123456789"
-                          value={newPhone}
-                          onChange={(e) => setNewPhone(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button variant="blue" onClick={handleSaveLead}>
-                        {editingLead ? 'Update Lead' : 'Create Lead'}
-                      </Button>
-                    </DialogFooter>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button variant="blue" onClick={handleSaveLead}>
+                          {editingLead ? 'Update Lead' : 'Create Lead'}
+                        </Button>
+                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -529,6 +727,15 @@ export default function LeadsPage() {
                                     <Link href={`/leads/${lead.id}`}>
                                       <Eye className="h-3 w-3" />
                                     </Link>
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                                    title="Edit"
+                                    onClick={() => handleEditClick(lead)}
+                                  >
+                                    <Pencil className="h-3 w-3" />
                                   </Button>
                                   <Button
                                     variant="outline"

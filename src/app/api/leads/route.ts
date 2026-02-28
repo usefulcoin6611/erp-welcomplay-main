@@ -9,6 +9,12 @@ const leadSchema = z.object({
   subject: z.string().optional().nullable(),
   email: z.string().email("Email tidak valid").optional().nullable(),
   phone: z.string().optional().nullable(),
+  pipelineId: z.string().optional().nullable(),
+  stageId: z.string().optional().nullable(),
+  ownerId: z.string().optional().nullable(),
+  sources: z.string().optional().nullable(),
+  products: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -39,7 +45,12 @@ export async function GET(request: NextRequest) {
       pipeline: l.pipeline?.name ?? "",
       pipelineId: l.pipelineId ?? "",
       stage: l.stage?.name ?? "",
+      stageId: l.stageId ?? "",
       owner: l.owner?.name ?? "",
+      ownerId: l.ownerId ?? "",
+      sources: l.sources ?? "",
+      products: l.products ?? "",
+      notes: l.notes ?? "",
       createdAt: (l.date ?? l.createdAt).toISOString(),
     }));
 
@@ -79,41 +90,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, subject, email, phone } = validation.data;
+    const { name, subject, email, phone, pipelineId, stageId, ownerId, sources, products, notes } = validation.data;
 
-    const pipelineName = "Default Pipeline";
-
-    let pipeline = await prisma.pipeline.findFirst({
-      where: {
-        name: pipelineName,
-        branchId,
-      },
-    });
-
+    // Resolve pipeline
+    let pipeline: any
+    if (pipelineId) {
+      pipeline = await prisma.pipeline.findUnique({ where: { id: pipelineId } })
+    }
     if (!pipeline) {
-      pipeline = await prisma.pipeline.create({
-        data: {
-          name: pipelineName,
-          branchId,
-        },
-      });
+      const pipelineName = "Default Pipeline"
+      pipeline = await prisma.pipeline.findFirst({ where: { name: pipelineName, branchId } })
+      if (!pipeline) {
+        pipeline = await prisma.pipeline.create({ data: { name: pipelineName, branchId } })
+      }
     }
 
-    let stage = await prisma.leadStage.findFirst({
-      where: {
-        name: "New",
-        pipelineId: pipeline.id,
-      },
-    });
-
+    // Resolve stage
+    let stage: any
+    if (stageId) {
+      stage = await prisma.leadStage.findUnique({ where: { id: stageId } })
+    }
     if (!stage) {
-      stage = await prisma.leadStage.create({
-        data: {
-          name: "New",
-          order: 0,
-          pipelineId: pipeline.id,
-        },
-      });
+      stage = await prisma.leadStage.findFirst({ where: { name: "Draft", pipelineId: pipeline.id } })
+      if (!stage) {
+        stage = await prisma.leadStage.create({ data: { name: "Draft", order: 0, pipelineId: pipeline.id } })
+      }
     }
 
     const lastLead = await prisma.lead.findFirst({
@@ -141,11 +142,15 @@ export async function POST(request: NextRequest) {
         phone: phone ?? null,
         pipelineId: pipeline.id,
         stageId: stage.id,
-        ownerId: userId ?? null,
+        ownerId: ownerId ?? userId ?? null,
         createdById: userId ?? null,
+        sources: sources ?? null,
+        products: products ?? null,
+        notes: notes ?? null,
         isActive: true,
         date: new Date(),
       },
+      include: { pipeline: true, stage: true, owner: true },
     });
 
     return NextResponse.json(
@@ -157,9 +162,15 @@ export async function POST(request: NextRequest) {
           subject: created.subject ?? "",
           email: created.email ?? "",
           phone: created.phone ?? "",
-          pipeline: pipeline.name,
-          stage: stage.name,
-          owner: (session.user as any).name ?? "",
+          pipeline: (created as any).pipeline?.name ?? "",
+          pipelineId: created.pipelineId ?? "",
+          stage: (created as any).stage?.name ?? "",
+          stageId: created.stageId ?? "",
+          owner: (created as any).owner?.name ?? "",
+          ownerId: created.ownerId ?? "",
+          sources: created.sources ?? "",
+          products: created.products ?? "",
+          notes: created.notes ?? "",
           createdAt: (created.date ?? created.createdAt).toISOString(),
         },
       },
