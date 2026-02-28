@@ -475,7 +475,7 @@ export default function LeadsPage() {
                               <TableCell className="px-6 font-medium">
                                 <Link
                                   href={`/leads/${lead.id}`}
-                                  className="text-blue-600 hover:text-blue-700 hover:underline underline-offset-2 transition-colors"
+                                  className="text-foreground hover:text-foreground/80 transition-colors"
                                 >
                                   {lead.name}
                                 </Link>
@@ -531,7 +531,7 @@ export default function LeadsPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="px-6 pb-6 pt-4">
+                  <div className="px-6 py-3">
                     <SimplePagination
                       totalCount={totalRecords}
                       currentPage={currentPage}
