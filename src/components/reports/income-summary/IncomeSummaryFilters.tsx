@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, RotateCcw, FileDown } from 'lucide-react'
+import { Search, RotateCcw, FileDown, FileSpreadsheet } from 'lucide-react'
 import { periods, yearList, categories as defaultCategories, customers as defaultCustomers } from './constants'
 
 interface IncomeSummaryFiltersProps {
@@ -151,8 +151,15 @@ function IncomeSummaryFiltersComponent({
               size="sm"
               className="h-9 px-4 shadow-none"
             >
-              <FileDown className="w-4 h-4" />
+              <FileSpreadsheet className="w-4 h-4" />
               Export
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+            >
+              <FileDown className="w-4 h-4" />
+              Download
             </Button>
           </div>
         </div>
