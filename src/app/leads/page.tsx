@@ -429,7 +429,7 @@ export default function LeadsPage() {
 
             {/* Content */}
             {viewMode === 'list' ? (
-              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] flex-1">
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
                   <CardTitle>Leads List</CardTitle>
                   <div className="flex items-center gap-2">
@@ -437,9 +437,9 @@ export default function LeadsPage() {
                       <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search leads..."
-                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                         value={search}
                         onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                       />
                     </div>
                   </div>
@@ -449,38 +449,37 @@ export default function LeadsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6 w-[220px]">Name</TableHead>
-                          <TableHead className="px-6">Subject</TableHead>
-                          <TableHead className="px-6 w-[120px]">Stage</TableHead>
-                          <TableHead className="px-6 w-[160px]">Users</TableHead>
-                          <TableHead className="px-6 w-[120px] text-right">Action</TableHead>
+                          <TableHead className="px-6 font-medium">Name</TableHead>
+                          <TableHead className="px-6 font-medium">Subject</TableHead>
+                          <TableHead className="px-6 font-medium">Stage</TableHead>
+                          <TableHead className="px-6 font-medium">Users</TableHead>
+                          <TableHead className="px-6 font-medium text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
-                           <TableRow>
-                             <TableCell colSpan={5} className="h-24 text-center">
-                               Loading...
-                             </TableCell>
-                           </TableRow>
-                        ) : paginatedData.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                              No leads found.
+                            <TableCell
+                              colSpan={5}
+                              className="px-6 py-8 text-center text-muted-foreground"
+                            >
+                              Loading...
                             </TableCell>
                           </TableRow>
-                        ) : (
+                        ) : paginatedData.length > 0 ? (
                           paginatedData.map((lead) => (
                             <TableRow key={lead.id}>
-                              <TableCell className="px-6 font-medium">
-                                <Link
-                                  href={`/leads/${lead.id}`}
-                                  className="text-foreground hover:text-foreground/80 transition-colors"
-                                >
-                                  {lead.name}
-                                </Link>
+                              <TableCell className="px-6">
+                                <div>
+                                  <Link
+                                    href={`/leads/${lead.id}`}
+                                    className="font-medium text-sm text-blue-600 hover:underline block"
+                                  >
+                                    {lead.name}
+                                  </Link>
+                                </div>
                               </TableCell>
-                              <TableCell className="px-6 text-muted-foreground text-sm">
+                              <TableCell className="px-6 text-sm text-muted-foreground">
                                 {lead.subject || '-'}
                               </TableCell>
                               <TableCell className="px-6">
@@ -501,19 +500,13 @@ export default function LeadsPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="shadow-none h-7 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
-                                    title="View"
-                                  >
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
                                     className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                    title="Edit"
-                                    onClick={() => handleEditClick(lead)}
+                                    title="View"
+                                    asChild
                                   >
-                                    <Pencil className="h-3 w-3" />
+                                    <Link href={`/leads/${lead.id}`}>
+                                      <Eye className="h-3 w-3" />
+                                    </Link>
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -527,6 +520,15 @@ export default function LeadsPage() {
                               </TableCell>
                             </TableRow>
                           ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="px-6 py-8 text-center text-muted-foreground"
+                            >
+                              No leads found
+                            </TableCell>
+                          </TableRow>
                         )}
                       </TableBody>
                     </Table>
