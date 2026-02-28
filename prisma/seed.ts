@@ -117,7 +117,6 @@ async function main() {
     await seedJournals(prisma);
     await seedCustomers(prisma);
     await seedVendors(prisma);
-    await seedEstimates(prisma);
     await seedTaxes(prisma);
     await seedUnits(prisma);
     await seedCategories(prisma);
