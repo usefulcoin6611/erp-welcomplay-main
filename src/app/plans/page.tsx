@@ -79,13 +79,13 @@ const defaultFormData = {
   chatgpt: false,
 }
 
-// Plan gradient colors based on plan name
-function getPlanGradient(name: string) {
+// Plan accent color bar based on plan name
+function getPlanAccentColor(name: string) {
   const n = name.toLowerCase()
-  if (n.includes('platinum')) return 'from-purple-600 to-purple-700'
-  if (n.includes('gold')) return 'from-amber-500 to-amber-600'
-  if (n.includes('silver')) return 'from-slate-500 to-slate-600'
-  return 'from-blue-500 to-blue-600' // Free Plan / default
+  if (n.includes('platinum')) return 'bg-purple-500'
+  if (n.includes('gold')) return 'bg-amber-500'
+  if (n.includes('silver')) return 'bg-slate-400'
+  return 'bg-blue-500' // Free Plan / default
 }
 
 export default function PlansPage() {
@@ -451,11 +451,14 @@ export default function PlansPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {plans.map((plan) => (
                   <div key={plan.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    {/* Card Header - gradient based on plan */}
-                    <div className={`bg-gradient-to-br ${getPlanGradient(plan.name)} px-4 pt-4 pb-8 relative`}>
-                      {/* Active switch + plan name */}
-                      <div className="flex items-center justify-between mb-3">
-                        <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs shadow-sm`}>
+                    {/* Colored accent bar at top */}
+                    <div className={`h-1.5 w-full ${getPlanAccentColor(plan.name)}`} />
+
+                    {/* Card Header - white background */}
+                    <div className="px-4 pt-4 pb-4">
+                      {/* Plan name badge + switch */}
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs`}>
                           {plan.name}
                         </Badge>
                         {isSuperAdmin && plan.price > 0 && (
@@ -463,27 +466,29 @@ export default function PlansPage() {
                             checked={!plan.is_disable}
                             onCheckedChange={() => handleToggleDisable(plan)}
                             title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
-                            className="data-[state=checked]:bg-white/90 data-[state=unchecked]:bg-white/30"
+                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           />
                         )}
                       </div>
-                      {/* Price */}
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-white">
+                      {/* Price - centered with accent color */}
+                      <div className="text-center py-2">
+                        <div className={`text-3xl font-bold ${getPlanAccentColor(plan.name).replace('bg-', 'text-')}`}>
                           {formatPrice(plan.price)}
                         </div>
                         {plan.price > 0 && (
-                          <div className="text-sm text-white/80 mt-0.5">/{getDurationLabel(plan.duration)}</div>
+                          <div className="text-sm text-muted-foreground mt-0.5">/{getDurationLabel(plan.duration)}</div>
                         )}
                         {plan.trial_days > 0 && (
-                          <div className="text-xs text-white/70 mt-1">{plan.trial_days} days free trial</div>
+                          <div className="text-xs text-muted-foreground mt-1 bg-gray-50 rounded-full px-3 py-1 inline-block">
+                            {plan.trial_days} days free trial
+                          </div>
                         )}
                       </div>
                     </div>
 
                     {/* Card Body */}
-                    <div className="px-4 pb-4 -mt-4 relative">
-                      <div className="bg-white rounded-2xl pt-4">
+                    <div className="px-4 pb-4">
+                      <div>
                         {/* Limits */}
                         <div className="bg-gray-50 rounded-xl px-3 py-3 mb-3 space-y-1.5">
                           {[
