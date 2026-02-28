@@ -45,7 +45,8 @@ export function useTransactionData() {
   // API data state
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [accountSummaryData, setAccountSummaryData] = useState<AccountSummary[]>([])
-  const [totalRecordsFromApi, setTotalRecordsFromApi] = useState(0)
+  const [accountOptions, setAccountOptions] = useState<string[]>(['All'])
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(['All', 'Income', 'Expense', 'Transfer'])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,7 +66,9 @@ export function useTransactionData() {
       if (json.success && json.data) {
         setTransactions(json.data.transactions || [])
         setAccountSummaryData(json.data.accountSummary || [])
-        setTotalRecordsFromApi(json.data.totalRecords || 0)
+        // Update filter options from API
+        if (json.data.accountOptions) setAccountOptions(json.data.accountOptions)
+        if (json.data.categoryOptions) setCategoryOptions(json.data.categoryOptions)
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to load transaction data')
@@ -90,7 +93,8 @@ export function useTransactionData() {
     if (selectedAccount !== 'All') {
       return accountSummaryData.filter(acc => 
         acc.id === selectedAccount ||
-        acc.holderName === selectedAccount
+        acc.holderName === selectedAccount ||
+        `${acc.bankName} - ${acc.holderName}` === selectedAccount
       )
     }
     return accountSummaryData
@@ -132,6 +136,10 @@ export function useTransactionData() {
     setSelectedCategory,
     loading,
     error,
+    
+    // Filter options (dynamic from API)
+    accountOptions,
+    categoryOptions,
     
     // Pagination states
     currentPage,

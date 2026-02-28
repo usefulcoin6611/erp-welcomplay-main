@@ -20,6 +20,10 @@ function TransactionTabComponent() {
     selectedCategory,
     setSelectedCategory,
     
+    // Filter options (dynamic from API)
+    accountOptions,
+    categoryOptions,
+    
     // Pagination states
     currentPage,
     setCurrentPage,
@@ -63,6 +67,8 @@ function TransactionTabComponent() {
         setSelectedCategory={setSelectedCategory}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        accountOptions={accountOptions}
+        categoryOptions={categoryOptions}
       />
 
       {/* Info Cards */}

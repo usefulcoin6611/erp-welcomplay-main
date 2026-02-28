@@ -5,12 +5,15 @@ import { headers } from "next/headers"
 
 /**
  * GET /api/reports/transaction
- * 
+ *
  * Returns transaction report data combining:
  * - Journal entries (double-entry)
  * - Bank transfers
- * - Payments
- * 
+ *
+ * Also returns:
+ * - accountOptions: bank accounts for filter dropdown
+ * - categoryOptions: categories from Category model for filter dropdown
+ *
  * Query params:
  *   startMonth: YYYY-MM
  *   endMonth: YYYY-MM
@@ -136,7 +139,7 @@ export async function GET(request: NextRequest) {
     // Sort by date descending
     transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-    // Account summary
+    // Account summary + options for filter dropdown
     const bankAccounts = await prisma.bankAccount.findMany({
       where: { branchId },
       select: { id: true, holderName: true, bank: true, accountNumber: true },
@@ -150,11 +153,35 @@ export async function GET(request: NextRequest) {
       accountNumber: acc.accountNumber,
     }))
 
+    // Account options for filter: "All" + each bank account as "Bank - HolderName"
+    const accountOptions = [
+      "All",
+      ...bankAccounts.map(acc => `${acc.bank} - ${acc.holderName}`)
+    ]
+
+    // Category options from Category model (same as /accounting/setup/custom-field?tab=category)
+    const categories = await prisma.category.findMany({
+      where: { branchId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    })
+
+    // Transaction categories: standard types + categories from DB
+    const categoryOptions = [
+      "All",
+      "Income",
+      "Expense",
+      "Transfer",
+      ...categories.map(c => c.name),
+    ]
+
     return NextResponse.json({
       success: true,
       data: {
         transactions,
         accountSummary,
+        accountOptions,
+        categoryOptions,
         totalRecords: transactions.length,
       },
     })
