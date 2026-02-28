@@ -541,18 +541,6 @@ export default function PlansPage() {
                       </Badge>
                     </div>
 
-                    {/* Active Switch - blue when plan is active (not disabled) */}
-                    {isSuperAdmin && plan.price > 0 && (
-                      <div className="absolute top-2.5 right-2.5 z-10">
-                        <Switch
-                          checked={!plan.is_disable}
-                          onCheckedChange={() => handleToggleDisable(plan)}
-                          title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
-                          className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                        />
-                      </div>
-                    )}
-
                     <CardContent className="pt-12 pb-4 px-4 flex flex-col flex-1">
                       {/* Price */}
                       <div className="text-center mb-4">
@@ -620,7 +608,18 @@ export default function PlansPage() {
 
                       {/* Actions */}
                       {isSuperAdmin && (
-                        <div className="flex gap-2 pt-3 border-t">
+                        <div className="flex items-center gap-2 pt-3 border-t">
+                          {/* Active/Disable Switch - aligned with buttons */}
+                          {plan.price > 0 && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Switch
+                                checked={!plan.is_disable}
+                                onCheckedChange={() => handleToggleDisable(plan)}
+                                title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
+                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                              />
+                            </div>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
