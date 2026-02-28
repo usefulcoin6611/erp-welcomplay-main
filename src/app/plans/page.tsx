@@ -268,7 +268,7 @@ export default function PlansPage() {
       }
       // Optimistic update
       setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_disable: !p.is_disable } : p))
-      toast.success(`Plan ${!plan.is_disable ? 'disabled' : 'enabled'} successfully`)
+      toast.success(`Plan ${plan.is_disable ? 'enabled' : 'disabled'} successfully`)
     } catch {
       toast.error('Failed to update plan status')
     }
@@ -310,7 +310,7 @@ export default function PlansPage() {
             id="f-name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g. Gold"
+            placeholder="e.g. Free Plan, Silver, Gold, Platinum"
             className={formErrors.name ? 'border-red-500' : ''}
           />
           {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
@@ -324,7 +324,7 @@ export default function PlansPage() {
             min="0"
             value={formData.price}
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            placeholder="e.g. 750000"
+            placeholder="e.g. 0 (free), 250000, 750000, 1500000"
             className={formErrors.price ? 'border-red-500' : ''}
           />
           {formErrors.price && <p className="text-xs text-red-500">{formErrors.price}</p>}
@@ -354,7 +354,7 @@ export default function PlansPage() {
             min="0"
             value={formData.trial_days}
             onChange={(e) => setFormData({ ...formData, trial_days: e.target.value })}
-            placeholder="0"
+            placeholder="e.g. 0, 7, 14, 30"
             className={formErrors.trial_days ? 'border-red-500' : ''}
           />
           {formErrors.trial_days && <p className="text-xs text-red-500">{formErrors.trial_days}</p>}
@@ -369,7 +369,7 @@ export default function PlansPage() {
             type="number"
             value={formData.max_users}
             onChange={(e) => setFormData({ ...formData, max_users: e.target.value })}
-            placeholder="-1 for unlimited"
+            placeholder="e.g. 5, 20, 50, -1 (unlimited)"
             className={formErrors.max_users ? 'border-red-500' : ''}
           />
           {formErrors.max_users && <p className="text-xs text-red-500">{formErrors.max_users}</p>}
@@ -382,10 +382,11 @@ export default function PlansPage() {
             type="number"
             value={formData.max_customers}
             onChange={(e) => setFormData({ ...formData, max_customers: e.target.value })}
-            placeholder="-1 for unlimited"
+            placeholder="e.g. 5, 100, 500, -1 (unlimited)"
             className={formErrors.max_customers ? 'border-red-500' : ''}
           />
           {formErrors.max_customers && <p className="text-xs text-red-500">{formErrors.max_customers}</p>}
+          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
       </div>
 
@@ -397,10 +398,11 @@ export default function PlansPage() {
             type="number"
             value={formData.max_venders}
             onChange={(e) => setFormData({ ...formData, max_venders: e.target.value })}
-            placeholder="-1 for unlimited"
+            placeholder="e.g. 5, 50, 100, -1 (unlimited)"
             className={formErrors.max_venders ? 'border-red-500' : ''}
           />
           {formErrors.max_venders && <p className="text-xs text-red-500">{formErrors.max_venders}</p>}
+          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="f-clients">Max Clients <span className="text-red-500">*</span></Label>
@@ -409,10 +411,11 @@ export default function PlansPage() {
             type="number"
             value={formData.max_clients}
             onChange={(e) => setFormData({ ...formData, max_clients: e.target.value })}
-            placeholder="-1 for unlimited"
+            placeholder="e.g. 5, 25, 50, -1 (unlimited)"
             className={formErrors.max_clients ? 'border-red-500' : ''}
           />
           {formErrors.max_clients && <p className="text-xs text-red-500">{formErrors.max_clients}</p>}
+          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
       </div>
 
@@ -423,7 +426,7 @@ export default function PlansPage() {
           type="number"
           value={formData.storage_limit}
           onChange={(e) => setFormData({ ...formData, storage_limit: e.target.value })}
-          placeholder="-1 for unlimited"
+          placeholder="e.g. 1024 (1GB), 5000 (5GB), -1 (unlimited)"
           className={formErrors.storage_limit ? 'border-red-500' : ''}
         />
         {formErrors.storage_limit && <p className="text-xs text-red-500">{formErrors.storage_limit}</p>}
@@ -441,16 +444,30 @@ export default function PlansPage() {
             { key: 'project', label: 'Project' },
             { key: 'pos', label: 'POS' },
             { key: 'chatgpt', label: 'ChatGPT' },
-          ].map((mod) => (
-            <div key={mod.key} className="flex items-center gap-2 p-2 border rounded-md">
-              <Switch
-                id={`f-${mod.key}`}
-                checked={formData[mod.key as keyof typeof formData] as boolean}
-                onCheckedChange={(checked) => setFormData({ ...formData, [mod.key]: checked })}
-              />
-              <Label htmlFor={`f-${mod.key}`} className="text-sm cursor-pointer">{mod.label}</Label>
-            </div>
-          ))}
+          ].map((mod) => {
+            const isEnabled = formData[mod.key as keyof typeof formData] as boolean
+            return (
+              <div
+                key={mod.key}
+                className={`flex items-center gap-2 p-2 border rounded-md transition-colors ${
+                  isEnabled ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
+                }`}
+              >
+                <Switch
+                  id={`f-${mod.key}`}
+                  checked={isEnabled}
+                  onCheckedChange={(checked) => setFormData({ ...formData, [mod.key]: checked })}
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                />
+                <Label
+                  htmlFor={`f-${mod.key}`}
+                  className={`text-sm cursor-pointer ${isEnabled ? 'text-blue-700 font-medium' : 'text-gray-600'}`}
+                >
+                  {mod.label}
+                </Label>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -524,13 +541,14 @@ export default function PlansPage() {
                       </Badge>
                     </div>
 
-                    {/* Disable Switch */}
+                    {/* Active Switch - blue when plan is active (not disabled) */}
                     {isSuperAdmin && plan.price > 0 && (
                       <div className="absolute top-2.5 right-2.5 z-10">
                         <Switch
-                          checked={plan.is_disable}
+                          checked={!plan.is_disable}
                           onCheckedChange={() => handleToggleDisable(plan)}
                           title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
+                          className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                         />
                       </div>
                     )}
