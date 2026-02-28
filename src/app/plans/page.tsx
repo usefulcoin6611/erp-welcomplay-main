@@ -5,7 +5,6 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
@@ -80,6 +79,15 @@ const defaultFormData = {
   chatgpt: false,
 }
 
+// Plan gradient colors based on plan name
+function getPlanGradient(name: string) {
+  const n = name.toLowerCase()
+  if (n.includes('platinum')) return 'from-purple-600 to-purple-700'
+  if (n.includes('gold')) return 'from-amber-500 to-amber-600'
+  if (n.includes('silver')) return 'from-slate-500 to-slate-600'
+  return 'from-blue-500 to-blue-600' // Free Plan / default
+}
+
 export default function PlansPage() {
   const { user } = useAuth()
   const isSuperAdmin = user?.type === 'super admin'
@@ -121,11 +129,11 @@ export default function PlansPage() {
     if (formData.price === '' || isNaN(Number(formData.price))) errors.price = 'Valid price is required'
     if (Number(formData.price) < 0) errors.price = 'Price must be non-negative'
     if (!formData.duration) errors.duration = 'Duration is required'
-    if (formData.max_users === '' || isNaN(Number(formData.max_users))) errors.max_users = 'Valid number required (-1 for unlimited)'
+    if (formData.max_users === '' || isNaN(Number(formData.max_users))) errors.max_users = 'Valid number required'
     if (formData.max_customers === '' || isNaN(Number(formData.max_customers))) errors.max_customers = 'Valid number required'
     if (formData.max_venders === '' || isNaN(Number(formData.max_venders))) errors.max_venders = 'Valid number required'
     if (formData.max_clients === '' || isNaN(Number(formData.max_clients))) errors.max_clients = 'Valid number required'
-    if (formData.storage_limit === '' || isNaN(Number(formData.storage_limit))) errors.storage_limit = 'Valid number required (-1 for unlimited)'
+    if (formData.storage_limit === '' || isNaN(Number(formData.storage_limit))) errors.storage_limit = 'Valid number required'
     if (formData.trial_days === '' || isNaN(Number(formData.trial_days))) errors.trial_days = 'Valid number required'
     if (Number(formData.trial_days) < 0) errors.trial_days = 'Trial days must be non-negative'
     setFormErrors(errors)
@@ -161,20 +169,14 @@ export default function PlansPage() {
         body: JSON.stringify(buildPayload()),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to create plan')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to create plan'); return }
       toast.success('Plan created successfully')
       setDialogOpen(false)
       setFormData(defaultFormData)
       setFormErrors({})
       await loadPlans()
-    } catch {
-      toast.error('Failed to create plan')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to create plan') }
+    finally { setSaving(false) }
   }
 
   const handleEdit = (plan: Plan) => {
@@ -211,21 +213,15 @@ export default function PlansPage() {
         body: JSON.stringify(buildPayload()),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to update plan')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to update plan'); return }
       toast.success('Plan updated successfully')
       setEditDialogOpen(false)
       setEditingPlan(null)
       setFormData(defaultFormData)
       setFormErrors({})
       await loadPlans()
-    } catch {
-      toast.error('Failed to update plan')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to update plan') }
+    finally { setSaving(false) }
   }
 
   const handleDeleteClick = (plan: Plan) => {
@@ -239,19 +235,13 @@ export default function PlansPage() {
     try {
       const res = await fetch(`/api/plans/${planToDelete.id}`, { method: 'DELETE' })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to delete plan')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to delete plan'); return }
       toast.success('Plan deleted successfully')
       setDeleteDialogOpen(false)
       setPlanToDelete(null)
       await loadPlans()
-    } catch {
-      toast.error('Failed to delete plan')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to delete plan') }
+    finally { setSaving(false) }
   }
 
   const handleToggleDisable = async (plan: Plan) => {
@@ -262,196 +252,124 @@ export default function PlansPage() {
         body: JSON.stringify({ isDisable: !plan.is_disable }),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to update plan status')
-        return
-      }
-      // Optimistic update
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to update plan status'); return }
       setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_disable: !p.is_disable } : p))
       toast.success(`Plan ${plan.is_disable ? 'enabled' : 'disabled'} successfully`)
-    } catch {
-      toast.error('Failed to update plan status')
-    }
+    } catch { toast.error('Failed to update plan status') }
   }
 
   const formatPrice = (price: number) => {
     if (price === 0) return 'Free'
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price)
   }
-
-  const formatLimit = (limit: number) => {
-    if (limit === -1) return 'Unlimited'
-    return limit.toString()
-  }
-
+  const formatLimit = (limit: number) => limit === -1 ? 'Unlimited' : limit.toString()
   const formatStorage = (limit: number) => {
     if (limit === -1) return 'Unlimited'
     if (limit >= 1000) return `${(limit / 1000).toFixed(0)} GB`
     return `${limit} MB`
   }
+  const getDurationLabel = (duration: string) => durations.find(d => d.value === duration)?.label || duration
 
-  const getDurationLabel = (duration: string) => {
-    const found = durations.find((d) => d.value === duration)
-    return found?.label || duration
-  }
+  const modules = [
+    { key: 'account', label: 'Account' },
+    { key: 'crm', label: 'CRM' },
+    { key: 'hrm', label: 'HRM' },
+    { key: 'project', label: 'Project' },
+    { key: 'pos', label: 'POS' },
+    { key: 'chatgpt', label: 'ChatGPT' },
+  ]
 
-  // Shared form fields component
   const PlanFormFields = () => (
-    <div className="grid gap-4 py-4">
+    <div className="space-y-4 py-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="f-name">Name <span className="text-red-500">*</span></Label>
+          <Label className="text-sm font-medium">Name <span className="text-red-500">*</span></Label>
           <Input
-            id="f-name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="e.g. Free Plan, Silver, Gold, Platinum"
-            className={formErrors.name ? 'border-red-500' : ''}
+            className={`bg-gray-50 ${formErrors.name ? 'border-red-500' : 'border-0'}`}
           />
           {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="f-price">Price (IDR) <span className="text-red-500">*</span></Label>
+          <Label className="text-sm font-medium">Price (IDR) <span className="text-red-500">*</span></Label>
           <Input
-            id="f-price"
-            type="number"
-            step="1000"
-            min="0"
+            type="number" step="1000" min="0"
             value={formData.price}
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            placeholder="e.g. 0 (free), 250000, 750000, 1500000"
-            className={formErrors.price ? 'border-red-500' : ''}
+            placeholder="e.g. 0 (free), 250000, 750000"
+            className={`bg-gray-50 ${formErrors.price ? 'border-red-500' : 'border-0'}`}
           />
           {formErrors.price && <p className="text-xs text-red-500">{formErrors.price}</p>}
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="f-duration">Duration <span className="text-red-500">*</span></Label>
+          <Label className="text-sm font-medium">Duration <span className="text-red-500">*</span></Label>
           <Select value={formData.duration} onValueChange={(v) => setFormData({ ...formData, duration: v })}>
-            <SelectTrigger id="f-duration" className={formErrors.duration ? 'border-red-500' : ''}>
+            <SelectTrigger className={`bg-gray-50 ${formErrors.duration ? 'border-red-500' : 'border-0'}`}>
               <SelectValue placeholder="Select Duration" />
             </SelectTrigger>
             <SelectContent>
-              {durations.map((dur) => (
-                <SelectItem key={dur.value} value={dur.value}>{dur.label}</SelectItem>
-              ))}
+              {durations.map((dur) => <SelectItem key={dur.value} value={dur.value}>{dur.label}</SelectItem>)}
             </SelectContent>
           </Select>
           {formErrors.duration && <p className="text-xs text-red-500">{formErrors.duration}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="f-trial">Trial Days <span className="text-red-500">*</span></Label>
+          <Label className="text-sm font-medium">Trial Days <span className="text-red-500">*</span></Label>
           <Input
-            id="f-trial"
-            type="number"
-            min="0"
+            type="number" min="0"
             value={formData.trial_days}
             onChange={(e) => setFormData({ ...formData, trial_days: e.target.value })}
             placeholder="e.g. 0, 7, 14, 30"
-            className={formErrors.trial_days ? 'border-red-500' : ''}
+            className={`bg-gray-50 ${formErrors.trial_days ? 'border-red-500' : 'border-0'}`}
           />
           {formErrors.trial_days && <p className="text-xs text-red-500">{formErrors.trial_days}</p>}
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="f-users">Max Users <span className="text-red-500">*</span></Label>
-          <Input
-            id="f-users"
-            type="number"
-            value={formData.max_users}
-            onChange={(e) => setFormData({ ...formData, max_users: e.target.value })}
-            placeholder="e.g. 5, 20, 50, -1 (unlimited)"
-            className={formErrors.max_users ? 'border-red-500' : ''}
-          />
+          <Label className="text-sm font-medium">Max Users <span className="text-red-500">*</span></Label>
+          <Input type="number" value={formData.max_users} onChange={(e) => setFormData({ ...formData, max_users: e.target.value })} placeholder="e.g. 5, 20, 50, -1 (unlimited)" className={`bg-gray-50 ${formErrors.max_users ? 'border-red-500' : 'border-0'}`} />
           {formErrors.max_users && <p className="text-xs text-red-500">{formErrors.max_users}</p>}
           <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="f-customers">Max Customers <span className="text-red-500">*</span></Label>
-          <Input
-            id="f-customers"
-            type="number"
-            value={formData.max_customers}
-            onChange={(e) => setFormData({ ...formData, max_customers: e.target.value })}
-            placeholder="e.g. 5, 100, 500, -1 (unlimited)"
-            className={formErrors.max_customers ? 'border-red-500' : ''}
-          />
+          <Label className="text-sm font-medium">Max Customers <span className="text-red-500">*</span></Label>
+          <Input type="number" value={formData.max_customers} onChange={(e) => setFormData({ ...formData, max_customers: e.target.value })} placeholder="e.g. 5, 100, 500, -1 (unlimited)" className={`bg-gray-50 ${formErrors.max_customers ? 'border-red-500' : 'border-0'}`} />
           {formErrors.max_customers && <p className="text-xs text-red-500">{formErrors.max_customers}</p>}
-          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="f-vendors">Max Vendors <span className="text-red-500">*</span></Label>
-          <Input
-            id="f-vendors"
-            type="number"
-            value={formData.max_venders}
-            onChange={(e) => setFormData({ ...formData, max_venders: e.target.value })}
-            placeholder="e.g. 5, 50, 100, -1 (unlimited)"
-            className={formErrors.max_venders ? 'border-red-500' : ''}
-          />
+          <Label className="text-sm font-medium">Max Vendors <span className="text-red-500">*</span></Label>
+          <Input type="number" value={formData.max_venders} onChange={(e) => setFormData({ ...formData, max_venders: e.target.value })} placeholder="e.g. 5, 50, 100, -1 (unlimited)" className={`bg-gray-50 ${formErrors.max_venders ? 'border-red-500' : 'border-0'}`} />
           {formErrors.max_venders && <p className="text-xs text-red-500">{formErrors.max_venders}</p>}
-          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="f-clients">Max Clients <span className="text-red-500">*</span></Label>
-          <Input
-            id="f-clients"
-            type="number"
-            value={formData.max_clients}
-            onChange={(e) => setFormData({ ...formData, max_clients: e.target.value })}
-            placeholder="e.g. 5, 25, 50, -1 (unlimited)"
-            className={formErrors.max_clients ? 'border-red-500' : ''}
-          />
+          <Label className="text-sm font-medium">Max Clients <span className="text-red-500">*</span></Label>
+          <Input type="number" value={formData.max_clients} onChange={(e) => setFormData({ ...formData, max_clients: e.target.value })} placeholder="e.g. 5, 25, 50, -1 (unlimited)" className={`bg-gray-50 ${formErrors.max_clients ? 'border-red-500' : 'border-0'}`} />
           {formErrors.max_clients && <p className="text-xs text-red-500">{formErrors.max_clients}</p>}
-          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
         </div>
       </div>
-
       <div className="space-y-1.5">
-        <Label htmlFor="f-storage">Storage Limit (MB) <span className="text-red-500">*</span></Label>
-        <Input
-          id="f-storage"
-          type="number"
-          value={formData.storage_limit}
-          onChange={(e) => setFormData({ ...formData, storage_limit: e.target.value })}
-          placeholder="e.g. 1024 (1GB), 5000 (5GB), -1 (unlimited)"
-          className={formErrors.storage_limit ? 'border-red-500' : ''}
-        />
+        <Label className="text-sm font-medium">Storage Limit (MB) <span className="text-red-500">*</span></Label>
+        <Input type="number" value={formData.storage_limit} onChange={(e) => setFormData({ ...formData, storage_limit: e.target.value })} placeholder="e.g. 1024 (1GB), 5000 (5GB), -1 (unlimited)" className={`bg-gray-50 ${formErrors.storage_limit ? 'border-red-500' : 'border-0'}`} />
         {formErrors.storage_limit && <p className="text-xs text-red-500">{formErrors.storage_limit}</p>}
         <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
       </div>
-
       {/* Module toggles */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Modules</Label>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { key: 'account', label: 'Account' },
-            { key: 'crm', label: 'CRM' },
-            { key: 'hrm', label: 'HRM' },
-            { key: 'project', label: 'Project' },
-            { key: 'pos', label: 'POS' },
-            { key: 'chatgpt', label: 'ChatGPT' },
-          ].map((mod) => {
+        <div className="grid grid-cols-3 gap-2">
+          {modules.map((mod) => {
             const isEnabled = formData[mod.key as keyof typeof formData] as boolean
             return (
               <div
                 key={mod.key}
-                className={`flex items-center gap-2 p-2 border rounded-md transition-colors ${
-                  isEnabled ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
-                }`}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-colors ${isEnabled ? 'bg-blue-50' : 'bg-gray-50'}`}
               >
                 <Switch
                   id={`f-${mod.key}`}
@@ -461,7 +379,7 @@ export default function PlansPage() {
                 />
                 <Label
                   htmlFor={`f-${mod.key}`}
-                  className={`text-sm cursor-pointer ${isEnabled ? 'text-blue-700 font-medium' : 'text-gray-600'}`}
+                  className={`text-xs cursor-pointer ${isEnabled ? 'text-blue-700 font-semibold' : 'text-gray-500'}`}
                 >
                   {mod.label}
                 </Label>
@@ -475,23 +393,19 @@ export default function PlansPage() {
 
   return (
     <SidebarProvider
-      style={
-        {
-          '--sidebar-width': 'calc(var(--spacing) * 72)',
-          '--header-height': 'calc(var(--spacing) * 12)',
-        } as React.CSSProperties
-      }
+      style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100 min-h-screen">
+
+            {/* Page Header */}
+            <div className="bg-white rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm">
               <div>
-                <h1 className="text-lg font-semibold">Subscription Plans</h1>
-                <p className="text-sm text-muted-foreground">Manage your subscription plans</p>
+                <h1 className="text-lg font-semibold text-gray-900">Subscription Plans</h1>
+                <p className="text-sm text-muted-foreground">{plans.length} plans available</p>
               </div>
               {isSuperAdmin && (
                 <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -499,20 +413,20 @@ export default function PlansPage() {
                   if (!open) { setFormData(defaultFormData); setFormErrors({}) }
                 }}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none">
-                      <Plus className="mr-2 h-4 w-4" /> Create Plan
+                    <Button size="sm" variant="blue" className="shadow-none rounded-lg h-9 px-4">
+                      <Plus className="mr-1.5 h-4 w-4" /> Create Plan
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                       <DialogTitle>Create New Plan</DialogTitle>
                       <DialogDescription>Add a new subscription plan to your system.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit}>
                       <PlanFormFields />
-                      <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                        <Button type="submit" variant="blue" disabled={saving}>
+                      <DialogFooter className="gap-2">
+                        <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="rounded-lg">Cancel</Button>
+                        <Button type="submit" variant="blue" disabled={saving} className="rounded-lg">
                           {saving ? 'Creating...' : 'Create Plan'}
                         </Button>
                       </DialogFooter>
@@ -522,10 +436,13 @@ export default function PlansPage() {
               )}
             </div>
 
-            {/* Loading state */}
+            {/* Loading */}
             {loading && (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">Loading plans...</p>
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                  <div className="h-8 w-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">Loading plans...</p>
+                </div>
               </div>
             )}
 
@@ -533,120 +450,107 @@ export default function PlansPage() {
             {!loading && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {plans.map((plan) => (
-                  <Card key={plan.id} className="relative flex flex-col rounded-lg overflow-hidden border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.05)]">
-                    {/* Plan Badge */}
-                    <div className="absolute top-0 left-0 right-0 flex items-center justify-center pt-3 pb-2">
-                      <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
-                        {plan.name}
-                      </Badge>
-                    </div>
-
-                    <CardContent className="pt-12 pb-4 px-4 flex flex-col flex-1">
-                      {/* Price */}
-                      <div className="text-center mb-4">
-                        <div className="flex items-baseline justify-center gap-1">
-                          <span className="text-3xl font-bold text-gray-900">
-                            {formatPrice(plan.price)}
-                          </span>
-                          {plan.price > 0 && (
-                            <span className="text-sm text-gray-500 font-medium">
-                              /{getDurationLabel(plan.duration)}
-                            </span>
-                          )}
-                        </div>
-                        {plan.trial_days > 0 && (
-                          <p className="text-xs text-gray-500 font-medium mt-1">
-                            {plan.trial_days} days free trial
-                          </p>
+                  <div key={plan.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    {/* Card Header - gradient based on plan */}
+                    <div className={`bg-gradient-to-br ${getPlanGradient(plan.name)} px-4 pt-4 pb-8 relative`}>
+                      {/* Active switch + plan name */}
+                      <div className="flex items-center justify-between mb-3">
+                        <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs shadow-sm`}>
+                          {plan.name}
+                        </Badge>
+                        {isSuperAdmin && plan.price > 0 && (
+                          <Switch
+                            checked={!plan.is_disable}
+                            onCheckedChange={() => handleToggleDisable(plan)}
+                            title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
+                            className="data-[state=checked]:bg-white/90 data-[state=unchecked]:bg-white/30"
+                          />
                         )}
                       </div>
+                      {/* Price */}
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-white">
+                          {formatPrice(plan.price)}
+                        </div>
+                        {plan.price > 0 && (
+                          <div className="text-sm text-white/80 mt-0.5">/{getDurationLabel(plan.duration)}</div>
+                        )}
+                        {plan.trial_days > 0 && (
+                          <div className="text-xs text-white/70 mt-1">{plan.trial_days} days free trial</div>
+                        )}
+                      </div>
+                    </div>
 
-                      {/* Limits */}
-                      <div className="space-y-1.5 mb-4 flex-1">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{formatLimit(plan.max_users)} Users</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{formatLimit(plan.max_customers)} Customers</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{formatLimit(plan.max_venders)} Vendors</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{formatLimit(plan.max_clients)} Clients</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{formatStorage(plan.storage_limit)} Storage</span>
-                        </div>
-
-                        {/* Modules */}
-                        <div className="pt-2 border-t mt-2">
+                    {/* Card Body */}
+                    <div className="px-4 pb-4 -mt-4 relative">
+                      <div className="bg-white rounded-2xl pt-4">
+                        {/* Limits */}
+                        <div className="bg-gray-50 rounded-xl px-3 py-3 mb-3 space-y-1.5">
                           {[
-                            { key: 'account', label: 'Account', enabled: plan.account },
-                            { key: 'crm', label: 'CRM', enabled: plan.crm },
-                            { key: 'hrm', label: 'HRM', enabled: plan.hrm },
-                            { key: 'project', label: 'Project', enabled: plan.project },
-                            { key: 'pos', label: 'POS', enabled: plan.pos },
-                            { key: 'chatgpt', label: 'ChatGPT', enabled: plan.chatgpt },
-                          ].map((mod) => (
-                            <div key={mod.key} className="flex items-center gap-2 text-sm text-gray-600 py-0.5">
-                              {mod.enabled ? (
-                                <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                              ) : (
-                                <X className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
-                              )}
-                              <span className={mod.enabled ? '' : 'text-gray-400'}>{mod.label}</span>
+                            { label: 'Users', value: formatLimit(plan.max_users) },
+                            { label: 'Customers', value: formatLimit(plan.max_customers) },
+                            { label: 'Vendors', value: formatLimit(plan.max_venders) },
+                            { label: 'Clients', value: formatLimit(plan.max_clients) },
+                            { label: 'Storage', value: formatStorage(plan.storage_limit) },
+                          ].map((item) => (
+                            <div key={item.label} className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">{item.label}</span>
+                              <span className="font-medium text-gray-700">{item.value}</span>
                             </div>
                           ))}
                         </div>
-                      </div>
 
-                      {/* Actions */}
-                      {isSuperAdmin && (
-                        <div className="flex items-center gap-2 pt-3 border-t">
-                          {/* Active/Disable Switch - aligned with buttons */}
-                          {plan.price > 0 && (
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Switch
-                                checked={!plan.is_disable}
-                                onCheckedChange={() => handleToggleDisable(plan)}
-                                title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
-                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                              />
-                            </div>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 shadow-none h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                            onClick={() => handleEdit(plan)}
-                          >
-                            <Pencil className="h-3 w-3 mr-1" /> Edit
-                          </Button>
-                          {plan.price > 0 && (
+                        {/* Modules */}
+                        <div className="grid grid-cols-3 gap-1.5 mb-3">
+                          {modules.map((mod) => {
+                            const enabled = plan[mod.key as keyof Plan] as boolean
+                            return (
+                              <div
+                                key={mod.key}
+                                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs ${enabled ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-400'}`}
+                              >
+                                {enabled ? <Check className="h-3 w-3 shrink-0" /> : <X className="h-3 w-3 shrink-0" />}
+                                <span className="truncate">{mod.label}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {/* Actions */}
+                        {isSuperAdmin && (
+                          <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 shadow-none h-8 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                              onClick={() => handleDeleteClick(plan)}
+                              className="flex-1 h-8 text-xs rounded-lg shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-0"
+                              onClick={() => handleEdit(plan)}
                             >
-                              <Trash className="h-3 w-3 mr-1" /> Delete
+                              <Pencil className="h-3 w-3 mr-1" /> Edit
                             </Button>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                            {plan.price > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 h-8 text-xs rounded-lg shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-0"
+                                onClick={() => handleDeleteClick(plan)}
+                              >
+                                <Trash className="h-3 w-3 mr-1" /> Delete
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
 
                 {plans.length === 0 && !loading && (
-                  <div className="col-span-4 text-center py-12 text-muted-foreground">
-                    No plans found. Create your first plan.
+                  <div className="col-span-4 bg-white rounded-2xl py-16 text-center">
+                    <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                      <Plus className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <p className="text-muted-foreground">No plans found.</p>
+                    <p className="text-sm text-muted-foreground mt-1">Create your first subscription plan.</p>
                   </div>
                 )}
               </div>
@@ -657,7 +561,7 @@ export default function PlansPage() {
               setEditDialogOpen(open)
               if (!open) { setEditingPlan(null); setFormData(defaultFormData); setFormErrors({}) }
             }}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Edit Plan</DialogTitle>
                   <DialogDescription>
@@ -667,9 +571,9 @@ export default function PlansPage() {
                 </DialogHeader>
                 <form onSubmit={handleUpdateSubmit}>
                   <PlanFormFields />
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-                    <Button type="submit" variant="blue" disabled={saving}>
+                  <DialogFooter className="gap-2">
+                    <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-lg">Cancel</Button>
+                    <Button type="submit" variant="blue" disabled={saving} className="rounded-lg">
                       {saving ? 'Saving...' : 'Save Changes'}
                     </Button>
                   </DialogFooter>
@@ -679,18 +583,18 @@ export default function PlansPage() {
 
             {/* Delete Confirmation */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogContent>
+              <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Plan?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete "{planToDelete?.name}"? This action cannot be undone.
+                    Are you sure you want to delete <strong>"{planToDelete?.name}"</strong>? This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel onClick={() => setPlanToDelete(null)} className="rounded-lg">Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleConfirmDelete}
-                    className="bg-red-600 hover:bg-red-700"
+                    className="bg-red-600 hover:bg-red-700 rounded-lg"
                     disabled={saving}
                   >
                     {saving ? 'Deleting...' : 'Delete'}
@@ -698,6 +602,7 @@ export default function PlansPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
           </div>
         </MainContentWrapper>
       </SidebarInset>
