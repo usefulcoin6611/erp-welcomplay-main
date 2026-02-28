@@ -25,6 +25,7 @@ export function PayablesFilters({
   setDateRange,
   isDateRangeOpen,
   setIsDateRangeOpen,
+  onApply,
   onReset,
 }: PayablesFiltersProps) {
   const t = useTranslations('reports.payables')
@@ -83,6 +84,7 @@ export function PayablesFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={onApply}
             >
               <Search className="w-4 h-4" />
               {t('apply')}

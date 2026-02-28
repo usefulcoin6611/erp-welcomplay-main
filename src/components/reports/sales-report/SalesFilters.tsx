@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { format } from 'date-fns'
 import { DateRange } from 'react-day-picker'
@@ -11,24 +10,14 @@ import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 
 interface SalesFiltersProps {
+  dateRange?: DateRange
+  onDateRangeChange?: (range: DateRange | undefined) => void
+  onApply?: () => void
   onReset?: () => void
 }
 
-export function SalesFilters({ onReset }: SalesFiltersProps) {
+export function SalesFilters({ dateRange, onDateRangeChange, onApply, onReset }: SalesFiltersProps) {
   const t = useTranslations('reports.salesReport')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2025, 5, 1),
-    to: new Date(2025, 6, 30),
-  })
-  const [isDateRangeOpen, setIsDateRangeOpen] = useState(false)
-
-  const handleReset = () => {
-    setDateRange({
-      from: new Date(2025, 5, 1),
-      to: new Date(2025, 6, 30),
-    })
-    onReset?.()
-  }
 
   const dateRangeLabel = dateRange?.from
     ? dateRange.to
@@ -45,7 +34,7 @@ export function SalesFilters({ onReset }: SalesFiltersProps) {
             <Label className="text-xs font-medium text-muted-foreground">
               {t('dateRange')}
             </Label>
-            <Popover open={isDateRangeOpen} onOpenChange={setIsDateRangeOpen}>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -64,7 +53,7 @@ export function SalesFilters({ onReset }: SalesFiltersProps) {
                   mode="range"
                   defaultMonth={dateRange?.from}
                   selected={dateRange}
-                  onSelect={setDateRange}
+                  onSelect={onDateRangeChange}
                   numberOfMonths={2}
                   required={false}
                 />
@@ -72,7 +61,7 @@ export function SalesFilters({ onReset }: SalesFiltersProps) {
                   <Button
                     size="sm"
                     className="w-full h-8 bg-blue-500 hover:bg-blue-600"
-                    onClick={() => setIsDateRangeOpen(false)}
+                    onClick={onApply}
                   >
                     {t('select')}
                   </Button>
@@ -86,6 +75,7 @@ export function SalesFilters({ onReset }: SalesFiltersProps) {
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={onApply}
             >
               <Search className="w-4 h-4" />
               {t('apply')}
@@ -93,7 +83,7 @@ export function SalesFilters({ onReset }: SalesFiltersProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleReset}
+              onClick={onReset}
               className="h-9 px-3 shadow-none"
             >
               <RotateCcw className="w-4 h-4" />

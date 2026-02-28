@@ -15,6 +15,7 @@ interface ReceivablesFiltersProps {
   isDateRangeOpen: boolean
   setIsDateRangeOpen: (open: boolean) => void
   onReset: () => void
+  onApply?: () => void
 }
 
 export function ReceivablesFilters({
@@ -23,6 +24,7 @@ export function ReceivablesFilters({
   isDateRangeOpen,
   setIsDateRangeOpen,
   onReset,
+  onApply,
 }: ReceivablesFiltersProps) {
   const t = useTranslations('reports.receivables')
 
@@ -80,6 +82,7 @@ export function ReceivablesFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={onApply}
             >
               <Search className="w-4 h-4" />
               {t('apply')}

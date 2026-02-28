@@ -32,6 +32,7 @@ const ReceivablesTabComponent = () => {
     agingSummaryTotals,
     handleTabChange,
     handleReset,
+    handleApplyFilters,
   } = useReceivablesData()
 
   const receivablesTabItems = useMemo(
@@ -54,6 +55,7 @@ const ReceivablesTabComponent = () => {
         isDateRangeOpen={isDateRangeOpen}
         setIsDateRangeOpen={setIsDateRangeOpen}
         onReset={handleReset}
+        onApply={handleApplyFilters}
       />
 
       {/* Main Data Card with Tabs */}

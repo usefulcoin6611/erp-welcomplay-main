@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { availableCategories, availableStatuses, type StockStatus } from './constants'
+import { availableStatuses, type StockStatus } from './constants'
 
 interface ProductStockFiltersProps {
   selectedCategory: string
@@ -20,6 +20,7 @@ interface ProductStockFiltersProps {
   setSelectedStatus: (status: StockStatus) => void
   onApply: () => void
   onReset: () => void
+  categoryOptions?: string[]
 }
 
 export function ProductStockFilters({
@@ -29,7 +30,9 @@ export function ProductStockFilters({
   setSelectedStatus,
   onApply,
   onReset,
+  categoryOptions,
 }: ProductStockFiltersProps) {
+  const dynamicCategories = categoryOptions || ['All']
   return (
     <Card className="shadow-none">
       <CardContent className="px-4 py-2">
@@ -42,7 +45,7 @@ export function ProductStockFilters({
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                {availableCategories.map((category: string) => (
+                {dynamicCategories.map((category: string) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

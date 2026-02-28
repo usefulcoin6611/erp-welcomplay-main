@@ -1,5 +1,24 @@
-import { useState, useMemo } from 'react'
-import { mockTransactions, mockAccountSummary } from '../constants'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+
+type Transaction = {
+  id: string
+  date: string
+  type: string
+  reference: string
+  description: string
+  account: string
+  category: string
+  debit: number
+  credit: number
+  amount: number
+}
+
+type AccountSummary = {
+  id: string
+  holderName: string
+  bankName: string
+  accountNumber: string
+}
 
 export function useTransactionData() {
   // Get default dates (last 6 months to current)
@@ -23,59 +42,73 @@ export function useTransactionData() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  // Filtered data
-  const filteredData = useMemo(() => {
-    return mockTransactions.filter((transaction) => {
-      // Date filter
-      const transactionDate = transaction.date.slice(0, 7)
-      if (transactionDate < startMonth || transactionDate > endMonth) {
-        return false
+  // API data state
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [accountSummaryData, setAccountSummaryData] = useState<AccountSummary[]>([])
+  const [totalRecordsFromApi, setTotalRecordsFromApi] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      params.set('startMonth', startMonth)
+      params.set('endMonth', endMonth)
+      if (selectedAccount !== 'All') params.set('accountId', selectedAccount)
+      if (selectedCategory !== 'All') params.set('category', selectedCategory)
+
+      const res = await fetch(`/api/reports/transaction?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch transaction data')
+      const json = await res.json()
+      if (json.success && json.data) {
+        setTransactions(json.data.transactions || [])
+        setAccountSummaryData(json.data.accountSummary || [])
+        setTotalRecordsFromApi(json.data.totalRecords || 0)
       }
-      
-      // Account filter
-      if (selectedAccount !== 'All' && transaction.account !== selectedAccount) {
-        return false
-      }
-      
-      // Category filter
-      if (selectedCategory !== 'All' && transaction.category !== selectedCategory) {
-        return false
-      }
-      
-      return true
-    })
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load transaction data')
+    } finally {
+      setLoading(false)
+    }
   }, [startMonth, endMonth, selectedAccount, selectedCategory])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   // Paginated data
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
     const endIndex = startIndex + pageSize
-    return filteredData.slice(startIndex, endIndex)
-  }, [filteredData, currentPage, pageSize])
+    return transactions.slice(startIndex, endIndex)
+  }, [transactions, currentPage, pageSize])
 
   // Account summary filtered
   const accountSummary = useMemo(() => {
     if (selectedAccount !== 'All') {
-      return mockAccountSummary.filter(acc => 
-        acc.holderName === selectedAccount || 
-        `${acc.bankName} - ${acc.holderName}` === selectedAccount
+      return accountSummaryData.filter(acc => 
+        acc.id === selectedAccount ||
+        acc.holderName === selectedAccount
       )
     }
-    return mockAccountSummary
-  }, [selectedAccount])
+    return accountSummaryData
+  }, [accountSummaryData, selectedAccount])
 
   // Handlers
-  const handleApplyFilters = () => {
+  const handleApplyFilters = useCallback(() => {
     setCurrentPage(1)
-  }
+    fetchData()
+  }, [fetchData])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setStartMonth(getDefaultStartMonth())
     setEndMonth(getDefaultEndMonth())
     setSelectedAccount('All')
     setSelectedCategory('All')
     setCurrentPage(1)
-  }
+  }, [])
 
   const formatDateRange = () => {
     const start = new Date(startMonth + '-01')
@@ -84,7 +117,7 @@ export function useTransactionData() {
   }
 
   // Pagination calculations
-  const totalRecords = filteredData.length
+  const totalRecords = transactions.length
   const totalPages = Math.ceil(totalRecords / pageSize)
 
   return {
@@ -97,6 +130,8 @@ export function useTransactionData() {
     setSelectedAccount,
     selectedCategory,
     setSelectedCategory,
+    loading,
+    error,
     
     // Pagination states
     currentPage,

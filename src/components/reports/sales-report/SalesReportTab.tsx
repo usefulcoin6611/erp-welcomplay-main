@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { SearchInput } from '@/components/ui/search-input'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SalesFilters } from './SalesFilters'
 import { SalesByItemTable } from './tables/SalesByItemTable'
 import { SalesByCustomerTable } from './tables/SalesByCustomerTable'
@@ -19,6 +20,10 @@ function SalesReportTabComponent() {
     selectedTab,
     currentPage,
     pageSize,
+    dateRange,
+    setDateRange,
+    loading,
+    error,
     paginatedItems,
     paginatedCustomers,
     filteredItems,
@@ -27,6 +32,8 @@ function SalesReportTabComponent() {
     setCurrentPage,
     setPageSize,
     handleTabChange,
+    handleApplyFilters,
+    handleReset,
   } = useSalesData()
 
   const salesTabItems = useMemo(
@@ -46,7 +53,12 @@ function SalesReportTabComponent() {
   return (
     <div className="flex flex-col gap-3">
       {/* Filter Section */}
-      <SalesFilters onReset={() => setCurrentPage(1)} />
+      <SalesFilters
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onApply={handleApplyFilters}
+        onReset={handleReset}
+      />
 
       {/* Data Section */}
       <Card>
@@ -83,28 +95,52 @@ function SalesReportTabComponent() {
         </div>
         <CardContent className="pt-0">
           <div style={{ minHeight: '400px' }}>
+            {/* Loading State */}
+            {loading && (
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            )}
+
+            {/* Error State */}
+            {!loading && error && (
+              <div className="flex items-center justify-center h-40 text-sm text-red-500">
+                {error}
+              </div>
+            )}
+
             {/* Table Content */}
-            {selectedTab === 'items' && <SalesByItemTable data={paginatedItems} />}
-            {selectedTab === 'customers' && <SalesByCustomerTable data={paginatedCustomers} />}
+            {!loading && !error && selectedTab === 'items' && (
+              <SalesByItemTable data={paginatedItems} />
+            )}
+            {!loading && !error && selectedTab === 'customers' && (
+              <SalesByCustomerTable data={paginatedCustomers} />
+            )}
           </div>
 
           {/* Pagination */}
-          <div className="mt-4">
-            <SimplePagination
-              totalCount={
-                selectedTab === 'items'
-                  ? filteredItems.length
-                  : filteredCustomers.length
-              }
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={(p) => setCurrentPage(p)}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
-            />
-          </div>
+          {!loading && !error && (
+            <div className="mt-4">
+              <SimplePagination
+                totalCount={
+                  selectedTab === 'items'
+                    ? filteredItems.length
+                    : filteredCustomers.length
+                }
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={(p) => setCurrentPage(p)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

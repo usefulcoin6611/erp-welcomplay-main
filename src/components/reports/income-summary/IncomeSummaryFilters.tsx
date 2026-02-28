@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Search, RotateCcw, FileDown } from 'lucide-react'
-import { periods, yearList, categories, customers } from './constants'
+import { periods, yearList, categories as defaultCategories, customers as defaultCustomers } from './constants'
 
 interface IncomeSummaryFiltersProps {
   period: string
@@ -25,6 +25,8 @@ interface IncomeSummaryFiltersProps {
   setCustomer: (value: string) => void
   onApply: () => void
   onReset: () => void
+  categoryOptions?: string[]
+  customerOptions?: { id: string; name: string }[]
 }
 
 function IncomeSummaryFiltersComponent({
@@ -38,7 +40,11 @@ function IncomeSummaryFiltersComponent({
   setCustomer,
   onApply,
   onReset,
+  categoryOptions,
+  customerOptions,
 }: IncomeSummaryFiltersProps) {
+  const categories = categoryOptions || defaultCategories
+  const customers = customerOptions ? customerOptions.map(c => c.name) : defaultCustomers
   return (
     <Card className="shadow-none">
       <CardContent className="px-4 py-2">

@@ -24,6 +24,7 @@ function BillSummaryTabComponent() {
     setSelectedVendor,
     selectedStatus,
     setSelectedStatus,
+    vendorOptions,
     
     // UI states
     selectedTab,
@@ -84,6 +85,7 @@ function BillSummaryTabComponent() {
         setSelectedStatus={setSelectedStatus}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        vendorOptions={vendorOptions}
       />
 
       {/* Statistics Cards */}

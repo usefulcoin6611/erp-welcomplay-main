@@ -35,6 +35,7 @@ const PayablesTabComponent = () => {
     agingSummaryTotals,
     handleTabChange,
     handleReset,
+    handleApplyFilters,
   } = usePayablesData()
 
   const payablesTabItems = useMemo(
@@ -56,7 +57,7 @@ const PayablesTabComponent = () => {
         setDateRange={setDateRange}
         isDateRangeOpen={isDateRangeOpen}
         setIsDateRangeOpen={setIsDateRangeOpen}
-        onApply={() => {}}
+        onApply={handleApplyFilters}
         onReset={handleReset}
       />
 

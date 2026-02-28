@@ -1,18 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { DateRange } from 'react-day-picker'
-import { 
-  VENDOR_BALANCE_DATA,
-  PAYABLE_SUMMARY_DATA,
-  PAYABLE_DETAILS_DATA,
-  AGING_SUMMARY_DATA,
-  AGING_DETAILS_DATA,
-  PayableTab
-} from '../constants'
+import { format } from 'date-fns'
+import { PayableTab } from '../constants'
 
 export function usePayablesData() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2025, 5, 1),
-    to: new Date(2025, 6, 30),
+    from: new Date(new Date().getFullYear(), 0, 1),
+    to: new Date(),
   })
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false)
   const [selectedTab, setSelectedTab] = useState<PayableTab>('vendor-balance')
@@ -20,34 +14,82 @@ export function usePayablesData() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  // API data state
+  const [apiData, setApiData] = useState<{
+    vendorBalance: any[]
+    payableSummary: any[]
+    payableDetails: any[]
+    agingSummary: any[]
+    agingDetails: any[]
+    totalBalance: number
+    agingSummaryTotals: any
+  }>({
+    vendorBalance: [],
+    payableSummary: [],
+    payableDetails: [],
+    agingSummary: [],
+    agingDetails: [],
+    totalBalance: 0,
+    agingSummaryTotals: { current: 0, days1_15: 0, days16_30: 0, days31_45: 0, over45Days: 0, total: 0 },
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (dateRange?.from) params.set('startDate', format(dateRange.from, 'yyyy-MM-dd'))
+      if (dateRange?.to) params.set('endDate', format(dateRange.to, 'yyyy-MM-dd'))
+      if (searchQuery) params.set('search', searchQuery)
+
+      const res = await fetch(`/api/reports/payables?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch payables data')
+      const json = await res.json()
+      if (json.success && json.data) {
+        setApiData(json.data)
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load payables data')
+    } finally {
+      setLoading(false)
+    }
+  }, [dateRange, searchQuery])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
   const filteredData = useMemo(() => {
+    const query = searchQuery.toLowerCase()
     if (selectedTab === 'vendor-balance') {
-      return VENDOR_BALANCE_DATA.filter(item =>
-        item.vendor.toLowerCase().includes(searchQuery.toLowerCase())
+      return apiData.vendorBalance.filter(item =>
+        item.vendor.toLowerCase().includes(query)
       )
     } else if (selectedTab === 'payable-summary') {
-      return PAYABLE_SUMMARY_DATA.filter(item =>
-        item.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.transaction.toLowerCase().includes(searchQuery.toLowerCase())
+      return apiData.payableSummary.filter(item =>
+        item.vendor.toLowerCase().includes(query) ||
+        item.transaction.toLowerCase().includes(query)
       )
     } else if (selectedTab === 'payable-details') {
-      return PAYABLE_DETAILS_DATA.filter(item =>
-        item.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.transaction.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+      return apiData.payableDetails.filter(item =>
+        item.vendor.toLowerCase().includes(query) ||
+        item.transaction.toLowerCase().includes(query) ||
+        item.itemName.toLowerCase().includes(query)
       )
     } else if (selectedTab === 'aging-summary') {
-      return AGING_SUMMARY_DATA.filter(item =>
-        item.vendor.toLowerCase().includes(searchQuery.toLowerCase())
+      return apiData.agingSummary.filter(item =>
+        item.vendor.toLowerCase().includes(query)
       )
     } else if (selectedTab === 'aging-details') {
-      return AGING_DETAILS_DATA.filter(item =>
-        item.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.transaction.toLowerCase().includes(searchQuery.toLowerCase())
+      return apiData.agingDetails.filter(item =>
+        item.vendor.toLowerCase().includes(query) ||
+        item.transaction.toLowerCase().includes(query)
       )
     }
     return []
-  }, [selectedTab, searchQuery])
+  }, [selectedTab, searchQuery, apiData])
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
@@ -56,21 +98,8 @@ export function usePayablesData() {
   }, [filteredData, currentPage, pageSize])
 
   const totalBalance = useMemo(() => {
-    return VENDOR_BALANCE_DATA.reduce((acc, item) => ({
-      closingBalance: acc.closingBalance + item.closingBalance
-    }), { closingBalance: 0 })
-  }, [])
-
-  const agingSummaryTotals = useMemo(() => {
-    return AGING_SUMMARY_DATA.reduce((acc, item) => ({
-      current: acc.current + item.current,
-      days1_15: acc.days1_15 + item.days1_15,
-      days16_30: acc.days16_30 + item.days16_30,
-      days31_45: acc.days31_45 + item.days31_45,
-      over45Days: acc.over45Days + item.over45Days,
-      total: acc.total + item.total
-    }), { current: 0, days1_15: 0, days16_30: 0, days31_45: 0, over45Days: 0, total: 0 })
-  }, [])
+    return { closingBalance: apiData.totalBalance }
+  }, [apiData.totalBalance])
 
   const handleTabChange = (tabId: string) => {
     setSelectedTab(tabId as PayableTab)
@@ -80,11 +109,18 @@ export function usePayablesData() {
 
   const handleReset = () => {
     setDateRange({
-      from: new Date(2025, 5, 1),
-      to: new Date(2025, 6, 30),
+      from: new Date(new Date().getFullYear(), 0, 1),
+      to: new Date(),
     })
     setSearchQuery('')
     setCurrentPage(1)
+    fetchData()
+  }
+
+  const handleApplyFilters = () => {
+    setCurrentPage(1)
+    setIsDateRangeOpen(false)
+    fetchData()
   }
 
   return {
@@ -100,15 +136,18 @@ export function usePayablesData() {
     setCurrentPage,
     pageSize,
     setPageSize,
+    loading,
+    error,
     
     // Data
     filteredData,
     paginatedData,
     totalBalance,
-    agingSummaryTotals,
+    agingSummaryTotals: apiData.agingSummaryTotals,
     
     // Handlers
     handleTabChange,
     handleReset,
+    handleApplyFilters,
   }
 }
