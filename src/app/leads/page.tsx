@@ -263,14 +263,36 @@ export default function LeadsPage() {
 
   const totalRecords = filteredData.length
   const totalLeads = leads.length
-  // Group by stage for Kanban. 
-  // We need stages for the SELECTED pipeline if possible, or all unique stages in filtered data.
-  // Ideally fetch stages for selected pipeline. But for now use existing logic.
-  const stages = Array.from(new Set(filteredData.map((lead) => lead.stage)))
-  const leadsByStage = stages.map((stage) => ({
+
+  // Fixed stage order for Kanban
+  const KANBAN_STAGES = ['Draft', 'Sent', 'Open', 'Revised', 'Declined']
+  const leadsByStage = KANBAN_STAGES.map((stage) => ({
     stage,
     leads: filteredData.filter((lead) => lead.stage === stage),
   }))
+
+  // Stage column header colors
+  const getStageHeaderColor = (stage: string) => {
+    switch (stage) {
+      case 'Draft': return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'Sent': return 'bg-blue-100 text-blue-700 border-blue-200'
+      case 'Open': return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+      case 'Revised': return 'bg-amber-100 text-amber-700 border-amber-200'
+      case 'Declined': return 'bg-red-100 text-red-700 border-red-200'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+    }
+  }
+
+  const getStageAccentColor = (stage: string) => {
+    switch (stage) {
+      case 'Draft': return 'bg-gray-400'
+      case 'Sent': return 'bg-blue-500'
+      case 'Open': return 'bg-emerald-500'
+      case 'Revised': return 'bg-amber-500'
+      case 'Declined': return 'bg-red-500'
+      default: return 'bg-gray-400'
+    }
+  }
 
   return (
     <SidebarProvider
@@ -550,63 +572,82 @@ export default function LeadsPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="flex-1 overflow-x-auto">
-                <div className="flex gap-4 min-w-max pb-4">
+              <div className="overflow-x-auto">
+                <div className="flex gap-3 min-w-max pb-4">
                   {leadsByStage.map((group) => (
-                    <div key={group.stage} className="w-72 flex-shrink-0 flex flex-col gap-3">
-                      <div className="flex items-center justify-between px-1">
-                        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
-                          {group.stage}
-                        </h3>
-                        <Badge variant="secondary" className="rounded-full px-2">
+                    <div key={group.stage} className="w-64 flex-shrink-0 flex flex-col gap-2">
+                      {/* Column Header */}
+                      <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${getStageHeaderColor(group.stage)}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${getStageAccentColor(group.stage)}`} />
+                          <span className="text-xs font-semibold uppercase tracking-wider">
+                            {group.stage}
+                          </span>
+                        </div>
+                        <span className="text-xs font-medium bg-white/60 rounded-full px-2 py-0.5">
                           {group.leads.length}
-                        </Badge>
+                        </span>
                       </div>
-                      {group.leads.map((lead) => (
-                        <Card key={lead.id} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                          <CardContent className="p-3 space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-1">
-                                <Link href={`/leads/${lead.id}`} className="font-medium hover:underline block truncate">
-                                  {lead.name}
-                                </Link>
-                                <p className="text-xs text-muted-foreground truncate">{lead.subject}</p>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 -mr-2">
-                                    <MoreVertical className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditClick(lead)}>Edit</DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            <div className="space-y-2 pt-2 border-t">
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <IconCalendar className="h-3 w-3" />
-                                <span>{formatDate(lead.createdAt)}</span>
-                              </div>
-                              {lead.phone && (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <IconPhone className="h-3 w-3" />
-                                  <span>{lead.phone}</span>
+
+                      {/* Lead Cards */}
+                      <div className="flex flex-col gap-2">
+                        {group.leads.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 text-center">
+                            <p className="text-xs text-muted-foreground">No leads</p>
+                          </div>
+                        ) : (
+                          group.leads.map((lead) => (
+                            <Card key={lead.id} className="shadow-none border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer bg-white">
+                              <CardContent className="p-3">
+                                {/* Card Header */}
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <Link
+                                    href={`/leads/${lead.id}`}
+                                    className="font-medium text-sm text-blue-600 hover:underline leading-tight line-clamp-2 flex-1"
+                                  >
+                                    {lead.name}
+                                  </Link>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 shrink-0 text-muted-foreground hover:text-foreground">
+                                        <MoreVertical className="h-3 w-3" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEditClick(lead)}>
+                                        <Pencil className="h-3 w-3 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-red-600">
+                                        <Trash2 className="h-3 w-3 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between pt-2">
-                              <Badge variant="outline" className={getStageBadge(lead.stage)}>
-                                {lead.stage}
-                              </Badge>
-                              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary">
-                                {lead.owner.substring(0, 2).toUpperCase()}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+
+                                {/* Subject */}
+                                {lead.subject && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+                                    {lead.subject}
+                                  </p>
+                                )}
+
+                                {/* Footer */}
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <IconCalendar className="h-3 w-3 shrink-0" />
+                                    <span>{formatDate(lead.createdAt)}</span>
+                                  </div>
+                                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-semibold text-primary shrink-0">
+                                    {lead.owner ? lead.owner.substring(0, 2).toUpperCase() : '??'}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
