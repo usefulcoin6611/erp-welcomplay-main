@@ -5,14 +5,16 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Plus, MoreVertical, Pencil, Trash, Lock, Calendar, Clock, Users, Building2, RotateCcw, LogIn, LogOut, ShoppingCart, Check, Search } from 'lucide-react'
+import {
+  Plus, MoreVertical, Pencil, Trash, Lock, Calendar, Clock,
+  Users, Building2, RotateCcw, LogIn, LogOut, ShoppingCart, Check, Search
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -43,7 +45,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 
-// Types
 interface Company {
   id: string
   name: string
@@ -83,7 +84,6 @@ export default function CompaniesPage() {
   const [search, setSearch] = useState('')
   const [showDeleted, setShowDeleted] = useState(false)
 
-  // Dialogs
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
@@ -91,19 +91,13 @@ export default function CompaniesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false)
 
-  // Selected company
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null)
-
-  // Form data
   const [formData, setFormData] = useState(defaultFormData)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [newPassword, setNewPassword] = useState('')
 
-  // Plans from API
   const [availablePlans, setAvailablePlans] = useState<{ id: string; name: string; price: number; duration: string; max_users: number; max_customers: number; max_venders: number }[]>([])
-
-  // Company users for Admin Hub
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
 
@@ -113,7 +107,6 @@ export default function CompaniesPage() {
       const params = new URLSearchParams()
       if (search) params.set('search', search)
       if (showDeleted) params.set('includeDeleted', 'true')
-
       const res = await fetch(`/api/companies?${params.toString()}`, { cache: 'no-store' })
       const json = await res.json()
       if (json.success && Array.isArray(json.data)) {
@@ -132,9 +125,7 @@ export default function CompaniesPage() {
     try {
       const res = await fetch('/api/plans', { cache: 'no-store' })
       const json = await res.json()
-      if (json.success && Array.isArray(json.data)) {
-        setAvailablePlans(json.data)
-      }
+      if (json.success && Array.isArray(json.data)) setAvailablePlans(json.data)
     } catch {}
   }, [])
 
@@ -153,6 +144,15 @@ export default function CompaniesPage() {
     return Object.keys(errors).length === 0
   }
 
+  const buildPayload = () => ({
+    name: formData.name.trim(),
+    email: formData.email.trim(),
+    password: formData.password || null,
+    plan: (formData.plan && formData.plan !== 'none') ? formData.plan : null,
+    planExpireDate: formData.planExpireDate || null,
+    isEnableLogin: formData.isEnableLogin,
+  })
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
@@ -161,30 +161,17 @@ export default function CompaniesPage() {
       const res = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          password: formData.password || null,
-          plan: (formData.plan && formData.plan !== 'none') ? formData.plan : null,
-          planExpireDate: formData.planExpireDate || null,
-          isEnableLogin: formData.isEnableLogin,
-        }),
+        body: JSON.stringify(buildPayload()),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to create company')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to create company'); return }
       toast.success('Company created successfully')
       setCreateDialogOpen(false)
       setFormData(defaultFormData)
       setFormErrors({})
       await loadCompanies()
-    } catch {
-      toast.error('Failed to create company')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to create company') }
+    finally { setSaving(false) }
   }
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -195,31 +182,18 @@ export default function CompaniesPage() {
       const res = await fetch(`/api/companies/${selectedCompany.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          password: formData.password || null,
-          plan: (formData.plan && formData.plan !== 'none') ? formData.plan : null,
-          planExpireDate: formData.planExpireDate || null,
-          isEnableLogin: formData.isEnableLogin,
-        }),
+        body: JSON.stringify(buildPayload()),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to update company')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to update company'); return }
       toast.success('Company updated successfully')
       setEditDialogOpen(false)
       setSelectedCompany(null)
       setFormData(defaultFormData)
       setFormErrors({})
       await loadCompanies()
-    } catch {
-      toast.error('Failed to update company')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to update company') }
+    finally { setSaving(false) }
   }
 
   const handleEditClick = (company: Company) => {
@@ -244,27 +218,15 @@ export default function CompaniesPage() {
         body: JSON.stringify({ isEnableLogin: !company.is_enable_login }),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to update login status')
-        return
-      }
-      // Optimistic update
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to update login status'); return }
       setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_enable_login: !c.is_enable_login } : c))
       toast.success(`Login ${!company.is_enable_login ? 'enabled' : 'disabled'} for ${company.name}`)
-    } catch {
-      toast.error('Failed to update login status')
-    }
+    } catch { toast.error('Failed to update login status') }
   }
 
   const handleResetPassword = async () => {
-    if (!selectedCompany || !newPassword) {
-      toast.error('New password is required')
-      return
-    }
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters')
-      return
-    }
+    if (!selectedCompany || !newPassword) { toast.error('New password is required'); return }
+    if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return }
     setSaving(true)
     try {
       const res = await fetch(`/api/companies/${selectedCompany.id}`, {
@@ -273,19 +235,13 @@ export default function CompaniesPage() {
         body: JSON.stringify({ password: newPassword }),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to reset password')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to reset password'); return }
       toast.success('Password reset successfully')
       setResetPasswordDialogOpen(false)
       setNewPassword('')
       setSelectedCompany(null)
-    } catch {
-      toast.error('Failed to reset password')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to reset password') }
+    finally { setSaving(false) }
   }
 
   const handleUpgradePlan = async (planName: string) => {
@@ -298,19 +254,13 @@ export default function CompaniesPage() {
         body: JSON.stringify({ plan: planName }),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) {
-        toast.error(json.message || 'Failed to upgrade plan')
-        return
-      }
+      if (!res.ok || !json.success) { toast.error(json.message || 'Failed to upgrade plan'); return }
       toast.success(`Plan upgraded to ${planName} successfully`)
       setUpgradeDialogOpen(false)
       setSelectedCompany(null)
       await loadCompanies()
-    } catch {
-      toast.error('Failed to upgrade plan')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to upgrade plan') }
+    finally { setSaving(false) }
   }
 
   const handleConfirmDelete = async () => {
@@ -318,36 +268,25 @@ export default function CompaniesPage() {
     setSaving(true)
     try {
       if (companyToDelete.delete_status === 0) {
-        // Restore: set isActive = true
         const res = await fetch(`/api/companies/${companyToDelete.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ isActive: true }),
         })
         const json = await res.json()
-        if (!res.ok || !json.success) {
-          toast.error(json.message || 'Failed to restore company')
-          return
-        }
+        if (!res.ok || !json.success) { toast.error(json.message || 'Failed to restore company'); return }
         toast.success('Company restored successfully')
       } else {
-        // Soft delete
         const res = await fetch(`/api/companies/${companyToDelete.id}`, { method: 'DELETE' })
         const json = await res.json()
-        if (!res.ok || !json.success) {
-          toast.error(json.message || 'Failed to delete company')
-          return
-        }
+        if (!res.ok || !json.success) { toast.error(json.message || 'Failed to delete company'); return }
         toast.success('Company deactivated successfully')
       }
       setDeleteDialogOpen(false)
       setCompanyToDelete(null)
       await loadCompanies()
-    } catch {
-      toast.error('Failed to process request')
-    } finally {
-      setSaving(false)
-    }
+    } catch { toast.error('Failed to process request') }
+    finally { setSaving(false) }
   }
 
   const handleOpenAdminHub = async (company: Company) => {
@@ -355,84 +294,66 @@ export default function CompaniesPage() {
     setAdminHubDialogOpen(true)
     setLoadingUsers(true)
     try {
-      // Fetch users for this company's branch
       const res = await fetch(`/api/users?branchId=${company.branchId}`, { cache: 'no-store' })
       const json = await res.json()
       if (json.success && Array.isArray(json.data)) {
-        setCompanyUsers(json.data.map((u: any) => ({
-          id: u.id,
-          name: u.name || u.email,
-          avatar: u.image,
-          is_disable: false,
-        })))
+        setCompanyUsers(json.data.map((u: any) => ({ id: u.id, name: u.name || u.email, avatar: u.image, is_disable: false })))
       }
-    } catch {
-      setCompanyUsers([])
-    } finally {
-      setLoadingUsers(false)
-    }
+    } catch { setCompanyUsers([]) }
+    finally { setLoadingUsers(false) }
   }
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  const formatDate = (d: string | null | undefined) => {
+    if (!d) return '-'
+    return new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' })
   }
-
-  const formatTime = (dateString: string | null | undefined) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  const formatTime = (d: string | null | undefined) => {
+    if (!d) return '-'
+    return new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   }
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2)
+  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+  const formatExpireDate = (d: string | null | undefined) => {
+    if (!d) return 'Lifetime'
+    return new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })
   }
-
-  const formatExpireDate = (date: string | null | undefined) => {
-    if (!date) return 'Lifetime'
-    const expireDate = new Date(date)
-    return expireDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
-  }
-
   const formatPrice = (price: number) => {
     if (price === 0) return 'Free'
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price)
   }
-
   const formatLimit = (limit: number) => limit === -1 ? 'Unlimited' : limit.toString()
 
-  // Shared form fields
   const CompanyFormFields = () => (
-    <div className="grid gap-4 py-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="c-name">Company Name <span className="text-red-500">*</span></Label>
-        <Input
-          id="c-name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="e.g. Acme Corporation"
-          className={formErrors.name ? 'border-red-500' : ''}
-        />
-        {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="c-email">Email <span className="text-red-500">*</span></Label>
-        <Input
-          id="c-email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="admin@company.com"
-          className={formErrors.email ? 'border-red-500' : ''}
-        />
-        {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
+    <div className="space-y-4 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="c-name" className="text-sm font-medium">Company Name <span className="text-red-500">*</span></Label>
+          <Input
+            id="c-name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g. Acme Corporation"
+            className={`bg-gray-50 ${formErrors.name ? 'border-red-500' : 'border-0'}`}
+          />
+          {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="c-email" className="text-sm font-medium">Email <span className="text-red-500">*</span></Label>
+          <Input
+            id="c-email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="admin@company.com"
+            className={`bg-gray-50 ${formErrors.email ? 'border-red-500' : 'border-0'}`}
+          />
+          {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="c-plan">Plan</Label>
+          <Label htmlFor="c-plan" className="text-sm font-medium">Plan</Label>
           <Select value={formData.plan} onValueChange={(v) => setFormData({ ...formData, plan: v })}>
-            <SelectTrigger id="c-plan">
+            <SelectTrigger id="c-plan" className="bg-gray-50 border-0">
               <SelectValue placeholder="Select Plan" />
             </SelectTrigger>
             <SelectContent>
@@ -444,29 +365,35 @@ export default function CompaniesPage() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="c-expire">Plan Expire Date</Label>
+          <Label htmlFor="c-expire" className="text-sm font-medium">Plan Expire Date</Label>
           <Input
             id="c-expire"
             type="date"
             value={formData.planExpireDate}
             onChange={(e) => setFormData({ ...formData, planExpireDate: e.target.value })}
+            className="bg-gray-50 border-0"
           />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="c-password">Password {selectedCompany ? '(leave blank to keep current)' : ''}</Label>
+        <Label htmlFor="c-password" className="text-sm font-medium">
+          Password {selectedCompany ? <span className="text-muted-foreground font-normal">(leave blank to keep current)</span> : ''}
+        </Label>
         <Input
           id="c-password"
           type="password"
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           placeholder={selectedCompany ? 'Leave blank to keep current' : 'Enter password (min 6 chars)'}
-          className={formErrors.password ? 'border-red-500' : ''}
+          className={`bg-gray-50 ${formErrors.password ? 'border-red-500' : 'border-0'}`}
         />
         {formErrors.password && <p className="text-xs text-red-500">{formErrors.password}</p>}
       </div>
-      <div className="flex items-center justify-between p-3 border rounded-md">
-        <Label htmlFor="c-login" className="cursor-pointer">Enable Login</Label>
+      <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+        <div>
+          <Label htmlFor="c-login" className="text-sm font-medium cursor-pointer">Enable Login</Label>
+          <p className="text-xs text-muted-foreground">Allow this company to log in</p>
+        </div>
         <Switch
           id="c-login"
           checked={formData.isEnableLogin}
@@ -479,72 +406,76 @@ export default function CompaniesPage() {
 
   return (
     <SidebarProvider
-      style={
-        {
-          '--sidebar-width': 'calc(var(--spacing) * 72)',
-          '--header-height': 'calc(var(--spacing) * 12)',
-        } as React.CSSProperties
-      }
+      style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
         <MainContentWrapper>
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative flex-1 max-w-xs">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100 min-h-screen">
+
+            {/* Page Header */}
+            <div className="bg-white rounded-2xl px-6 py-4 flex items-center justify-between gap-4 shadow-sm">
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">Companies</h1>
+                <p className="text-sm text-muted-foreground">{companies.length} companies registered</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search companies..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 h-9 bg-white shadow-none"
+                    className="pl-9 h-9 w-56 bg-gray-50 border-0 shadow-none rounded-lg"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                {/* Show Deleted Toggle */}
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
                   <Switch
                     checked={showDeleted}
                     onCheckedChange={setShowDeleted}
                     className="data-[state=checked]:bg-blue-500"
                   />
-                  <Label className="text-sm text-muted-foreground cursor-pointer" onClick={() => setShowDeleted(!showDeleted)}>
-                    Show Deleted
-                  </Label>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">Show Deleted</span>
                 </div>
+                {/* Create Button */}
+                <Dialog open={createDialogOpen} onOpenChange={(open) => {
+                  setCreateDialogOpen(open)
+                  if (!open) { setFormData(defaultFormData); setFormErrors({}) }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="blue" className="shadow-none rounded-lg h-9 px-4">
+                      <Plus className="mr-1.5 h-4 w-4" /> Create Company
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Create Company</DialogTitle>
+                      <DialogDescription>Add a new company to your system.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateSubmit}>
+                      <CompanyFormFields />
+                      <DialogFooter className="gap-2">
+                        <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)} className="rounded-lg">Cancel</Button>
+                        <Button type="submit" variant="blue" disabled={saving} className="rounded-lg">
+                          {saving ? 'Creating...' : 'Create Company'}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
-              <Dialog open={createDialogOpen} onOpenChange={(open) => {
-                setCreateDialogOpen(open)
-                if (!open) { setFormData(defaultFormData); setFormErrors({}) }
-              }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="blue" className="shadow-none shrink-0">
-                    <Plus className="mr-2 h-4 w-4" /> Create Company
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Create Company</DialogTitle>
-                    <DialogDescription>Add a new company to your system.</DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleCreateSubmit}>
-                    <CompanyFormFields />
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-                      <Button type="submit" variant="blue" disabled={saving}>
-                        {saving ? 'Creating...' : 'Create Company'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
             </div>
 
             {/* Loading */}
             {loading && (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">Loading companies...</p>
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                  <div className="h-8 w-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">Loading companies...</p>
+                </div>
               </div>
             )}
 
@@ -552,46 +483,34 @@ export default function CompaniesPage() {
             {!loading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {companies.map((company) => (
-                  <Card key={company.id} className="flex flex-col overflow-hidden shadow-none rounded-xl">
-                    {/* Card Header - Blue gradient background */}
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 px-4 pt-4 pb-6 relative">
-                      {/* Plan badge + actions row */}
-                      <div className="flex items-center justify-between mb-3">
-                        <Badge className={`${getPlanBadgeColors(company.plan || 'No Plan')} text-xs`}>
+                  <div key={company.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    {/* Card Header - Blue gradient */}
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 px-4 pt-4 pb-8 relative">
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge className={`${getPlanBadgeColors(company.plan || 'No Plan')} text-xs shadow-sm`}>
                           {company.plan || 'No Plan'}
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white hover:bg-white/20">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/80 hover:text-white hover:bg-white/20 rounded-lg">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="rounded-xl">
                             <DropdownMenuItem onClick={() => handleEditClick(company)}>
                               <Pencil className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => {
-                                setCompanyToDelete(company)
-                                setDeleteDialogOpen(true)
-                              }}
+                              onClick={() => { setCompanyToDelete(company); setDeleteDialogOpen(true) }}
                               className={company.delete_status === 0 ? 'text-green-600' : 'text-destructive'}
                             >
-                              {company.delete_status === 0 ? (
-                                <><RotateCcw className="mr-2 h-4 w-4" /> Restore</>
-                              ) : (
-                                <><Trash className="mr-2 h-4 w-4" /> Delete</>
-                              )}
+                              {company.delete_status === 0 ? <><RotateCcw className="mr-2 h-4 w-4" /> Restore</> : <><Trash className="mr-2 h-4 w-4" /> Delete</>}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleOpenAdminHub(company)}>
                               <Building2 className="mr-2 h-4 w-4" /> Admin Hub
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedCompany(company)
-                              setNewPassword('')
-                              setResetPasswordDialogOpen(true)
-                            }}>
+                            <DropdownMenuItem onClick={() => { setSelectedCompany(company); setNewPassword(''); setResetPasswordDialogOpen(true) }}>
                               <Lock className="mr-2 h-4 w-4" /> Reset Password
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -599,92 +518,95 @@ export default function CompaniesPage() {
                               onClick={() => handleToggleLogin(company)}
                               className={company.is_enable_login ? 'text-destructive' : 'text-green-600'}
                             >
-                              {company.is_enable_login ? (
-                                <><LogOut className="mr-2 h-4 w-4" /> Disable Login</>
-                              ) : (
-                                <><LogIn className="mr-2 h-4 w-4" /> Enable Login</>
-                              )}
+                              {company.is_enable_login ? <><LogOut className="mr-2 h-4 w-4" /> Disable Login</> : <><LogIn className="mr-2 h-4 w-4" /> Enable Login</>}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-
-                      {/* Avatar centered */}
-                      <div className="flex flex-col items-center">
-                        <Avatar className="h-16 w-16 ring-4 ring-white/30">
+                      {/* Avatar */}
+                      <div className="flex justify-center">
+                        <Avatar className="h-16 w-16 ring-4 ring-white/40 shadow-lg">
                           <AvatarImage src={company.avatar ?? undefined} />
-                          <AvatarFallback className="text-lg font-semibold bg-white text-blue-600">
+                          <AvatarFallback className="text-lg font-bold bg-white text-blue-600">
                             {getInitials(company.name)}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     </div>
 
-                    {/* Card Body - White background */}
-                    <div className="bg-white px-4 pt-3 pb-4 flex flex-col flex-1 -mt-3 rounded-t-2xl relative">
-                      {/* Company name + email */}
-                      <div className="text-center mb-3">
-                        <h5 className="font-semibold text-sm truncate">{company.name}</h5>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{company.email}</p>
-                        <div className="flex items-center justify-center gap-1 mt-1.5 flex-wrap">
-                          {company.delete_status === 0 && (
-                            <Badge variant="destructive" className="text-xs">Deactivated</Badge>
-                          )}
-                          {!company.is_enable_login && (
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">Login Off</span>
+                    {/* Card Body */}
+                    <div className="px-4 pb-4 -mt-4 relative">
+                      {/* White rounded top overlap */}
+                      <div className="bg-white rounded-2xl pt-4 px-0">
+                        {/* Name + Email */}
+                        <div className="text-center mb-3">
+                          <h5 className="font-semibold text-sm text-gray-900 truncate">{company.name}</h5>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{company.email}</p>
+                          {(company.delete_status === 0 || !company.is_enable_login) && (
+                            <div className="flex items-center justify-center gap-1.5 mt-1.5 flex-wrap">
+                              {company.delete_status === 0 && (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">Deactivated</span>
+                              )}
+                              {!company.is_enable_login && (
+                                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Login Off</span>
+                              )}
+                            </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Last Login - gray background section */}
-                      <div className="bg-gray-50 rounded-lg px-3 py-2 mb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                            <span>{formatDate(company.last_login_at)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5 text-blue-500" />
-                            <span>{formatTime(company.last_login_at)}</span>
+                        {/* Last Login - gray section */}
+                        <div className="bg-gray-50 rounded-xl px-3 py-2.5 mb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <div className="h-6 w-6 rounded-lg bg-blue-500 flex items-center justify-center">
+                                <Calendar className="h-3 w-3 text-white" />
+                              </div>
+                              <span className="text-xs text-gray-600">{formatDate(company.last_login_at)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="h-6 w-6 rounded-lg bg-blue-500 flex items-center justify-center">
+                                <Clock className="h-3 w-3 text-white" />
+                              </div>
+                              <span className="text-xs text-gray-600">{formatTime(company.last_login_at)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <Button
-                          variant="blue"
-                          size="sm"
-                          className="flex-1 shadow-none h-8 text-xs"
-                          onClick={() => {
-                            setSelectedCompany(company)
-                            setUpgradeDialogOpen(true)
-                          }}
-                        >
-                          Upgrade Plan
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 shadow-none h-8 text-xs bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          onClick={() => handleOpenAdminHub(company)}
-                        >
-                          Admin Hub
-                        </Button>
-                      </div>
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 mb-3">
+                          <Button
+                            variant="blue"
+                            size="sm"
+                            className="flex-1 h-8 text-xs rounded-lg shadow-none"
+                            onClick={() => { setSelectedCompany(company); setUpgradeDialogOpen(true) }}
+                          >
+                            Upgrade Plan
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 h-8 text-xs rounded-lg shadow-none bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            onClick={() => handleOpenAdminHub(company)}
+                          >
+                            Admin Hub
+                          </Button>
+                        </div>
 
-                      {/* Plan Expire - light blue background */}
-                      <div className="bg-blue-50 rounded-lg px-3 py-2 text-center">
-                        <p className="text-xs text-blue-600 font-medium">
-                          Expires: {formatExpireDate(company.plan_expire_date)}
-                        </p>
+                        {/* Plan Expire - blue section */}
+                        <div className="bg-blue-50 rounded-xl px-3 py-2 text-center">
+                          <p className="text-xs text-blue-600 font-medium">
+                            Expires: {formatExpireDate(company.plan_expire_date)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
 
                 {companies.length === 0 && !loading && (
-                  <div className="col-span-4 text-center py-12 text-muted-foreground">
-                    No companies found.
+                  <div className="col-span-4 bg-white rounded-2xl py-16 text-center">
+                    <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-muted-foreground">No companies found.</p>
+                    <p className="text-sm text-muted-foreground mt-1">Create your first company to get started.</p>
                   </div>
                 )}
               </div>
@@ -695,16 +617,16 @@ export default function CompaniesPage() {
               setEditDialogOpen(open)
               if (!open) { setSelectedCompany(null); setFormData(defaultFormData); setFormErrors({}) }
             }}>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Edit Company</DialogTitle>
                   <DialogDescription>Update company information.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleEditSubmit}>
                   <CompanyFormFields />
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-                    <Button type="submit" variant="blue" disabled={saving}>
+                  <DialogFooter className="gap-2">
+                    <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-lg">Cancel</Button>
+                    <Button type="submit" variant="blue" disabled={saving} className="rounded-lg">
                       {saving ? 'Saving...' : 'Save Changes'}
                     </Button>
                   </DialogFooter>
@@ -717,32 +639,30 @@ export default function CompaniesPage() {
               setUpgradeDialogOpen(open)
               if (!open) setSelectedCompany(null)
             }}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Upgrade Plan</DialogTitle>
-                  <DialogDescription>
-                    Select a new plan for {selectedCompany?.name ?? ''}
-                  </DialogDescription>
+                  <DialogDescription>Select a new plan for <strong>{selectedCompany?.name}</strong></DialogDescription>
                 </DialogHeader>
                 {selectedCompany && (
-                  <div className="space-y-3">
+                  <div className="space-y-2 py-2">
                     {availablePlans.map((plan) => {
                       const isCurrentPlan = plan.name === selectedCompany.plan
                       return (
                         <div
                           key={plan.id}
-                          className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
-                            isCurrentPlan ? 'border-green-300 bg-green-50' : 'hover:bg-gray-50'
+                          className={`flex items-center justify-between p-4 rounded-xl transition-colors ${
+                            isCurrentPlan ? 'bg-green-50' : 'bg-gray-50 hover:bg-blue-50'
                           }`}
                         >
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1">
-                              <h4 className="font-medium">{plan.name}</h4>
-                              <span className="text-sm text-muted-foreground">
-                                ({formatPrice(plan.price)}{plan.duration !== 'lifetime' ? `/${plan.duration}` : ''})
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm">{plan.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatPrice(plan.price)}{plan.duration !== 'lifetime' ? `/${plan.duration}` : ''}
                               </span>
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span>Users: {formatLimit(plan.max_users)}</span>
                               <span>Customers: {formatLimit(plan.max_customers)}</span>
                               <span>Vendors: {formatLimit(plan.max_venders)}</span>
@@ -750,23 +670,18 @@ export default function CompaniesPage() {
                           </div>
                           <div className="ml-4">
                             {isCurrentPlan ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-10 w-10 p-0 bg-green-500 hover:bg-green-600 text-white border-green-500"
-                                disabled
-                              >
-                                <Check className="h-5 w-5" />
-                              </Button>
+                              <div className="h-9 w-9 rounded-xl bg-green-500 flex items-center justify-center">
+                                <Check className="h-4 w-4 text-white" />
+                              </div>
                             ) : (
                               <Button
                                 variant="blue"
                                 size="sm"
-                                className="h-10 w-10 p-0 shadow-none"
+                                className="h-9 w-9 p-0 rounded-xl shadow-none"
                                 onClick={() => handleUpgradePlan(plan.name)}
                                 disabled={saving}
                               >
-                                <ShoppingCart className="h-5 w-5" />
+                                <ShoppingCart className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
@@ -776,7 +691,7 @@ export default function CompaniesPage() {
                   </div>
                 )}
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => { setUpgradeDialogOpen(false); setSelectedCompany(null) }}>
+                  <Button type="button" variant="outline" onClick={() => { setUpgradeDialogOpen(false); setSelectedCompany(null) }} className="rounded-lg">
                     Close
                   </Button>
                 </DialogFooter>
@@ -788,63 +703,47 @@ export default function CompaniesPage() {
               setAdminHubDialogOpen(open)
               if (!open) { setSelectedCompany(null); setCompanyUsers([]) }
             }}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle>Admin Hub — {selectedCompany?.name}</DialogTitle>
+                  <DialogTitle>Admin Hub</DialogTitle>
+                  <DialogDescription>{selectedCompany?.name} — User Management</DialogDescription>
                 </DialogHeader>
                 {selectedCompany && (
-                  <div className="space-y-6">
-                    {/* Summary cards */}
-                    <div className="bg-white rounded-lg border p-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
+                  <div className="space-y-4">
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: 'Total Users', value: companyUsers.length, color: 'bg-blue-500' },
+                        { label: 'Active', value: companyUsers.filter(u => !u.is_disable).length, color: 'bg-green-500' },
+                        { label: 'Disabled', value: companyUsers.filter(u => u.is_disable).length, color: 'bg-red-500' },
+                      ].map((stat) => (
+                        <div key={stat.label} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
+                          <div className={`h-10 w-10 rounded-xl ${stat.color} flex items-center justify-center`}>
                             <Users className="h-5 w-5 text-white" />
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-muted-foreground">Total Users</p>
-                            <p className="text-lg font-medium">{companyUsers.length}</p>
+                            <p className="text-xs text-muted-foreground">{stat.label}</p>
+                            <p className="text-xl font-bold">{stat.value}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
-                            <Users className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground">Active Users</p>
-                            <p className="text-lg font-medium">{companyUsers.filter(u => !u.is_disable).length}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
-                            <Users className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground">Disabled Users</p>
-                            <p className="text-lg font-medium">{companyUsers.filter(u => u.is_disable).length}</p>
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
 
                     {/* User List */}
                     {loadingUsers ? (
                       <div className="text-center py-8 text-muted-foreground">Loading users...</div>
                     ) : companyUsers.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {companyUsers.map((user) => (
-                          <div
-                            key={user.id}
-                            className="flex items-center justify-between p-3 border border-green-200 rounded-lg bg-white"
-                          >
-                            <div className="flex items-center gap-3 flex-1">
-                              <Avatar className="h-10 w-10 border-2 border-green-200">
+                          <div key={user.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-9 w-9">
                                 <AvatarImage src={user.avatar} />
-                                <AvatarFallback className="bg-green-100 text-green-700 text-sm">
+                                <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
                                   {getInitials(user.name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-normal text-sm">{user.name}</span>
+                              <span className="text-sm font-medium">{user.name}</span>
                             </div>
                             <Switch
                               checked={!user.is_disable}
@@ -857,17 +756,15 @@ export default function CompaniesPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>No users found for this company</p>
+                      <div className="text-center py-10 bg-gray-50 rounded-xl">
+                        <Users className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm text-muted-foreground">No users found for this company</p>
                       </div>
                     )}
                   </div>
                 )}
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setAdminHubDialogOpen(false)}>
-                    Close
-                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setAdminHubDialogOpen(false)} className="rounded-lg">Close</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -877,26 +774,25 @@ export default function CompaniesPage() {
               setResetPasswordDialogOpen(open)
               if (!open) { setSelectedCompany(null); setNewPassword('') }
             }}>
-              <DialogContent className="max-w-sm">
+              <DialogContent className="max-w-sm rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Reset Password</DialogTitle>
-                  <DialogDescription>
-                    Set a new password for {selectedCompany?.name}
-                  </DialogDescription>
+                  <DialogDescription>Set a new password for <strong>{selectedCompany?.name}</strong></DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 py-4">
-                  <Label htmlFor="new-password">New Password</Label>
+                  <Label htmlFor="new-password" className="text-sm font-medium">New Password</Label>
                   <Input
                     id="new-password"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password (min 6 chars)"
+                    className="bg-gray-50 border-0"
                   />
                 </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setResetPasswordDialogOpen(false)}>Cancel</Button>
-                  <Button variant="blue" onClick={handleResetPassword} disabled={saving}>
+                <DialogFooter className="gap-2">
+                  <Button type="button" variant="outline" onClick={() => setResetPasswordDialogOpen(false)} className="rounded-lg">Cancel</Button>
+                  <Button variant="blue" onClick={handleResetPassword} disabled={saving} className="rounded-lg">
                     {saving ? 'Resetting...' : 'Reset Password'}
                   </Button>
                 </DialogFooter>
@@ -905,22 +801,22 @@ export default function CompaniesPage() {
 
             {/* Delete/Restore Confirmation */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogContent>
+              <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle>
                     {companyToDelete?.delete_status === 0 ? 'Restore Company' : 'Deactivate Company'}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     {companyToDelete?.delete_status === 0
-                      ? `Are you sure you want to restore "${companyToDelete?.name}"? This will make the company active again.`
-                      : `Are you sure you want to deactivate "${companyToDelete?.name}"? The company will be soft deleted and can be restored later.`}
+                      ? `Restore "${companyToDelete?.name}"? This will make the company active again.`
+                      : `Deactivate "${companyToDelete?.name}"? The company will be soft deleted and can be restored later.`}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setCompanyToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel onClick={() => setCompanyToDelete(null)} className="rounded-lg">Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleConfirmDelete}
-                    className={companyToDelete?.delete_status === 0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}
+                    className={`rounded-lg ${companyToDelete?.delete_status === 0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}`}
                     disabled={saving}
                   >
                     {saving ? 'Processing...' : companyToDelete?.delete_status === 0 ? 'Restore' : 'Deactivate'}
@@ -928,6 +824,7 @@ export default function CompaniesPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
           </div>
         </MainContentWrapper>
       </SidebarInset>
