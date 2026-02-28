@@ -1933,3 +1933,18 @@ model Plan {
 
   @@map("plan")
 }
+
+/// Coupon/Discount code model for subscription plan discounts
+model Coupon {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  discount  Float    @default(0)  // Percentage discount (0-100)
+  limit     Int      @default(0)  // Max usage limit (0 = unlimited)
+  used      Int      @default(0)  // Times used
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("coupon")
+}
