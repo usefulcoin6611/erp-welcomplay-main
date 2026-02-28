@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Search, X, Eye, Loader2 } from 'lucide-react'
+import Link from 'next/link'
 import { POSPageLayout } from '@/components/pos-page-layout'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -36,8 +38,9 @@ function formatPrice(n: number) {
 }
 
 /**
- * POS Summary (reference-erp pos.report): list transaksi POS.
+ * POS Summary: list transaksi POS.
  * Data diambil dari API /api/pos/orders.
+ * Pagination mengikuti pola /pos/quotation (client-side filtering + SimplePagination).
  */
 export default function POSSummaryPage() {
   const [search, setSearch] = useState('')
@@ -45,32 +48,28 @@ export default function POSSummaryPage() {
   const [pageSize, setPageSize] = useState(10)
   const [orders, setOrders] = useState<PosOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({
-        page: String(currentPage),
-        limit: String(pageSize),
-      })
-      const res = await fetch(`/api/pos/orders?${params.toString()}`)
+      // Fetch all orders (large limit) for client-side filtering + pagination
+      const res = await fetch('/api/pos/orders?limit=500')
       const data = await res.json()
       if (data.success) {
         setOrders(data.data)
-        setTotalCount(data.meta?.total ?? data.data.length)
       }
     } catch {
       // silently fail
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize])
+  }, [])
 
   useEffect(() => {
     fetchOrders()
   }, [fetchOrders])
 
+  // Client-side filtering (same pattern as /pos/quotation)
   const filteredData = useMemo(() => {
     if (!search.trim()) return orders
     const q = search.trim().toLowerCase()
@@ -78,14 +77,15 @@ export default function POSSummaryPage() {
       (r) =>
         r.posId.toLowerCase().includes(q) ||
         r.customerName.toLowerCase().includes(q) ||
-        r.warehouseName.toLowerCase().includes(q)
+        (r.warehouseName ?? '').toLowerCase().includes(q)
     )
   }, [search, orders])
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value)
-    setCurrentPage(1)
-  }
+  // Client-side pagination (same pattern as /pos/quotation)
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredData.slice(start, start + pageSize)
+  }, [filteredData, currentPage, pageSize])
 
   return (
     <POSPageLayout
@@ -100,11 +100,11 @@ export default function POSSummaryPage() {
             <Input
               placeholder="Search POS..."
               value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
               className="pl-9 pr-9 h-9 bg-gray-50 hover:bg-gray-100 focus-visible:ring-0 border-0 focus-visible:border-0 shadow-none transition-colors"
             />
             {search.length > 0 && (
-              <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0" onClick={() => handleSearchChange('')}>
+              <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0" onClick={() => { setSearch(''); setCurrentPage(1) }}>
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -130,14 +130,14 @@ export default function POSSummaryPage() {
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                     </TableCell>
                   </TableRow>
-                ) : filteredData.length === 0 ? (
+                ) : paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-8 text-center text-muted-foreground text-sm">
                       No Data Found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData.map((row) => (
+                  paginatedData.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="px-4 py-3 text-sm font-medium">{row.posId}</TableCell>
                       <TableCell className="px-4 py-3 text-sm">{formatDate(row.createdAt)}</TableCell>
@@ -145,7 +145,12 @@ export default function POSSummaryPage() {
                       <TableCell className="px-4 py-3 text-sm">{row.warehouseName || '-'}</TableCell>
                       <TableCell className="px-4 py-3 text-sm text-right font-medium">{formatPrice(row.total)}</TableCell>
                       <TableCell className="px-4 py-3">
-                        <Button variant="outline" size="sm" className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100" asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                          asChild
+                        >
                           <Link href={`/pos/summary/${row.posId}`}>
                             <Eye className="h-4 w-4" />
                           </Link>
@@ -157,10 +162,11 @@ export default function POSSummaryPage() {
               </TableBody>
             </Table>
           </div>
-          {totalCount > 0 && (
+          {/* Pagination - same pattern as /pos/quotation */}
+          {filteredData.length > 0 && (
             <div className="px-4 py-3 border-t">
               <SimplePagination
-                totalCount={totalCount}
+                totalCount={filteredData.length}
                 currentPage={currentPage}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
