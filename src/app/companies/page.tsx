@@ -70,7 +70,7 @@ interface CompanyUser {
 const defaultFormData = {
   name: '',
   email: '',
-  plan: '',
+  plan: 'none',
   password: '',
   planExpireDate: '',
   isEnableLogin: true,
@@ -165,7 +165,7 @@ export default function CompaniesPage() {
           name: formData.name.trim(),
           email: formData.email.trim(),
           password: formData.password || null,
-          plan: formData.plan || null,
+          plan: (formData.plan && formData.plan !== 'none') ? formData.plan : null,
           planExpireDate: formData.planExpireDate || null,
           isEnableLogin: formData.isEnableLogin,
         }),
@@ -199,7 +199,7 @@ export default function CompaniesPage() {
           name: formData.name.trim(),
           email: formData.email.trim(),
           password: formData.password || null,
-          plan: formData.plan || null,
+          plan: (formData.plan && formData.plan !== 'none') ? formData.plan : null,
           planExpireDate: formData.planExpireDate || null,
           isEnableLogin: formData.isEnableLogin,
         }),
@@ -227,7 +227,7 @@ export default function CompaniesPage() {
     setFormData({
       name: company.name,
       email: company.email,
-      plan: company.plan || '',
+      plan: company.plan || 'none',
       password: '',
       planExpireDate: company.plan_expire_date || '',
       isEnableLogin: company.is_enable_login,
@@ -436,7 +436,7 @@ export default function CompaniesPage() {
               <SelectValue placeholder="Select Plan" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Plan</SelectItem>
+              <SelectItem value="none">No Plan</SelectItem>
               {availablePlans.map((p) => (
                 <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
               ))}
