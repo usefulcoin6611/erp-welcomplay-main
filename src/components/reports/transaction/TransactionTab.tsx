@@ -3,7 +3,7 @@
 import { memo } from 'react'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { FileText, Calendar, Wallet, Hash, DollarSign } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowLeftRight, Hash } from 'lucide-react'
 import { TransactionFilters } from './TransactionFilters'
 import { TransactionTable } from './TransactionTable'
 import { useTransactionData } from './hooks/useTransactionData'
@@ -32,7 +32,6 @@ function TransactionTabComponent() {
     
     // Data
     paginatedData,
-    accountSummary,
     
     // Handlers
     handleApplyFilters,
@@ -53,6 +52,19 @@ function TransactionTabComponent() {
     }).format(amount)
   }
 
+  // Calculate summary stats from paginated data (all transactions)
+  const totalIncome = paginatedData
+    .filter(t => t.category === 'Income' || t.type === 'Journal Entry')
+    .reduce((sum, t) => sum + (t.debit || 0), 0)
+  
+  const totalExpense = paginatedData
+    .filter(t => t.category === 'Expense')
+    .reduce((sum, t) => sum + (t.debit || 0), 0)
+
+  const totalTransfer = paginatedData
+    .filter(t => t.category === 'Transfer')
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+
   return (
     <div className="flex flex-col gap-3">
       {/* Filter Section */}
@@ -71,97 +83,68 @@ function TransactionTabComponent() {
         categoryOptions={categoryOptions}
       />
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Report Info Card */}
+      {/* Summary Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Total Records */}
         <Card className="shadow-none">
           <CardContent className="px-3 py-2 flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
-              <FileText className="w-5 h-5 text-blue-600" />
+              <Hash className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-muted-foreground">Report</p>
-              <p className="text-sm font-semibold">Transaction Summary</p>
+              <p className="text-xs text-muted-foreground">Total Transactions</p>
+              <p className="text-lg font-bold">{totalRecords}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Account Info Card */}
-        {selectedAccount !== 'All' && (
-          <Card className="shadow-none">
-            <CardContent className="px-3 py-2 flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
-                <Wallet className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">Account</p>
-                <p className="text-sm font-semibold">{selectedAccount}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Category Info Card */}
-        {selectedCategory !== 'All' && (
-          <Card className="shadow-none">
-            <CardContent className="px-3 py-2 flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100">
-                <Hash className="w-5 h-5 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">Category</p>
-                <p className="text-sm font-semibold">{selectedCategory}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Duration Card */}
+        {/* Total Income */}
         <Card className="shadow-none">
           <CardContent className="px-3 py-2 flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
-              <Calendar className="w-5 h-5 text-green-600" />
+              <TrendingUp className="w-5 h-5 text-green-600" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-muted-foreground">Duration</p>
-              <p className="text-sm font-semibold">{formatDateRange()}</p>
+              <p className="text-xs text-muted-foreground">Income</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(totalIncome)}</p>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Account Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {accountSummary.map((account) => (
-          <Card key={account.id} className="shadow-none">
-            <CardContent className="px-3 py-2 flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
-                <DollarSign className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">
-                  {account.type === 'cash' 
-                    ? account.holderName 
-                    : account.type === 'online'
-                    ? account.holderName
-                    : `${account.bankName} - ${account.holderName}`
-                  }
-                </p>
-                <p className={`text-lg font-bold ${account.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(account.total)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {/* Total Expense */}
+        <Card className="shadow-none">
+          <CardContent className="px-3 py-2 flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-100">
+              <TrendingDown className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Expense</p>
+              <p className="text-lg font-bold text-red-600">{formatCurrency(totalExpense)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Transfer */}
+        <Card className="shadow-none">
+          <CardContent className="px-3 py-2 flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100">
+              <ArrowLeftRight className="w-5 h-5 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Transfer</p>
+              <p className="text-lg font-bold text-purple-600">{formatCurrency(totalTransfer)}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content */}
       <Card>
         <div className="pt-4 pb-0">
           {/* Title */}
-          <div className="px-6 mb-3">
+          <div className="px-6 mb-3 flex items-center justify-between">
             <CardTitle className="text-base">Transaction List</CardTitle>
+            <span className="text-xs text-muted-foreground">{formatDateRange()}</span>
           </div>
         </div>
 
