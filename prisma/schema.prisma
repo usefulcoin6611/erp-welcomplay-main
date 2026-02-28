@@ -17,6 +17,10 @@ model User {
   branchId         String?
   departmentId     String?
   accessProfileId  String?
+  plan             String?     // Subscription plan name (for company role)
+  planExpireDate   DateTime?   // Plan expiry date
+  isActive         Boolean     @default(true)
+  isEnableLogin    Boolean     @default(true)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   accounts         Account[]
