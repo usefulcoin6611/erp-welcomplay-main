@@ -98,17 +98,17 @@ function getPlanCardStyle(name: string) {
   }
   if (n.includes('silver')) {
     return {
-      card: 'bg-gradient-to-b from-slate-50 to-white',
-      price: 'text-slate-600',
-      badge: 'bg-slate-100 text-slate-700',
-      limitsBg: 'bg-slate-100/80',
+      card: 'bg-gradient-to-b from-blue-50/80 to-white',
+      price: 'text-blue-600',
+      badge: 'bg-blue-100 text-blue-700',
+      limitsBg: 'bg-blue-50/60',
     }
   }
   return {
-    card: 'bg-gradient-to-b from-blue-50/80 to-white',
-    price: 'text-blue-600',
-    badge: 'bg-blue-100 text-blue-700',
-    limitsBg: 'bg-blue-50/60',
+    card: 'bg-gradient-to-b from-zinc-50 to-white',
+    price: 'text-zinc-600',
+    badge: 'bg-zinc-100 text-zinc-700',
+    limitsBg: 'bg-zinc-100/80',
   }
 }
 
@@ -501,11 +501,9 @@ export default function PlansPage() {
                           <div className={`text-3xl font-bold ${style.price}`}>
                             {formatPrice(plan.price)}
                           </div>
-                          {plan.price > 0 && (
-                            <div className="text-sm text-slate-500 mt-1 font-medium">
-                              {getDurationLabel(plan.duration)}
-                            </div>
-                          )}
+                          <div className="text-sm text-slate-500 mt-1 font-medium">
+                            {plan.price === 0 ? 'See what we can do' : getDurationLabel(plan.duration)}
+                          </div>
                           {plan.trial_days > 0 && (
                             <div className="text-xs font-semibold text-slate-600 mt-2">
                               {plan.trial_days} days trial

@@ -14,11 +14,21 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const employeeId = searchParams.get("employeeId");
+    const employeeIdParam = searchParams.get("employeeId");
     const status = searchParams.get("status");
 
     const whereClause: any = {};
-    if (employeeId) whereClause.employeeId = employeeId;
+    const isEmployee = (session.user as { role?: string })?.role === "employee";
+    if (isEmployee) {
+      const myEmployee = await prisma.employee.findFirst({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (myEmployee) whereClause.employeeId = myEmployee.id;
+      else whereClause.employeeId = "none"; // no record, return empty
+    } else {
+      if (employeeIdParam) whereClause.employeeId = employeeIdParam;
+    }
     if (status) whereClause.status = status;
 
     const leaves = await prisma.leaveRequest.findMany({
@@ -51,11 +61,35 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { employeeId, leaveTypeId, startDate, endDate, reason } = body;
+    const { employeeId: bodyEmployeeId, leaveTypeId, startDate, endDate, reason } = body;
 
-    if (!employeeId || !leaveTypeId || !startDate || !endDate) {
+    const isEmployee = (session.user as { role?: string })?.role === "employee";
+
+    let employeeId: string;
+    if (isEmployee) {
+      const myEmployee = await prisma.employee.findFirst({
+        where: { userId: session.user.id },
+      });
+      if (!myEmployee) {
+        return NextResponse.json(
+          { success: false, message: "Employee record not linked. Please contact HR." },
+          { status: 400 }
+        );
+      }
+      employeeId = myEmployee.id;
+    } else {
+      if (!bodyEmployeeId) {
+        return NextResponse.json(
+          { success: false, message: "Employee, leave type, start date, and end date are required" },
+          { status: 400 }
+        );
+      }
+      employeeId = String(bodyEmployeeId);
+    }
+
+    if (!leaveTypeId || !startDate || !endDate) {
       return NextResponse.json(
-        { success: false, message: "Employee, leave type, start date, dan end date wajib diisi" },
+        { success: false, message: "Leave type, start date, and end date are required" },
         { status: 400 }
       );
     }
@@ -65,22 +99,22 @@ export async function POST(request: NextRequest) {
 
     if (isNaN(sd.getTime()) || isNaN(ed.getTime())) {
       return NextResponse.json(
-        { success: false, message: "Tanggal mulai/akhir tidak valid" },
+        { success: false, message: "Invalid start or end date" },
         { status: 400 }
       );
     }
 
     if (ed < sd) {
       return NextResponse.json(
-        { success: false, message: "End date harus sesudah start date" },
+        { success: false, message: "End date must be after start date" },
         { status: 400 }
       );
     }
 
-    const employee = await prisma.employee.findUnique({ where: { id: String(employeeId) } });
+    const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) {
       return NextResponse.json(
-        { success: false, message: "Employee tidak ditemukan" },
+        { success: false, message: "Employee not found" },
         { status: 400 }
       );
     }

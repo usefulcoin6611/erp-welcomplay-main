@@ -121,6 +121,7 @@ model Branch {
   accessProfiles  AccessProfile[]
   users           User[]
   vendors         Vendor[]
+  sources         Source[]
 
   @@map("branch")
 }
@@ -1567,6 +1568,19 @@ model DealStage {
   pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
 
   @@map("deal_stage")
+}
+
+/// CRM source: lead/deal origin (e.g. Website, Referral). Scoped by branch.
+model Source {
+  id        String   @id @default(cuid())
+  name      String
+  branchId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@map("source")
+  @@index([branchId])
 }
 
 model Lead {

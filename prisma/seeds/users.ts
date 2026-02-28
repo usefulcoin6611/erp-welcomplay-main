@@ -32,6 +32,9 @@ export async function seedUsers(prisma: any) {
   const branchPusatJakarta = await prisma.branch.findFirst({ where: { name: "Pusat Jakarta" } });
   const defaultBranch = branchPusatJakarta ?? (await prisma.branch.findFirst());
 
+  const goldPlanExpire = new Date();
+  goldPlanExpire.setFullYear(goldPlanExpire.getFullYear() + 1);
+
   for (const user of users) {
     const branch =
       user.role === "company"
@@ -41,6 +44,11 @@ export async function seedUsers(prisma: any) {
           : await prisma.branch.findFirst();
     const hashedPassword = await bcrypt.hash(user.password, 10);
 
+    const isCompanyTest = user.email === "company@example.com";
+    const planFields = isCompanyTest
+      ? { plan: "Gold" as const, planExpireDate: goldPlanExpire }
+      : {};
+
     const dbUser = await prisma.user.upsert({
       where: { email: user.email },
       update: {
@@ -49,6 +57,7 @@ export async function seedUsers(prisma: any) {
         password: hashedPassword,
         emailVerified: true,
         branchId: branch?.id ?? null,
+        ...planFields,
       },
       create: {
         email: user.email,
@@ -57,6 +66,7 @@ export async function seedUsers(prisma: any) {
         password: hashedPassword,
         emailVerified: true,
         branchId: branch?.id ?? null,
+        ...planFields,
       },
     });
 

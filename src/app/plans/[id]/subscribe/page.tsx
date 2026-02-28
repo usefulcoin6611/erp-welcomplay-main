@@ -20,9 +20,9 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
-import { ArrowLeft, Check, Search, Monitor, Briefcase, Calendar, FileText, Target, Users, Database, CreditCard, Building2 } from 'lucide-react'
+import { ArrowLeft, Check, Search, Monitor, Briefcase, Target, Users, CreditCard, Building2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
-import { PLAN_DATA } from '@/lib/plan-data'
+import { toast } from 'sonner'
 
 interface Plan {
   id: string
@@ -32,7 +32,7 @@ interface Plan {
   trial_days: number
   max_users: number
   max_customers: number
-  max_vendors: number
+  max_venders: number
   max_clients: number
   storage_limit: number
   account: boolean
@@ -41,114 +41,21 @@ interface Plan {
   project: boolean
   pos: boolean
   chatgpt: boolean
-  is_active: boolean
   is_disable: boolean
 }
 
-interface Feature {
-  id: string
+// Plan module keys and their display config (synced with plan flags from API)
+const PLAN_FEATURE_CONFIG: {
+  key: keyof Pick<Plan, 'account' | 'crm' | 'hrm' | 'project' | 'pos' | 'chatgpt'>
   name: string
   icon: React.ReactNode
-}
-
-// Mock plans data
-const mockPlans: Plan[] = [
-  {
-    id: '1',
-    name: 'Free Plan',
-    price: 0,
-    duration: 'monthly',
-    trial_days: 0,
-    max_users: 5,
-    max_customers: 10,
-    max_vendors: 5,
-    max_clients: 5,
-    storage_limit: 100,
-    account: true,
-    crm: false,
-    hrm: false,
-    project: false,
-    pos: false,
-    chatgpt: false,
-    is_active: false,
-    is_disable: false,
-  },
-  {
-    id: '2',
-    name: 'Gold',
-    price: 49,
-    duration: 'monthly',
-    trial_days: 7,
-    max_users: 20,
-    max_customers: 50,
-    max_vendors: 20,
-    max_clients: 20,
-    storage_limit: 500,
-    account: true,
-    crm: true,
-    hrm: false,
-    project: true,
-    pos: false,
-    chatgpt: false,
-    is_active: false,
-    is_disable: false,
-  },
-  {
-    id: '3',
-    name: 'Silver',
-    price: 99,
-    duration: 'monthly',
-    trial_days: 14,
-    max_users: 50,
-    max_customers: 100,
-    max_vendors: 50,
-    max_clients: 50,
-    storage_limit: 1000,
-    account: true,
-    crm: true,
-    hrm: true,
-    project: true,
-    pos: true,
-    chatgpt: false,
-    is_active: true,
-    is_disable: false,
-  },
-  {
-    id: '4',
-    name: 'Platinum',
-    price: 199,
-    duration: 'monthly',
-    trial_days: 30,
-    max_users: -1,
-    max_customers: -1,
-    max_vendors: -1,
-    max_clients: -1,
-    storage_limit: -1,
-    account: true,
-    crm: true,
-    hrm: true,
-    project: true,
-    pos: true,
-    chatgpt: true,
-    is_active: false,
-    is_disable: false,
-  },
-]
-
-// Mock features data
-const allFeatures: Feature[] = [
-  { id: '1', name: 'AI Assistant', icon: <Monitor className="h-5 w-5" /> },
-  { id: '2', name: 'Accounting', icon: <Briefcase className="h-5 w-5" /> },
-  { id: '3', name: 'Budget Planner', icon: <Target className="h-5 w-5" /> },
-  { id: '4', name: 'Calendar', icon: <Calendar className="h-5 w-5" /> },
-  { id: '5', name: 'Contract', icon: <FileText className="h-5 w-5" /> },
-  { id: '6', name: 'Double Entry', icon: <FileText className="h-5 w-5" /> },
-  { id: '7', name: 'Form Builder', icon: <FileText className="h-5 w-5" /> },
-  { id: '8', name: 'Financial Goal', icon: <Target className="h-5 w-5" /> },
-  { id: '9', name: 'HRM', icon: <Users className="h-5 w-5" /> },
-  { id: '10', name: 'CRM', icon: <Briefcase className="h-5 w-5" /> },
-  { id: '11', name: 'Project', icon: <FileText className="h-5 w-5" /> },
-  { id: '12', name: 'POS', icon: <CreditCard className="h-5 w-5" /> },
+}[] = [
+  { key: 'account', name: 'Account', icon: <Building2 className="h-5 w-5" /> },
+  { key: 'crm', name: 'CRM', icon: <Briefcase className="h-5 w-5" /> },
+  { key: 'hrm', name: 'HRM', icon: <Users className="h-5 w-5" /> },
+  { key: 'project', name: 'Project', icon: <Target className="h-5 w-5" /> },
+  { key: 'pos', name: 'POS', icon: <CreditCard className="h-5 w-5" /> },
+  { key: 'chatgpt', name: 'ChatGPT', icon: <Monitor className="h-5 w-5" /> },
 ]
 
 interface SubscribePageProps {
@@ -160,19 +67,63 @@ export default function SubscribePage({ params }: SubscribePageProps) {
   const { user } = useAuth()
   const [planId, setPlanId] = React.useState<string | null>(null)
   const [plan, setPlan] = React.useState<Plan | null>(null)
+  const [planLoading, setPlanLoading] = React.useState(true)
   const [couponCode, setCouponCode] = React.useState<string>('')
+  const [appliedCoupon, setAppliedCoupon] = React.useState<{ code: string; discount: number; name: string } | null>(null)
+  const [couponError, setCouponError] = React.useState<string | null>(null)
+  const [applyLoading, setApplyLoading] = React.useState(false)
+  const [submitLoading, setSubmitLoading] = React.useState(false)
   const [paymentMethod, setPaymentMethod] = React.useState<string>('bank-transfer')
   const [featureSearch, setFeatureSearch] = React.useState<string>('')
 
   React.useEffect(() => {
-    async function loadParams() {
-      const resolvedParams = await params
-      const id = resolvedParams.id
-      setPlanId(id)
-      const foundPlan = mockPlans.find((p) => p.id === id)
-      setPlan(foundPlan || null)
+    let cancelled = false
+
+    async function loadPlan() {
+      setPlanLoading(true)
+      try {
+        const resolvedParams = await params
+        const id = resolvedParams.id
+        setPlanId(id)
+
+        const res = await fetch(`/api/plans/${id}`, { cache: 'no-store' })
+        const json = await res.json()
+
+        if (cancelled) return
+
+        if (json.success && json.data) {
+          const p = json.data
+          setPlan({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            duration: p.duration,
+            trial_days: p.trial_days,
+            max_users: p.max_users,
+            max_customers: p.max_customers,
+            max_venders: p.max_venders,
+            max_clients: p.max_clients,
+            storage_limit: p.storage_limit,
+            account: p.account,
+            crm: p.crm,
+            hrm: p.hrm,
+            project: p.project,
+            pos: p.pos,
+            chatgpt: p.chatgpt,
+            is_disable: p.is_disable,
+          })
+        } else {
+          setPlan(null)
+        }
+      } catch {
+        if (!cancelled) setPlan(null)
+      } finally {
+        if (!cancelled) setPlanLoading(false)
+      }
     }
-    loadParams()
+
+    loadPlan()
+    return () => { cancelled = true }
   }, [params])
 
   const formatPriceIdr = (price: number) => {
@@ -195,24 +146,80 @@ export default function SubscribePage({ params }: SubscribePageProps) {
     return `${users} users`
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleApplyCoupon = async () => {
+    const code = couponCode.trim().toUpperCase()
+    if (!code) {
+      setCouponError('Enter a coupon code')
+      return
+    }
+    setCouponError(null)
+    setApplyLoading(true)
+    try {
+      const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(code)}`, { cache: 'no-store' })
+      const json = await res.json()
+      if (!json.success) {
+        setCouponError(json.message || 'Failed to validate coupon')
+        setAppliedCoupon(null)
+        return
+      }
+      if (!json.valid) {
+        setCouponError(json.message || 'Invalid coupon')
+        setAppliedCoupon(null)
+        return
+      }
+      setAppliedCoupon({ code: json.code, discount: json.discount, name: json.name || code })
+      toast.success(json.message || 'Coupon applied')
+    } catch {
+      setCouponError('Failed to validate coupon')
+      setAppliedCoupon(null)
+    } finally {
+      setApplyLoading(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponError(null)
+    setCouponCode('')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle subscription submission
-    console.log('Subscribing to plan:', planId, {
-      paymentMethod,
-      couponCode,
-    })
-    // Redirect to success page or back to subscription plan
-    router.push('/settings?tab=subscription-plan')
+    if (!plan || !planId) return
+    setSubmitLoading(true)
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          paymentMethod: paymentMethod === 'bank-transfer' ? 'Bank Transfer' : paymentMethod === 'stripe' ? 'STRIPE' : paymentMethod === 'paypal' ? 'PayPal' : paymentMethod,
+          couponCode: appliedCoupon?.code || '',
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.message || 'Failed to create subscription')
+        return
+      }
+      toast.success(json.message || 'Subscription order created')
+      router.push('/settings?tab=subscription-plan')
+    } catch {
+      toast.error('Failed to create subscription')
+    } finally {
+      setSubmitLoading(false)
+    }
   }
 
-  const handleApplyCoupon = () => {
-    // Handle coupon application
-    console.log('Applying coupon:', couponCode)
-  }
-
-  const filteredFeatures = allFeatures.filter((feature) =>
-    feature.name.toLowerCase().includes(featureSearch.toLowerCase())
+  // All plan features with enabled flag (show all; disabled look for not-included)
+  const allFeaturesWithStatus = plan
+    ? PLAN_FEATURE_CONFIG.map((config) => ({
+        ...config,
+        enabled: plan[config.key],
+      }))
+    : []
+  const filteredFeatures = allFeaturesWithStatus.filter((f) =>
+    f.name.toLowerCase().includes(featureSearch.toLowerCase())
   )
 
   // Calculate plan expire date (30 days from now for trial, or 1 year for regular)
@@ -225,6 +232,36 @@ export default function SubscribePage({ params }: SubscribePageProps) {
           .toISOString()
           .split('T')[0]
     : ''
+
+  if (planLoading) {
+    return (
+      <SidebarProvider
+        style={
+          {
+            '--sidebar-width': 'calc(var(--spacing) * 72)',
+            '--header-height': 'calc(var(--spacing) * 12)',
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <MainContentWrapper>
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center gap-3 text-muted-foreground">
+                    <div className="h-5 w-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    <p>Loading plan...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </MainContentWrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
 
   if (!plan) {
     return (
@@ -258,8 +295,11 @@ export default function SubscribePage({ params }: SubscribePageProps) {
     )
   }
 
-  const planPriceIdr = PLAN_DATA.find((p) => p.name === plan.name)?.price ?? plan.price
-  const totalPrice = Math.round(planPriceIdr * 1.1) // Include 10% tax (Pajak 10%)
+  const planPriceIdr = plan.price
+  const discountPercent = appliedCoupon?.discount ?? 0
+  const discountAmount = Math.round(planPriceIdr * (discountPercent / 100))
+  const priceAfterDiscount = Math.max(0, planPriceIdr - discountAmount)
+  const totalPrice = Math.round(priceAfterDiscount * 1.1) // Include 10% tax (Pajak 10%)
 
   return (
     <SidebarProvider
@@ -349,19 +389,39 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                         </Button>
                       </div>
 
-                      {/* Features Grid */}
+                      {/* Features Grid - all modules; disabled look for not-included */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto">
-                        {filteredFeatures.map((feature) => (
-                          <div
-                            key={feature.id}
-                            className="flex flex-col items-center gap-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                          >
-                            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600">
-                              {feature.icon}
+                        {filteredFeatures.map((feature) => {
+                          const enabled = feature.enabled
+                          return (
+                            <div
+                              key={feature.key}
+                              className={`flex flex-col items-center gap-2 p-3 border rounded-lg transition-colors ${
+                                enabled
+                                  ? 'hover:bg-muted/50 cursor-pointer border-border'
+                                  : 'opacity-60 cursor-not-allowed border-border/50 bg-muted/30'
+                              }`}
+                            >
+                              <div
+                                className={`flex items-center justify-center w-10 h-10 rounded-lg ${
+                                  enabled ? 'bg-blue-100 text-blue-600' : 'bg-muted text-muted-foreground'
+                                }`}
+                              >
+                                {feature.icon}
+                              </div>
+                              <span
+                                className={`text-xs text-center font-medium ${
+                                  enabled ? 'text-foreground' : 'text-muted-foreground'
+                                }`}
+                              >
+                                {feature.name}
+                              </span>
+                              {!enabled && (
+                                <span className="text-[10px] text-muted-foreground">Not included</span>
+                              )}
                             </div>
-                            <span className="text-xs text-center font-medium">{feature.name}</span>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   </CardContent>
@@ -392,23 +452,75 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                       {/* Coupon Code */}
                       <div className="space-y-3">
                         <Label htmlFor="coupon-code">Coupon Code</Label>
-                        <div className="flex gap-3">
-                          <Input
-                            id="coupon-code"
-                            placeholder="Enter coupon code"
-                            value={couponCode}
-                            onChange={(e) => setCouponCode(e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="shadow-none"
-                            onClick={handleApplyCoupon}
-                          >
-                            Apply
-                          </Button>
-                        </div>
+                        {appliedCoupon ? (
+                          <div className="flex items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <Check className="h-4 w-4 text-green-600" />
+                              <span className="text-sm font-medium text-green-800">
+                                {appliedCoupon.name} ({appliedCoupon.code}) – {appliedCoupon.discount}% off
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-green-700 hover:bg-green-100"
+                              onClick={handleRemoveCoupon}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-3">
+                            <Input
+                              id="coupon-code"
+                              placeholder="Enter coupon code"
+                              value={couponCode}
+                              onChange={(e) => {
+                                setCouponCode(e.target.value)
+                                setCouponError(null)
+                              }}
+                              className={couponError ? 'border-destructive' : ''}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="shadow-none"
+                              onClick={handleApplyCoupon}
+                              disabled={applyLoading}
+                            >
+                              {applyLoading ? 'Checking...' : 'Apply'}
+                            </Button>
+                          </div>
+                        )}
+                        {couponError && (
+                          <p className="text-xs text-destructive">{couponError}</p>
+                        )}
                       </div>
+
+                      {/* Price summary */}
+                      {planPriceIdr > 0 && (
+                        <div className="space-y-2 rounded-lg border bg-muted/30 px-4 py-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Subtotal</span>
+                            <span>{formatPriceIdr(planPriceIdr)}</span>
+                          </div>
+                          {discountPercent > 0 && (
+                            <div className="flex justify-between text-sm text-green-600">
+                              <span>Discount ({appliedCoupon?.code})</span>
+                              <span>-{formatPriceIdr(discountAmount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Tax (10%)</span>
+                            <span>{formatPriceIdr(Math.round(priceAfterDiscount * 0.1))}</span>
+                          </div>
+                          <div className="flex justify-between border-t pt-2 font-semibold">
+                            <span>Total</span>
+                            <span>{formatPriceIdr(totalPrice)}</span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Plan Summary */}
                       <div className="space-y-4">
@@ -479,9 +591,10 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                       {/* Subscribe Button */}
                       <Button
                         type="submit"
+                        disabled={submitLoading}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-none h-12 text-base font-semibold mt-2"
                       >
-                        Subscribe to Plan - {planPriceIdr === 0 ? 'Gratis' : formatPriceIdr(totalPrice)}
+                        {submitLoading ? 'Processing...' : `Subscribe to Plan - ${totalPrice === 0 ? 'Gratis' : formatPriceIdr(totalPrice)}`}
                       </Button>
                     </form>
                   </CardContent>

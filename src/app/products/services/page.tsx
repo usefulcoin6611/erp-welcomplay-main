@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/auth-context'
 import { toast } from 'sonner'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -73,7 +74,21 @@ function formatRupiah(amount: number): string {
   }).format(amount)
 }
 
+const canModifyProduct = (permissions: string[] | null | undefined) => {
+  if (!Array.isArray(permissions)) return true
+  const set = new Set(permissions.map((p) => p.toLowerCase()))
+  return (
+    set.has('manage product & service') ||
+    set.has('create product & service') ||
+    set.has('edit product & service') ||
+    set.has('delete product & service')
+  )
+}
+
 export default function ProductServicesPage() {
+  const { user } = useAuth()
+  const canModify = canModifyProduct(user?.permissions)
+
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories')
   const [search, setSearch] = useState('')
@@ -596,12 +611,14 @@ export default function ProductServicesPage() {
                   Export Product & Services
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="blue" className="shadow-none h-7 px-4" title="Create">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Product & Service
-                    </Button>
-                  </DialogTrigger>
+                  {canModify && (
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="blue" className="shadow-none h-7 px-4" title="Create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Product & Service
+                      </Button>
+                    </DialogTrigger>
+                  )}
                   <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{editingId ? 'Edit Product & Service' : 'Create New Product & Service'}</DialogTitle>
@@ -778,7 +795,7 @@ export default function ProductServicesPage() {
                           </Select>
                           <p className="text-xs text-muted-foreground">
                             Create tax here.{' '}
-                            <Link href="/accounting/setup/taxes" className="text-primary underline">
+                            <Link href="/accounting/setup?tab=taxes" className="text-primary underline">
                               Create tax
                             </Link>
                           </p>
@@ -805,7 +822,7 @@ export default function ProductServicesPage() {
                           </Select>
                           <p className="text-xs text-muted-foreground">
                             Create category here.{' '}
-                            <Link href="/accounting/setup/custom-field?tab=category" className="text-primary underline">
+                            <Link href="/accounting/setup?tab=category" className="text-primary underline">
                               Create Category
                             </Link>
                           </p>
@@ -832,7 +849,7 @@ export default function ProductServicesPage() {
                           </Select>
                           <p className="text-xs text-muted-foreground">
                             Create unit here.{' '}
-                            <Link href="/accounting/setup/unit" className="text-primary underline">
+                            <Link href="/accounting/setup?tab=unit" className="text-primary underline">
                               Create unit
                             </Link>
                           </p>
@@ -1079,24 +1096,28 @@ export default function ProductServicesPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
-                                  title="Edit"
-                                  onClick={() => handleOpenEdit(item)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                  title="Delete"
-                                  onClick={() => handleDelete(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {canModify && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                                      title="Edit"
+                                      onClick={() => handleOpenEdit(item)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                      title="Delete"
+                                      onClick={() => handleDelete(item.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>

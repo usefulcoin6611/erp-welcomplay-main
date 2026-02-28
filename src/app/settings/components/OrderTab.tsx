@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
@@ -16,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
-import { PLAN_DATA } from '@/lib/plan-data'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Order {
   id: string
@@ -24,118 +23,82 @@ interface Order {
   name: string
   plan_name: string
   price: number
-  status: 'success' | 'Pending' | 'failed' | 'succeeded' | 'Approved'
+  status: string
   payment_type: string
   date: string
   coupon?: string
   receipt?: string
+  is_refund?: number
 }
-
-const planPriceByName = (planName: string) =>
-  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
-
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    order_id: 'ORD-001',
-    name: 'PT Maju Jaya',
-    plan_name: 'Gold',
-    price: planPriceByName('Gold'),
-    status: 'success',
-    payment_type: 'STRIPE',
-    date: '2024-01-15',
-    coupon: 'SUMMER10',
-    receipt: 'https://example.com/receipt.pdf',
-  },
-  {
-    id: '2',
-    order_id: 'ORD-002',
-    name: 'CV Kreatif Digital',
-    plan_name: 'Silver',
-    price: planPriceByName('Silver'),
-    status: 'Pending',
-    payment_type: 'Bank Transfer',
-    date: '2024-01-16',
-    receipt: 'receipt.pdf',
-  },
-  {
-    id: '3',
-    order_id: 'ORD-003',
-    name: 'PT Teknologi',
-    plan_name: 'Platinum',
-    price: planPriceByName('Platinum'),
-    status: 'succeeded',
-    payment_type: 'PayPal',
-    date: '2024-01-17',
-  },
-  {
-    id: '4',
-    order_id: 'ORD-004',
-    name: 'PT Maju Bersama',
-    plan_name: 'Free Plan',
-    price: 0,
-    status: 'success',
-    payment_type: 'Manually',
-    date: '2024-01-18',
-  },
-  {
-    id: '5',
-    order_id: 'ORD-005',
-    name: 'CV Digital Indonesia',
-    plan_name: 'Gold',
-    price: planPriceByName('Gold'),
-    status: 'Pending',
-    payment_type: 'Bank Transfer',
-    date: '2024-01-19',
-  },
-]
 
 const getStatusColor = (status: string) => {
   if (status === 'success' || status === 'succeeded' || status === 'Approved') {
     return 'bg-green-100 text-green-700'
-  } else if (status === 'Pending') {
-    return 'bg-yellow-100 text-yellow-700'
-  } else {
-    return 'bg-red-100 text-red-700'
   }
+  if (status === 'Pending') {
+    return 'bg-yellow-100 text-yellow-700'
+  }
+  return 'bg-red-100 text-red-700'
 }
 
 const getStatusLabel = (status: string) => {
-  if (status === 'succeeded') {
-    return 'Success'
-  }
+  if (status === 'succeeded') return 'Success'
   return status
 }
 
 export function OrderTab() {
-  const [orders] = useState<Order[]>(mockOrders)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  // Filtered data
-  const filteredData = useMemo(() => {
-    if (!search.trim()) return orders
+  const fetchHistory = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      params.set('page', String(currentPage))
+      params.set('pageSize', String(pageSize))
+      if (search.trim()) params.set('search', search.trim())
+      const res = await fetch(`/api/settings/subscription-history?${params.toString()}`, { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        setError(json.message ?? 'Failed to load subscription history')
+        setOrders([])
+        setTotalRecords(0)
+        return
+      }
+      setOrders(Array.isArray(json.data?.orders) ? json.data.orders : [])
+      setTotalRecords(Number(json.data?.totalRecords) ?? 0)
+    } catch {
+      setError('Failed to load subscription history')
+      setOrders([])
+      setTotalRecords(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [currentPage, pageSize, search])
 
-    const q = search.trim().toLowerCase()
-    return orders.filter(
-      (order) =>
-        order.order_id.toLowerCase().includes(q) ||
-        order.name.toLowerCase().includes(q) ||
-        order.plan_name.toLowerCase().includes(q)
-    )
-  }, [orders, search])
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
 
-  // Paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize
-    const endIndex = startIndex + pageSize
-    return filteredData.slice(startIndex, endIndex)
-  }, [filteredData, currentPage, pageSize])
+  // Debounced search: apply search term after user stops typing
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput)
+      setCurrentPage(1)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -154,118 +117,124 @@ export function OrderTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Orders</CardTitle>
+        <CardTitle>Subscription History</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Manage subscription orders and payments
+          View your subscription and payment history
         </p>
       </CardHeader>
       <CardContent>
-        {/* Search */}
         <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by Order ID, Name, or Plan..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setCurrentPage(1)
-              }}
+              placeholder="Search by Order ID, Plan, or Payment type..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-9 border-0 focus-visible:border-0 focus-visible:ring-0 bg-gray-50 hover:bg-gray-100 shadow-none"
             />
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Plan Name</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Coupon</TableHead>
-                <TableHead>Invoice</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No orders found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedData.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-mono text-sm">{order.order_id}</TableCell>
-                    <TableCell>{order.name}</TableCell>
-                    <TableCell>
-                      <Badge className={getPlanBadgeColors(order.plan_name)}>
-                        {order.plan_name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatPrice(order.price)}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(order.status)}>
-                        {getStatusLabel(order.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{order.payment_type}</TableCell>
-                    <TableCell>{formatDate(order.date)}</TableCell>
-                    <TableCell className="text-center">{order.coupon || '-'}</TableCell>
-                    <TableCell>
-                      {order.receipt ? (
-                        order.payment_type === 'Manually' ? (
-                          <p className="text-xs text-muted-foreground">
-                            Manually plan upgraded by Super Admin
-                          </p>
-                        ) : order.receipt === 'free coupon' ? (
-                          <p className="text-xs text-muted-foreground">
-                            Used 100% discount coupon code.
-                          </p>
-                        ) : (
-                          <a
-                            href={order.receipt}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline flex items-center gap-1 text-sm"
-                          >
-                            <FileText className="h-4 w-4" /> Receipt
-                          </a>
-                        )
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        {filteredData.length > 0 && (
-          <div className="mt-4">
-            <SimplePagination
-              currentPage={currentPage}
-              totalCount={filteredData.length}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              onPageSizeChange={(size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              }}
-            />
+        {error && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 px-4 py-3 text-sm text-muted-foreground mb-4">
+            {error}
           </div>
+        )}
+
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Payment Type</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Coupon</TableHead>
+                    <TableHead>Receipt</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        No subscription history found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    orders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono text-sm">{order.order_id}</TableCell>
+                        <TableCell>
+                          <Badge className={getPlanBadgeColors(order.plan_name)}>
+                            {order.plan_name}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatPrice(order.price)}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(order.status)}>
+                            {getStatusLabel(order.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.payment_type}</TableCell>
+                        <TableCell>{formatDate(order.date)}</TableCell>
+                        <TableCell className="text-center">{order.coupon ?? '-'}</TableCell>
+                        <TableCell>
+                          {order.receipt ? (
+                            order.payment_type === 'Manually' ? (
+                              <p className="text-xs text-muted-foreground">
+                                Manually plan upgraded by Super Admin
+                              </p>
+                            ) : order.receipt === 'free coupon' || order.receipt.toLowerCase().includes('free') ? (
+                              <p className="text-xs text-muted-foreground">
+                                Used 100% discount coupon code.
+                              </p>
+                            ) : (
+                              <a
+                                href={order.receipt}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline flex items-center gap-1 text-sm"
+                              >
+                                <FileText className="h-4 w-4" /> Receipt
+                              </a>
+                            )
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {totalRecords > 0 && (
+              <div className="mt-4">
+                <SimplePagination
+                  currentPage={currentPage}
+                  totalCount={totalRecords}
+                  onPageChange={setCurrentPage}
+                  pageSize={pageSize}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size)
+                    setCurrentPage(1)
+                  }}
+                />
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
   )
 }
-

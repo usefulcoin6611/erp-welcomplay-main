@@ -128,6 +128,36 @@ function getStageBadge(stage: string) {
   }
 }
 
+function getStageHeaderColor(stage: string) {
+  switch (stage) {
+    case 'Proposal Sent':
+      return 'bg-blue-100 text-blue-700 border-blue-200'
+    case 'Negotiation':
+      return 'bg-amber-100 text-amber-700 border-amber-200'
+    case 'Won':
+      return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+    case 'Lost':
+      return 'bg-red-100 text-red-700 border-red-200'
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200'
+  }
+}
+
+function getStageAccentColor(stage: string) {
+  switch (stage) {
+    case 'Proposal Sent':
+      return 'bg-blue-500'
+    case 'Negotiation':
+      return 'bg-amber-500'
+    case 'Won':
+      return 'bg-emerald-500'
+    case 'Lost':
+      return 'bg-red-500'
+    default:
+      return 'bg-gray-400'
+  }
+}
+
 function getLabelBadge(color: string) {
   switch (color) {
     case 'blue':
@@ -458,76 +488,95 @@ export default function DealsPage() {
 
             {/* Content */}
             {viewMode === 'kanban' ? (
-              <div className="flex-1 overflow-x-auto">
-                <div className="flex gap-4 min-w-max pb-4">
+              <div className="overflow-x-auto">
+                <div className="flex gap-3 min-w-max pb-4">
                   {stageOrder.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground w-full">
-                          Belum ada deal atau stage pada pipeline ini.
-                      </div>
-                  ) : (
-                  dealsByStage && Object.entries(dealsByStage).map(([stage, items]) => (
-                    <div key={stage} className="w-72 flex-shrink-0 flex flex-col gap-3">
-                      <div className="flex items-center justify-between px-1">
-                        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
-                          {stage}
-                        </h3>
-                        <Badge variant="secondary" className="rounded-full px-2">
-                          {items.length}
-                        </Badge>
-                      </div>
-                      {items.map((deal) => (
-                        <Card key={deal.id} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                          <CardContent className="p-3 space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="space-y-1">
-                                <Link href={`/deals/${deal.id}`} className="font-medium hover:underline block truncate">
-                                  {deal.name}
-                                </Link>
-                                <p className="text-xs text-muted-foreground truncate">{deal.client}</p>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 -mr-2">
-                                    <IconDotsVertical className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            <div className="space-y-2 pt-2 border-t">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium">Rp {deal.price.toLocaleString('id-ID')}</span>
-                                <span className="text-muted-foreground">{formatDate(deal.createdAt)}</span>
-                              </div>
-                              {deal.phone && (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <IconPhone className="h-3 w-3" />
-                                  <span>{deal.phone}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between pt-2">
-                                <div className="flex gap-1">
-                                    {deal.labels.map(l => (
-                                        <Badge key={l.id} variant="outline" className={`text-[10px] px-1 h-4 ${getLabelBadge(l.color)}`}>
-                                            {l.name}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/50 px-6 py-12 text-center w-full">
+                      <p className="text-sm text-muted-foreground">Belum ada deal atau stage pada pipeline ini.</p>
                     </div>
-                  ))
+                  ) : (
+                    stageOrder.map((stage) => {
+                      const items = dealsByStage[stage] ?? []
+                      return (
+                        <div key={stage} className="w-64 flex-shrink-0 flex flex-col gap-2">
+                          {/* Column Header */}
+                          <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${getStageHeaderColor(stage)}`}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${getStageAccentColor(stage)}`} />
+                              <span className="text-xs font-semibold uppercase tracking-wider">
+                                {stage}
+                              </span>
+                            </div>
+                            <span className="text-xs font-medium bg-white/60 rounded-full px-2 py-0.5">
+                              {items.length}
+                            </span>
+                          </div>
+
+                          {/* Deal Cards */}
+                          <div className="flex flex-col gap-2">
+                            {items.length === 0 ? (
+                              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 text-center">
+                                <p className="text-xs text-muted-foreground">No deals</p>
+                              </div>
+                            ) : (
+                              items.map((deal) => (
+                                <Card key={deal.id} className="shadow-none border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer bg-white">
+                                  <CardContent className="p-3">
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                      <Link
+                                        href={`/deals/${deal.id}`}
+                                        className="font-medium text-sm text-blue-600 hover:underline leading-tight line-clamp-2 flex-1"
+                                      >
+                                        {deal.name}
+                                      </Link>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0 shrink-0 text-muted-foreground hover:text-foreground">
+                                            <IconDotsVertical className="h-3 w-3" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                                          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                    {deal.client && (
+                                      <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+                                        {deal.client}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <IconCalendar className="h-3 w-3 shrink-0" />
+                                        <span>{formatDate(deal.createdAt)}</span>
+                                      </div>
+                                      <span className="text-xs font-semibold text-slate-700">
+                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(deal.price)}
+                                      </span>
+                                    </div>
+                                    {deal.labels && deal.labels.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
+                                        {deal.labels.map((l) => (
+                                          <Badge key={l.id} variant="outline" className={`text-[10px] px-1.5 py-0 ${getLabelBadge(l.color)}`}>
+                                            {l.name}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
                   )}
                 </div>
               </div>
             ) : (
-              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] flex-1">
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
                   <CardTitle>Deals List</CardTitle>
                   <div className="flex items-center gap-2">
@@ -535,9 +584,9 @@ export default function DealsPage() {
                       <IconSearch className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search deals..."
-                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
+                        className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                       />
                     </div>
                   </div>
@@ -547,41 +596,46 @@ export default function DealsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6 w-[200px]">Deal Name</TableHead>
-                          <TableHead className="px-6">Client</TableHead>
-                          <TableHead className="px-6">Price</TableHead>
-                          <TableHead className="px-6">Stage</TableHead>
-                          <TableHead className="px-6">Phone</TableHead>
-                          <TableHead className="px-6 w-[100px] text-right">Action</TableHead>
+                          <TableHead className="px-6 font-medium">Deal Name</TableHead>
+                          <TableHead className="px-6 font-medium">Client</TableHead>
+                          <TableHead className="px-6 font-medium">Price</TableHead>
+                          <TableHead className="px-6 font-medium">Stage</TableHead>
+                          <TableHead className="px-6 font-medium">Phone</TableHead>
+                          <TableHead className="px-6 font-medium text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
+                            <TableCell
+                              colSpan={6}
+                              className="px-6 py-8 text-center text-muted-foreground"
+                            >
                               Loading...
                             </TableCell>
                           </TableRow>
-                        ) : paginatedDeals.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                              No deals found.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
+                        ) : paginatedDeals.length > 0 ? (
                           paginatedDeals.map((deal) => (
                             <TableRow key={deal.id}>
-                              <TableCell className="px-6 font-medium">
-                                <Link href={`/deals/${deal.id}`} className="hover:underline text-blue-600">
-                                  {deal.name}
-                                </Link>
-                              </TableCell>
-                              <TableCell className="px-6">{deal.client}</TableCell>
                               <TableCell className="px-6">
+                                <div>
+                                  <Link
+                                    href={`/deals/${deal.id}`}
+                                    className="font-medium text-sm text-blue-600 hover:underline block"
+                                  >
+                                    {deal.name}
+                                  </Link>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-6 text-sm text-muted-foreground">
+                                {deal.client || '-'}
+                              </TableCell>
+                              <TableCell className="px-6 text-sm text-muted-foreground">
                                 {new Intl.NumberFormat('id-ID', {
                                   style: 'currency',
                                   currency: 'IDR',
                                   minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0,
                                 }).format(deal.price)}
                               </TableCell>
                               <TableCell className="px-6">
@@ -590,12 +644,16 @@ export default function DealsPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="px-6">
-                                {deal.phone ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <IconPhone className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-sm">{deal.phone}</span>
-                                  </div>
-                                ) : '-'}
+                                <div className="flex items-center gap-2">
+                                  {deal.phone ? (
+                                    <>
+                                      <IconPhone className="h-3 w-3 text-muted-foreground shrink-0" />
+                                      <span className="text-sm text-muted-foreground truncate max-w-[120px]">{deal.phone}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">-</span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="px-6 text-right">
                                 <div className="flex items-center justify-end gap-2">
@@ -603,6 +661,17 @@ export default function DealsPage() {
                                     variant="outline"
                                     size="sm"
                                     className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                    title="View"
+                                    asChild
+                                  >
+                                    <Link href={`/deals/${deal.id}`}>
+                                      <IconEye className="h-3 w-3" />
+                                    </Link>
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shadow-none h-7 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
                                     title="Edit"
                                   >
                                     <IconPencil className="h-3 w-3" />
@@ -619,6 +688,15 @@ export default function DealsPage() {
                               </TableCell>
                             </TableRow>
                           ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={6}
+                              className="px-6 py-8 text-center text-muted-foreground"
+                            >
+                              No deals found
+                            </TableCell>
+                          </TableRow>
                         )}
                       </TableBody>
                     </Table>

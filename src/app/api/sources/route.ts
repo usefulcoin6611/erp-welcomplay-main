@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
 
     const branchId = (session.user as any).branchId as string | null
 
+    const sourceModel = (prisma as any).source
+    if (sourceModel == null || typeof sourceModel.findMany !== "function") {
+      return NextResponse.json({ success: true, data: [] })
+    }
+
     const where: any = {}
     if (branchId) {
       where.branchId = branchId
@@ -27,7 +32,7 @@ export async function GET(request: NextRequest) {
       where.branchId = null
     }
 
-    const sources = await (prisma as any).source.findMany({
+    const sources = await sourceModel.findMany({
       where,
       orderBy: {
         createdAt: "asc",
@@ -79,7 +84,15 @@ export async function POST(request: NextRequest) {
     const { name } = validation.data
     const branchId = ((session.user as any).branchId as string | null) ?? null
 
-    const existing = await (prisma as any).source.findFirst({
+    const sourceModel = (prisma as any).source
+    if (!sourceModel?.findFirst || !sourceModel?.create) {
+      return NextResponse.json(
+        { success: false, message: "Fitur source belum tersedia" },
+        { status: 503 },
+      )
+    }
+
+    const existing = await sourceModel.findFirst({
       where: {
         name,
         ...(branchId ? { branchId } : { branchId: null }),
@@ -93,7 +106,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const source = await (prisma as any).source.create({
+    const source = await sourceModel.create({
       data: {
         name,
         branchId,

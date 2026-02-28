@@ -1,20 +1,124 @@
 'use client'
 
-import { useEffect } from 'react'
+import { lazy, Suspense, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { AppSidebar } from '@/components/app-sidebar'
+import { SiteHeader } from '@/components/site-header'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SmoothTab } from '@/components/ui/smooth-tab'
+import { Skeleton } from '@/components/ui/skeleton'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 
-export default function AccountingSetupRedirectPage() {
-  const router = useRouter()
+const TaxesTab = lazy(() => import('@/components/accounting-setup/taxes-tab').then((m) => ({ default: m.TaxesTab })))
+const CategoryTab = lazy(() => import('@/components/accounting-setup/category-tab').then((m) => ({ default: m.CategoryTab })))
+const UnitTab = lazy(() => import('@/components/accounting-setup/unit-tab').then((m) => ({ default: m.UnitTab })))
+const CustomFieldTab = lazy(() => import('@/components/accounting-setup/custom-field-tab').then((m) => ({ default: m.CustomFieldTab })))
+
+const TabLoadingSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-[90px] w-full" />
+    <Skeleton className="h-[380px] w-full" />
+  </div>
+)
+
+export default function AccountingSetupPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
 
-  useEffect(() => {
-    const tabParam = searchParams.get('tab')
-    const allowed = new Set(['taxes', 'category', 'unit', 'custom-field'])
-    const targetTab = tabParam && allowed.has(tabParam) ? tabParam : 'taxes'
-    router.replace(`/accounting/setup/custom-field?tab=${targetTab}`)
-  }, [router, searchParams])
+  const activeTab = searchParams.get('tab') || 'taxes'
+  const tabContentCache = useRef<{ [key: string]: React.ReactNode }>({})
 
-  return null
+  function TabContentWithCache({
+    tabId,
+    Component,
+    cache,
+  }: {
+    tabId: string
+    Component: React.ComponentType
+    cache: Record<string, React.ReactNode>
+  }) {
+    const [mounted, setMounted] = useState(false)
+    if (cache[tabId]) return cache[tabId]
+    if (!mounted) {
+      setMounted(true)
+      cache[tabId] = <Component />
+    }
+    return <Component />
+  }
+
+  const setupTabs = useMemo(
+    () => [
+      {
+        id: 'taxes',
+        title: 'Taxes',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="taxes" Component={TaxesTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'category',
+        title: 'Category',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="category" Component={CategoryTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'unit',
+        title: 'Unit',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="unit" Component={UnitTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'custom-field',
+        title: 'Custom Field',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache
+              tabId="custom-field"
+              Component={CustomFieldTab}
+              cache={tabContentCache.current}
+            />
+          </Suspense>
+        ),
+      },
+    ],
+    []
+  )
+
+  const handleTabChange = (tabId: string) => {
+    router.push(`/accounting/setup?tab=${tabId}`, { scroll: false })
+  }
+
+  return (
+    <SidebarProvider
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <SmoothTab
+              items={setupTabs}
+              defaultTabId={activeTab}
+              onChange={handleTabChange}
+              activeColor="bg-white dark:bg-gray-700 shadow-xs"
+            />
+          </div>
+        </MainContentWrapper>
+      </SidebarInset>
+    </SidebarProvider>
+  )
 }
-
-

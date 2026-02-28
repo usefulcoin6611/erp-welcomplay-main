@@ -10,6 +10,10 @@ export interface User {
   avatar?: string
   branchId?: string
   departmentId?: string
+  /** Access profile permissions. null = no profile, undefined = not loaded, string[] = profile permissions. */
+  permissions?: string[] | null
+  /** Access profile display name when assigned. */
+  accessProfileName?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -107,6 +111,24 @@ export const authService = {
     if (typeof window === 'undefined') return null;
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
+  },
+
+  /**
+   * Fetches current user's access profile permissions and name from API (cookie-based auth).
+   * Returns { permissions, accessProfileName }. permissions: string[] when profile assigned, null otherwise.
+   */
+  async getPermissions(): Promise<{ permissions: string[] | null; accessProfileName: string | null }> {
+    if (typeof window === 'undefined') return { permissions: null, accessProfileName: null };
+    try {
+      const res = await fetch('/api/auth/permissions', { credentials: 'include' });
+      const json = await res.json();
+      if (!json?.success) return { permissions: null, accessProfileName: null };
+      const permissions = json.permissions === null ? null : Array.isArray(json.permissions) ? json.permissions : null;
+      const accessProfileName = typeof json.accessProfileName === 'string' ? json.accessProfileName : null;
+      return { permissions, accessProfileName };
+    } catch {
+      return { permissions: null, accessProfileName: null };
+    }
   },
 
   clearStoredUser() {

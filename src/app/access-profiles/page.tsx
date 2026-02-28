@@ -212,6 +212,8 @@ const ACCOUNT_MODULES = [
   'chart of account',
   'journal entry',
   'report',
+  'budget plan',
+  'print settings',
 ]
 
 const POS_MODULES = [
@@ -270,12 +272,39 @@ const buildPermissionsForModules = (modules: string[], category: Permission['cat
   return permissions
 }
 
+/** Build permissions for a module with only specified actions (e.g. Accounting: show-only product & service per SoD). */
+const buildPermissionsForModuleWithActions = (
+  moduleLabel: string,
+  actions: string[],
+  category: Permission['category']
+): PermissionItem[] => {
+  const permissions: PermissionItem[] = []
+  actions.forEach((action) => {
+    const rawPermission = `${action} ${moduleLabel}`
+    const matchedPermission = referencePermissionLookup.get(rawPermission.toLowerCase())
+    if (!matchedPermission) return
+    permissions.push({
+      id: matchedPermission,
+      name: matchedPermission,
+      module: moduleLabel,
+      moduleLabel,
+      category,
+      action,
+    })
+  })
+  return permissions
+}
+
+/** Account tab: standard modules + product & service (show-only for SoD best practice). */
+const ACCOUNT_MODULES_WITH_EXTRA = [...ACCOUNT_MODULES, 'product & service']
+
 const allPermissions: PermissionItem[] = [
   ...buildPermissionsForModules(STAFF_MODULES_BASE, 'staff'),
   ...buildPermissionsForModules(CRM_MODULES, 'crm'),
   ...buildPermissionsForModules(PROJECT_MODULES, 'project'),
   ...buildPermissionsForModules(HRM_MODULES, 'hrm'),
   ...buildPermissionsForModules(ACCOUNT_MODULES, 'account'),
+  ...buildPermissionsForModuleWithActions('product & service', ['show'], 'account'),
   ...buildPermissionsForModules(POS_MODULES, 'pos'),
 ]
 
@@ -717,7 +746,7 @@ export default function AccessProfilesPage() {
                               {renderPermissionTable('hrm', HRM_MODULES)}
                             </TabsContent>
                             <TabsContent value="account" className="mt-4">
-                              {renderPermissionTable('account', ACCOUNT_MODULES)}
+                              {renderPermissionTable('account', ACCOUNT_MODULES_WITH_EXTRA)}
                             </TabsContent>
                             <TabsContent value="pos" className="mt-4">
                               {renderPermissionTable('pos', POS_MODULES)}

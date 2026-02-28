@@ -16,7 +16,7 @@ import {
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { useAuth } from '@/contexts/auth-context'
-import { getMenuByRole } from '@/lib/menu-config'
+import { getMenuByRole, filterMenuByPermissions } from '@/lib/menu-config'
 import type { MenuItem } from '@/lib/menu-config'
 
 function filterMenuByQuery(items: MenuItem[], query: string): MenuItem[] {
@@ -49,7 +49,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { sidebarSearchQuery } = useSidebar()
 
   // Get menu based on user role
-  const menuData = user ? getMenuByRole(user.type, t) : { navMain: [], navSecondary: [] }
+  const menuByRole = React.useMemo(
+    () => (user ? getMenuByRole(user.type, t) : { navMain: [], navSecondary: [] }),
+    [user?.type, t]
+  )
+
+  // When employee: filter by permissions if profile loaded; show minimal menu until permissions loaded to avoid leaking HRM
+  const menuData = React.useMemo(() => {
+    let navMain: typeof menuByRole.navMain
+    if (user?.type === 'employee') {
+      if (user.permissions === undefined || user.permissions === null) {
+        // Permissions not yet loaded OR no profile: show minimal to avoid wrong access (e.g. HRM dashboard for non-HRM)
+        navMain = filterMenuByPermissions(menuByRole.navMain, [])
+      } else {
+        navMain = filterMenuByPermissions(menuByRole.navMain, user.permissions)
+      }
+      // Always show Support System, Zoom Meeting, and Messenger for employee
+      const alwaysShowUrls = ['/attendance', '/support', '/zoom', '/messenger']
+      const existingUrls = new Set(navMain.map((item) => item.url))
+      const toAppend = menuByRole.navMain.filter(
+        (item) => item.url && alwaysShowUrls.includes(item.url) && !existingUrls.has(item.url)
+      )
+      navMain = [...navMain, ...toAppend]
+    } else {
+      navMain = menuByRole.navMain
+    }
+    return { ...menuByRole, navMain }
+  }, [user?.type, user?.permissions, menuByRole])
 
   const filteredNavMain = React.useMemo(
     () => filterMenuByQuery(menuData.navMain, sidebarSearchQuery),

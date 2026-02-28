@@ -51,6 +51,7 @@ export const REFERENCE_PERMISSIONS = [
   'create product & service',
   'edit product & service',
   'delete product & service',
+  'show product & service',
   'manage customer',
   'create customer',
   'edit customer',

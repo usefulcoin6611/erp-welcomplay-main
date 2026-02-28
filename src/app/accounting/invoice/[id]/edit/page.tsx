@@ -247,7 +247,7 @@ export default function InvoiceEditPage({ params }: InvoiceEditPageProps) {
                         </Select>
                         <p className="text-xs text-muted-foreground">
                           Create category here.{' '}
-                          <Link className="font-medium text-primary" href="/accounting/setup/custom-field?tab=category">
+                          <Link className="font-medium text-primary" href="/accounting/setup?tab=category">
                             Create category
                           </Link>
                         </p>

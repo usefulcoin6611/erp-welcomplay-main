@@ -34,8 +34,8 @@ export function RouteGuard({
       return
     }
 
-    // Check route access
-    const hasAccess = hasRouteAccess(pathname || '', user.type)
+    // Check route access (include access profile permissions for employees)
+    const hasAccess = hasRouteAccess(pathname || '', user.type, user.permissions)
     
     if (!hasAccess) {
       // User doesn't have access to this route
@@ -74,7 +74,7 @@ export function RouteGuard({
     return null
   }
 
-  const hasAccess = hasRouteAccess(pathname || '', user.type)
+  const hasAccess = hasRouteAccess(pathname || '', user.type, user.permissions)
   const routeRequiredRole = getRequiredRoleForRoute(pathname || '')
 
   // Check access and role requirements

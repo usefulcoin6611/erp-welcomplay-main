@@ -80,7 +80,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     // If authenticated, check route access based on role
     if (isAuthenticated && user && !isPublicRoute) {
       // Check if user has access to this route
-      const hasAccess = hasRouteAccess(pathname, user.type)
+      const hasAccess = hasRouteAccess(pathname, user.type, user.permissions)
       
       if (!hasAccess) {
         const redirectPath = getRedirectPathByRole(user.type)
@@ -143,7 +143,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     // If authenticated, check route access based on role
     if (isAuthenticated && user && !isPublicRoute) {
       // Check if user has access to this route
-      const hasAccess = hasRouteAccess(pathname, user.type)
+      const hasAccess = hasRouteAccess(pathname, user.type, user.permissions)
       
       if (!hasAccess) {
         // User navigated to unauthorized route - redirect

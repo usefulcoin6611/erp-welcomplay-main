@@ -13,9 +13,9 @@ const ACTIONS = [
   "ledger", "trial balance", "convert", "copy",
 ];
 
+// Staff: catalog only (no User Management, Client, Settings - Company Admin only per ERP best practice)
 const STAFF_MODULES = [
-  "user", "role", "client", "product & service", "constant unit", "constant tax",
-  "constant category", "zoom meeting", "company settings", "permission", "language",
+  "product & service", "constant unit", "constant tax", "constant category",
 ];
 
 const CRM_MODULES = [
@@ -46,7 +46,7 @@ const ACCOUNT_MODULES = [
   "account dashboard", "proposal", "invoice", "bill", "revenue", "payment",
   "proposal product", "invoice product", "bill product", "goal", "credit note", "debit note",
   "bank account", "bank transfer", "transaction", "customer", "vender", "constant custom field",
-  "assets", "chart of account", "journal entry", "report",
+  "assets", "chart of account", "journal entry", "report", "budget plan", "print settings",
 ];
 
 const POS_MODULES = [
@@ -69,11 +69,29 @@ function buildPermissionsForModules(modules: string[]): string[] {
   return [...new Set(out)];
 }
 
+/** Build permissions for module with only specified actions (e.g. Accounting: show-only product & service). */
+function buildPermissionsForModuleWithActions(
+  moduleLabel: string,
+  actions: string[]
+): string[] {
+  const out: string[] = [];
+  for (const action of actions) {
+    const key = `${action} ${moduleLabel}`.toLowerCase();
+    const exact = lookup.get(key);
+    if (exact) out.push(exact);
+  }
+  return [...new Set(out)];
+}
+
 const STAFF_PERMISSIONS = buildPermissionsForModules(STAFF_MODULES);
 const CRM_PERMISSIONS = buildPermissionsForModules(CRM_MODULES);
 const PROJECT_PERMISSIONS = buildPermissionsForModules(PROJECT_MODULES);
 const HRM_PERMISSIONS = buildPermissionsForModules(HRM_MODULES);
-const ACCOUNT_PERMISSIONS = buildPermissionsForModules(ACCOUNT_MODULES);
+// Accounting: full access to account modules + show-only for product & service (SoD best practice)
+const ACCOUNT_PERMISSIONS = [
+  ...buildPermissionsForModules(ACCOUNT_MODULES),
+  ...buildPermissionsForModuleWithActions("product & service", ["show"]),
+];
 const POS_PERMISSIONS = buildPermissionsForModules(POS_MODULES);
 
 const PROFILES: { name: string; permissions: string[] }[] = [
@@ -81,7 +99,7 @@ const PROFILES: { name: string; permissions: string[] }[] = [
   { name: "CRM", permissions: CRM_PERMISSIONS },
   { name: "Project", permissions: PROJECT_PERMISSIONS },
   { name: "HRM", permissions: HRM_PERMISSIONS },
-  { name: "Account", permissions: ACCOUNT_PERMISSIONS },
+  { name: "Accounting", permissions: ACCOUNT_PERMISSIONS },
   { name: "POS", permissions: POS_PERMISSIONS },
 ];
 
@@ -95,6 +113,7 @@ export async function seedAccessProfiles(prisma: any) {
   }
 
   let created = 0;
+  let updated = 0;
   for (const branch of branches) {
     for (const profile of PROFILES) {
       const existing = await prisma.accessProfile.findFirst({
@@ -111,9 +130,29 @@ export async function seedAccessProfiles(prisma: any) {
         });
         created++;
         console.log(`  Access profile created: ${profile.name} @ ${branch.name}`);
+      } else if (profile.name === "Accounting") {
+        await prisma.accessProfile.update({
+          where: { id: existing.id },
+          data: {
+            permissions: profile.permissions,
+            description: `Access profile: ${profile.name} (${branch.name})`,
+          },
+        });
+        updated++;
+        console.log(`  Access profile updated: ${profile.name} @ ${branch.name} (show-only product & service)`);
+      } else if (profile.name === "Staff") {
+        await prisma.accessProfile.update({
+          where: { id: existing.id },
+          data: {
+            permissions: profile.permissions,
+            description: `Access profile: ${profile.name} (${branch.name})`,
+          },
+        });
+        updated++;
+        console.log(`  Access profile updated: ${profile.name} @ ${branch.name} (catalog & client only, no User Management/Settings)`);
       }
     }
   }
 
-  console.log(`Access Profiles seeding completed. New records: ${created}`);
+  console.log(`Access Profiles seeding completed. Created: ${created}, Updated: ${updated}`);
 }

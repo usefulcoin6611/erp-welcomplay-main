@@ -23,7 +23,7 @@ function SettingsContent() {
   const tabParam = searchParams.get('tab')
   
   // Validasi tab: hanya user company yang bisa akses settings
-  const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program']
+  const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program'] // order = Subscription History
   const isValidTab = isCompany && (!tabParam || companyTabs.includes(tabParam))
   const activeTab = isValidTab ? (tabParam || 'system-settings') : 'system-settings'
 
@@ -69,7 +69,7 @@ function SettingsContent() {
           },
           {
             id: 'order',
-            title: 'Order',
+            title: 'Subscription History',
             content: (
               <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
                 <OrderTab />

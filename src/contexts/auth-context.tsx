@@ -14,6 +14,10 @@ export interface User {
   avatar?: string
   branchId?: string
   departmentId?: string
+  /** Access profile permissions for menu/route filtering (employee/company). null = no profile (full role menu), undefined = not yet loaded, string[] = profile permissions. */
+  permissions?: string[] | null
+  /** Access profile display name when assigned. */
+  accessProfileName?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -74,7 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = await authService.getCurrentUser()
           if (isMounted) {
             if (userData) {
-              setUser(userData)
+              // Load access profile permissions before first paint so menu never flashes full list for employee/company
+              if (userData.type === 'employee' || userData.type === 'company') {
+                const { permissions, accessProfileName } = await authService.getPermissions()
+                setUser({ ...userData, permissions: permissions ?? null, accessProfileName: accessProfileName ?? null })
+              } else {
+                setUser(userData)
+              }
             } else {
               // If API call fails, clear everything
               authService.clearStoredUser()
@@ -174,15 +184,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   /**
-   * Refresh user data from API
+   * Refresh user data from API (including access profile permissions for employee/company)
    */
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const userData = await authService.getCurrentUser()
       if (userData) {
-        setUser(userData)
+        let nextUser: typeof userData = userData
+        if (userData.type === 'employee' || userData.type === 'company') {
+          const { permissions, accessProfileName } = await authService.getPermissions()
+          nextUser = { ...userData, permissions: permissions ?? null, accessProfileName: accessProfileName ?? null }
+        }
+        setUser(nextUser)
       } else {
-        // If refresh fails, logout
         await logout()
       }
     } catch (error) {

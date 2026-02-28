@@ -1235,7 +1235,7 @@ export function EstimateTab() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Create category here.{' '}
                       <Link
-                        href="/accounting/setup/custom-field?tab=category"
+                        href="/accounting/setup?tab=category"
                         className="font-medium text-primary"
                       >
                         Create category

@@ -136,10 +136,13 @@ export async function seedCrmPipelines(prisma: any) {
 
   const sourceNames: string[] = [
     "Website",
-    "Social Media",
+    "Media Sosial",
     "Referral",
-    "Email Campaign",
-    "Cold Call",
+    "Telepon / Cold Call",
+    "Email / Kampanye Email",
+    "WhatsApp",
+    "Pameran & Event",
+    "Seminar & Workshop",
   ];
 
   let sourceCreated = 0;
@@ -175,11 +178,12 @@ export async function seedCrmPipelines(prisma: any) {
   }
 
   const labelDefinitions: { name: string; color: string }[] = [
-    { name: "Hot", color: "#ef4444" },
-    { name: "Warm", color: "#f59e0b" },
-    { name: "Cold", color: "#3b82f6" },
+    { name: "Panas", color: "#ef4444" },
+    { name: "Hangat", color: "#f59e0b" },
+    { name: "Dingin", color: "#3b82f6" },
     { name: "VIP", color: "#8b5cf6" },
-    { name: "Standard", color: "#10b981" },
+    { name: "Prioritas", color: "#10b981" },
+    { name: "Tindak Lanjut", color: "#ec4899" },
   ];
 
   let labelCreated = 0;
@@ -216,14 +220,14 @@ export async function seedCrmPipelines(prisma: any) {
   }
 
   const contractTypeNames: string[] = [
-    "Implementation",
-    "Support",
-    "Development",
-    "Migration",
-    "Audit",
-    "Optimization",
-    "Training",
-    "Integration",
+    "Implementasi",
+    "Dukungan & Pemeliharaan",
+    "Pengembangan",
+    "Migrasi Sistem",
+    "Audit & Konsultasi",
+    "Pelatihan",
+    "Integrasi Sistem",
+    "Konsultasi",
   ];
 
   let contractTypeCreated = 0;
@@ -352,10 +356,10 @@ export async function seedCrmPipelines(prisma: any) {
   );
 
   const salesLabelDefinitions: { name: string; color: string }[] = [
-    { name: "New", color: "#3b82f6" },
-    { name: "Follow Up", color: "#f59e0b" },
-    { name: "High Value", color: "#10b981" },
-    { name: "Churn Risk", color: "#ef4444" },
+    { name: "Baru", color: "#3b82f6" },
+    { name: "Tindak Lanjut", color: "#f59e0b" },
+    { name: "Nilai Tinggi", color: "#10b981" },
+    { name: "Risiko Churn", color: "#ef4444" },
     { name: "Upsell", color: "#8b5cf6" },
   ];
 

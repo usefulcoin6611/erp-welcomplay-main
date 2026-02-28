@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
       ...bankAccounts.map(acc => `${acc.bank} - ${acc.holderName}`)
     ]
 
-    // Category options from Category model (same as /accounting/setup/custom-field?tab=category)
+    // Category options from Category model (same as /accounting/setup?tab=category)
     const categories = await prisma.category.findMany({
       where: { branchId },
       select: { id: true, name: true },

@@ -73,28 +73,28 @@ const mockTransactions: Transaction[] = [
 const mockPayoutRequests: PayoutRequest[] = [
   {
     id: '1',
-    company_name: 'Workdo',
+    company_name: 'WelcomePlay',
     requested_date: '2024-04-10',
     requested_amount: 50000,
     status: 'Approved',
   },
   {
     id: '2',
-    company_name: 'Workdo',
+    company_name: 'Welcomplay',
     requested_date: '2024-04-10',
     requested_amount: 25000,
     status: 'Rejected',
   },
   {
     id: '3',
-    company_name: 'Workdo',
+    company_name: 'Welcomplay',
     requested_date: '2024-04-10',
     requested_amount: 100000,
     status: 'Approved',
   },
   {
     id: '4',
-    company_name: 'Workdo',
+    company_name: 'Welcomplay',
     requested_date: '2024-04-10',
     requested_amount: 75000,
     status: 'In Progress',

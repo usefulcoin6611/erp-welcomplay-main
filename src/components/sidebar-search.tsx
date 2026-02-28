@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/command"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/auth-context"
-import { getMenuByRole } from "@/lib/menu-config"
+import { getMenuByRole, filterMenuByPermissions } from "@/lib/menu-config"
 import type { MenuItem } from "@/lib/menu-config"
 
 type FlatMenuItem = { title: string; url: string; breadcrumb: string }
@@ -47,7 +47,31 @@ export function SidebarSearch() {
   const { user } = useAuth()
   const router = useRouter()
 
-  const menuData = user ? getMenuByRole(user.type, tMenu) : { navMain: [], navSecondary: [] }
+  const menuByRole = useMemo(
+    () => (user ? getMenuByRole(user.type, tMenu) : { navMain: [], navSecondary: [] }),
+    [user?.type, tMenu]
+  )
+  const menuData = useMemo(() => {
+    let navMain: typeof menuByRole.navMain
+    if (user?.type === "employee") {
+      if (user.permissions === undefined) {
+        navMain = filterMenuByPermissions(menuByRole.navMain, [])
+      } else if (user.permissions === null) {
+        navMain = menuByRole.navMain
+      } else {
+        navMain = filterMenuByPermissions(menuByRole.navMain, user.permissions)
+      }
+      const alwaysShowUrls = ["/support", "/zoom", "/messenger"]
+      const existingUrls = new Set(navMain.map((item) => item.url))
+      const toAppend = menuByRole.navMain.filter(
+        (item) => item.url && alwaysShowUrls.includes(item.url) && !existingUrls.has(item.url)
+      )
+      navMain = [...navMain, ...toAppend]
+    } else {
+      navMain = menuByRole.navMain
+    }
+    return { ...menuByRole, navMain }
+  }, [user?.type, user?.permissions, menuByRole])
   const allItems = useMemo(
     () => [
       ...flattenMenuItems(menuData.navMain),

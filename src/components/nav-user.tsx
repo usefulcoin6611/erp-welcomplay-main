@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   IconCreditCard,
   IconLogout,
@@ -8,6 +9,7 @@ import {
   IconUserCircle,
   IconShield,
   IconBuildingStore,
+  IconRocket,
 } from "@tabler/icons-react"
 import { ChevronDown } from "lucide-react"
 
@@ -61,10 +63,18 @@ export function NavUser({
     branchId?: string
   }
 }) {
+  const router = useRouter()
   const { isMobile } = useSidebar()
   const { user: authUser, logout } = useAuth()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [branchName, setBranchName] = useState<string>("")
+  const isCompany = authUser?.type === "company"
+
+  const openLogoutDialog = () => {
+    setDropdownOpen(false)
+    setTimeout(() => setShowLogoutDialog(true), 0)
+  }
 
   useEffect(() => {
     async function fetchBranchName() {
@@ -102,20 +112,13 @@ export function NavUser({
     }
   }
 
-  const roleColors: Record<string, string> = {
-    "super admin": "text-red-700 bg-red-50 dark:bg-red-950/50 dark:text-red-300",
-    company: "text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300",
-    client: "text-green-700 bg-green-50 dark:bg-green-950/50 dark:text-green-300",
-    employee: "text-purple-700 bg-purple-50 dark:bg-purple-950/50 dark:text-purple-300",
-  }
-
   return (
     <SidebarMenuItem suppressHydrationWarning>
-      <DropdownMenu>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
             size="lg"
-            className="cursor-pointer rounded-lg px-3 py-2.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground data-[state=open]:ring-2 data-[state=open]:ring-sidebar-ring/30 transition-colors duration-200"
+            className="cursor-pointer rounded-lg px-3 py-2.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground transition-colors duration-200"
             suppressHydrationWarning
             aria-label="Open user menu"
           >
@@ -152,29 +155,32 @@ export function NavUser({
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 min-w-0 gap-1">
-                <span className="truncate font-semibold text-foreground">
+              <div className="flex-1 min-w-0 space-y-0.5">
+                <span className="block truncate font-semibold text-foreground">
                   {user.name}
                 </span>
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="block truncate text-xs text-muted-foreground">
                   {user.email}
                 </span>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {authUser && (
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${roleColors[authUser.type] ?? "text-muted-foreground bg-muted"}`}
-                    >
-                      <IconShield className="h-3 w-3 shrink-0" />
-                      {authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}
-                    </span>
-                  )}
-                  {branchName && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-300">
-                      <IconBuildingStore className="h-3 w-3 shrink-0" />
-                      {branchName}
-                    </span>
-                  )}
-                </div>
+                {(authUser || branchName) && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1">
+                    {authUser && (
+                      <span className="inline-flex items-center gap-1 truncate">
+                        <IconShield className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                        <span className="truncate">{authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}</span>
+                      </span>
+                    )}
+                    {authUser && branchName && (
+                      <span className="shrink-0 w-0.5 h-0.5 rounded-full bg-muted-foreground/40" aria-hidden />
+                    )}
+                    {branchName && (
+                      <span className="inline-flex items-center gap-1 min-w-0 truncate">
+                        <IconBuildingStore className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                        <span className="truncate">{branchName}</span>
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </DropdownMenuLabel>
@@ -188,6 +194,15 @@ export function NavUser({
               <IconCreditCard className="size-4 text-muted-foreground" />
               Billing
             </DropdownMenuItem>
+            {isCompany && (
+              <DropdownMenuItem
+                className="rounded-lg cursor-pointer gap-2.5 py-2.5"
+                onClick={() => router.push("/settings?tab=subscription-plan")}
+              >
+                <IconRocket className="size-4 text-muted-foreground" />
+                Upgrade plan
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
               <IconNotification className="size-4 text-muted-foreground" />
               Notifications
@@ -196,7 +211,10 @@ export function NavUser({
           <DropdownMenuSeparator className="mx-0" />
           <div className="p-1.5">
             <DropdownMenuItem
-              onClick={() => setShowLogoutDialog(true)}
+              onSelect={(e) => {
+                e.preventDefault()
+                openLogoutDialog()
+              }}
               className="rounded-lg cursor-pointer gap-2.5 py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive"
             >
               <IconLogout className="size-4" />
@@ -209,12 +227,16 @@ export function NavUser({
       <AlertDialog
         open={showLogoutDialog}
         onOpenChange={(open) => {
-          if (!open) requestAnimationFrame(() => setShowLogoutDialog(false))
-          else setShowLogoutDialog(true)
+          if (!open) {
+            setTimeout(() => setShowLogoutDialog(false), 0)
+          } else {
+            setShowLogoutDialog(true)
+          }
         }}
       >
         <AlertDialogContent
           onCloseAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Logout</AlertDialogTitle>

@@ -55,10 +55,12 @@ import {
   IconCalendar,
   IconDownload,
   IconFileImport,
+  IconLayoutKanban,
+  IconList,
   IconPhone,
   IconPlus,
 } from '@tabler/icons-react'
-import { List, LayoutGrid, Search as SearchIcon, X, Eye, Pencil, MoreVertical, Trash2 } from 'lucide-react'
+import { Search as SearchIcon, X, Eye, Pencil, MoreVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Lead = {
@@ -108,7 +110,7 @@ function formatDate(dateString: string) {
 }
 
 export default function LeadsPage() {
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -415,8 +417,22 @@ export default function LeadsPage() {
                     <Button
                       type="button"
                       size="sm"
-                      variant="ghost"
+                      variant={viewMode === 'kanban' ? 'default' : 'ghost'}
                       className={`h-7 w-7 shadow-none p-0 ${
+                        viewMode === 'kanban'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setViewMode('kanban')}
+                      title="Kanban view"
+                    >
+                      <IconLayoutKanban className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
                         viewMode === 'list'
                           ? 'bg-blue-500 text-white hover:bg-blue-600'
                           : 'text-blue-600 hover:bg-blue-50'
@@ -424,21 +440,7 @@ export default function LeadsPage() {
                       onClick={() => setViewMode('list')}
                       title="List view"
                     >
-                      <List className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className={`h-7 w-7 shadow-none p-0 border-l border-muted ${
-                        viewMode === 'grid'
-                          ? 'bg-blue-500 text-white hover:bg-blue-600'
-                          : 'text-blue-600 hover:bg-blue-50'
-                      }`}
-                      onClick={() => setViewMode('grid')}
-                      title="Kanban view"
-                    >
-                      <LayoutGrid className="h-3 w-3" />
+                      <IconList className="h-3 w-3" />
                     </Button>
                   </div>
                   <Button

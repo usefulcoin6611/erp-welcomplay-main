@@ -1096,7 +1096,7 @@ export function InvoiceTab() {
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
                       Create category here.{" "}
-                      <Link href="/accounting/setup/custom-field?tab=category" className="font-medium text-primary">
+                      <Link href="/accounting/setup?tab=category" className="font-medium text-primary">
                         Create category
                       </Link>
                     </p>

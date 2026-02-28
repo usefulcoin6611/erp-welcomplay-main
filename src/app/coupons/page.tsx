@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { SimplePagination } from '@/components/ui/simple-pagination'
 import { toast } from 'sonner'
 
 interface Coupon {
@@ -51,11 +52,128 @@ const defaultFormData = {
   autoCode: '',
 }
 
+type FormData = typeof defaultFormData
+
+function CouponFormFields({
+  formData,
+  setFormData,
+  formErrors,
+  codeType,
+  setCodeType,
+  generateCode,
+}: {
+  formData: FormData
+  setFormData: React.Dispatch<React.SetStateAction<FormData>>
+  formErrors: Record<string, string>
+  codeType: 'manual' | 'auto'
+  setCodeType: (v: 'manual' | 'auto') => void
+  generateCode: () => void
+}) {
+  return (
+    <div className="grid gap-4 py-4">
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">Name <span className="text-red-500">*</span></Label>
+        <Input
+          value={formData.name}
+          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+          placeholder="e.g. New Year Special"
+          className={`bg-gray-50 ${formErrors.name ? 'border-red-500' : 'border-0'}`}
+        />
+        {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Discount (%) <span className="text-red-500">*</span></Label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            value={formData.discount}
+            onChange={(e) => setFormData((prev) => ({ ...prev, discount: e.target.value }))}
+            placeholder="e.g. 10, 20, 50"
+            className={`bg-gray-50 ${formErrors.discount ? 'border-red-500' : 'border-0'}`}
+          />
+          {formErrors.discount && <p className="text-xs text-red-500">{formErrors.discount}</p>}
+          <p className="text-xs text-muted-foreground">Percentage (0-100)</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Limit <span className="text-red-500">*</span></Label>
+          <Input
+            type="number"
+            min="0"
+            value={formData.limit}
+            onChange={(e) => setFormData((prev) => ({ ...prev, limit: e.target.value }))}
+            placeholder="e.g. 100 (0 = unlimited)"
+            className={`bg-gray-50 ${formErrors.limit ? 'border-red-500' : 'border-0'}`}
+          />
+          {formErrors.limit && <p className="text-xs text-red-500">{formErrors.limit}</p>}
+          <p className="text-xs text-muted-foreground">0 = Unlimited</p>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Code <span className="text-red-500">*</span></Label>
+        <RadioGroup
+          value={codeType}
+          onValueChange={(value) => {
+            setCodeType(value as 'manual' | 'auto')
+            setFormData((prev) => (value === 'manual' ? { ...prev, autoCode: '' } : { ...prev, manualCode: '' }))
+          }}
+          className="flex gap-6"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="manual" id="manual_code" />
+            <Label htmlFor="manual_code" className="text-sm cursor-pointer">Manual</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="auto" id="auto_code" />
+            <Label htmlFor="auto_code" className="text-sm cursor-pointer">Auto Generate</Label>
+          </div>
+        </RadioGroup>
+      </div>
+      {codeType === 'manual' ? (
+        <div className="space-y-1.5">
+          <Input
+            value={formData.manualCode}
+            onChange={(e) => setFormData((prev) => ({ ...prev, manualCode: e.target.value.toUpperCase() }))}
+            placeholder="e.g. SUMMER50"
+            className={`uppercase bg-gray-50 ${formErrors.code ? 'border-red-500' : 'border-0'}`}
+          />
+          {formErrors.code && <p className="text-xs text-red-500">{formErrors.code}</p>}
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <div className="flex gap-2">
+            <Input
+              value={formData.autoCode}
+              onChange={(e) => setFormData((prev) => ({ ...prev, autoCode: e.target.value.toUpperCase() }))}
+              placeholder="Click generate or enter manually"
+              className={`flex-1 uppercase bg-gray-50 ${formErrors.code ? 'border-red-500' : 'border-0'}`}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={generateCode}
+              className="shadow-none bg-gray-50 border-0 hover:bg-gray-100"
+              title="Generate random code"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+          {formErrors.code && <p className="text-xs text-red-500">{formErrors.code}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -79,6 +197,7 @@ export default function CouponsPage() {
       const json = await res.json()
       if (json.success && Array.isArray(json.data)) {
         setCoupons(json.data)
+        setCurrentPage(1)
       } else {
         toast.error(json.message || 'Failed to load coupons')
       }
@@ -92,6 +211,12 @@ export default function CouponsPage() {
   useEffect(() => {
     loadCoupons()
   }, [loadCoupons])
+
+  const totalRecords = coupons.length
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return coupons.slice(start, start + pageSize)
+  }, [coupons, currentPage, pageSize])
 
   const generateCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -231,104 +356,6 @@ export default function CouponsPage() {
     }
   }
 
-  const CouponFormFields = () => (
-    <div className="grid gap-4 py-4">
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Name <span className="text-red-500">*</span></Label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="e.g. New Year Special"
-          className={`bg-gray-50 ${formErrors.name ? 'border-red-500' : 'border-0'}`}
-        />
-        {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Discount (%) <span className="text-red-500">*</span></Label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            max="100"
-            value={formData.discount}
-            onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-            placeholder="e.g. 10, 20, 50"
-            className={`bg-gray-50 ${formErrors.discount ? 'border-red-500' : 'border-0'}`}
-          />
-          {formErrors.discount && <p className="text-xs text-red-500">{formErrors.discount}</p>}
-          <p className="text-xs text-muted-foreground">Percentage (0-100)</p>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Limit <span className="text-red-500">*</span></Label>
-          <Input
-            type="number"
-            min="0"
-            value={formData.limit}
-            onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
-            placeholder="e.g. 100 (0 = unlimited)"
-            className={`bg-gray-50 ${formErrors.limit ? 'border-red-500' : 'border-0'}`}
-          />
-          {formErrors.limit && <p className="text-xs text-red-500">{formErrors.limit}</p>}
-          <p className="text-xs text-muted-foreground">0 = Unlimited</p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Code <span className="text-red-500">*</span></Label>
-        <RadioGroup
-          value={codeType}
-          onValueChange={(value) => {
-            setCodeType(value as 'manual' | 'auto')
-            if (value === 'manual') setFormData({ ...formData, autoCode: '' })
-            else setFormData({ ...formData, manualCode: '' })
-          }}
-          className="flex gap-6"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="manual" id="manual_code" />
-            <Label htmlFor="manual_code" className="text-sm cursor-pointer">Manual</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="auto" id="auto_code" />
-            <Label htmlFor="auto_code" className="text-sm cursor-pointer">Auto Generate</Label>
-          </div>
-        </RadioGroup>
-      </div>
-      {codeType === 'manual' ? (
-        <div className="space-y-1.5">
-          <Input
-            value={formData.manualCode}
-            onChange={(e) => setFormData({ ...formData, manualCode: e.target.value.toUpperCase() })}
-            placeholder="e.g. SUMMER50"
-            className={`uppercase bg-gray-50 ${formErrors.code ? 'border-red-500' : 'border-0'}`}
-          />
-          {formErrors.code && <p className="text-xs text-red-500">{formErrors.code}</p>}
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          <div className="flex gap-2">
-            <Input
-              value={formData.autoCode}
-              onChange={(e) => setFormData({ ...formData, autoCode: e.target.value.toUpperCase() })}
-              placeholder="Click generate or enter manually"
-              className={`flex-1 uppercase bg-gray-50 ${formErrors.code ? 'border-red-500' : 'border-0'}`}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={generateCode}
-              className="shadow-none bg-gray-50 border-0 hover:bg-gray-100"
-              title="Generate random code"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-          {formErrors.code && <p className="text-xs text-red-500">{formErrors.code}</p>}
-        </div>
-      )}
-    </div>
-  )
-
   return (
     <SidebarProvider
       style={{ '--sidebar-width': 'calc(var(--spacing) * 72)', '--header-height': 'calc(var(--spacing) * 12)' } as React.CSSProperties}
@@ -364,13 +391,23 @@ export default function CouponsPage() {
                       <Plus className="mr-1.5 h-4 w-4" /> Create Coupon
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+                  <DialogContent
+                    className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
                     <DialogHeader>
                       <DialogTitle>Create New Coupon</DialogTitle>
                       <DialogDescription>Add a new discount coupon to your system.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit}>
-                      <CouponFormFields />
+                      <CouponFormFields
+                        formData={formData}
+                        setFormData={setFormData}
+                        formErrors={formErrors}
+                        codeType={codeType}
+                        setCodeType={setCodeType}
+                        generateCode={generateCode}
+                      />
                       <DialogFooter className="gap-2">
                         <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="rounded-lg">Cancel</Button>
                         <Button type="submit" variant="blue" disabled={saving} className="rounded-lg">
@@ -406,18 +443,18 @@ export default function CouponsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {coupons.length === 0 ? (
+                      {totalRecords === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                             No coupons found. Create your first coupon.
                           </td>
                         </tr>
                       ) : (
-                        coupons.map((coupon) => (
+                        paginatedData.map((coupon) => (
                           <tr key={coupon.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4 text-sm font-medium text-gray-900">{coupon.name}</td>
                             <td className="px-6 py-4">
-                              <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold">
+                              <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold">
                                 {coupon.code}
                               </span>
                             </td>
@@ -482,6 +519,22 @@ export default function CouponsPage() {
                   </table>
                 </div>
               )}
+
+              {/* Pagination */}
+              {!loading && totalRecords > 0 && (
+                <div className="px-4 py-3 border-t">
+                  <SimplePagination
+                    currentPage={currentPage}
+                    totalCount={totalRecords}
+                    onPageChange={setCurrentPage}
+                    pageSize={pageSize}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size)
+                      setCurrentPage(1)
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* View Coupon Dialog */}
@@ -496,7 +549,7 @@ export default function CouponsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { label: 'Coupon Name', value: selectedCoupon.name },
-                        { label: 'Coupon Code', value: selectedCoupon.code, mono: true },
+                        { label: 'Coupon Code', value: selectedCoupon.code },
                         { label: 'Discount', value: `${selectedCoupon.discount}%` },
                         { label: 'Limit', value: selectedCoupon.limit === 0 ? 'Unlimited' : selectedCoupon.limit.toString() },
                         { label: 'Used', value: selectedCoupon.used.toString() },
@@ -504,7 +557,7 @@ export default function CouponsPage() {
                       ].map((item) => (
                         <div key={item.label} className="bg-gray-50 rounded-xl px-4 py-3">
                           <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
-                          <p className={`text-sm font-semibold ${item.mono ? 'font-mono text-blue-700' : 'text-gray-900'}`}>
+                          <p className="text-sm font-semibold text-gray-900">
                             {item.value}
                           </p>
                         </div>
@@ -537,13 +590,23 @@ export default function CouponsPage() {
               setEditDialogOpen(open)
               if (!open) { setEditingCoupon(null); resetForm() }
             }}>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+              <DialogContent
+                className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
                 <DialogHeader>
                   <DialogTitle>Edit Coupon</DialogTitle>
                   <DialogDescription>Update discount coupon information.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleUpdateSubmit}>
-                  <CouponFormFields />
+                  <CouponFormFields
+                    formData={formData}
+                    setFormData={setFormData}
+                    formErrors={formErrors}
+                    codeType={codeType}
+                    setCodeType={setCodeType}
+                    generateCode={generateCode}
+                  />
                   <DialogFooter className="gap-2">
                     <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-lg">Cancel</Button>
                     <Button type="submit" variant="blue" disabled={saving} className="rounded-lg">

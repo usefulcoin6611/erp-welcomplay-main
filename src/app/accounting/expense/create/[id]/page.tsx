@@ -591,7 +591,7 @@ export default function ExpenseCreatePage() {
                           Create category here.{' '}
                           <Link
                             className="font-medium text-primary"
-                            href="/accounting/setup/custom-field?tab=category"
+                            href="/accounting/setup?tab=category"
                           >
                             Create category
                           </Link>
