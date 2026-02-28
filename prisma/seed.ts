@@ -68,6 +68,7 @@ import { seedHrmAdmin } from "./seeds/hrm-admin";
 import { seedAccessProfiles } from "./seeds/access-profiles";
 import { seedSupport } from "./seeds/support";
 import { seedWarehouses } from "./seeds/warehouses";
+import { seedTransfers } from "./seeds/transfers";
 
 dotenv.config();
 
@@ -148,6 +149,7 @@ async function main() {
     await seedBugs(prisma);
     await seedTimeTrackers(prisma);
     await seedWarehouses(prisma);
+    await seedTransfers(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

@@ -98,9 +98,10 @@ model Branch {
   budgetPlans     BudgetPlan[]
   categories      Category[]
   chartOfAccounts ChartOfAccount[]
-  warehouses      Warehouse[]
-  posOrders       PosOrder[]
-  barcodeSettings BarcodeSetting[]
+  warehouses          Warehouse[]
+  posOrders           PosOrder[]
+  barcodeSettings     BarcodeSetting[]
+  warehouseTransfers  WarehouseTransfer[]
   customers       Customer[]
   deals           Deal[]
   departments     Department[]
@@ -1002,6 +1003,7 @@ model Product {
   billItems        BillItem[]
   expenseItems     ExpenseItem[]
   posOrderItems    PosOrderItem[]
+  warehouseTransfers WarehouseTransfer[] @relation("TransferProduct")
   branch           Branch?         @relation(fields: [branchId], references: [id])
   category         Category?       @relation(fields: [categoryId], references: [id])
   expenseAccount   ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
@@ -1807,8 +1809,10 @@ model Warehouse {
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  branch      Branch?      @relation(fields: [branchId], references: [id])
-  posOrders   PosOrder[]
+  branch           Branch?             @relation(fields: [branchId], references: [id])
+  posOrders        PosOrder[]
+  transfersFrom    WarehouseTransfer[] @relation("TransferFrom")
+  transfersTo      WarehouseTransfer[] @relation("TransferTo")
 
   @@map("warehouse")
   @@index([branchId])
@@ -1873,4 +1877,30 @@ model BarcodeSetting {
 
   @@map("barcode_setting")
   @@index([branchId])
+}
+
+/// Warehouse Transfer: transfer produk antar warehouse.
+model WarehouseTransfer {
+  id              String    @id @default(cuid())
+  transferId      String    @unique
+  fromWarehouseId String
+  toWarehouseId   String
+  productId       String
+  quantity        Float     @default(0)
+  note            String?
+  branchId        String?
+  transferDate    DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  fromWarehouse   Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse     Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  product         Product   @relation("TransferProduct", fields: [productId], references: [id])
+  branch          Branch?   @relation(fields: [branchId], references: [id])
+
+  @@map("warehouse_transfer")
+  @@index([branchId])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([productId])
+  @@index([transferDate])
 }
