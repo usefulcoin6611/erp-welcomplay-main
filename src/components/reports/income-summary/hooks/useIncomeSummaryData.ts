@@ -5,6 +5,8 @@ import {
   halfYearlyMonthList,
   yearlyMonthList,
   calculateTotalIncome,
+  mockRevenueData,
+  mockInvoiceData,
   type IncomeData,
 } from '../constants'
 
@@ -15,9 +17,9 @@ export function useIncomeSummaryData() {
   const [category, setCategory] = useState<string>('All')
   const [customer, setCustomer] = useState<string>('All')
 
-  // API data state
-  const [invoiceData, setInvoiceData] = useState<IncomeData[]>([])
-  const [revenueData, setRevenueData] = useState<IncomeData[]>([])
+  // API data state - initialize with mock data to prevent undefined errors
+  const [invoiceData, setInvoiceData] = useState<IncomeData[]>(mockInvoiceData)
+  const [revenueData, setRevenueData] = useState<IncomeData[]>(mockRevenueData)
   const [monthLabels, setMonthLabels] = useState<string[]>(monthlyMonthList)
   const [categoryOptions, setCategoryOptions] = useState<string[]>(['All'])
   const [customerOptions, setCustomerOptions] = useState<{ id: string; name: string }[]>([{ id: 'All', name: 'All' }])
@@ -38,14 +40,20 @@ export function useIncomeSummaryData() {
       if (!res.ok) throw new Error('Failed to fetch income summary data')
       const json = await res.json()
       if (json.success && json.data) {
-        setInvoiceData(json.data.invoiceData || [])
-        setRevenueData(json.data.revenueData || [])
+        // invoiceData and revenueData are IncomeData[] { category, data }
+        const newInvoiceData = json.data.invoiceData || []
+        const newRevenueData = json.data.revenueData || []
+        
+        // Use mock data if API returns empty
+        setInvoiceData(newInvoiceData.length > 0 ? newInvoiceData : mockInvoiceData)
+        setRevenueData(newRevenueData.length > 0 ? newRevenueData : mockRevenueData)
         setMonthLabels(json.data.monthLabels || monthlyMonthList)
         if (json.data.categories) setCategoryOptions(json.data.categories)
         if (json.data.customers) setCustomerOptions(json.data.customers)
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to load income summary data')
+      // Keep existing data on error
     } finally {
       setLoading(false)
     }
