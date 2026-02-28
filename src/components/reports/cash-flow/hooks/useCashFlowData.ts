@@ -1,20 +1,14 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
-import type { ViewType } from '../constants'
-
-type CashFlowRow = {
-  month: string
-  income: number
-  expense: number
-  netProfit: number
-}
+import { useState, useEffect, useCallback } from 'react'
+import type { CashFlowData, ViewType } from '../constants'
+import { mockCashFlowData, calculateTotals } from '../constants'
 
 export function useCashFlowData() {
   // Filter states
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()))
   const [viewType, setViewType] = useState<ViewType>('monthly')
 
-  // API data state
-  const [cashFlowData, setCashFlowData] = useState<CashFlowRow[]>([])
+  // API data state - initialize with mock data to avoid undefined errors
+  const [cashFlowData, setCashFlowData] = useState<CashFlowData>(mockCashFlowData)
   const [totalIncome, setTotalIncome] = useState<number[]>(Array(12).fill(0))
   const [totalExpense, setTotalExpense] = useState<number[]>(Array(12).fill(0))
   const [netProfit, setNetProfit] = useState<number[]>(Array(12).fill(0))
@@ -39,7 +33,14 @@ export function useCashFlowData() {
       if (!res.ok) throw new Error('Failed to fetch cash flow data')
       const json = await res.json()
       if (json.success && json.data) {
-        setCashFlowData(json.data.cashFlowData || [])
+        // cashFlowData must be CashFlowData format: { revenue, invoice, payment, bill }
+        const data = json.data.cashFlowData
+        if (data && data.revenue && data.invoice && data.payment && data.bill) {
+          setCashFlowData(data)
+        } else {
+          // Fallback to empty structure
+          setCashFlowData({ revenue: [], invoice: [], payment: [], bill: [] })
+        }
         setTotalIncome(json.data.totalIncome || Array(12).fill(0))
         setTotalExpense(json.data.totalExpense || Array(12).fill(0))
         setNetProfit(json.data.netProfit || Array(12).fill(0))
@@ -53,6 +54,7 @@ export function useCashFlowData() {
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to load cash flow data')
+      // Keep existing data on error
     } finally {
       setLoading(false)
     }
