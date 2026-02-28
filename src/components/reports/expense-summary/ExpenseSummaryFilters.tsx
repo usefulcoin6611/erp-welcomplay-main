@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, RotateCcw, FileDown } from 'lucide-react'
+import { Search, RotateCcw, FileDown, FileSpreadsheet } from 'lucide-react'
 import { periods, yearList } from './constants'
 
 interface ExpenseSummaryFiltersProps {
@@ -46,14 +46,14 @@ function ExpenseSummaryFiltersComponent({
   return (
     <Card className="shadow-none">
       <CardContent className="px-4 py-2">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+        <div className="flex flex-wrap lg:flex-nowrap items-end gap-3">
           {/* Period Select */}
-          <div className="w-full lg:w-48 space-y-1.5">
+          <div className="w-full sm:w-44 shrink-0 space-y-1.5">
             <Label htmlFor="period" className="text-xs font-medium text-muted-foreground">
-              Expense Period
+              Period
             </Label>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger id="period" className="h-9 text-sm shadow-none">
+              <SelectTrigger id="period" className="h-9 text-sm shadow-none w-full">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -68,12 +68,12 @@ function ExpenseSummaryFiltersComponent({
 
           {/* Year Select - Hide when yearly is selected */}
           {period !== 'yearly' && (
-            <div className="w-full lg:w-48 space-y-1.5">
+            <div className="w-full sm:w-32 shrink-0 space-y-1.5">
               <Label htmlFor="year" className="text-xs font-medium text-muted-foreground">
                 Year
               </Label>
               <Select value={year} onValueChange={setYear}>
-                <SelectTrigger id="year" className="h-9 text-sm shadow-none">
+                <SelectTrigger id="year" className="h-9 text-sm shadow-none w-full">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -88,13 +88,13 @@ function ExpenseSummaryFiltersComponent({
           )}
 
           {/* Category Select */}
-          <div className="w-full lg:w-40 space-y-1.5">
+          <div className="w-full sm:w-40 shrink-0 space-y-1.5">
             <Label htmlFor="category" className="text-xs font-medium text-muted-foreground">
               Category
             </Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger id="category" className="h-9 text-sm shadow-none">
-                <SelectValue placeholder="Select category" />
+              <SelectTrigger id="category" className="h-9 text-sm shadow-none w-full">
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 {categoryOptions.map((cat) => (
@@ -107,13 +107,13 @@ function ExpenseSummaryFiltersComponent({
           </div>
 
           {/* Vendor Select */}
-          <div className="w-full lg:w-40 space-y-1.5">
+          <div className="w-full sm:w-44 shrink-0 space-y-1.5">
             <Label htmlFor="vendor" className="text-xs font-medium text-muted-foreground">
               Vendor
             </Label>
             <Select value={vendor} onValueChange={setVendor}>
-              <SelectTrigger id="vendor" className="h-9 text-sm shadow-none">
-                <SelectValue placeholder="Select vendor" />
+              <SelectTrigger id="vendor" className="h-9 text-sm shadow-none w-full">
+                <SelectValue placeholder="All Vendors" />
               </SelectTrigger>
               <SelectContent>
                 {vendorOptions.map((ven) => (
@@ -126,7 +126,7 @@ function ExpenseSummaryFiltersComponent({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 lg:ml-auto">
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             <Button
               size="sm"
               onClick={onApply}
@@ -148,8 +148,15 @@ function ExpenseSummaryFiltersComponent({
               size="sm"
               className="h-9 px-4 shadow-none"
             >
-              <FileDown className="w-4 h-4" />
+              <FileSpreadsheet className="w-4 h-4" />
               Export
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+            >
+              <FileDown className="w-4 h-4" />
+              Download
             </Button>
           </div>
         </div>

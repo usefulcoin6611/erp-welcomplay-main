@@ -17,7 +17,9 @@ export const periods = [
   { value: 'yearly', label: 'Yearly' },
 ]
 
-export const yearList = ['2025', '2024', '2023', '2022', '2021']
+// Dynamic year list: current year + 4 previous years
+const currentYear = new Date().getFullYear()
+export const yearList = Array.from({ length: 5 }, (_, i) => String(currentYear - i))
 
 export const categories = [
   'All',

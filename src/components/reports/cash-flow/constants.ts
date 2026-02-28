@@ -16,7 +16,9 @@ export const monthList = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ]
 
-export const yearList = ['2023', '2024', '2025', '2026']
+// Dynamic year list: current year + 3 previous years
+const currentYear = new Date().getFullYear()
+export const yearList = Array.from({ length: 4 }, (_, i) => String(currentYear - i))
 
 export type ViewType = 'monthly' | 'quarterly'
 
