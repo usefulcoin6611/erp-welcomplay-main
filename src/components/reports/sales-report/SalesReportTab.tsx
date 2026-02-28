@@ -94,7 +94,7 @@ function SalesReportTabComponent() {
           </div>
         </div>
         <CardContent className="pt-0">
-          <div style={{ minHeight: '400px' }}>
+          <div>
             {/* Loading State */}
             {loading && (
               <div className="space-y-3 py-4">

@@ -91,7 +91,7 @@ const ReceivablesTabComponent = () => {
         </div>
 
         <CardContent className="pt-0">
-          <div style={{ minHeight: '400px' }}>
+          <div>
             {/* Customer Balance Table */}
             {selectedTab === 'customer-balance' && (
               <CustomerBalanceTable 
