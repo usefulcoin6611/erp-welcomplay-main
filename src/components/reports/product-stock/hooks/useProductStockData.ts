@@ -152,6 +152,7 @@ export function useProductStockData() {
     setPageSize,
     
     // Data
+    filteredData,
     paginatedData,
     summaryStats,
     

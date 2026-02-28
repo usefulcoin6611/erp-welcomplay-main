@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { availableStatuses, type BillStatus } from './constants'
+import { exportBillSummary } from '../utils/exportUtils'
 
 interface BillSummaryFiltersProps {
   dateRange: DateRange | undefined
@@ -30,6 +31,7 @@ interface BillSummaryFiltersProps {
   onApply: () => void
   onReset: () => void
   vendorOptions?: string[]
+  exportData?: any[]
 }
 
 export function BillSummaryFilters({
@@ -44,6 +46,7 @@ export function BillSummaryFilters({
   onApply,
   onReset,
   vendorOptions,
+  exportData = [],
 }: BillSummaryFiltersProps) {
   const dynamicVendors = vendorOptions || ['All']
   const dateRangeLabel = dateRange?.from
@@ -148,6 +151,7 @@ export function BillSummaryFilters({
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={() => exportBillSummary(exportData, 'bill-summary')}
             >
               <FileSpreadsheet className="w-4 h-4" />
               Export
@@ -155,6 +159,7 @@ export function BillSummaryFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={() => exportBillSummary(exportData, 'bill-summary')}
             >
               <FileDown className="w-4 h-4" />
               Download

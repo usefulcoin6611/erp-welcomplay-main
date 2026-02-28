@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { availableStatuses, type StockStatus } from './constants'
+import { exportProductStock } from '../utils/exportUtils'
 
 interface ProductStockFiltersProps {
   selectedCategory: string
@@ -21,6 +22,7 @@ interface ProductStockFiltersProps {
   onApply: () => void
   onReset: () => void
   categoryOptions?: string[]
+  exportData?: any[]
 }
 
 export function ProductStockFilters({
@@ -31,6 +33,7 @@ export function ProductStockFilters({
   onApply,
   onReset,
   categoryOptions,
+  exportData = [],
 }: ProductStockFiltersProps) {
   const dynamicCategories = categoryOptions || ['All']
   return (
@@ -94,6 +97,7 @@ export function ProductStockFilters({
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={() => exportProductStock(exportData, 'product-stock')}
             >
               <FileSpreadsheet className="w-4 h-4" />
               Export
@@ -101,6 +105,7 @@ export function ProductStockFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={() => exportProductStock(exportData, 'product-stock')}
             >
               <FileDown className="w-4 h-4" />
               Download

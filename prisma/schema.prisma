@@ -38,6 +38,7 @@ model User {
   createdSupportTickets SupportTicket[] @relation("SupportCreatedBy")
   assignedSupportTickets SupportTicket[] @relation("SupportAssignedTo")
   supportReplies   SupportReply[]
+  orders           Order[]
 
   @@map("user")
 }
@@ -1947,4 +1948,28 @@ model Coupon {
   updatedAt DateTime @updatedAt
 
   @@map("coupon")
+}
+
+/// Subscription Order: records of plan purchases by companies (super admin view)
+model Order {
+  id            String   @id @default(cuid())
+  orderId       String   @unique  // e.g. ORD-001
+  userId        String?           // Company user who placed the order
+  userName      String            // Company name / user name
+  planName      String            // Plan name at time of purchase
+  price         Float    @default(0)
+  paymentStatus String   @default("Pending") // Pending | Approved | success | failed
+  paymentType   String   @default("Bank Transfer") // Bank Transfer | STRIPE | Manually | Free
+  coupon        String?           // Coupon code used
+  receipt       String?           // Receipt URL or note
+  isRefund      Int      @default(0) // 0 = not refunded, 1 = refunded
+  orderDate     DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("order")
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([orderDate])
 }

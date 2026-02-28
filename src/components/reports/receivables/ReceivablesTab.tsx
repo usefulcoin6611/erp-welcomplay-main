@@ -56,6 +56,8 @@ const ReceivablesTabComponent = () => {
         setIsDateRangeOpen={setIsDateRangeOpen}
         onReset={handleReset}
         onApply={handleApplyFilters}
+        selectedTab={selectedTab}
+        exportData={filteredData}
       />
 
       {/* Main Data Card with Tabs */}

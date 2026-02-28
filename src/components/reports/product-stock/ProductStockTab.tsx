@@ -24,6 +24,7 @@ function ProductStockTabComponent() {
     setPageSize,
     
     // Data
+    filteredData,
     paginatedData,
     summaryStats,
     
@@ -47,6 +48,7 @@ function ProductStockTabComponent() {
         onApply={handleApplyFilters}
         onReset={handleReset}
         categoryOptions={categoryOptions}
+        exportData={filteredData}
       />
 
       {/* Statistics Cards */}

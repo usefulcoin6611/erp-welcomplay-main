@@ -46,6 +46,7 @@ function CashFlowTabComponent() {
         setViewType={setViewType}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        cashFlowData={cashFlowData}
       />
 
       {/* Statistics Cards */}

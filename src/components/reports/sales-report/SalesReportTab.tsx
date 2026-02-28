@@ -58,6 +58,9 @@ function SalesReportTabComponent() {
         onDateRangeChange={setDateRange}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        selectedTab={selectedTab}
+        itemsData={filteredItems}
+        customersData={filteredCustomers}
       />
 
       {/* Data Section */}

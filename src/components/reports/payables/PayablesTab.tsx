@@ -59,6 +59,8 @@ const PayablesTabComponent = () => {
         setIsDateRangeOpen={setIsDateRangeOpen}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        selectedTab={selectedTab}
+        exportData={filteredData}
       />
 
       {/* Main Data Card with Tabs */}

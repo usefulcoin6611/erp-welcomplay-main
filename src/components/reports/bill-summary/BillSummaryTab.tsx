@@ -34,6 +34,7 @@ function BillSummaryTabComponent() {
     setPageSize,
     
     // Data
+    filteredBills,
     paginatedBills,
     summaryStats,
     monthlyChartData,
@@ -86,6 +87,7 @@ function BillSummaryTabComponent() {
         onApply={handleApplyFilters}
         onReset={handleReset}
         vendorOptions={vendorOptions}
+        exportData={filteredBills}
       />
 
       {/* Statistics Cards */}

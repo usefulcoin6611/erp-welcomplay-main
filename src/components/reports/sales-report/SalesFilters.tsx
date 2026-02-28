@@ -8,15 +8,28 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
+import { exportSalesByItem, exportSalesByCustomer } from '../utils/exportUtils'
 
 interface SalesFiltersProps {
   dateRange?: DateRange
   onDateRangeChange?: (range: DateRange | undefined) => void
   onApply?: () => void
   onReset?: () => void
+  // Data for export
+  selectedTab?: string
+  itemsData?: any[]
+  customersData?: any[]
 }
 
-export function SalesFilters({ dateRange, onDateRangeChange, onApply, onReset }: SalesFiltersProps) {
+export function SalesFilters({
+  dateRange,
+  onDateRangeChange,
+  onApply,
+  onReset,
+  selectedTab = 'items',
+  itemsData = [],
+  customersData = [],
+}: SalesFiltersProps) {
   const t = useTranslations('reports.salesReport')
 
   const dateRangeLabel = dateRange?.from
@@ -24,6 +37,19 @@ export function SalesFilters({ dateRange, onDateRangeChange, onApply, onReset }:
       ? `${format(dateRange.from, 'LLL dd, y')} - ${format(dateRange.to, 'LLL dd, y')}`
       : format(dateRange.from, 'LLL dd, y')
     : t('pickDateRange')
+
+  const handleExport = () => {
+    if (selectedTab === 'items') {
+      exportSalesByItem(itemsData, 'sales-by-item')
+    } else {
+      exportSalesByCustomer(customersData, 'sales-by-customer')
+    }
+  }
+
+  const handleDownload = () => {
+    // Download as CSV (same as export for CSV format)
+    handleExport()
+  }
 
   return (
     <Card>
@@ -92,6 +118,7 @@ export function SalesFilters({ dateRange, onDateRangeChange, onApply, onReset }:
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={handleExport}
             >
               <FileSpreadsheet className="w-4 h-4" />
               {t('export')}
@@ -99,6 +126,7 @@ export function SalesFilters({ dateRange, onDateRangeChange, onApply, onReset }:
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={handleDownload}
             >
               <FileDown className="w-4 h-4" />
               {t('download')}
