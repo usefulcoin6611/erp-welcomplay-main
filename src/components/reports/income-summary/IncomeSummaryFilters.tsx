@@ -45,17 +45,18 @@ function IncomeSummaryFiltersComponent({
 }: IncomeSummaryFiltersProps) {
   const categories = categoryOptions || defaultCategories
   const customers = customerOptions ? customerOptions.map(c => c.name) : defaultCustomers
+
   return (
     <Card className="shadow-none">
       <CardContent className="px-4 py-2">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+        <div className="flex flex-wrap lg:flex-nowrap items-end gap-3">
           {/* Period Select */}
-          <div className="w-full lg:w-48 space-y-1.5">
+          <div className="w-full sm:w-44 shrink-0 space-y-1.5">
             <Label htmlFor="period" className="text-xs font-medium text-muted-foreground">
-              Income Period
+              Period
             </Label>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger id="period" className="h-9 text-sm shadow-none">
+              <SelectTrigger id="period" className="h-9 text-sm shadow-none w-full">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -70,12 +71,12 @@ function IncomeSummaryFiltersComponent({
 
           {/* Year Select - Hide when yearly is selected */}
           {period !== 'yearly' && (
-            <div className="w-full lg:w-48 space-y-1.5">
+            <div className="w-full sm:w-32 shrink-0 space-y-1.5">
               <Label htmlFor="year" className="text-xs font-medium text-muted-foreground">
                 Year
               </Label>
               <Select value={year} onValueChange={setYear}>
-                <SelectTrigger id="year" className="h-9 text-sm shadow-none">
+                <SelectTrigger id="year" className="h-9 text-sm shadow-none w-full">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -90,13 +91,13 @@ function IncomeSummaryFiltersComponent({
           )}
 
           {/* Category Select */}
-          <div className="w-full lg:w-40 space-y-1.5">
+          <div className="w-full sm:w-40 shrink-0 space-y-1.5">
             <Label htmlFor="category" className="text-xs font-medium text-muted-foreground">
               Category
             </Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger id="category" className="h-9 text-sm shadow-none">
-                <SelectValue placeholder="Select category" />
+              <SelectTrigger id="category" className="h-9 text-sm shadow-none w-full">
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
@@ -109,13 +110,13 @@ function IncomeSummaryFiltersComponent({
           </div>
 
           {/* Customer Select */}
-          <div className="w-full lg:w-40 space-y-1.5">
+          <div className="w-full sm:w-44 shrink-0 space-y-1.5">
             <Label htmlFor="customer" className="text-xs font-medium text-muted-foreground">
               Customer
             </Label>
             <Select value={customer} onValueChange={setCustomer}>
-              <SelectTrigger id="customer" className="h-9 text-sm shadow-none">
-                <SelectValue placeholder="Select customer" />
+              <SelectTrigger id="customer" className="h-9 text-sm shadow-none w-full">
+                <SelectValue placeholder="All Customers" />
               </SelectTrigger>
               <SelectContent>
                 {customers.map((cust) => (
@@ -128,7 +129,7 @@ function IncomeSummaryFiltersComponent({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 lg:ml-auto">
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             <Button
               size="sm"
               onClick={onApply}
