@@ -30,15 +30,67 @@ import { EventCalendar } from '@/components/event-calendar'
 // Import ApexCharts dynamically to avoid SSR issues
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
+type SuperAdminDashboard = {
+  totalCompanies: number
+  paidCompanies: number
+  totalOrders: number
+  totalRevenue: number
+  totalPlans: number
+  mostPopularPlan: string
+  recentOrdersChart: { labels: string[]; data: number[] }
+}
+
+const defaultSuperAdmin: SuperAdminDashboard = {
+  totalCompanies: 0,
+  paidCompanies: 0,
+  totalOrders: 0,
+  totalRevenue: 0,
+  totalPlans: 0,
+  mostPopularPlan: "-",
+  recentOrdersChart: { labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], data: [0, 0, 0, 0, 0, 0, 0] },
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
-  const isSuperAdmin = user?.type === 'super admin'
-  const isClient = user?.type === 'client'
+  const isSuperAdmin = user?.type === "super admin"
+  const isClient = user?.type === "client"
   const [mounted, setMounted] = useState(false)
+  const [superAdminData, setSuperAdminData] = useState<SuperAdminDashboard>(defaultSuperAdmin)
+  const [superAdminLoading, setSuperAdminLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (!mounted || !isSuperAdmin) {
+      if (!isSuperAdmin) setSuperAdminLoading(false)
+      return
+    }
+    let cancelled = false
+    setSuperAdminLoading(true)
+    fetch("/api/dashboard/super-admin", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json.success || !json.data) return
+        setSuperAdminData({
+          totalCompanies: json.data.totalCompanies ?? 0,
+          paidCompanies: json.data.paidCompanies ?? 0,
+          totalOrders: json.data.totalOrders ?? 0,
+          totalRevenue: json.data.totalRevenue ?? 0,
+          totalPlans: json.data.totalPlans ?? 0,
+          mostPopularPlan: json.data.mostPopularPlan ?? "-",
+          recentOrdersChart: json.data.recentOrdersChart ?? defaultSuperAdmin.recentOrdersChart,
+        })
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setSuperAdminLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [mounted, isSuperAdmin])
 
   // Mock data - in production, this would come from an API
   const dashboardData = {
@@ -179,115 +231,136 @@ export default function DashboardPage() {
             {/* Super Admin Dashboard */}
             {isSuperAdmin ? (
               <div className="space-y-8">
-                {/* Stats Cards - Minimalist Design */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Total Companies */}
-                  <Card className="rounded-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <p className="text-sm text-gray-600 font-medium">Total Companies</p>
-                          <h3 className="text-3xl font-semibold text-gray-900">24</h3>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Paid Users: <span className="font-medium text-gray-700">18</span>
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                          <Building2 className="w-6 h-6 text-blue-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {superAdminLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[1, 2, 3].map((i) => (
+                      <Card key={i} className="rounded-lg">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2 flex-1">
+                              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+                              <div className="h-3 w-20 bg-gray-100 rounded animate-pulse mt-2" />
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 animate-pulse" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    {/* Stats Cards - Minimalist Design */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Total Companies */}
+                      <Card className="rounded-lg">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-600 font-medium">Total Companies</p>
+                              <h3 className="text-3xl font-semibold text-gray-900">{superAdminData.totalCompanies}</h3>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Paid Users: <span className="font-medium text-gray-700">{superAdminData.paidCompanies}</span>
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                              <Building2 className="w-6 h-6 text-blue-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                  {/* Total Orders */}
-                  <Card className="rounded-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <p className="text-sm text-gray-600 font-medium">Total Orders</p>
-                          <h3 className="text-3xl font-semibold text-gray-900">156</h3>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Amount: <span className="font-medium text-gray-700">
-                              {new Intl.NumberFormat('id-ID', {
-                                style: 'currency',
-                                currency: 'IDR',
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0,
-                              }).format(45230)}
-                            </span>
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-                          <ShoppingCart className="w-6 h-6 text-green-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      {/* Total Orders */}
+                      <Card className="rounded-lg">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-600 font-medium">Total Orders</p>
+                              <h3 className="text-3xl font-semibold text-gray-900">{superAdminData.totalOrders}</h3>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Amount: <span className="font-medium text-gray-700">
+                                  {new Intl.NumberFormat("id-ID", {
+                                    style: "currency",
+                                    currency: "IDR",
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  }).format(superAdminData.totalRevenue)}
+                                </span>
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                              <ShoppingCart className="w-6 h-6 text-green-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                  {/* Total Plans */}
-                  <Card className="rounded-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <p className="text-sm text-gray-600 font-medium">Total Plans</p>
-                          <h3 className="text-3xl font-semibold text-gray-900">4</h3>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Most Popular: <span className="font-medium text-gray-700">Gold</span>
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-purple-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                      {/* Total Plans */}
+                      <Card className="rounded-lg">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-600 font-medium">Total Plans</p>
+                              <h3 className="text-3xl font-semibold text-gray-900">{superAdminData.totalPlans}</h3>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Most Popular: <span className="font-medium text-gray-700">{superAdminData.mostPopularPlan}</span>
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+                              <FileText className="w-6 h-6 text-purple-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                {/* Recent Order Chart - Clean Design */}
-                <Card className="rounded-lg">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-lg font-medium text-gray-900">Recent Orders</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Chart
-                      options={{
-                        chart: {
-                          height: 300,
-                          type: 'area',
-                          toolbar: { show: false },
-                          fontFamily: 'inherit',
-                        },
-                        dataLabels: { enabled: false },
-                        stroke: { width: 2, curve: 'smooth' },
-                        xaxis: {
-                          categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                          labels: { style: { colors: '#6b7280', fontSize: '12px' } },
-                        },
-                        yaxis: {
-                          labels: { style: { colors: '#6b7280', fontSize: '12px' } },
-                        },
-                        colors: ['#3b82f6'],
-                        grid: { 
-                          strokeDashArray: 4,
-                          borderColor: '#f3f4f6',
-                        },
-                        legend: { show: false },
-                        tooltip: {
-                          theme: 'light',
-                          style: { fontSize: '12px' },
-                        },
-                      }}
-                      series={[
-                        {
-                          name: 'Income',
-                          data: [1200, 1900, 3000, 5000, 2000, 3000, 4500],
-                        },
-                      ]}
-                      type="area"
-                      height={300}
-                    />
-                  </CardContent>
-                </Card>
+                    {/* Recent Order Chart - Clean Design */}
+                    <Card className="rounded-lg">
+                      <CardHeader className="p-3">
+                        <CardTitle className="text-lg font-medium text-gray-900">Recent Orders</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Chart
+                          options={{
+                            chart: {
+                              height: 300,
+                              type: "area",
+                              toolbar: { show: false },
+                              fontFamily: "inherit",
+                            },
+                            dataLabels: { enabled: false },
+                            stroke: { width: 2, curve: "smooth" },
+                            xaxis: {
+                              categories: superAdminData.recentOrdersChart.labels,
+                              labels: { style: { colors: "#6b7280", fontSize: "12px" } },
+                            },
+                            yaxis: {
+                              labels: { style: { colors: "#6b7280", fontSize: "12px" } },
+                            },
+                            colors: ["#3b82f6"],
+                            grid: {
+                              strokeDashArray: 4,
+                              borderColor: "#f3f4f6",
+                            },
+                            legend: { show: false },
+                            tooltip: {
+                              theme: "light",
+                              style: { fontSize: "12px" },
+                            },
+                          }}
+                          series={[
+                            {
+                              name: "Income",
+                              data: superAdminData.recentOrdersChart.data,
+                            },
+                          ]}
+                          type="area"
+                          height={300}
+                        />
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-6">

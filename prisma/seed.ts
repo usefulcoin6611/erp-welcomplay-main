@@ -70,6 +70,7 @@ import { seedSupport } from "./seeds/support";
 import { seedWarehouses } from "./seeds/warehouses";
 import { seedTransfers } from "./seeds/transfers";
 import { seedPlans } from "./seeds/plans";
+import { seedOrders } from "./seeds/orders";
 
 dotenv.config();
 
@@ -115,6 +116,7 @@ async function main() {
     await seedHrmAssets(prisma);
     await seedUsers(prisma);
     await seedEmployeeUsers(prisma);
+    await seedOrders(prisma);
     await seedSupport(prisma);
     await seedAttendance(prisma);
     await seedJournals(prisma);

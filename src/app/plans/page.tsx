@@ -6,8 +6,6 @@ import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Pencil, Trash, Check, X } from 'lucide-react'
 import {
@@ -79,13 +77,39 @@ const defaultFormData = {
   chatgpt: false,
 }
 
-// Plan accent color bar based on plan name
-function getPlanAccentColor(name: string) {
+// Plan-specific styling to make each card unique
+function getPlanCardStyle(name: string) {
   const n = name.toLowerCase()
-  if (n.includes('platinum')) return 'bg-purple-500'
-  if (n.includes('gold')) return 'bg-amber-500'
-  if (n.includes('silver')) return 'bg-slate-400'
-  return 'bg-blue-500' // Free Plan / default
+  if (n.includes('platinum')) {
+    return {
+      card: 'bg-gradient-to-b from-purple-50/80 to-white',
+      price: 'text-purple-600',
+      badge: 'bg-purple-100 text-purple-700',
+      limitsBg: 'bg-purple-50/60',
+    }
+  }
+  if (n.includes('gold')) {
+    return {
+      card: 'bg-gradient-to-b from-amber-50/80 to-white',
+      price: 'text-amber-600',
+      badge: 'bg-amber-100 text-amber-700',
+      limitsBg: 'bg-amber-50/60',
+    }
+  }
+  if (n.includes('silver')) {
+    return {
+      card: 'bg-gradient-to-b from-slate-50 to-white',
+      price: 'text-slate-600',
+      badge: 'bg-slate-100 text-slate-700',
+      limitsBg: 'bg-slate-100/80',
+    }
+  }
+  return {
+    card: 'bg-gradient-to-b from-blue-50/80 to-white',
+    price: 'text-blue-600',
+    badge: 'bg-blue-100 text-blue-700',
+    limitsBg: 'bg-blue-50/60',
+  }
 }
 
 export default function PlansPage() {
@@ -402,7 +426,7 @@ export default function PlansPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100 min-h-screen">
 
             {/* Page Header */}
-            <div className="bg-white rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm">
+            <div className="bg-white rounded-2xl px-6 py-4 flex items-center justify-between gap-4 shadow-sm">
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Subscription Plans</h1>
                 <p className="text-sm text-muted-foreground">{plans.length} plans available</p>
@@ -438,10 +462,10 @@ export default function PlansPage() {
 
             {/* Loading */}
             {loading && (
-              <div className="flex items-center justify-center py-16">
-                <div className="text-center">
-                  <div className="h-8 w-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">Loading plans...</p>
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center bg-white rounded-2xl px-8 py-6 shadow-md">
+                  <div className="h-8 w-8 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin mx-auto mb-3" />
+                  <p className="text-sm font-medium text-slate-600">Loading plans...</p>
                 </div>
               </div>
             )}
@@ -449,48 +473,48 @@ export default function PlansPage() {
             {/* Plans Grid */}
             {!loading && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plans.map((plan) => (
-                  <div key={plan.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    {/* Colored accent bar at top */}
-                    <div className={`h-1.5 w-full ${getPlanAccentColor(plan.name)}`} />
-
-                    {/* Card Header - white background */}
-                    <div className="px-4 pt-4 pb-4">
-                      {/* Plan name badge + switch */}
-                      <div className="flex items-center justify-between mb-4">
-                        <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs`}>
-                          {plan.name}
-                        </Badge>
-                        {isSuperAdmin && plan.price > 0 && (
-                          <Switch
-                            checked={!plan.is_disable}
-                            onCheckedChange={() => handleToggleDisable(plan)}
-                            title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                        )}
-                      </div>
-                      {/* Price - centered with accent color */}
-                      <div className="text-center py-2">
-                        <div className={`text-3xl font-bold ${getPlanAccentColor(plan.name).replace('bg-', 'text-')}`}>
-                          {formatPrice(plan.price)}
+                {plans.map((plan) => {
+                  const style = getPlanCardStyle(plan.name)
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`group relative flex flex-col h-full ${style.card} rounded-2xl overflow-hidden shadow-sm`}
+                    >
+                      <div className="flex flex-col flex-1 p-6">
+                        {/* Plan name pill */}
+                        <div className="flex items-center justify-between mb-4">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${style.badge}`}>
+                            {plan.name}
+                          </span>
+                          {isSuperAdmin && plan.price > 0 && (
+                            <Switch
+                              checked={!plan.is_disable}
+                              onCheckedChange={() => handleToggleDisable(plan)}
+                              title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                            />
+                          )}
                         </div>
-                        {plan.price > 0 && (
-                          <div className="text-sm text-muted-foreground mt-0.5">/{getDurationLabel(plan.duration)}</div>
-                        )}
-                        {plan.trial_days > 0 && (
-                          <div className="text-xs text-muted-foreground mt-1 bg-gray-50 rounded-full px-3 py-1 inline-block">
-                            {plan.trial_days} days free trial
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Card Body */}
-                    <div className="px-4 pb-4">
-                      <div>
-                        {/* Limits */}
-                        <div className="bg-gray-50 rounded-xl px-3 py-3 mb-3 space-y-1.5">
+                        {/* Price */}
+                        <div className="mb-5">
+                          <div className={`text-3xl font-bold ${style.price}`}>
+                            {formatPrice(plan.price)}
+                          </div>
+                          {plan.price > 0 && (
+                            <div className="text-sm text-slate-500 mt-1 font-medium">
+                              {getDurationLabel(plan.duration)}
+                            </div>
+                          )}
+                          {plan.trial_days > 0 && (
+                            <div className="text-xs font-semibold text-slate-600 mt-2">
+                              {plan.trial_days} days trial
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Limits - with plan-specific tint */}
+                        <div className={`${style.limitsBg} rounded-xl px-4 py-3 space-y-2 mb-5`}>
                           {[
                             { label: 'Users', value: formatLimit(plan.max_users) },
                             { label: 'Customers', value: formatLimit(plan.max_customers) },
@@ -498,45 +522,45 @@ export default function PlansPage() {
                             { label: 'Clients', value: formatLimit(plan.max_clients) },
                             { label: 'Storage', value: formatStorage(plan.storage_limit) },
                           ].map((item) => (
-                            <div key={item.label} className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">{item.label}</span>
-                              <span className="font-medium text-gray-700">{item.value}</span>
+                            <div key={item.label} className="flex justify-between text-sm">
+                              <span className="text-slate-500">{item.label}</span>
+                              <span className="font-semibold text-slate-800">{item.value}</span>
                             </div>
                           ))}
                         </div>
 
                         {/* Modules */}
-                        <div className="grid grid-cols-3 gap-1.5 mb-3">
+                        <div className="flex flex-wrap gap-2 mb-5">
                           {modules.map((mod) => {
                             const enabled = plan[mod.key as keyof Plan] as boolean
                             return (
-                              <div
+                              <span
                                 key={mod.key}
-                                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs ${enabled ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-400'}`}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${enabled ? `${style.badge}` : 'text-slate-400 bg-slate-100'}`}
                               >
-                                {enabled ? <Check className="h-3 w-3 shrink-0" /> : <X className="h-3 w-3 shrink-0" />}
-                                <span className="truncate">{mod.label}</span>
-                              </div>
+                                {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : <X className="h-3 w-3" strokeWidth={2} />}
+                                {mod.label}
+                              </span>
                             )
                           })}
                         </div>
 
-                        {/* Actions */}
+                        {/* Actions - anchored at bottom, no border, color-separated */}
                         {isSuperAdmin && (
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 pt-4 mt-auto">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              className="flex-1 h-8 text-xs rounded-lg shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-0"
+                              className="flex-1 h-9 text-xs font-semibold rounded-xl border-0 bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800"
                               onClick={() => handleEdit(plan)}
                             >
                               <Pencil className="h-3 w-3 mr-1" /> Edit
                             </Button>
                             {plan.price > 0 && (
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="flex-1 h-8 text-xs rounded-lg shadow-none bg-red-50 text-red-700 hover:bg-red-100 border-0"
+                                className="flex-1 h-9 text-xs font-semibold rounded-xl border-0 bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800"
                                 onClick={() => handleDeleteClick(plan)}
                               >
                                 <Trash className="h-3 w-3 mr-1" /> Delete
@@ -546,16 +570,16 @@ export default function PlansPage() {
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
 
                 {plans.length === 0 && !loading && (
-                  <div className="col-span-4 bg-white rounded-2xl py-16 text-center">
-                    <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                      <Plus className="h-6 w-6 text-gray-400" />
+                  <div className="col-span-4 bg-white rounded-2xl py-20 text-center shadow-md">
+                    <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                      <Plus className="h-7 w-7 text-slate-500" />
                     </div>
-                    <p className="text-muted-foreground">No plans found.</p>
-                    <p className="text-sm text-muted-foreground mt-1">Create your first subscription plan.</p>
+                    <p className="text-base font-bold text-slate-700">No plans found.</p>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">Create your first subscription plan.</p>
                   </div>
                 )}
               </div>
