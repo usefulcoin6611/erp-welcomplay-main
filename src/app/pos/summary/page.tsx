@@ -2,10 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Search, X, Eye, Loader2 } from 'lucide-react'
-import Link from 'next/link'
 import { POSPageLayout } from '@/components/pos-page-layout'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -93,11 +91,6 @@ export default function POSSummaryPage() {
     <POSPageLayout
       title="POS Summary"
       breadcrumbLabel="POS"
-      actionButton={
-        <Button size="sm" variant="blue" className="shadow-none h-7" asChild>
-          <Link href="/pos/sales">Add POS</Link>
-        </Button>
-      }
     >
       <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
         <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2">
