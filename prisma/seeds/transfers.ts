@@ -1,6 +1,11 @@
 export async function seedTransfers(prisma: any) {
   console.log("Seeding warehouse transfers...");
 
+  if (!prisma.warehouseTransfer) {
+    console.log("Skipping warehouse transfers: WarehouseTransfer model not on Prisma client. Run `pnpm prisma generate`.");
+    return;
+  }
+
   const branch = await prisma.branch.findFirst({ orderBy: { createdAt: "asc" } });
   const branchId = branch?.id ?? null;
 
