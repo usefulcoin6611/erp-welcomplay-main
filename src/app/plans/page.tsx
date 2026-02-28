@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColorsSolid } from '@/lib/plan-badge-colors'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Pencil, Trash, Check, X, CirclePlus, CircleMinus } from 'lucide-react'
+import { Plus, Pencil, Trash, Check, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -34,10 +34,27 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/contexts/auth-context'
-import { PLAN_DATA, type PlanData } from '@/lib/plan-data'
+import { toast } from 'sonner'
 
-// Types
-type Plan = PlanData
+type Plan = {
+  id: string
+  name: string
+  price: number
+  duration: 'lifetime' | 'month' | 'year'
+  max_users: number
+  max_customers: number
+  max_venders: number
+  max_clients: number
+  storage_limit: number
+  trial_days: number
+  is_disable: boolean
+  account: boolean
+  crm: boolean
+  hrm: boolean
+  project: boolean
+  pos: boolean
+  chatgpt: boolean
+}
 
 const durations = [
   { value: 'lifetime', label: 'Lifetime' },
@@ -45,55 +62,119 @@ const durations = [
   { value: 'year', label: 'Per Year' },
 ]
 
+const defaultFormData = {
+  name: '',
+  price: '',
+  duration: 'month',
+  max_users: '',
+  max_customers: '',
+  max_venders: '',
+  max_clients: '',
+  storage_limit: '',
+  trial_days: '0',
+  account: true,
+  crm: true,
+  hrm: true,
+  project: false,
+  pos: false,
+  chatgpt: false,
+}
+
 export default function PlansPage() {
   const { user } = useAuth()
   const isSuperAdmin = user?.type === 'super admin'
-  const [plans, setPlans] = useState<Plan[]>(PLAN_DATA)
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    duration: '',
-    max_users: '',
-    max_customers: '',
-    max_venders: '',
-    max_clients: '',
-    storage_limit: '',
-    trial_days: '',
-    account: false,
-    crm: false,
-    hrm: false,
-    project: false,
-    pos: false,
-    chatgpt: false,
+  const [formData, setFormData] = useState(defaultFormData)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
+  const loadPlans = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/plans', { cache: 'no-store' })
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data)) {
+        setPlans(json.data)
+      } else {
+        toast.error(json.message || 'Failed to load plans')
+      }
+    } catch {
+      toast.error('Failed to load plans')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPlans()
+  }, [loadPlans])
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+    if (!formData.name.trim()) errors.name = 'Plan name is required'
+    if (formData.price === '' || isNaN(Number(formData.price))) errors.price = 'Valid price is required'
+    if (Number(formData.price) < 0) errors.price = 'Price must be non-negative'
+    if (!formData.duration) errors.duration = 'Duration is required'
+    if (formData.max_users === '' || isNaN(Number(formData.max_users))) errors.max_users = 'Valid number required (-1 for unlimited)'
+    if (formData.max_customers === '' || isNaN(Number(formData.max_customers))) errors.max_customers = 'Valid number required'
+    if (formData.max_venders === '' || isNaN(Number(formData.max_venders))) errors.max_venders = 'Valid number required'
+    if (formData.max_clients === '' || isNaN(Number(formData.max_clients))) errors.max_clients = 'Valid number required'
+    if (formData.storage_limit === '' || isNaN(Number(formData.storage_limit))) errors.storage_limit = 'Valid number required (-1 for unlimited)'
+    if (formData.trial_days === '' || isNaN(Number(formData.trial_days))) errors.trial_days = 'Valid number required'
+    if (Number(formData.trial_days) < 0) errors.trial_days = 'Trial days must be non-negative'
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const buildPayload = () => ({
+    name: formData.name.trim(),
+    price: Number(formData.price),
+    duration: formData.duration as 'lifetime' | 'month' | 'year',
+    maxUsers: Number(formData.max_users),
+    maxCustomers: Number(formData.max_customers),
+    maxVenders: Number(formData.max_venders),
+    maxClients: Number(formData.max_clients),
+    storageLimit: Number(formData.storage_limit),
+    trialDays: Number(formData.trial_days),
+    hasAccount: formData.account,
+    hasCrm: formData.crm,
+    hasHrm: formData.hrm,
+    hasProject: formData.project,
+    hasPos: formData.pos,
+    hasChatgpt: formData.chatgpt,
   })
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form data:', formData)
-    setDialogOpen(false)
-    // Reset form
-    setFormData({
-      name: '',
-      price: '',
-      duration: '',
-      max_users: '',
-      max_customers: '',
-      max_venders: '',
-      max_clients: '',
-      storage_limit: '',
-      trial_days: '',
-      account: false,
-      crm: false,
-      hrm: false,
-      project: false,
-      pos: false,
-      chatgpt: false,
-    })
+    if (!validateForm()) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload()),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.message || 'Failed to create plan')
+        return
+      }
+      toast.success('Plan created successfully')
+      setDialogOpen(false)
+      setFormData(defaultFormData)
+      setFormErrors({})
+      await loadPlans()
+    } catch {
+      toast.error('Failed to create plan')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleEdit = (plan: Plan) => {
@@ -115,59 +196,36 @@ export default function PlansPage() {
       pos: plan.pos,
       chatgpt: plan.chatgpt,
     })
+    setFormErrors({})
     setEditDialogOpen(true)
   }
 
-  const handleUpdateSubmit = (e: React.FormEvent) => {
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingPlan) return
-
-    // Update plan in state
-    setPlans(
-      plans.map((p) =>
-        p.id === editingPlan.id
-          ? {
-              ...p,
-              name: formData.name,
-              price: parseFloat(formData.price),
-              duration: formData.duration as 'lifetime' | 'month' | 'year',
-              max_users: parseInt(formData.max_users),
-              max_customers: parseInt(formData.max_customers),
-              max_venders: parseInt(formData.max_venders),
-              max_clients: parseInt(formData.max_clients),
-              storage_limit: parseInt(formData.storage_limit),
-              trial_days: parseInt(formData.trial_days),
-              account: formData.account,
-              crm: formData.crm,
-              hrm: formData.hrm,
-              project: formData.project,
-              pos: formData.pos,
-              chatgpt: formData.chatgpt,
-            }
-          : p
-      )
-    )
-
-    setEditDialogOpen(false)
-    setEditingPlan(null)
-    // Reset form
-    setFormData({
-      name: '',
-      price: '',
-      duration: '',
-      max_users: '',
-      max_customers: '',
-      max_venders: '',
-      max_clients: '',
-      storage_limit: '',
-      trial_days: '',
-      account: false,
-      crm: false,
-      hrm: false,
-      project: false,
-      pos: false,
-      chatgpt: false,
-    })
+    if (!editingPlan || !validateForm()) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/plans/${editingPlan.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload()),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.message || 'Failed to update plan')
+        return
+      }
+      toast.success('Plan updated successfully')
+      setEditDialogOpen(false)
+      setEditingPlan(null)
+      setFormData(defaultFormData)
+      setFormErrors({})
+      await loadPlans()
+    } catch {
+      toast.error('Failed to update plan')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDeleteClick = (plan: Plan) => {
@@ -175,15 +233,49 @@ export default function PlansPage() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
-    if (planToDelete) {
-      setPlans(plans.filter((p) => p.id !== planToDelete.id))
+  const handleConfirmDelete = async () => {
+    if (!planToDelete) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/plans/${planToDelete.id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.message || 'Failed to delete plan')
+        return
+      }
+      toast.success('Plan deleted successfully')
       setDeleteDialogOpen(false)
       setPlanToDelete(null)
+      await loadPlans()
+    } catch {
+      toast.error('Failed to delete plan')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleDisable = async (plan: Plan) => {
+    try {
+      const res = await fetch(`/api/plans/${plan.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDisable: !plan.is_disable }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.message || 'Failed to update plan status')
+        return
+      }
+      // Optimistic update
+      setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_disable: !p.is_disable } : p))
+      toast.success(`Plan ${!plan.is_disable ? 'disabled' : 'enabled'} successfully`)
+    } catch {
+      toast.error('Failed to update plan status')
     }
   }
 
   const formatPrice = (price: number) => {
+    if (price === 0) return 'Free'
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
@@ -199,6 +291,7 @@ export default function PlansPage() {
 
   const formatStorage = (limit: number) => {
     if (limit === -1) return 'Unlimited'
+    if (limit >= 1000) return `${(limit / 1000).toFixed(0)} GB`
     return `${limit} MB`
   }
 
@@ -206,6 +299,162 @@ export default function PlansPage() {
     const found = durations.find((d) => d.value === duration)
     return found?.label || duration
   }
+
+  // Shared form fields component
+  const PlanFormFields = () => (
+    <div className="grid gap-4 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="f-name">Name <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g. Gold"
+            className={formErrors.name ? 'border-red-500' : ''}
+          />
+          {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="f-price">Price (IDR) <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-price"
+            type="number"
+            step="1000"
+            min="0"
+            value={formData.price}
+            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            placeholder="e.g. 750000"
+            className={formErrors.price ? 'border-red-500' : ''}
+          />
+          {formErrors.price && <p className="text-xs text-red-500">{formErrors.price}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="f-duration">Duration <span className="text-red-500">*</span></Label>
+          <Select value={formData.duration} onValueChange={(v) => setFormData({ ...formData, duration: v })}>
+            <SelectTrigger id="f-duration" className={formErrors.duration ? 'border-red-500' : ''}>
+              <SelectValue placeholder="Select Duration" />
+            </SelectTrigger>
+            <SelectContent>
+              {durations.map((dur) => (
+                <SelectItem key={dur.value} value={dur.value}>{dur.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {formErrors.duration && <p className="text-xs text-red-500">{formErrors.duration}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="f-trial">Trial Days <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-trial"
+            type="number"
+            min="0"
+            value={formData.trial_days}
+            onChange={(e) => setFormData({ ...formData, trial_days: e.target.value })}
+            placeholder="0"
+            className={formErrors.trial_days ? 'border-red-500' : ''}
+          />
+          {formErrors.trial_days && <p className="text-xs text-red-500">{formErrors.trial_days}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="f-users">Max Users <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-users"
+            type="number"
+            value={formData.max_users}
+            onChange={(e) => setFormData({ ...formData, max_users: e.target.value })}
+            placeholder="-1 for unlimited"
+            className={formErrors.max_users ? 'border-red-500' : ''}
+          />
+          {formErrors.max_users && <p className="text-xs text-red-500">{formErrors.max_users}</p>}
+          <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="f-customers">Max Customers <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-customers"
+            type="number"
+            value={formData.max_customers}
+            onChange={(e) => setFormData({ ...formData, max_customers: e.target.value })}
+            placeholder="-1 for unlimited"
+            className={formErrors.max_customers ? 'border-red-500' : ''}
+          />
+          {formErrors.max_customers && <p className="text-xs text-red-500">{formErrors.max_customers}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="f-vendors">Max Vendors <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-vendors"
+            type="number"
+            value={formData.max_venders}
+            onChange={(e) => setFormData({ ...formData, max_venders: e.target.value })}
+            placeholder="-1 for unlimited"
+            className={formErrors.max_venders ? 'border-red-500' : ''}
+          />
+          {formErrors.max_venders && <p className="text-xs text-red-500">{formErrors.max_venders}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="f-clients">Max Clients <span className="text-red-500">*</span></Label>
+          <Input
+            id="f-clients"
+            type="number"
+            value={formData.max_clients}
+            onChange={(e) => setFormData({ ...formData, max_clients: e.target.value })}
+            placeholder="-1 for unlimited"
+            className={formErrors.max_clients ? 'border-red-500' : ''}
+          />
+          {formErrors.max_clients && <p className="text-xs text-red-500">{formErrors.max_clients}</p>}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="f-storage">Storage Limit (MB) <span className="text-red-500">*</span></Label>
+        <Input
+          id="f-storage"
+          type="number"
+          value={formData.storage_limit}
+          onChange={(e) => setFormData({ ...formData, storage_limit: e.target.value })}
+          placeholder="-1 for unlimited"
+          className={formErrors.storage_limit ? 'border-red-500' : ''}
+        />
+        {formErrors.storage_limit && <p className="text-xs text-red-500">{formErrors.storage_limit}</p>}
+        <p className="text-xs text-muted-foreground">-1 = Unlimited</p>
+      </div>
+
+      {/* Module toggles */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Modules</Label>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { key: 'account', label: 'Account' },
+            { key: 'crm', label: 'CRM' },
+            { key: 'hrm', label: 'HRM' },
+            { key: 'project', label: 'Project' },
+            { key: 'pos', label: 'POS' },
+            { key: 'chatgpt', label: 'ChatGPT' },
+          ].map((mod) => (
+            <div key={mod.key} className="flex items-center gap-2 p-2 border rounded-md">
+              <Switch
+                id={`f-${mod.key}`}
+                checked={formData[mod.key as keyof typeof formData] as boolean}
+                onCheckedChange={(checked) => setFormData({ ...formData, [mod.key]: checked })}
+              />
+              <Label htmlFor={`f-${mod.key}`} className="text-sm cursor-pointer">{mod.label}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <SidebarProvider
@@ -222,228 +471,32 @@ export default function PlansPage() {
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             {/* Header */}
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-semibold">Subscription Plans</h1>
+                <p className="text-sm text-muted-foreground">Manage your subscription plans</p>
+              </div>
               {isSuperAdmin && (
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <Dialog open={dialogOpen} onOpenChange={(open) => {
+                  setDialogOpen(open)
+                  if (!open) { setFormData(defaultFormData); setFormErrors({}) }
+                }}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="blue" className="shadow-none">
                       <Plus className="mr-2 h-4 w-4" /> Create Plan
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create New Plan</DialogTitle>
-                      <DialogDescription>
-                        Add a new subscription plan to your system.
-                      </DialogDescription>
+                      <DialogDescription>Add a new subscription plan to your system.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit}>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Name <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="name"
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              placeholder="Enter Plan Name"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="price" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Price <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="price"
-                              type="number"
-                              step="0.01"
-                              value={formData.price}
-                              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                              placeholder="Enter Plan Price"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Duration <span className="text-red-500">*</span>
-                          </Label>
-                          <Select
-                            value={formData.duration}
-                            onValueChange={(value) => setFormData({ ...formData, duration: value })}
-                          >
-                            <SelectTrigger id="duration">
-                              <SelectValue placeholder="Select Duration" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {durations.map((dur) => (
-                                <SelectItem key={dur.value} value={dur.value}>
-                                  {dur.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="max_users" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Maximum Users <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="max_users"
-                              type="number"
-                              value={formData.max_users}
-                              onChange={(e) =>
-                                setFormData({ ...formData, max_users: e.target.value })
-                              }
-                              placeholder="Enter Maximum Users"
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="max_customers" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Maximum Customers <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="max_customers"
-                              type="number"
-                              value={formData.max_customers}
-                              onChange={(e) =>
-                                setFormData({ ...formData, max_customers: e.target.value })
-                              }
-                              placeholder="Enter Maximum Customers"
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="max_venders" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Maximum Vendors <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="max_venders"
-                              type="number"
-                              value={formData.max_venders}
-                              onChange={(e) =>
-                                setFormData({ ...formData, max_venders: e.target.value })
-                              }
-                              placeholder="Enter Maximum Vendors"
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="max_clients" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Maximum Clients <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="max_clients"
-                              type="number"
-                              value={formData.max_clients}
-                              onChange={(e) =>
-                                setFormData({ ...formData, max_clients: e.target.value })
-                              }
-                              placeholder="Enter Maximum Clients"
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="storage_limit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Storage Limit <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="storage_limit"
-                            type="number"
-                            value={formData.storage_limit}
-                            onChange={(e) =>
-                              setFormData({ ...formData, storage_limit: e.target.value })
-                            }
-                            placeholder="Enter Storage Limit"
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="account"
-                              checked={formData.account}
-                              onCheckedChange={(checked) =>
-                                setFormData({ ...formData, account: checked })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <Label htmlFor="account" className="text-sm font-medium text-gray-700 dark:text-gray-300">Account</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="crm"
-                              checked={formData.crm}
-                              onCheckedChange={(checked) => setFormData({ ...formData, crm: checked })}
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <Label htmlFor="crm" className="text-sm font-medium text-gray-700 dark:text-gray-300">CRM</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="hrm"
-                              checked={formData.hrm}
-                              onCheckedChange={(checked) => setFormData({ ...formData, hrm: checked })}
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <Label htmlFor="hrm" className="text-sm font-medium text-gray-700 dark:text-gray-300">HRM</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="project"
-                              checked={formData.project}
-                              onCheckedChange={(checked) =>
-                                setFormData({ ...formData, project: checked })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <Label htmlFor="project" className="text-sm font-medium text-gray-700 dark:text-gray-300">Project</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="pos"
-                              checked={formData.pos}
-                              onCheckedChange={(checked) => setFormData({ ...formData, pos: checked })}
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <Label htmlFor="pos" className="text-sm font-medium text-gray-700 dark:text-gray-300">POS</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="chatgpt"
-                              checked={formData.chatgpt}
-                              onCheckedChange={(checked) =>
-                                setFormData({ ...formData, chatgpt: checked })
-                              }
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <Label htmlFor="chatgpt">Chat GPT</Label>
-                          </div>
-                        </div>
-                      </div>
+                      <PlanFormFields />
                       <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" variant="blue" className="shadow-none">
-                          Create Plan
+                        <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                        <Button type="submit" variant="blue" disabled={saving}>
+                          {saving ? 'Creating...' : 'Create Plan'}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -452,402 +505,166 @@ export default function PlansPage() {
               )}
             </div>
 
-            {/* Plans Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {plans.map((plan) => (
-                <Card key={plan.id} className="relative flex flex-col rounded-lg overflow-hidden border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.05)]">
-                  {/* Plan Badge - Top of Card */}
-                  <div className="absolute top-0 left-0 right-0 flex items-center justify-center pt-3 pb-2">
-                    <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
-                      {plan.name}
-                    </Badge>
-                  </div>
-                  {/* Switch - Top Right */}
-                  {isSuperAdmin && plan.price > 0 && (
-                    <div className="absolute top-2.5 right-2.5 z-10">
-                      <Switch
-                        checked={plan.is_disable}
-                        onCheckedChange={(checked) => {
-                          setPlans(
-                            plans.map((p) => (p.id === plan.id ? { ...p, is_disable: checked } : p))
-                          )
-                        }}
-                        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                      />
-                    </div>
-                  )}
+            {/* Loading state */}
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-muted-foreground">Loading plans...</p>
+              </div>
+            )}
 
-                  <CardContent className="p-4 flex flex-col flex-1 pt-14">
-                    {/* Price Section - Centered */}
-                    <div className="mb-3 text-center">
-                      <div className="flex items-baseline justify-center gap-1 mb-1">
-                        <span className="text-3xl font-bold text-gray-900">
-                          {formatPrice(plan.price)}
-                        </span>
-                        {plan.price > 0 && (
-                          <span className="text-sm text-gray-500 font-medium">
-                            /{getDurationLabel(plan.duration)}
+            {/* Plans Grid */}
+            {!loading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {plans.map((plan) => (
+                  <Card key={plan.id} className="relative flex flex-col rounded-lg overflow-hidden border-0 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.05)]">
+                    {/* Plan Badge */}
+                    <div className="absolute top-0 left-0 right-0 flex items-center justify-center pt-3 pb-2">
+                      <Badge className={`${getPlanBadgeColorsSolid(plan.name)} text-xs font-semibold px-3 py-1.5 rounded-full`}>
+                        {plan.name}
+                      </Badge>
+                    </div>
+
+                    {/* Disable Switch */}
+                    {isSuperAdmin && plan.price > 0 && (
+                      <div className="absolute top-2.5 right-2.5 z-10">
+                        <Switch
+                          checked={plan.is_disable}
+                          onCheckedChange={() => handleToggleDisable(plan)}
+                          title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
+                        />
+                      </div>
+                    )}
+
+                    <CardContent className="pt-12 pb-4 px-4 flex flex-col flex-1">
+                      {/* Price */}
+                      <div className="text-center mb-4">
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span className="text-3xl font-bold text-gray-900">
+                            {formatPrice(plan.price)}
                           </span>
+                          {plan.price > 0 && (
+                            <span className="text-sm text-gray-500 font-medium">
+                              /{getDurationLabel(plan.duration)}
+                            </span>
+                          )}
+                        </div>
+                        {plan.trial_days > 0 && (
+                          <p className="text-xs text-gray-500 font-medium mt-1">
+                            {plan.trial_days} days free trial
+                          </p>
                         )}
                       </div>
-                      {plan.trial_days > 0 && (
-                        <p className="text-xs text-gray-500 font-medium">
-                          {plan.trial_days} days free trial
-                        </p>
-                      )}
-                    </div>
 
-                      {/* Features - Compact Grid */}
-                      <div className="flex-1 mb-3">
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-                          {/* Limits */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                              <span className="truncate">{formatLimit(plan.max_users)} Users</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                              <span className="truncate">{formatLimit(plan.max_customers)} Customers</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                              <span className="truncate">{formatLimit(plan.max_venders)} Vendors</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                              <span className="truncate">{formatLimit(plan.max_clients)} Clients</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                              <span className="truncate">{formatStorage(plan.storage_limit)}</span>
-                            </div>
-                          </div>
+                      {/* Limits */}
+                      <div className="space-y-1.5 mb-4 flex-1">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{formatLimit(plan.max_users)} Users</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{formatLimit(plan.max_customers)} Customers</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{formatLimit(plan.max_venders)} Vendors</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{formatLimit(plan.max_clients)} Clients</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{formatStorage(plan.storage_limit)} Storage</span>
                         </div>
 
-                      {/* Modules - Compact Grid */}
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 pt-3 border-t">
-                        {[
-                          { key: 'account', label: 'Account', enabled: plan.account },
-                          { key: 'crm', label: 'CRM', enabled: plan.crm },
-                          { key: 'hrm', label: 'HRM', enabled: plan.hrm },
-                          { key: 'project', label: 'Project', enabled: plan.project },
-                          { key: 'pos', label: 'POS', enabled: plan.pos },
-                          { key: 'chatgpt', label: 'ChatGPT', enabled: plan.chatgpt },
-                        ].map((module) => (
-                          <div key={module.key} className="flex items-center gap-1.5 text-sm">
-                            {module.enabled ? (
-                              <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                            ) : (
-                              <X className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
-                            )}
-                            <span className={`truncate ${module.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
-                              {module.label}
-                            </span>
-                          </div>
-                        ))}
+                        {/* Modules */}
+                        <div className="pt-2 border-t mt-2">
+                          {[
+                            { key: 'account', label: 'Account', enabled: plan.account },
+                            { key: 'crm', label: 'CRM', enabled: plan.crm },
+                            { key: 'hrm', label: 'HRM', enabled: plan.hrm },
+                            { key: 'project', label: 'Project', enabled: plan.project },
+                            { key: 'pos', label: 'POS', enabled: plan.pos },
+                            { key: 'chatgpt', label: 'ChatGPT', enabled: plan.chatgpt },
+                          ].map((mod) => (
+                            <div key={mod.key} className="flex items-center gap-2 text-sm text-gray-600 py-0.5">
+                              {mod.enabled ? (
+                                <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                              ) : (
+                                <X className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+                              )}
+                              <span className={mod.enabled ? '' : 'text-gray-400'}>{mod.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Actions */}
-                    {isSuperAdmin ? (
-                      <div className="flex items-center justify-center gap-2 pt-3 border-t mt-auto">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shadow-none h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                          onClick={() => handleEdit(plan)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        {plan.id !== '1' && (
+                      {/* Actions */}
+                      {isSuperAdmin && (
+                        <div className="flex gap-2 pt-3 border-t">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="shadow-none h-8 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                            onClick={() => handleDeleteClick(plan)}
+                            className="flex-1 shadow-none h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                            onClick={() => handleEdit(plan)}
                           >
-                            <Trash className="h-3.5 w-3.5" />
+                            <Pencil className="h-3 w-3 mr-1" /> Edit
                           </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-2 pt-3 border-t mt-auto">
-                        {plan.price > 0 && (
-                          <Button variant="blue" size="sm" className="w-full shadow-none h-8 text-sm font-medium">
-                            Buy Plan
-                          </Button>
-                        )}
-                        {plan.trial_days > 0 && (
-                          <Button variant="outline" size="sm" className="w-full shadow-none h-8 text-sm">
-                            Start Free Trial
-                          </Button>
-                        )}
-                        {plan.id !== '1' && (
-                          <Button variant="outline" size="sm" className="w-full shadow-none h-8 text-sm">
-                            <X className="h-3.5 w-3.5 mr-1.5" /> Send Request
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Edit Plan Dialog */}
-            {editingPlan && (
-              <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Edit Plan</DialogTitle>
-                    <DialogDescription>
-                      Update plan information. Free Plan (ID: 1) cannot change price and duration.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleUpdateSubmit}>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Name <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="edit_name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="Enter Plan Name"
-                            required
-                          />
-                        </div>
-                        {editingPlan.id !== '1' && (
-                          <>
-                            <div className="space-y-2">
-                              <Label htmlFor="edit_price" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Price <span className="text-red-500">*</span>
-                              </Label>
-                              <Input
-                                id="edit_price"
-                                type="number"
-                                step="0.01"
-                                value={formData.price}
-                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                placeholder="Enter Plan Price"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="edit_duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Duration <span className="text-red-500">*</span>
-                              </Label>
-                              <Select
-                                value={formData.duration}
-                                onValueChange={(value) => setFormData({ ...formData, duration: value })}
-                              >
-                                <SelectTrigger id="edit_duration">
-                                  <SelectValue placeholder="Select Duration" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {durations.map((dur) => (
-                                    <SelectItem key={dur.value} value={dur.value}>
-                                      {dur.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit_max_users">
-                            Maximum Users <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="edit_max_users"
-                            type="number"
-                            value={formData.max_users}
-                            onChange={(e) =>
-                              setFormData({ ...formData, max_users: e.target.value })
-                            }
-                            placeholder="Enter Maximum Users"
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit_max_customers">
-                            Maximum Customers <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="edit_max_customers"
-                            type="number"
-                            value={formData.max_customers}
-                            onChange={(e) =>
-                              setFormData({ ...formData, max_customers: e.target.value })
-                            }
-                            placeholder="Enter Maximum Customers"
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit_max_venders">
-                            Maximum Vendors <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="edit_max_venders"
-                            type="number"
-                            value={formData.max_venders}
-                            onChange={(e) =>
-                              setFormData({ ...formData, max_venders: e.target.value })
-                            }
-                            placeholder="Enter Maximum Vendors"
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit_max_clients">
-                            Maximum Clients <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="edit_max_clients"
-                            type="number"
-                            value={formData.max_clients}
-                            onChange={(e) =>
-                              setFormData({ ...formData, max_clients: e.target.value })
-                            }
-                            placeholder="Enter Maximum Clients"
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="edit_storage_limit">
-                          Storage Limit <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="edit_storage_limit"
-                          type="number"
-                          value={formData.storage_limit}
-                          onChange={(e) =>
-                            setFormData({ ...formData, storage_limit: e.target.value })
-                          }
-                          placeholder="Enter Storage Limit"
-                          required
-                        />
-                        <p className="text-xs text-muted-foreground">Note: "-1" for Unlimited</p>
-                      </div>
-                      {editingPlan.id !== '1' && (
-                        <div className="space-y-2">
-                          <Label htmlFor="edit_trial_days" className="text-sm font-medium text-gray-700 dark:text-gray-300">Trial Days</Label>
-                          <Input
-                            id="edit_trial_days"
-                            type="number"
-                            value={formData.trial_days}
-                            onChange={(e) =>
-                              setFormData({ ...formData, trial_days: e.target.value })
-                            }
-                            placeholder="Enter Trial Days"
-                            min="1"
-                          />
+                          {plan.price > 0 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 shadow-none h-8 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                              onClick={() => handleDeleteClick(plan)}
+                            >
+                              <Trash className="h-3 w-3 mr-1" /> Delete
+                            </Button>
+                          )}
                         </div>
                       )}
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="edit_account"
-                            checked={formData.account}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, account: checked })
-                            }
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                          <Label htmlFor="edit_account">Account</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="edit_crm"
-                            checked={formData.crm}
-                            onCheckedChange={(checked) => setFormData({ ...formData, crm: checked })}
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                          <Label htmlFor="edit_crm" className="text-sm font-medium text-gray-700 dark:text-gray-300">CRM</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="edit_hrm"
-                            checked={formData.hrm}
-                            onCheckedChange={(checked) => setFormData({ ...formData, hrm: checked })}
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                          <Label htmlFor="edit_hrm" className="text-sm font-medium text-gray-700 dark:text-gray-300">HRM</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="edit_project"
-                            checked={formData.project}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, project: checked })
-                            }
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                          <Label htmlFor="edit_project" className="text-sm font-medium text-gray-700 dark:text-gray-300">Project</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="edit_pos"
-                            checked={formData.pos}
-                            onCheckedChange={(checked) => setFormData({ ...formData, pos: checked })}
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                          <Label htmlFor="edit_pos" className="text-sm font-medium text-gray-700 dark:text-gray-300">POS</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="edit_chatgpt"
-                            checked={formData.chatgpt}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, chatgpt: checked })
-                            }
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                          <Label htmlFor="edit_chatgpt" className="text-sm font-medium text-gray-700 dark:text-gray-300">Chat GPT</Label>
-                        </div>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setEditDialogOpen(false)
-                          setEditingPlan(null)
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" variant="blue" className="shadow-none">
-                        Update Plan
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {plans.length === 0 && !loading && (
+                  <div className="col-span-4 text-center py-12 text-muted-foreground">
+                    No plans found. Create your first plan.
+                  </div>
+                )}
+              </div>
             )}
 
-            {/* Delete Confirmation Dialog */}
+            {/* Edit Dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={(open) => {
+              setEditDialogOpen(open)
+              if (!open) { setEditingPlan(null); setFormData(defaultFormData); setFormErrors({}) }
+            }}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Plan</DialogTitle>
+                  <DialogDescription>
+                    Update plan information.
+                    {editingPlan?.price === 0 && ' Free Plan cannot change price and duration.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleUpdateSubmit}>
+                  <PlanFormFields />
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                    <Button type="submit" variant="blue" disabled={saving}>
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+                  <AlertDialogTitle>Delete Plan?</AlertDialogTitle>
                   <AlertDialogDescription>
                     Are you sure you want to delete "{planToDelete?.name}"? This action cannot be undone.
                   </AlertDialogDescription>
@@ -856,9 +673,10 @@ export default function PlansPage() {
                   <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleConfirmDelete}
-                    className="bg-red-500 hover:bg-red-600"
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={saving}
                   >
-                    Delete
+                    {saving ? 'Deleting...' : 'Delete'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -869,5 +687,3 @@ export default function PlansPage() {
     </SidebarProvider>
   )
 }
-
-

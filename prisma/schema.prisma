@@ -1904,3 +1904,28 @@ model WarehouseTransfer {
   @@index([productId])
   @@index([transferDate])
 }
+
+/// Subscription Plan model for SaaS plan management
+model Plan {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  price         Float    @default(0)
+  duration      String   @default("month") // lifetime | month | year
+  maxUsers      Int      @default(5)
+  maxCustomers  Int      @default(5)
+  maxVenders    Int      @default(5)
+  maxClients    Int      @default(5)
+  storageLimit  Int      @default(1024) // in MB, -1 = unlimited
+  trialDays     Int      @default(0)
+  isDisable     Boolean  @default(false)
+  hasAccount    Boolean  @default(true)
+  hasCrm        Boolean  @default(true)
+  hasHrm        Boolean  @default(true)
+  hasProject    Boolean  @default(false)
+  hasPos        Boolean  @default(false)
+  hasChatgpt    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("plan")
+}

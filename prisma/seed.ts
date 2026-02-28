@@ -69,6 +69,7 @@ import { seedAccessProfiles } from "./seeds/access-profiles";
 import { seedSupport } from "./seeds/support";
 import { seedWarehouses } from "./seeds/warehouses";
 import { seedTransfers } from "./seeds/transfers";
+import { seedPlans } from "./seeds/plans";
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   try {
+    await seedPlans(prisma);
     await ensureLeaveRequestSchema(prisma);
     await ensureTrainingSchema(prisma);
     await ensurePayrollEmployeeSchema(prisma);
