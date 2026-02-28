@@ -183,7 +183,7 @@ export default function POSQuotationPage() {
           estimateId: e.id,           // API returns estimateId as 'id'
           customerId: e.customerId ?? '',
           customerName: e.customer ?? '—',  // API returns customer name as 'customer'
-          category: e.category ?? '',
+          category: e.category ?? '',       // API returns category name as 'category'
           categoryId: e.categoryId ?? '',
           issueDate: e.issueDate ?? '',
           status: e.status as QuotationStatus,
@@ -208,13 +208,12 @@ export default function POSQuotationPage() {
       if (res.success) setCustomers(res.data.map((c: any) => ({ id: c.id, name: c.name, customerCode: c.customerCode })))
     }).catch(() => {})
     // Fetch all categories (not filtered by branchId) for the quotation form
-    // Use ?all=true to get categories across all branches
     fetch('/api/categories?all=true').then(r => r.json()).then(res => {
       if (res.success) {
-        const cats = res.data.map((c: any) => ({ id: c.id, name: c.name }))
-        setCategories(cats)
+        setCategories(res.data.map((c: any) => ({ id: c.id, name: c.name })))
       }
     }).catch(() => {})
+    // Only fetch products from catalog (no manual entry allowed)
     fetch('/api/products').then(r => r.json()).then(res => {
       if (res.success) setProducts(res.data.map((p: any) => ({
         id: p.id,
@@ -277,17 +276,22 @@ export default function POSQuotationPage() {
       setFormIssueDate(est.issueDate?.slice(0, 10) ?? '')
       setFormStatus(est.status as QuotationStatus)
       setFormDescription(est.description ?? '')
+      // Map items - try to match product by itemName
       setFormItems(
         est.items?.length > 0
-          ? est.items.map((it: any) => ({
-              productId: NO_SELECTION, // items don't have productId in estimate
-              itemName: it.itemName ?? '',
-              quantity: Number(it.quantity) || 1,
-              price: Number(it.price) || 0,
-              discount: Number(it.discount) || 0,
-              taxRate: Number(it.taxRate) || 0,
-              amount: Number(it.amount) || 0,
-            }))
+          ? est.items.map((it: any) => {
+              // Try to find matching product by name
+              const matchedProduct = products.find(p => p.name === it.itemName)
+              return {
+                productId: matchedProduct ? matchedProduct.id : NO_SELECTION,
+                itemName: it.itemName ?? '',
+                quantity: Number(it.quantity) || 1,
+                price: Number(it.price) || 0,
+                discount: Number(it.discount) || 0,
+                taxRate: Number(it.taxRate) || 0,
+                amount: Number(it.amount) || 0,
+              }
+            })
           : [{ ...EMPTY_ITEM }]
       )
       setFormErrors({})
@@ -305,18 +309,22 @@ export default function POSQuotationPage() {
     setFormItems(prev => {
       const updated = [...prev]
       const item = { ...updated[idx], [field]: value }
-      if (field === 'productId' && value !== NO_SELECTION) {
-        const product = products.find(p => p.id === value)
-        if (product) {
-          item.itemName = product.name
-          item.price = product.salePrice
-          item.taxRate = product.taxRate
+      // When product is selected, auto-fill name, price, tax (not editable by user)
+      if (field === 'productId') {
+        if (value !== NO_SELECTION) {
+          const product = products.find(p => p.id === value)
+          if (product) {
+            item.itemName = product.name
+            item.price = product.salePrice
+            item.taxRate = product.taxRate
+          }
+        } else {
+          item.itemName = ''
+          item.price = 0
+          item.taxRate = 0
         }
-      } else if (field === 'productId' && value === NO_SELECTION) {
-        item.itemName = ''
-        item.price = 0
-        item.taxRate = 0
       }
+      // Only quantity and discount are editable by user
       item.amount = calcItemAmount(item)
       updated[idx] = item
       return updated
@@ -344,8 +352,8 @@ export default function POSQuotationPage() {
     const errors: Record<string, string> = {}
     if (!fromSelectValue(formCustomerId)) errors.customer = 'Customer is required'
     if (!formIssueDate) errors.issueDate = 'Issue date is required'
-    if (formItems.some(it => !it.itemName.trim())) {
-      errors.items = 'All items must have a name'
+    if (formItems.some(it => it.productId === NO_SELECTION)) {
+      errors.items = 'All items must have a product selected from the catalog'
     }
     setFormErrors(errors)
     return Object.keys(errors).length === 0
@@ -412,12 +420,14 @@ export default function POSQuotationPage() {
       const data = await res.json()
       if (data.success) {
         const est = data.data
+        // Find category name from categories list
+        const categoryName = categories.find(c => c.id === est.categoryId)?.name ?? ''
         setViewDetail({
           id: est.id,
           estimateId: est.estimateId,
           customerId: est.customerId,
           customerName: est.customer?.name ?? '—',
-          category: '',
+          category: categoryName,
           categoryId: est.categoryId ?? '',
           issueDate: est.issueDate?.slice(0, 10) ?? '',
           status: est.status as QuotationStatus,
@@ -548,6 +558,8 @@ export default function POSQuotationPage() {
                 ) : (
                   paginatedData.map((row) => {
                     const statusConfig = getStatusConfig(row.status)
+                    // Show category name from API response (already resolved by estimates API)
+                    const categoryDisplay = row.category || (row.categoryId ? categories.find(c => c.id === row.categoryId)?.name : '') || '—'
                     return (
                       <TableRow key={row.id}>
                         <TableCell className="px-4 py-3">
@@ -562,7 +574,7 @@ export default function POSQuotationPage() {
                         </TableCell>
                         <TableCell className="px-4 py-3 text-sm">{formatDate(row.issueDate)}</TableCell>
                         <TableCell className="px-4 py-3 text-sm">{row.customerName}</TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">{row.category || '—'}</TableCell>
+                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">{categoryDisplay}</TableCell>
                         <TableCell className="px-4 py-3 text-sm text-right font-medium">{formatPrice(row.total)}</TableCell>
                         <TableCell className="px-4 py-3">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.color}`}>
@@ -716,12 +728,15 @@ export default function POSQuotationPage() {
 
             <Separator />
 
-            {/* Items */}
+            {/* Items - only from product catalog, no manual entry */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">
-                  Items <span className="text-red-500">*</span>
-                </Label>
+                <div>
+                  <Label className="text-sm font-semibold">
+                    Items <span className="text-red-500">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Select products from the catalog. Price and tax are auto-filled.</p>
+                </div>
                 <Button
                   type="button"
                   size="sm"
@@ -743,43 +758,34 @@ export default function POSQuotationPage() {
               {/* Items grid layout */}
               <div className="space-y-2">
                 {/* Column headers */}
-                <div className="grid grid-cols-[1fr_60px_100px_90px_60px_100px_32px] gap-2 px-1">
-                  <span className="text-xs font-medium text-muted-foreground">Product / Item Name</span>
+                <div className="grid grid-cols-[1fr_60px_110px_90px_70px_110px_32px] gap-2 px-1">
+                  <span className="text-xs font-medium text-muted-foreground">Product (from catalog)</span>
                   <span className="text-xs font-medium text-muted-foreground">Qty</span>
-                  <span className="text-xs font-medium text-muted-foreground">Price</span>
+                  <span className="text-xs font-medium text-muted-foreground">Price (auto)</span>
                   <span className="text-xs font-medium text-muted-foreground">Discount</span>
-                  <span className="text-xs font-medium text-muted-foreground">Tax%</span>
+                  <span className="text-xs font-medium text-muted-foreground">Tax% (auto)</span>
                   <span className="text-xs font-medium text-muted-foreground text-right">Amount</span>
                   <span></span>
                 </div>
                 {/* Item rows */}
                 {formItems.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_60px_100px_90px_60px_100px_32px] gap-2 items-center rounded-md border border-border bg-muted/10 px-2 py-2">
-                    {/* Product select or manual name input */}
-                    <div className="space-y-1">
-                      <Select
-                        value={item.productId}
-                        onValueChange={v => updateItem(idx, 'productId', v)}
-                      >
-                        <SelectTrigger className="h-8 text-xs w-full">
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NO_SELECTION}>Manual entry</SelectItem>
-                          {products.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {item.productId === NO_SELECTION && (
-                        <Input
-                          value={item.itemName}
-                          onChange={e => updateItem(idx, 'itemName', e.target.value)}
-                          placeholder="Item name"
-                          className="h-7 text-xs w-full"
-                        />
-                      )}
-                    </div>
+                  <div key={idx} className="grid grid-cols-[1fr_60px_110px_90px_70px_110px_32px] gap-2 items-center rounded-md border border-border bg-muted/10 px-2 py-2">
+                    {/* Product select - only from catalog */}
+                    <Select
+                      value={item.productId}
+                      onValueChange={v => updateItem(idx, 'productId', v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue placeholder="Select product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_SELECTION}>Select product</SelectItem>
+                        {products.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {/* Qty - editable */}
                     <Input
                       type="number"
                       min={1}
@@ -787,31 +793,28 @@ export default function POSQuotationPage() {
                       onChange={e => updateItem(idx, 'quantity', Number(e.target.value) || 1)}
                       className="h-8 text-xs w-full"
                     />
-                    <Input
-                      type="number"
-                      min={0}
-                      value={item.price}
-                      onChange={e => updateItem(idx, 'price', Number(e.target.value) || 0)}
-                      className="h-8 text-xs w-full"
-                    />
+                    {/* Price - read-only, auto-filled from product */}
+                    <div className="h-8 flex items-center px-2 rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+                      {item.price > 0 ? formatPrice(item.price) : '—'}
+                    </div>
+                    {/* Discount - editable */}
                     <Input
                       type="number"
                       min={0}
                       value={item.discount}
                       onChange={e => updateItem(idx, 'discount', Number(e.target.value) || 0)}
                       className="h-8 text-xs w-full"
+                      disabled={item.productId === NO_SELECTION}
                     />
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={item.taxRate}
-                      onChange={e => updateItem(idx, 'taxRate', Number(e.target.value) || 0)}
-                      className="h-8 text-xs w-full"
-                    />
+                    {/* Tax - read-only, auto-filled from product */}
+                    <div className="h-8 flex items-center px-2 rounded-md border border-border bg-muted/30 text-xs text-muted-foreground">
+                      {item.taxRate > 0 ? `${item.taxRate}%` : '—'}
+                    </div>
+                    {/* Amount */}
                     <span className="text-xs font-medium text-right pr-1">
-                      {formatPrice(calcItemAmount(item))}
+                      {item.productId !== NO_SELECTION ? formatPrice(calcItemAmount(item)) : '—'}
                     </span>
+                    {/* Remove */}
                     <Button
                       type="button"
                       variant="outline"
@@ -873,77 +876,93 @@ export default function POSQuotationPage() {
 
       {/* ─── View Detail Dialog ───────────────────────────────────────────────── */}
       <Dialog open={openView} onOpenChange={setOpenView}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Quotation Detail</DialogTitle>
+            <DialogTitle>{viewDetail?.estimateId ?? 'Quotation Detail'}</DialogTitle>
           </DialogHeader>
           {loadingDetail ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : viewDetail ? (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Quotation ID</p>
-                  <p className="font-semibold text-blue-600">{viewDetail.estimateId}</p>
+            <div className="space-y-5">
+              {/* Info grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Customer</Label>
+                  <p className="text-sm font-semibold">{viewDetail.customerName}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Customer</p>
-                  <p className="font-medium">{viewDetail.customerName}</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                  <p className="text-sm">{viewDetail.category || '—'}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Issue Date</p>
-                  <p>{formatDate(viewDetail.issueDate)}</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Issue Date</Label>
+                  <p className="text-sm">{formatDate(viewDetail.issueDate)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Status</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusConfig(viewDetail.status).color}`}>
                     {getStatusConfig(viewDetail.status).label}
                   </span>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="font-bold text-blue-600">{formatPrice(viewDetail.total)}</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Total</Label>
+                  <p className="text-sm font-bold text-blue-600">{formatPrice(viewDetail.total)}</p>
                 </div>
-                {viewDetail.description && (
-                  <div className="col-span-2 space-y-1">
-                    <p className="text-xs text-muted-foreground">Notes</p>
-                    <p className="text-muted-foreground">{viewDetail.description}</p>
-                  </div>
-                )}
               </div>
+              {viewDetail.description && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                  <p className="text-sm text-muted-foreground">{viewDetail.description}</p>
+                </div>
+              )}
 
               <Separator />
 
               {/* Items */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">Items</p>
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="px-3 py-2 text-xs font-medium">Item</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Qty</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Price</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Discount</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Tax</TableHead>
-                        <TableHead className="px-3 py-2 text-xs font-medium text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viewDetail.items?.map((item, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="px-3 py-2 text-xs font-medium">{item.itemName}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{item.quantity}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{formatPrice(item.price)}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{item.discount > 0 ? formatPrice(item.discount) : '—'}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right">{item.taxRate > 0 ? `${item.taxRate}%` : '—'}</TableCell>
-                          <TableCell className="px-3 py-2 text-xs text-right font-medium">{formatPrice(item.amount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <Label className="text-sm font-semibold">Items ({viewDetail.items?.length ?? 0})</Label>
+                <div className="space-y-1">
+                  <div className="grid grid-cols-[1fr_60px_110px_90px_70px_110px] gap-2 px-1">
+                    <span className="text-xs font-medium text-muted-foreground">Product</span>
+                    <span className="text-xs font-medium text-muted-foreground">Qty</span>
+                    <span className="text-xs font-medium text-muted-foreground">Price</span>
+                    <span className="text-xs font-medium text-muted-foreground">Discount</span>
+                    <span className="text-xs font-medium text-muted-foreground">Tax%</span>
+                    <span className="text-xs font-medium text-muted-foreground text-right">Amount</span>
+                  </div>
+                  {viewDetail.items?.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_60px_110px_90px_70px_110px] gap-2 items-center rounded-md border border-border bg-muted/10 px-2 py-2">
+                      <span className="text-xs font-medium truncate">{item.itemName}</span>
+                      <span className="text-xs text-center">{item.quantity}</span>
+                      <span className="text-xs">{formatPrice(item.price)}</span>
+                      <span className="text-xs text-red-600">{item.discount > 0 ? `- ${formatPrice(item.discount)}` : '—'}</span>
+                      <span className="text-xs">{item.taxRate > 0 ? `${item.taxRate}%` : '—'}</span>
+                      <span className="text-xs font-semibold text-right">{formatPrice(item.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary */}
+                <div className="flex justify-end">
+                  <div className="min-w-[220px] space-y-1.5 text-sm border rounded-md p-3 bg-muted/20">
+                    <div className="flex justify-between gap-8">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatPrice(viewDetail.items?.reduce((s, it) => s + it.quantity * it.price, 0) ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between gap-8">
+                      <span className="text-muted-foreground">Discount</span>
+                      <span className="text-red-600">- {formatPrice(viewDetail.items?.reduce((s, it) => s + it.discount, 0) ?? 0)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between gap-8 font-semibold">
+                      <span>Total</span>
+                      <span className="text-blue-600">{formatPrice(viewDetail.total)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -951,7 +970,7 @@ export default function POSQuotationPage() {
 
               {/* Quick status change */}
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Change Status</p>
+                <Label className="text-sm font-medium text-muted-foreground">Change Status</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {STATUS_OPTIONS.map(s => (
                     <Button
