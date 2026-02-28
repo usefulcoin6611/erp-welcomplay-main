@@ -191,7 +191,7 @@ function Sidebar({
       <div
         data-slot="sidebar"
         className={cn(
-          'bg-blue-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col',
+          'bg-gradient-to-r from-slate-50/95 via-white to-blue-50/80 text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col',
           className,
         )}
         {...props}
@@ -208,7 +208,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-blue-50 dark:bg-gray-950 text-sidebar-foreground w-(--sidebar-width) p-0"
+          className="bg-gradient-to-r from-slate-50/95 via-white to-blue-50/80 text-sidebar-foreground border-r border-sidebar-border w-(--sidebar-width) p-0"
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
@@ -265,7 +265,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-blue-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 group-data-[variant=floating]:border-sidebar-border group-data-[variant=inset]:rounded-xl flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm overflow-hidden"
+          className="bg-gradient-to-r from-slate-50/95 via-white to-blue-50/80 border-r border-sidebar-border flex h-full w-full flex-col overflow-hidden group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=inset]:rounded-xl"
         >
           {children}
         </div>
@@ -361,7 +361,7 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="sidebar-header"
       data-sidebar="header"
-      className={cn('flex flex-col gap-2 p-2', className)}
+      className={cn("flex flex-col gap-2 px-2 pt-2 pb-1", className)}
       {...props}
     />
   )
@@ -372,7 +372,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="sidebar-footer"
       data-sidebar="footer"
-      className={cn('flex flex-col gap-2 p-2', className)}
+      className={cn("flex flex-col gap-2 px-2 pb-2 pt-1", className)}
       {...props}
     />
   )

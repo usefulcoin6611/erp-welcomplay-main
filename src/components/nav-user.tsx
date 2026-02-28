@@ -3,19 +3,19 @@
 import { useEffect, useState } from "react"
 import {
   IconCreditCard,
-  IconDotsVertical,
   IconLogout,
   IconNotification,
   IconUserCircle,
   IconShield,
   IconBuildingStore,
 } from "@tabler/icons-react"
+import { ChevronDown } from "lucide-react"
 
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/ui/avatar'
+} from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +24,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,13 +34,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog"
 import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { useAuth } from '@/contexts/auth-context'
+} from "@/components/ui/sidebar"
+import { useAuth } from "@/contexts/auth-context"
+
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((s) => s[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 export function NavUser({
   user,
@@ -75,60 +84,29 @@ export function NavUser({
   }, [authUser?.branchId])
 
   const handleLogout = async () => {
-    // Close dialog
     setShowLogoutDialog(false)
-    
     try {
-      // Import and use authService directly (like reference project)
-      const { authService } = await import('@/lib/auth')
-      
-      // ✅ CRITICAL: Clear token and storage FIRST (synchronous)
-      // Clear token from apiClient immediately
+      const { authService } = await import("@/lib/auth")
       authService.clearStoredUser()
-      
-      // Call logout API (non-blocking, but clear storage first)
       authService.logout().catch((err) => {
-        console.error('Logout API error (non-critical):', err)
+        console.error("Logout API error (non-critical):", err)
       })
-      
-      // ✅ CRITICAL: Clear context state and redirect
-      // Context logout will handle complete cleanup and redirect
       await logout()
     } catch (error) {
-      console.error('Logout error:', error)
-      // ✅ CRITICAL: Ensure logout completes even on error
-      // Force clear everything and redirect
-      if (typeof window !== 'undefined') {
+      console.error("Logout error:", error)
+      if (typeof window !== "undefined") {
         localStorage.clear()
         sessionStorage.clear()
       }
       await logout()
     }
   }
-  
-  // Get user role badge color
-  const getRoleBadge = () => {
-    if (!authUser) return null
-    const roleColors: Record<string, string> = {
-      'super admin': 'text-red-600 bg-red-50',
-      'company': 'text-blue-600 bg-blue-50',
-      'client': 'text-green-600 bg-green-50',
-      'employee': 'text-purple-600 bg-purple-50',
-    }
-    return (
-      <div className="flex flex-col gap-1.5">
-        <span className={`inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${roleColors[authUser.type] || 'text-gray-600 bg-gray-50'}`}>
-          <IconShield className="h-3 w-3" />
-          {authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}
-        </span>
-        {branchName && (
-          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-amber-600 bg-amber-50">
-            <IconBuildingStore className="h-3 w-3" />
-            {branchName}
-          </span>
-        )}
-      </div>
-    )
+
+  const roleColors: Record<string, string> = {
+    "super admin": "text-red-700 bg-red-50 dark:bg-red-950/50 dark:text-red-300",
+    company: "text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300",
+    client: "text-green-700 bg-green-50 dark:bg-green-950/50 dark:text-green-300",
+    employee: "text-purple-700 bg-purple-50 dark:bg-purple-950/50 dark:text-purple-300",
   }
 
   return (
@@ -137,71 +115,107 @@ export function NavUser({
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
             size="lg"
-            className="cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground transition-colors duration-200"
+            className="cursor-pointer rounded-lg px-3 py-2.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground data-[state=open]:ring-2 data-[state=open]:ring-sidebar-ring/30 transition-colors duration-200"
             suppressHydrationWarning
+            aria-label="Open user menu"
           >
-            <Avatar className="h-8 w-8 rounded-xs">
+            <Avatar className="h-9 w-9 rounded-lg border-2 border-sidebar-border shrink-0">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">CN</AvatarFallback>
+              <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm font-medium">
+                {getInitials(user.name)}
+              </AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium text-sidebar-foreground">{user.name}</span>
+            <div className="grid flex-1 min-w-0 text-left text-sm leading-tight gap-0.5">
+              <span className="truncate font-semibold text-sidebar-foreground">
+                {user.name}
+              </span>
               <span className="truncate text-xs text-sidebar-foreground/70">
-                {branchName ? `${branchName} • ${user.email}` : user.email}
+                {branchName ? `${branchName}` : user.email}
               </span>
             </div>
-            <IconDotsVertical className="ml-auto size-4 text-sidebar-foreground" />
+            <ChevronDown className="ml-auto size-4 shrink-0 text-sidebar-foreground/70 transition-transform [[data-state=open]_&]:rotate-180" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+          className="min-w-[240px] w-64 rounded-xl border border-border/80 bg-popover p-0 shadow-lg"
           side={isMobile ? "bottom" : "right"}
           align="end"
-          sideOffset={4}
+          sideOffset={8}
+          alignOffset={-4}
         >
+          {/* Profile header */}
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-              <Avatar className="h-8 w-8 rounded-lg">
+            <div className="flex items-start gap-3 px-4 py-3">
+              <Avatar className="h-11 w-11 rounded-xl border-2 border-border/80 shrink-0">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-xl bg-muted text-muted-foreground text-sm font-semibold">
+                  {getInitials(user.name)}
+                </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
+              <div className="grid flex-1 min-w-0 gap-1">
+                <span className="truncate font-semibold text-foreground">
+                  {user.name}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
                   {user.email}
                 </span>
-                <div className="mt-1">
-                  {getRoleBadge()}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {authUser && (
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${roleColors[authUser.type] ?? "text-muted-foreground bg-muted"}`}
+                    >
+                      <IconShield className="h-3 w-3 shrink-0" />
+                      {authUser.type.charAt(0).toUpperCase() + authUser.type.slice(1)}
+                    </span>
+                  )}
+                  {branchName && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-300">
+                      <IconBuildingStore className="h-3 w-3 shrink-0" />
+                      {branchName}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <IconUserCircle />
+          <DropdownMenuSeparator className="mx-0" />
+          <DropdownMenuGroup className="p-1.5">
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
+              <IconUserCircle className="size-4 text-muted-foreground" />
               Account
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <IconCreditCard />
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
+              <IconCreditCard className="size-4 text-muted-foreground" />
               Billing
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <IconNotification />
+            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
+              <IconNotification className="size-4 text-muted-foreground" />
               Notifications
             </DropdownMenuItem>
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setShowLogoutDialog(true)}>
-            <IconLogout />
-            Log out
-          </DropdownMenuItem>
+          <DropdownMenuSeparator className="mx-0" />
+          <div className="p-1.5">
+            <DropdownMenuItem
+              onClick={() => setShowLogoutDialog(true)}
+              className="rounded-lg cursor-pointer gap-2.5 py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive"
+            >
+              <IconLogout className="size-4" />
+              Log out
+            </DropdownMenuItem>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={showLogoutDialog}
+        onOpenChange={(open) => {
+          if (!open) requestAnimationFrame(() => setShowLogoutDialog(false))
+          else setShowLogoutDialog(true)
+        }}
+      >
+        <AlertDialogContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
             <AlertDialogDescription>
@@ -209,12 +223,10 @@ export function NavUser({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowLogoutDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-destructive text-white hover:bg-destructive/90 hover:text-white"
             >
               Log out
             </AlertDialogAction>

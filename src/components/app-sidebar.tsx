@@ -3,7 +3,8 @@
 import * as React from "react"
 import { useTranslations } from 'next-intl'
 
-import { SidebarMenu } from '@/components/SidebarMenu'
+import { SidebarMenu } from "@/components/SidebarMenu"
+import { SidebarSearch } from "@/components/sidebar-search"
 import {
   Sidebar,
   SidebarContent,
@@ -11,9 +12,9 @@ import {
   SidebarHeader,
   SidebarMenuButton,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { NavSecondary } from '@/components/nav-secondary'
-import { NavUser } from '@/components/nav-user'
+} from "@/components/ui/sidebar"
+import { NavSecondary } from "@/components/nav-secondary"
+import { NavUser } from "@/components/nav-user"
 import { useAuth } from '@/contexts/auth-context'
 import { getMenuByRole } from '@/lib/menu-config'
 import type { MenuItem } from '@/lib/menu-config'
@@ -50,14 +51,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Get menu based on user role
   const menuData = user ? getMenuByRole(user.type, t) : { navMain: [], navSecondary: [] }
 
-  // Debug log to verify role-based menus are working
-  React.useEffect(() => {
-    if (user) {
-      console.log('Current User Role:', user.type)
-      console.log('Menu Items Count:', menuData.navMain.length)
-    }
-  }, [user, menuData])
-
   const filteredNavMain = React.useMemo(
     () => filterMenuByQuery(menuData.navMain, sidebarSearchQuery),
     [menuData.navMain, sidebarSearchQuery]
@@ -75,23 +68,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-sidebar-border/80 bg-sidebar/80">
         <SidebarMenuButton
           asChild
-          className="data-[slot=sidebar-menu-button]:!p-1.5"
+          className="data-[slot=sidebar-menu-button]:!px-3 !py-3 rounded-lg hover:bg-sidebar-accent"
         >
-          <a href="#">
-            <div className="flex flex-col items-start flex-1">
-              <span className="text-base font-semibold">WelcomplayERP</span>
+          <a href="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm">
+              W
             </div>
+            <span className="text-base font-semibold text-sidebar-foreground truncate">Welcomplay ERP</span>
           </a>
         </SidebarMenuButton>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="scrollbar-thin">
+        <div className="group-data-[collapsible=icon]:hidden">
+          <SidebarSearch />
+        </div>
         <SidebarMenu items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/80 bg-sidebar/50 pt-2">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
