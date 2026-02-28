@@ -552,16 +552,17 @@ export default function CompaniesPage() {
             {!loading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {companies.map((company) => (
-                  <Card key={company.id} className="flex flex-col h-full">
-                    <CardContent className="p-4 flex flex-col flex-1">
-                      {/* Header with Plan Badge and Actions */}
+                  <Card key={company.id} className="flex flex-col overflow-hidden shadow-none rounded-xl">
+                    {/* Card Header - Blue gradient background */}
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 px-4 pt-4 pb-6 relative">
+                      {/* Plan badge + actions row */}
                       <div className="flex items-center justify-between mb-3">
-                        <Badge className={getPlanBadgeColors(company.plan || 'No Plan')}>
+                        <Badge className={`${getPlanBadgeColors(company.plan || 'No Plan')} text-xs`}>
                           {company.plan || 'No Plan'}
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white hover:bg-white/20">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -608,48 +609,53 @@ export default function CompaniesPage() {
                         </DropdownMenu>
                       </div>
 
-                      {/* Company Info */}
-                      <div className="flex items-center gap-3 border-b pb-3 mb-3">
-                        <Avatar className="h-16 w-16 border-2 border-blue-200">
+                      {/* Avatar centered */}
+                      <div className="flex flex-col items-center">
+                        <Avatar className="h-16 w-16 ring-4 ring-white/30">
                           <AvatarImage src={company.avatar ?? undefined} />
-                          <AvatarFallback className="text-base bg-blue-100 text-blue-700">
+                          <AvatarFallback className="text-lg font-semibold bg-white text-blue-600">
                             {getInitials(company.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-medium mb-1 truncate">{company.name}</h5>
+                      </div>
+                    </div>
+
+                    {/* Card Body - White background */}
+                    <div className="bg-white px-4 pt-3 pb-4 flex flex-col flex-1 -mt-3 rounded-t-2xl relative">
+                      {/* Company name + email */}
+                      <div className="text-center mb-3">
+                        <h5 className="font-semibold text-sm truncate">{company.name}</h5>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{company.email}</p>
+                        <div className="flex items-center justify-center gap-1 mt-1.5 flex-wrap">
                           {company.delete_status === 0 && (
-                            <Badge variant="destructive" className="text-xs mb-1">Deactivated</Badge>
+                            <Badge variant="destructive" className="text-xs">Deactivated</Badge>
                           )}
                           {!company.is_enable_login && (
-                            <Badge variant="outline" className="text-xs mb-1 bg-orange-50 text-orange-700 border-orange-200">Login Disabled</Badge>
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">Login Off</span>
                           )}
-                          <p className="text-sm text-muted-foreground truncate">{company.email}</p>
                         </div>
                       </div>
 
-                      {/* Last Login Date & Time */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
-                            <Calendar className="h-4 w-4 text-white" />
+                      {/* Last Login - gray background section */}
+                      <div className="bg-gray-50 rounded-lg px-3 py-2 mb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                            <span>{formatDate(company.last_login_at)}</span>
                           </div>
-                          <span className="text-sm">{formatDate(company.last_login_at)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center">
-                            <Clock className="h-4 w-4 text-white" />
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 text-blue-500" />
+                            <span>{formatTime(company.last_login_at)}</span>
                           </div>
-                          <span className="text-sm">{formatTime(company.last_login_at)}</span>
                         </div>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-2 border-b border-t py-3 my-3">
+                      <div className="flex items-center gap-2 mb-3">
                         <Button
                           variant="blue"
                           size="sm"
-                          className="flex-1 shadow-none"
+                          className="flex-1 shadow-none h-8 text-xs"
                           onClick={() => {
                             setSelectedCompany(company)
                             setUpgradeDialogOpen(true)
@@ -658,29 +664,21 @@ export default function CompaniesPage() {
                           Upgrade Plan
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="flex-1 shadow-none"
+                          className="flex-1 shadow-none h-8 text-xs bg-gray-100 text-gray-700 hover:bg-gray-200"
                           onClick={() => handleOpenAdminHub(company)}
                         >
                           Admin Hub
                         </Button>
                       </div>
 
-                      {/* Plan Expire Date */}
-                      <div className="text-center pb-3 mb-3 border-b">
-                        <span className="text-sm text-muted-foreground">
-                          Plan Expired: {formatExpireDate(company.plan_expire_date)}
-                        </span>
+                      {/* Plan Expire - light blue background */}
+                      <div className="bg-blue-50 rounded-lg px-3 py-2 text-center">
+                        <p className="text-xs text-blue-600 font-medium">
+                          Expires: {formatExpireDate(company.plan_expire_date)}
+                        </p>
                       </div>
-
-                      {/* Branch info */}
-                      <div className="text-center">
-                        <span className="text-xs text-muted-foreground">
-                          Branch: {company.branchName || '-'}
-                        </span>
-                      </div>
-                    </CardContent>
+                    </div>
                   </Card>
                 ))}
 
