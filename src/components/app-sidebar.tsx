@@ -43,10 +43,42 @@ function filterMenuByQuery(items: MenuItem[], query: string): MenuItem[] {
     })
 }
 
+function injectBadgeIntoItems(items: MenuItem[], url: string, badge: number): MenuItem[] {
+  if (badge <= 0) return items
+  return items.map((item) => {
+    if (item.url === url) {
+      return { ...item, badge }
+    }
+    if (item.items?.length) {
+      return { ...item, items: injectBadgeIntoItems(item.items, url, badge) }
+    }
+    return item
+  })
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const t = useTranslations('sidebar.menu')
   const { user } = useAuth()
   const { sidebarSearchQuery } = useSidebar()
+  const [messengerUnreadCount, setMessengerUnreadCount] = React.useState(0)
+
+  // Poll messenger unread count for sidebar badge
+  React.useEffect(() => {
+    if (!user) return
+    const fetchUnread = () => {
+      fetch('/api/messenger/unread-count')
+        .then((r) => r.json())
+        .then((json) => {
+          if (json?.success && typeof json.count === 'number') {
+            setMessengerUnreadCount(json.count)
+          }
+        })
+        .catch(() => {})
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 15000)
+    return () => clearInterval(interval)
+  }, [user])
 
   // Get menu based on user role
   const menuByRole = React.useMemo(
@@ -74,8 +106,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     } else {
       navMain = menuByRole.navMain
     }
+    navMain = injectBadgeIntoItems(navMain, '/messenger', messengerUnreadCount)
     return { ...menuByRole, navMain }
-  }, [user?.type, user?.permissions, menuByRole])
+  }, [user?.type, user?.permissions, menuByRole, messengerUnreadCount])
 
   const filteredNavMain = React.useMemo(
     () => filterMenuByQuery(menuData.navMain, sidebarSearchQuery),

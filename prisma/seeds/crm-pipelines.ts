@@ -219,39 +219,9 @@ export async function seedCrmPipelines(prisma: any) {
     console.log("Skipping pipeline labels seeding: PipelineLabel model not available.");
   }
 
-  const contractTypeNames: string[] = [
-    "Implementasi",
-    "Dukungan & Pemeliharaan",
-    "Pengembangan",
-    "Migrasi Sistem",
-    "Audit & Konsultasi",
-    "Pelatihan",
-    "Integrasi Sistem",
-    "Konsultasi",
-  ];
-
-  let contractTypeCreated = 0;
-
   if (hasContractTypeModel) {
-    for (const name of contractTypeNames) {
-      const existing = await prisma.contractType.findFirst({
-        where: { name },
-      });
-
-      if (existing) {
-        continue;
-      }
-
-      await prisma.contractType.create({
-        data: { name },
-      });
-      contractTypeCreated++;
-      console.log(`Contract type created: ${name}`);
-    }
-
-    console.log(
-      `Contract types seeding completed. New records: ${contractTypeCreated}`,
-    );
+    const { seedContractTypes } = await import("./contract-types");
+    await seedContractTypes(prisma);
   } else {
     console.log("Skipping contract types seeding: ContractType model not available.");
   }

@@ -1,4 +1,7 @@
 {
+  "messenger": {
+    "messagesEncrypted": "Pesan pribadi Anda terenkripsi dan bersifat pribadi."
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Kelola proyek dan analitik Anda",
@@ -217,7 +220,8 @@
     },
     "storageLimit": {
       "title": "Batas Penyimpanan",
-      "used": "Terpakai"
+      "used": "Terpakai",
+      "notConfigured": "Batas penyimpanan belum dikonfigurasi"
     },
     "recentInvoices": {
       "title": "Faktur Terbaru",
@@ -267,6 +271,7 @@
     },
     "goal": {
       "title": "Target",
+      "noGoals": "Belum ada target keuangan yang dikonfigurasi.",
       "name": "Nama",
       "type": "Tipe",
       "duration": "Durasi",
@@ -444,6 +449,7 @@
     },
     "leadStatus": {
       "title": "Status Lead",
+      "noData": "Belum ada lead",
       "draft": "Draft",
       "sent": "Terkirim",
       "open": "Open",
@@ -456,6 +462,7 @@
     },
     "dealStatus": {
       "title": "Status Deal",
+      "noData": "Belum ada deal",
       "initialContact": "Kontak Awal",
       "qualification": "Kualifikasi",
       "meeting": "Pertemuan",

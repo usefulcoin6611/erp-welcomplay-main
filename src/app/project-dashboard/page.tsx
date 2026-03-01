@@ -6,6 +6,7 @@ import { TasksOverview } from '@/components/tasks-overview'
 import { TopDueProjects } from '@/components/top-due-projects'
 import { TimesheetLoggedHours } from '@/components/timesheet-logged-hours'
 import { TopDueTasks } from '@/components/top-due-tasks'
+import { ProjectDashboardProvider } from '@/contexts/project-dashboard-context'
 import {
   SidebarInset,
   SidebarProvider,
@@ -13,6 +14,7 @@ import {
 
 export default function ProjectDashboardPage() {
   return (
+    <ProjectDashboardProvider>
     <SidebarProvider
       style={
         {
@@ -51,5 +53,6 @@ export default function ProjectDashboardPage() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </ProjectDashboardProvider>
   )
 }

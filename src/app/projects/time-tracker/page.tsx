@@ -159,7 +159,7 @@ export default function TimeTrackerPage() {
                   setSearch(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="h-9 pl-9 w-full bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                className="h-9 pl-9 w-full bg-gray-50 border-0 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
             </div>
           </div>

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { ButtonGroup } from "@/components/ui/button-group"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useTranslations } from 'next-intl'
 
 interface CalendarEvent {
@@ -19,31 +20,47 @@ interface CalendarEvent {
 }
 
 const COLOR_LABEL_TO_BADGE: Record<string, string> = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  purple: 'bg-purple-500',
-  red: 'bg-red-500',
-  orange: 'bg-orange-500',
-  yellow: 'bg-yellow-500',
+  blue: 'bg-blue-100 text-blue-700',
+  green: 'bg-green-100 text-green-700',
+  purple: 'bg-violet-100 text-violet-700',
+  red: 'bg-red-100 text-red-700',
+  orange: 'bg-amber-100 text-amber-700',
+  yellow: 'bg-amber-100 text-amber-700',
 }
 
 interface EventCalendarProps {
+  /** If provided, used as-is (no API fetch). If omitted, events are fetched from HRM dashboard calendar API. */
   events?: CalendarEvent[]
   enableGoogleCalendar?: boolean
 }
 
-export function EventCalendar({ 
-  events = [
-    { id: "1", title: "Team Meeting", date: "2024-01-15", time: "09:00", type: "meeting" },
-    { id: "2", title: "Training Session", date: "2024-01-18", time: "14:00", type: "training" },
-    { id: "3", title: "Project Review", date: "2024-01-22", time: "10:30", type: "meeting" },
-    { id: "4", title: "Holiday", date: "2024-01-25", time: "00:00", type: "holiday" },
-  ]
-}: EventCalendarProps) {
+export function EventCalendar({ events: eventsProp }: EventCalendarProps) {
   const t = useTranslations('hrmDashboard.eventCalendar')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isFading, setIsFading] = useState(false)
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('month')
+  const [fetchedEvents, setFetchedEvents] = useState<CalendarEvent[]>([])
+  const [eventsLoading, setEventsLoading] = useState(!eventsProp)
+
+  useEffect(() => {
+    if (eventsProp !== undefined) {
+      setEventsLoading(false)
+      return
+    }
+    let cancelled = false
+    setEventsLoading(true)
+    fetch('/api/hrm-dashboard/calendar')
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json?.success || !Array.isArray(json.data)) return
+        setFetchedEvents(json.data as CalendarEvent[])
+      })
+      .catch(() => setFetchedEvents([]))
+      .finally(() => { if (!cancelled) setEventsLoading(false) })
+    return () => { cancelled = true }
+  }, [eventsProp])
+
+  const events = eventsProp ?? fetchedEvents
 
   const currentMonth = selectedDate.getMonth()
   const currentYear = selectedDate.getFullYear()
@@ -163,7 +180,7 @@ export function EventCalendar({
             {dayEvents.slice(0, 1).map((event) => (
               <div 
                 key={event.id} 
-                className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${getEventBadgeColor(event)}`}
+                className={`text-[10px] px-1 py-0.5 rounded truncate ${getEventBadgeColor(event)}`}
                 title={`${event.title} - ${event.time}`}
               >
                 {event.title}
@@ -281,7 +298,7 @@ export function EventCalendar({
       <CardHeader>
         <div className="flex items-center gap-2 w-full">
           <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" />
+            <CalendarIcon className="h-[18px] w-[18px] text-blue-500 shrink-0" />
             {t('eventTitle')}
           </CardTitle>
           <ButtonGroup className="ml-auto">
@@ -319,6 +336,14 @@ export function EventCalendar({
         </div>
       </CardHeader>
   <CardContent className="p-3 sm:p-4">
+        {eventsLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-full max-w-[200px]" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+        ) : (
+        <>
         {/* Actions removed as requested: no calendar filter and no add event button */}
         {viewMode === 'month' && (
           <>
@@ -391,18 +416,20 @@ export function EventCalendar({
         {/* Legend */}
         <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded bg-blue-500"></div>
-            <span className="text-[11px] sm:text-xs">{t('eventTypes.meeting')}</span>
+            <div className="w-2.5 h-2.5 rounded bg-blue-100 border border-blue-200"></div>
+            <span className="text-[11px] sm:text-xs text-blue-700">{t('eventTypes.meeting')}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded bg-green-500"></div>
-            <span className="text-[11px] sm:text-xs">{t('eventTypes.training')}</span>
+            <div className="w-2.5 h-2.5 rounded bg-green-100 border border-green-200"></div>
+            <span className="text-[11px] sm:text-xs text-green-700">{t('eventTypes.training')}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded bg-red-500"></div>
-            <span className="text-[11px] sm:text-xs">{t('eventTypes.holiday')}</span>
+            <div className="w-2.5 h-2.5 rounded bg-red-100 border border-red-200"></div>
+            <span className="text-[11px] sm:text-xs text-red-700">{t('eventTypes.holiday')}</span>
           </div>
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   )

@@ -1,56 +1,15 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
-
-interface BankAccount {
-  id: string
-  bank: string
-  holderName: string
-  accountNumber: string
-  balance: number
-  type: string
-}
-
-const mockAccounts: BankAccount[] = [
-  {
-    id: "1",
-    bank: "Bank Mandiri",
-    holderName: "PT. Welcomplay Indonesia",
-    accountNumber: "1234567890",
-    balance: 125000000,
-    type: "Checking"
-  },
-  {
-    id: "2",
-    bank: "Bank BCA",
-    holderName: "PT. Welcomplay Indonesia",
-    accountNumber: "9876543210",
-    balance: 85000000,
-    type: "Savings"
-  },
-  {
-    id: "3",
-    bank: "Bank BNI",
-    holderName: "PT. Welcomplay Indonesia",
-    accountNumber: "5555666677",
-    balance: 45000000,
-    type: "Checking"
-  },
-  {
-    id: "4",
-    bank: "Bank BRI",
-    holderName: "PT. Welcomplay Indonesia",
-    accountNumber: "1122334455",
-    balance: 62500000,
-    type: "Savings"
-  },
-]
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function AccountBalanceTable() {
   const t = useTranslations('accountDashboard.accountBalance')
-  
+  const { data, loading } = useAccountDashboard()
+  const accounts = data.bankAccounts
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -59,8 +18,21 @@ export function AccountBalanceTable() {
     }).format(amount)
   }
 
-  const totalBalance = mockAccounts.reduce((sum, account) => sum + account.balance, 0)
-  
+  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0)
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-1 px-3 py-2">
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent className="pt-0 px-3 py-2">
+          <Skeleton className="h-24 w-full rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="pb-1 px-3 py-2">
@@ -92,7 +64,7 @@ export function AccountBalanceTable() {
                 </tr>
               </thead>
               <tbody className="[&_tr:last-child]:border-0">
-                {mockAccounts.map((account) => (
+                {accounts.map((account) => (
                   <tr key={account.id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="py-2 px-2 align-middle font-medium text-xs">
                       {account.bank}

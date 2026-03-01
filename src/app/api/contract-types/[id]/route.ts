@@ -46,7 +46,7 @@ export async function PUT(
 
     const { name } = validation.data
 
-    const existing = await (prisma as any).contractType.findUnique({
+    const existing = await prisma.contractType.findUnique({
       where: { id },
     })
 
@@ -57,7 +57,7 @@ export async function PUT(
       )
     }
 
-    const updated = await (prisma as any).contractType.update({
+    const updated = await prisma.contractType.update({
       where: { id },
       data: { name },
     })
@@ -65,7 +65,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: "Contract type berhasil diperbarui",
-      data: updated,
+      data: { id: updated.id, name: updated.name },
     })
   } catch (error) {
     console.error("Error updating contract type:", error)
@@ -98,7 +98,7 @@ export async function DELETE(
       )
     }
 
-    const existing = await (prisma as any).contractType.findUnique({
+    const existing = await prisma.contractType.findUnique({
       where: { id },
     })
 
@@ -109,7 +109,7 @@ export async function DELETE(
       )
     }
 
-    await (prisma as any).contractType.delete({
+    await prisma.contractType.delete({
       where: { id },
     })
 

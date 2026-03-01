@@ -1,36 +1,52 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { useTranslations } from "next-intl"
+import { Loader2 } from "lucide-react"
 
-// Sample data - last 10 days
-const generateChartData = () => {
-  const days = []
-  const today = new Date(2025, 9, 31) // October 31, 2025
-  
-  for (let i = 9; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0]
-    
-    // Generate values between 100-300
-    const purchaseValue = Math.floor(Math.random() * 180) + 80
-    const posValue = purchaseValue + Math.floor(Math.random() * 60) + 20
-    
-    days.push({
-      date: dateStr,
-      Purchase: purchaseValue,
-      POS: posValue,
-    })
-  }
-  
-  return days
+export type POSDashboardChartPoint = {
+  date: string
+  POS: number
+  Purchase: number
 }
 
-export function POSVsPurchaseChart() {
+export function POSVsPurchaseChart({ chartData: chartDataProp }: { chartData?: POSDashboardChartPoint[] | null }) {
   const t = useTranslations('posDashboard.chart')
-  const data = generateChartData()
+  const [chartData, setChartData] = useState<POSDashboardChartPoint[]>(chartDataProp ?? [])
+  const [loading, setLoading] = useState(!chartDataProp)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (chartDataProp != null) {
+      setChartData(chartDataProp)
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    fetch("/api/pos-dashboard")
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return
+        if (json?.success && Array.isArray(json?.data?.chartData)) {
+          setChartData(json.data.chartData)
+        } else {
+          setError(json?.message ?? "Failed to load")
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError("Failed to load")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [chartDataProp])
+
+  const formatCurrency = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -39,7 +55,7 @@ export function POSVsPurchaseChart() {
           <p className="text-sm font-medium mb-2">{payload[0].payload.date}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
+              {entry.name}: {formatCurrency(Number(entry.value))}
             </p>
           ))}
         </div>
@@ -48,18 +64,44 @@ export function POSVsPurchaseChart() {
     return null
   }
 
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">{t('title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">{t('title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="py-8 text-center text-sm text-destructive">
+          {error}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{t('title')}</CardTitle>
-          <p className="text-sm font-medium text-muted-foreground">{t('subtitle')}</p>
+          <p className="text-sm font-medium text-muted-foreground text-right">{t('subtitle')}</p>
         </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
           <AreaChart 
-            data={data} 
+            data={chartData} 
             margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
           >
             <defs>

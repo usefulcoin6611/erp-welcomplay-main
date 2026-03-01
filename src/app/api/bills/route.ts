@@ -234,9 +234,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let finalBillId = typeof billId === "string" && billId.trim() ? billId.trim() : null
+    if (!finalBillId) {
+      const year = new Date().getFullYear()
+      const prefix = `BILL-${year}-`
+      const existing = await prisma.bill.findMany({
+        where: { billId: { startsWith: prefix } },
+        select: { billId: true },
+        orderBy: { billId: "desc" },
+        take: 1,
+      })
+      const nextNum = existing.length > 0
+        ? parseInt(existing[0].billId.replace(prefix, ""), 10) + 1
+        : 1
+      finalBillId = `${prefix}${String(nextNum).padStart(3, "0")}`
+    }
+
     const created = await prisma.bill.create({
       data: {
-        billId: billId || undefined,
+        billId: finalBillId,
         vendorId,
         branchId: s.branchId,
         billDate: new Date(billDate),

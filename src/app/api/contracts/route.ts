@@ -22,19 +22,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const contracts = await prisma.contract.findMany({
-      orderBy: { createdAt: "desc" },
-    })
+    const { searchParams } = new URL(request.url)
+    const pageParam = searchParams.get("page")
+    const limitParam = searchParams.get("limit")
+    const usePagination = pageParam != null || limitParam != null
+    const page = usePagination ? Math.max(1, parseInt(pageParam ?? "1", 10)) : 1
+    const limit = usePagination
+      ? Math.min(100, Math.max(1, parseInt(limitParam ?? "10", 10)))
+      : 10000
+    const skip = (page - 1) * limit
+
+    const [contracts, total] = await Promise.all([
+      prisma.contract.findMany({
+        orderBy: { createdAt: "desc" },
+        ...(usePagination && { skip, take: limit }),
+      }),
+      prisma.contract.count(),
+    ])
+
+    const projectIds = [...new Set(contracts.map((c: { projectId: string | null }) => c.projectId).filter(Boolean))] as string[]
+    const projects = projectIds.length > 0
+      ? await prisma.project.findMany({
+          where: { projectId: { in: projectIds } },
+          select: { projectId: true, name: true },
+        })
+      : []
+    const projectNameByProjectId = Object.fromEntries(projects.map((p) => [p.projectId, p.name]))
 
     const data = contracts.map((c: any) => {
       const numberPart = c.contractId.split("-").slice(-1)[0] as string
       const contractNumber = `CTR-${numberPart}`
+      const projectName = c.projectId ? (projectNameByProjectId[c.projectId] ?? c.projectId) : ""
       return {
         id: c.contractId,
+        number: contractNumber,
         contractNumber,
         subject: c.subject,
         client: c.clientName,
-        project: c.projectId ?? "",
+        project: projectName || "-",
+        projectId: c.projectId ?? null,
         type: c.type,
         value: c.value,
         startDate: c.startDate.toISOString().slice(0, 10),
@@ -44,7 +70,16 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ success: true, data })
+    const payload: { success: true; data: typeof data; total?: number; page?: number; limit?: number } = {
+      success: true,
+      data,
+    }
+    if (usePagination) {
+      payload.total = total
+      payload.page = page
+      payload.limit = limit
+    }
+    return NextResponse.json(payload)
   } catch (error) {
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan internal" },
@@ -58,6 +93,13 @@ export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    const role = (session.user as { role?: string }).role
+    if (role === "client") {
+      return NextResponse.json(
+        { success: false, message: "Client role cannot create contracts." },
+        { status: 403 }
+      )
     }
 
     const json = await request.json()

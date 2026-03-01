@@ -25,6 +25,13 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
+    const existing = await prisma.estimate.findUnique({
+      where: { estimateId: id },
+      select: { id: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ success: false, message: "Estimate not found" }, { status: 404 })
+    }
     const updated = await prisma.estimate.update({
       where: { estimateId: id },
       data: {
@@ -36,7 +43,7 @@ export async function PUT(
         categoryId: typeof body.categoryId === "string" && body.categoryId !== "" ? body.categoryId : undefined,
         items: Array.isArray(body.items)
           ? {
-              deleteMany: {},
+              deleteMany: { estimateId: existing.id },
               create: body.items.map((it: any) => ({
                 itemName: it.item,
                 quantity: parseFloat(it.quantity) || 0,
@@ -49,7 +56,7 @@ export async function PUT(
             }
           : undefined,
       },
-      include: { items: true }
+      include: { items: true, customer: true }
     })
     return NextResponse.json({ success: true, data: updated })
   } catch {

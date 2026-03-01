@@ -56,6 +56,9 @@ type PipelineLabelItem = {
   color: string
 }
 
+const LABEL_COLOR_PLACEHOLDER = "__none__"
+const PIPELINE_PLACEHOLDER = "__none__"
+
 const labelColors = [
   { value: '#ef4444', label: 'Red' },
   { value: '#f59e0b', label: 'Orange' },
@@ -74,9 +77,9 @@ export function LabelsTabCreateButton({
   selectedPipelineId?: string
 }) {
   const [open, setOpen] = useState(false)
-  const [pipelineId, setPipelineId] = useState<string>("")
+  const [pipelineId, setPipelineId] = useState<string>(PIPELINE_PLACEHOLDER)
   const [name, setName] = useState("")
-  const [color, setColor] = useState<string>("")
+  const [color, setColor] = useState<string>(LABEL_COLOR_PLACEHOLDER)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -86,12 +89,12 @@ export function LabelsTabCreateButton({
     } else if (pipelines.length > 0) {
       setPipelineId(pipelines[0].id)
     } else {
-      setPipelineId("")
+      setPipelineId(PIPELINE_PLACEHOLDER)
     }
   }, [open, selectedPipelineId, pipelines])
 
   const handleSave = async () => {
-    if (!pipelineId) {
+    if (!pipelineId || pipelineId === PIPELINE_PLACEHOLDER) {
       toast.error("Pipeline wajib dipilih")
       return
     }
@@ -99,7 +102,7 @@ export function LabelsTabCreateButton({
       toast.error("Nama label wajib diisi")
       return
     }
-    if (!color) {
+    if (!color || color === LABEL_COLOR_PLACEHOLDER) {
       toast.error("Warna label wajib dipilih")
       return
     }
@@ -122,7 +125,7 @@ export function LabelsTabCreateButton({
         return
       }
       setName("")
-      setColor("")
+      setColor(LABEL_COLOR_PLACEHOLDER)
       setOpen(false)
       toast.success("Label berhasil dibuat")
       if (typeof window !== "undefined") {
@@ -159,17 +162,21 @@ export function LabelsTabCreateButton({
           <div className="grid gap-2">
             <Label htmlFor="pipeline">Pipeline</Label>
             <Select
-              value={pipelineId}
+              value={pipelineId || PIPELINE_PLACEHOLDER}
               onValueChange={setPipelineId}
               disabled={pipelines.length === 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select Pipeline">
-                  {pipelines.find((p) => p.id === pipelineId)?.name ||
-                    "Select Pipeline"}
+                  {pipelineId && pipelineId !== PIPELINE_PLACEHOLDER
+                    ? pipelines.find((p) => p.id === pipelineId)?.name
+                    : "Select Pipeline"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={PIPELINE_PLACEHOLDER}>
+                  Select Pipeline
+                </SelectItem>
                 {pipelines.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
@@ -195,14 +202,17 @@ export function LabelsTabCreateButton({
                 <SelectValue placeholder="Select Color" />
               </SelectTrigger>
               <SelectContent>
-                {labelColors.map((color) => (
-                  <SelectItem key={color.value} value={color.value}>
+                <SelectItem value={LABEL_COLOR_PLACEHOLDER}>
+                  Select Color
+                </SelectItem>
+                {labelColors.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
                     <div className="flex items-center gap-2">
                       <div
                         className="h-4 w-4 rounded-full"
-                        style={{ backgroundColor: color.value }}
+                        style={{ backgroundColor: c.value }}
                       />
-                      {color.label}
+                      {c.label}
                     </div>
                   </SelectItem>
                 ))}

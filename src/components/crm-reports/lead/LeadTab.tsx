@@ -2,16 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Download, ChevronRight, Loader2 } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ChevronRight } from 'lucide-react'
 import { LeadGeneralReport } from './LeadGeneralReport'
 import { LeadStaffReport } from './LeadStaffReport'
 import { LeadPipelineReport } from './LeadPipelineReport'
 
 export function LeadTab() {
   const [activeSection, setActiveSection] = useState('general-report')
-  const [isDownloading, setIsDownloading] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   // Setup intersection observer for automatic active section detection
@@ -46,20 +43,6 @@ export function LeadTab() {
     }
   }, [])
 
-  const handleDownload = async () => {
-    setIsDownloading(true)
-    try {
-      // Simulate PDF generation
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Downloading lead report as PDF...')
-      // Implement actual PDF download logic here
-    } catch (error) {
-      console.error('Download failed:', error)
-    } finally {
-      setIsDownloading(false)
-    }
-  }
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
@@ -76,40 +59,6 @@ export function LeadTab() {
 
   return (
     <div className="w-full min-w-0">
-      {/* Header with Download Button */}
-      <Card className="mb-5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">Lead Reports</h2>
-            <p className="text-sm text-muted-foreground mt-1">Comprehensive lead analytics and performance metrics</p>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="shadow-none bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Downloading...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download report as PDF</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
         {/* Left Sidebar Navigation */}
         <aside className="col-span-1 lg:col-span-3 min-w-0">

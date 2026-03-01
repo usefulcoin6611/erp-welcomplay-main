@@ -1,4 +1,7 @@
 {
+  "messenger": {
+    "messagesEncrypted": "Your personal messages are encrypted and private."
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Manage your projects and analytics",
@@ -217,7 +220,8 @@
     },
     "storageLimit": {
       "title": "Storage Limit",
-      "used": "Used"
+      "used": "Used",
+      "notConfigured": "Storage limit not configured"
     },
     "recentInvoices": {
       "title": "Recent Invoices",
@@ -267,6 +271,7 @@
     },
     "goal": {
       "title": "Goal",
+      "noGoals": "No financial goals configured.",
       "name": "Name",
       "type": "Type",
       "duration": "Duration",
@@ -444,6 +449,7 @@
     },
     "leadStatus": {
       "title": "Lead Status",
+      "noData": "No leads yet",
       "draft": "Draft",
       "sent": "Sent",
       "open": "Open",
@@ -456,6 +462,7 @@
     },
     "dealStatus": {
       "title": "Deal Status",
+      "noData": "No deals yet",
       "initialContact": "Initial Contact",
       "qualification": "Qualification",
       "meeting": "Meeting",

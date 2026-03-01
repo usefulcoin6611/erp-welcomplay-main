@@ -55,7 +55,7 @@ export function SmoothTab({
     defaultTabId,
     value,
     className,
-    activeColor = "bg-cyan-600",
+    activeColor = "bg-gray-600",
     action,
     onChange,
     onTabPreload,

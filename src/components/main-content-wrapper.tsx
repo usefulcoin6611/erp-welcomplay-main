@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 interface MainContentWrapperProps {
   children: ReactNode
@@ -32,8 +33,10 @@ const pageTransition = {
 export function MainContentWrapper({ children }: MainContentWrapperProps) {
   const pathname = usePathname()
 
+  const isMessenger = pathname?.includes('/messenger')
+
   return (
-    <div className="flex flex-1 flex-col bg-gray-100">
+    <div className={cn('flex flex-1 flex-col bg-gray-100', isMessenger && 'min-h-0 overflow-hidden')}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={pathname}
@@ -42,12 +45,13 @@ export function MainContentWrapper({ children }: MainContentWrapperProps) {
           exit="exit"
           variants={pageVariants}
           transition={pageTransition}
-          style={{ 
-            width: '100%', 
-            minHeight: '100%',
+          style={{
+            width: '100%',
+            minHeight: isMessenger ? 0 : '100%',
             flex: 1,
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            ...(isMessenger && { overflow: 'hidden', maxHeight: '100%' }),
           }}
           data-slot="page-transition"
         >

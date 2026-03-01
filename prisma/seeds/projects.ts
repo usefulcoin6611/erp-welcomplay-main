@@ -115,16 +115,24 @@ export async function seedProjects(prisma: any) {
     existing.map((p: any) => String(p.projectId)),
   );
 
-  const usersInBranch = await prisma.employee.findMany({
-    where: {
-      branch: branchId,
-    },
-    orderBy: { createdAt: "asc" },
+  const branchRecord = await prisma.branch.findUnique({
+    where: { id: branchId },
+    select: { name: true },
   });
+  const branchName = branchRecord?.name ?? null;
+
+  const usersInBranch =
+    branchName != null
+      ? await prisma.employee.findMany({
+          where: { branch: branchName },
+          orderBy: { createdAt: "asc" },
+          take: 10,
+        })
+      : [];
 
   const userNames =
     usersInBranch.length > 0
-      ? usersInBranch.map((e: any) => e.name).filter((n: any) => !!n)
+      ? (usersInBranch as any[]).map((e) => e.name).filter(Boolean)
       : ["Budi Santoso", "Sari Wijaya", "Ahmad Fauzi", "Dewi Lestari"];
 
   for (const bp of baseProjects) {

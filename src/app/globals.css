@@ -431,6 +431,38 @@
   /* Inter's design handles dark mode well without additional shadows */
 }
 
+/* Messenger: independent scroll areas with thin, modern scrollbar */
+[data-messenger-scroll] {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+[data-messenger-scroll]::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-messenger-scroll]::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-messenger-scroll]::-webkit-scrollbar-thumb {
+  background: oklch(0.75 0.02 250 / 0.4);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-messenger-scroll]::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.02 250 / 0.6);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dark [data-messenger-scroll]::-webkit-scrollbar-thumb {
+  background: oklch(0.45 0.02 250 / 0.5);
+}
+.dark [data-messenger-scroll]::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.02 250 / 0.7);
+}
+
 /* Scrollbar hide utility */
 @layer utilities {
   .scrollbar-hide {

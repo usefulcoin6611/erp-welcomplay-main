@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslations } from 'next-intl'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
 
 interface IncomeData {
   id: number
@@ -36,24 +37,6 @@ interface IncomeData {
   customer: string
   amountDue: number
 }
-
-const mockIncomeData: IncomeData[] = [
-  { id: 1, date: '12 Nov, 2025', customer: 'PT Telkom Indonesia', amountDue: 25000000 },
-  { id: 2, date: '11 Nov, 2025', customer: 'Bank Mandiri', amountDue: 18500000 },
-  { id: 3, date: '10 Nov, 2025', customer: 'PT Astra International', amountDue: 32000000 },
-  { id: 4, date: '09 Nov, 2025', customer: 'Unilever Indonesia', amountDue: 15750000 },
-  { id: 5, date: '08 Nov, 2025', customer: 'PT Pertamina', amountDue: 28300000 },
-  { id: 6, date: '07 Nov, 2025', customer: 'Acme Corporation', amountDue: 12500000 },
-  { id: 7, date: '06 Nov, 2025', customer: 'TechStart Inc', amountDue: 8750500 },
-  { id: 8, date: '05 Nov, 2025', customer: 'Global Solutions', amountDue: 15200000 },
-  { id: 9, date: '04 Nov, 2025', customer: 'Innovate Labs', amountDue: 6300750 },
-  { id: 10, date: '03 Nov, 2025', customer: 'Digital Ventures', amountDue: 9450250 },
-  { id: 11, date: '02 Nov, 2025', customer: 'PT Garuda Indonesia', amountDue: 22000000 },
-  { id: 12, date: '01 Nov, 2025', customer: 'Bank BCA', amountDue: 19800000 },
-  { id: 13, date: '31 Oct, 2025', customer: 'PT XL Axiata', amountDue: 16500000 },
-  { id: 14, date: '30 Oct, 2025', customer: 'Indofood CBP', amountDue: 14200000 },
-  { id: 15, date: '29 Oct, 2025', customer: 'PT Semen Indonesia', amountDue: 27500000 },
-]
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -66,14 +49,16 @@ function formatRupiah(amount: number) {
 export function LatestIncomeTable() {
   const t = useTranslations('accountDashboard.latestIncome')
   const headerT = useTranslations('header')
+  const { data, loading } = useAccountDashboard()
+  const incomeData: IncomeData[] = data.latestIncome
 
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return mockIncomeData
-    return mockIncomeData.filter(
+    if (!searchQuery) return incomeData
+    return incomeData.filter(
       (item) =>
         item.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -130,6 +115,26 @@ export function LatestIncomeTable() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
+
+  if (loading) {
+    return (
+      <Card className="py-2">
+        <CardHeader className="px-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        </CardHeader>
+        <CardTable>
+          <div className="px-3 py-2 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardTable>
+      </Card>
+    )
+  }
 
   return (
     <DataGrid table={table} recordCount={filteredData?.length || 0} tableLayout={{ cellBorder: true, dense: true }}>

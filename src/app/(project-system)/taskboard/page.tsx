@@ -454,7 +454,7 @@ export default function TaskboardPage() {
                       placeholder="Search by Name"
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                      className="h-9 pl-9 pr-9 bg-gray-50 border-0 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
                     />
                     {search.length > 0 && (
                       <Button

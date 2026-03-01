@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const labels = await (prisma as any).pipelineLabel.findMany({
+    const labels = await prisma.pipelineLabel.findMany({
       where: { pipelineId },
       orderBy: { createdAt: "asc" },
     })
@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json({ success: true, data })
-  } catch {
+  } catch (error) {
+    console.error("Pipeline labels GET error:", error)
     return NextResponse.json(
       { success: false, message: "Gagal mengambil labels" },
       { status: 500 },
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const existing = await (prisma as any).pipelineLabel.findFirst({
+    const existing = await prisma.pipelineLabel.findFirst({
       where: {
         pipelineId,
         name,
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const created = await (prisma as any).pipelineLabel.create({
+    const created = await prisma.pipelineLabel.create({
       data: {
         pipelineId,
         name,
@@ -136,7 +137,8 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 },
     )
-  } catch {
+  } catch (error) {
+    console.error("Pipeline labels POST error:", error)
     return NextResponse.json(
       { success: false, message: "Gagal membuat label" },
       { status: 500 },

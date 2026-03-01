@@ -13,6 +13,7 @@
     "db:migrate": "pnpm prisma migrate deploy",
     "db:push": "pnpm prisma db push",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+    "db:seed:contract-types": "ts-node prisma/scripts/seed-contract-types.ts",
     "db:setup": "pnpm prisma migrate deploy && ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "prisma": {

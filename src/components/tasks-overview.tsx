@@ -1,22 +1,24 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTranslations } from "next-intl";
+import { useProjectDashboard } from "@/contexts/project-dashboard-context";
 
 export function TasksOverview() {
   const t = useTranslations("projectDashboard.tasksOverview");
+  const { data, loading } = useProjectDashboard();
+  const chartData = data.tasksOverview.length ? data.tasksOverview : [{ day: "-", tasks: 0 }];
 
-  // Mock data for last 7 days completed tasks
-  const data = [
-    { day: "Mon", tasks: 12 },
-    { day: "Tue", tasks: 18 },
-    { day: "Wed", tasks: 15 },
-    { day: "Thu", tasks: 22 },
-    { day: "Fri", tasks: 28 },
-    { day: "Sat", tasks: 20 },
-    { day: "Sun", tasks: 14 },
-  ];
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader><CardTitle>{t("title")}</CardTitle></CardHeader>
+        <CardContent><Skeleton className="h-[300px] w-full" /></CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
@@ -30,7 +32,7 @@ export function TasksOverview() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={data}>
+          <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />

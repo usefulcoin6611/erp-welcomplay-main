@@ -39,6 +39,10 @@ model User {
   assignedSupportTickets SupportTicket[] @relation("SupportAssignedTo")
   supportReplies   SupportReply[]
   orders           Order[]
+  conversationParticipants ConversationParticipant[]
+  messagesSent    Message[]
+  zoomMeetingsCreated ZoomMeeting[] @relation("ZoomMeetingCreatedBy")
+  zoomMeetingParticipations ZoomMeetingParticipant[]
 
   @@map("user")
 }
@@ -73,6 +77,63 @@ model SupportReply {
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("support_reply")
+}
+
+/// Messenger: 1:1 conversations between users.
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  participants ConversationParticipant[]
+  messages  Message[]
+
+  @@map("conversation")
+}
+
+model ConversationParticipant {
+  id                 String    @id @default(cuid())
+  conversationId     String
+  userId             String
+  joinedAt           DateTime  @default(now())
+  lastSeenMessageId  String?
+  lastSeenAt         DateTime?
+  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSeenMessage    Message?     @relation("LastSeenMessage", fields: [lastSeenMessageId], references: [id], onDelete: SetNull)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participant")
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String       @default("")
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  lastSeenBy     ConversationParticipant[] @relation("LastSeenMessage")
+  attachments    MessageAttachment[]
+
+  @@map("message")
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model MessageAttachment {
+  id        String  @id @default(cuid())
+  messageId String
+  fileUrl   String
+  fileName  String
+  mimeType  String?
+  fileSize  Int?
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_attachment")
+  @@index([messageId])
 }
 
 /// Access profile per branch: name + permission set. Assignable to users (User.accessProfileId).
@@ -1530,18 +1591,44 @@ model Contract {
 }
 
 model Pipeline {
-  id         String      @id @default(cuid())
-  branchId   String?
-  name       String
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  deals      Deal[]
-  dealStages DealStage[]
-  leads      Lead[]
-  leadStages LeadStage[]
-  branch     Branch?     @relation(fields: [branchId], references: [id])
+  id             String          @id @default(cuid())
+  branchId       String?
+  name           String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deals          Deal[]
+  dealStages     DealStage[]
+  leads          Lead[]
+  leadStages     LeadStage[]
+  pipelineLabels PipelineLabel[]
+  branch         Branch?         @relation(fields: [branchId], references: [id])
 
   @@map("pipeline")
+}
+
+/// Labels for pipelines (e.g. Hot, Cold). Used to tag leads/deals.
+model PipelineLabel {
+  id         String   @id @default(cuid())
+  pipelineId String
+  name       String
+  color      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@map("pipeline_label")
+  @@unique([pipelineId, name])
+  @@index([pipelineId])
+}
+
+/// Contract type lookup (e.g. Implementasi, Dukungan). Used in CRM.
+model ContractType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contract_type")
 }
 
 model LeadStage {
@@ -1690,8 +1777,48 @@ model Project {
   tasks        ProjectTask[]
   timeTrackers TimeTracker[]
   timesheets   Timesheet[]
+  zoomMeetings ZoomMeeting[]
 
   @@map("project")
+}
+
+/// Zoom meeting (virtual meeting room). Optional link to Project; participants are Users.
+model ZoomMeeting {
+  id                String   @id @default(cuid())
+  title             String
+  projectId         String?
+  startAt           DateTime
+  durationMinutes   Int      @default(60)
+  joinUrl           String?
+  startUrl          String?
+  password          String?
+  status            String   @default("waiting") // waiting | started | ended
+  createdById       String
+  syncGoogleCalendar Boolean @default(false)
+  inviteClient      Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  project           Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdBy         User     @relation("ZoomMeetingCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  participants      ZoomMeetingParticipant[]
+
+  @@map("zoom_meeting")
+  @@index([projectId])
+  @@index([createdById])
+  @@index([startAt])
+}
+
+model ZoomMeetingParticipant {
+  id            String      @id @default(cuid())
+  zoomMeetingId String
+  userId        String
+  zoomMeeting   ZoomMeeting @relation(fields: [zoomMeetingId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([zoomMeetingId, userId])
+  @@map("zoom_meeting_participant")
+  @@index([zoomMeetingId])
+  @@index([userId])
 }
 
 model ProjectTask {

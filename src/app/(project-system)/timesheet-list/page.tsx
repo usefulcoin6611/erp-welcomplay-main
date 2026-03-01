@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { IconCalendar, IconPlus, IconSearch } from "@tabler/icons-react"
+import { IconSearch } from "@tabler/icons-react"
 import { SimplePagination } from "@/components/ui/simple-pagination"
 
 type TimesheetRow = {
@@ -107,43 +107,34 @@ export default function TimesheetListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Title card - acuan /hrm/assets */}
+      {/* Title / header card with stats */}
       <Card className={CARD_STYLE}>
-        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
-          <div className="min-w-0 space-y-1 flex-1">
+        <CardHeader className="px-6 pb-4 space-y-4">
+          <div className="min-w-0 space-y-1">
             <CardTitle className="text-lg font-semibold">Timesheet List</CardTitle>
             <CardDescription>
               Kelola timesheet per project dan task. Lihat jam kerja yang tercatat.
             </CardDescription>
           </div>
+          <div className="flex flex-wrap items-center gap-4 rounded-lg bg-muted/50 px-4 py-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Total Entries</span>
+              <span className="text-xl font-bold tabular-nums">{rows.length}</span>
+            </div>
+            <div className="h-4 w-px bg-border shrink-0" aria-hidden />
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Total Hours</span>
+              <span className="text-xl font-bold tabular-nums">{totalHours}</span>
+            </div>
+          </div>
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className={CARD_STYLE}>
-          <CardHeader className="pb-2 px-6">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pt-0">
-            <div className="text-2xl font-bold">{rows.length}</div>
-          </CardContent>
-        </Card>
-        <Card className={CARD_STYLE}>
-          <CardHeader className="pb-2 px-6">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Hours</CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pt-0">
-            <div className="text-2xl font-bold">{totalHours}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Table card - padding konsisten px-6 */}
+      {/* Timesheet List card: search + table */}
       <Card className={CARD_STYLE}>
-        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4 space-y-0 py-3.5">
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4 py-3.5">
           <CardTitle className="text-base font-medium">Timesheet List</CardTitle>
-          <div className="flex w-full max-w-md items-center gap-2">
-            <div className="relative flex-1">
+          <div className="relative w-full sm:w-auto sm:min-w-[220px]">
               <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search project or task..."
@@ -152,13 +143,8 @@ export default function TimesheetListPage() {
                   setSearch(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="h-9 pl-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                className="h-9 pl-9 w-full bg-gray-50 border-0 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
-            </div>
-            <Button variant="outline" size="sm" className="h-9 px-3 shadow-none bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700">
-              <IconCalendar className="mr-2 h-4 w-4" />
-              Week
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">

@@ -84,6 +84,13 @@ export async function PUT(request: NextRequest, props: RouteParams) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const role = (session.user as { role?: string }).role;
+    if (role === "client") {
+      return NextResponse.json(
+        { success: false, message: "Client role cannot edit projects." },
+        { status: 403 }
+      );
+    }
 
     const { id } = await props.params;
 
@@ -172,6 +179,13 @@ export async function DELETE(_request: NextRequest, props: RouteParams) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const role = (session.user as { role?: string }).role;
+    if (role === "client") {
+      return NextResponse.json(
+        { success: false, message: "Client role cannot delete projects." },
+        { status: 403 }
+      );
+    }
 
     const { id } = await props.params;
 
@@ -190,8 +204,9 @@ export async function DELETE(_request: NextRequest, props: RouteParams) {
       where: { id: existing.id },
     });
 
-    return NextResponse.json({ success: true });
-  } catch {
+    return NextResponse.json({ success: true, message: "Project berhasil dihapus" });
+  } catch (err) {
+    console.error("Project DELETE error:", err);
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan internal" },
       { status: 500 }

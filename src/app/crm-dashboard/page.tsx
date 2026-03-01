@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { CRMStatsCards } from '@/components/crm-stats-cards'
@@ -9,7 +12,33 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar'
 
+export type CRMDashboardData = {
+  totalLead: number
+  totalDeal: number
+  totalContract: number
+  leadByStage: { stage: string; count: number; percentage: number }[]
+  dealByStage: { stage: string; count: number; percentage: number }[]
+}
+
 export default function CrmDashboardPage() {
+  const [data, setData] = useState<CRMDashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/crm-dashboard')
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json?.success || !json?.data) return
+        setData(json.data)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+
   return (
     <SidebarProvider
       style={
@@ -24,15 +53,18 @@ export default function CrmDashboardPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <CRMStatsCards />
-            
-            {/* Lead Status and Deal Status */}
+            <CRMStatsCards
+              totalLead={data?.totalLead}
+              totalDeal={data?.totalDeal}
+              totalContract={data?.totalContract}
+              loading={loading}
+            />
+
             <div className="grid gap-6 lg:grid-cols-2">
-              <CRMLeadStatus />
-              <CRMDealStatus />
+              <CRMLeadStatus leadByStage={data?.leadByStage} loading={loading} />
+              <CRMDealStatus dealByStage={data?.dealByStage} loading={loading} />
             </div>
-            
-            {/* Latest Contract */}
+
             <CRMLatestContract />
           </div>
         </div>

@@ -3,12 +3,12 @@
 import { POSInterface } from '@/components/pos-interface'
 
 /**
- * Halaman POS sesuai reference-erp: full-bleed, hanya top bar + dua kolom (produk + keranjang).
- * Tanpa title card dan tanpa padding wrapper agar layout sama dengan reference pos/index.blade.php.
+ * POS Sales – full-screen focus mode: no header, no sidebar.
+ * Layout is handled by pos/layout when pathname is /pos/sales.
  */
 export default function POSSalesPage() {
   return (
-    <div className="-m-4 flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col min-h-screen w-full">
       <POSInterface />
     </div>
   )

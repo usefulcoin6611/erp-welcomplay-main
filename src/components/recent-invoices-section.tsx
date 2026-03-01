@@ -30,6 +30,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
 
 interface InvoiceData {
   id: number
@@ -40,24 +41,6 @@ interface InvoiceData {
   amount: number
   status: 'paid' | 'unpaid' | 'overdue'
 }
-
-const mockInvoiceData: InvoiceData[] = [
-  { id: 1, number: 'INV-2025-015', customer: 'PT Telkom Indonesia', issueDate: '12 Nov, 2025', dueDate: '26 Nov, 2025', amount: 25000000, status: 'unpaid' },
-  { id: 2, number: 'INV-2025-014', customer: 'Bank Mandiri', issueDate: '11 Nov, 2025', dueDate: '25 Nov, 2025', amount: 18500000, status: 'paid' },
-  { id: 3, number: 'INV-2025-013', customer: 'PT Astra International', issueDate: '10 Nov, 2025', dueDate: '24 Nov, 2025', amount: 32000000, status: 'paid' },
-  { id: 4, number: 'INV-2025-012', customer: 'Unilever Indonesia', issueDate: '09 Nov, 2025', dueDate: '23 Nov, 2025', amount: 15750000, status: 'unpaid' },
-  { id: 5, number: 'INV-2025-011', customer: 'PT Pertamina', issueDate: '08 Nov, 2025', dueDate: '22 Nov, 2025', amount: 28300000, status: 'paid' },
-  { id: 6, number: 'INV-2025-010', customer: 'Acme Corporation', issueDate: '07 Nov, 2025', dueDate: '21 Nov, 2025', amount: 12500000, status: 'paid' },
-  { id: 7, number: 'INV-2025-009', customer: 'TechStart Inc', issueDate: '06 Nov, 2025', dueDate: '20 Nov, 2025', amount: 8750500, status: 'unpaid' },
-  { id: 8, number: 'INV-2025-008', customer: 'Global Solutions', issueDate: '05 Nov, 2025', dueDate: '19 Nov, 2025', amount: 15200000, status: 'paid' },
-  { id: 9, number: 'INV-2025-007', customer: 'Innovate Labs', issueDate: '04 Nov, 2025', dueDate: '18 Nov, 2025', amount: 6300750, status: 'overdue' },
-  { id: 10, number: 'INV-2025-006', customer: 'Digital Ventures', issueDate: '03 Nov, 2025', dueDate: '17 Nov, 2025', amount: 9450250, status: 'unpaid' },
-  { id: 11, number: 'INV-2025-005', customer: 'PT Garuda Indonesia', issueDate: '02 Nov, 2025', dueDate: '16 Nov, 2025', amount: 22000000, status: 'paid' },
-  { id: 12, number: 'INV-2025-004', customer: 'Bank BCA', issueDate: '01 Nov, 2025', dueDate: '15 Nov, 2025', amount: 19800000, status: 'overdue' },
-  { id: 13, number: 'INV-2025-003', customer: 'PT XL Axiata', issueDate: '31 Oct, 2025', dueDate: '14 Nov, 2025', amount: 16500000, status: 'unpaid' },
-  { id: 14, number: 'INV-2025-002', customer: 'Indofood CBP', issueDate: '30 Oct, 2025', dueDate: '13 Nov, 2025', amount: 14200000, status: 'paid' },
-  { id: 15, number: 'INV-2025-001', customer: 'PT Semen Indonesia', issueDate: '29 Oct, 2025', dueDate: '12 Nov, 2025', amount: 27500000, status: 'overdue' },
-]
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -70,21 +53,23 @@ function formatRupiah(amount: number) {
 export function RecentInvoicesSection() {
   const t = useTranslations('accountDashboard.recentInvoices')
   const headerT = useTranslations('header')
+  const { data, loading } = useAccountDashboard()
+  const invoiceData: InvoiceData[] = data.recentInvoices
 
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'issueDate', desc: true }])
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return mockInvoiceData
-    return mockInvoiceData.filter(
+    if (!searchQuery) return invoiceData
+    return invoiceData.filter(
       (item) =>
         item.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
         formatRupiah(item.amount).toLowerCase().includes(searchQuery.toLowerCase()),
     )
-  }, [searchQuery])
+  }, [invoiceData, searchQuery])
 
   const getStatusBadge = (status: 'paid' | 'unpaid' | 'overdue') => {
     const variants = {
@@ -175,6 +160,26 @@ export function RecentInvoicesSection() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
+
+  if (loading) {
+    return (
+      <Card className="py-2 xl:col-span-2">
+        <CardHeader className="px-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+        </CardHeader>
+        <CardTable>
+          <div className="px-3 py-2 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardTable>
+      </Card>
+    )
+  }
 
   return (
     <DataGrid table={table} recordCount={filteredData?.length || 0} tableLayout={{ cellBorder: true, dense: true }}>

@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -9,6 +10,17 @@ export default function POSLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+  const isSalesFocus = pathname === '/pos/sales'
+
+  if (isSalesFocus) {
+    return (
+      <div className="flex flex-col min-h-screen w-full bg-gray-100">
+        {children}
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider
       style={

@@ -38,6 +38,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
+import {
   IconFilter,
   IconPlus,
   IconPencil,
@@ -46,7 +55,7 @@ import {
   IconList,
   IconEye,
 } from "@tabler/icons-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, X } from 'lucide-react'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import {
@@ -59,6 +68,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { toast } from "sonner"
+
+const PLACEHOLDER = "__none__"
+const PROJECT_STATUSES = ["not_started", "on_hold", "in_progress", "cancel", "finished"] as const
 
 interface Project {
   id: string
@@ -69,6 +82,10 @@ interface Project {
   description?: string
   startDate?: string
   endDate?: string
+  clientName?: string
+  budget?: number
+  estimatedHrs?: number
+  tags?: string
 }
 
 const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
@@ -94,17 +111,50 @@ function getCompletionColor(completion: number) {
   return "bg-red-500"
 }
 
+type CustomerOption = { id: string; name: string }
+type EmployeeOption = { id: string; name: string }
+
 export default function ProjectsPage() {
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [projects, setProjects] = useState<Project[]>(initialProjects)
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [view, setView] = useState<"list" | "grid">("list")
+  const isClientRole = userRole === "client"
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>("")
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createName, setCreateName] = useState("")
+  const [createClientId, setCreateClientId] = useState(PLACEHOLDER)
+  const [createStatus, setCreateStatus] = useState<string>("not_started")
+  const [createStartDate, setCreateStartDate] = useState("")
+  const [createEndDate, setCreateEndDate] = useState("")
+  const [createBudget, setCreateBudget] = useState("")
+  const [createEstimatedHrs, setCreateEstimatedHrs] = useState("")
+  const [createDescription, setCreateDescription] = useState("")
+  const [createTags, setCreateTags] = useState("")
+  const [createUserIds, setCreateUserIds] = useState<Set<string>>(new Set())
+  const [creating, setCreating] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editProject, setEditProject] = useState<Project | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editClientId, setEditClientId] = useState(PLACEHOLDER)
+  const [editStatus, setEditStatus] = useState("not_started")
+  const [editStartDate, setEditStartDate] = useState("")
+  const [editEndDate, setEditEndDate] = useState("")
+  const [editBudget, setEditBudget] = useState("")
+  const [editEstimatedHrs, setEditEstimatedHrs] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [editTags, setEditTags] = useState("")
+  const [editUserIds, setEditUserIds] = useState<Set<string>>(new Set())
+  const [savingEdit, setSavingEdit] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -144,6 +194,10 @@ export default function ProjectsPage() {
               description: p.description ?? "",
               startDate: p.startDate ?? undefined,
               endDate: p.endDate ?? undefined,
+              clientName: p.clientName ?? undefined,
+              budget: typeof p.budget === "number" ? p.budget : undefined,
+              estimatedHrs: typeof p.estimatedHrs === "number" ? p.estimatedHrs : undefined,
+              tags: p.tags ?? undefined,
             })),
           )
         }
@@ -165,17 +219,218 @@ export default function ProjectsPage() {
     }
   }, [statusFilter, search])
 
+  useEffect(() => {
+    let ignore = false
+    Promise.all([
+      fetch("/api/customers", { cache: "no-store" }).then((r) => r.json().catch(() => ({ success: false, data: [] }))),
+      fetch("/api/employees", { cache: "no-store" }).then((r) => r.json().catch(() => ({ success: false, data: [] }))),
+    ]).then(([custRes, empRes]) => {
+      if (ignore) return
+      if (custRes?.success && Array.isArray(custRes.data)) {
+        setCustomers(custRes.data.map((c: any) => ({ id: c.id, name: c.name })))
+      }
+      if (empRes?.success && Array.isArray(empRes.data)) {
+        setEmployees(empRes.data.map((e: any) => ({ id: e.id, name: e.name })))
+      }
+    })
+    return () => { ignore = true }
+  }, [])
+
   const openDeleteConfirm = (project: Project) => {
     setProjectToDelete(project)
     setDeleteAlertOpen(true)
   }
 
-  const handleConfirmDelete = () => {
-    if (projectToDelete) {
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) {
+      setDeleteAlertOpen(false)
+      return
+    }
+    try {
+      setDeleteLoading(true)
+      const res = await fetch(`/api/projects/${encodeURIComponent(projectToDelete.id)}`, { method: "DELETE" })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? "Gagal menghapus project")
+        return
+      }
       setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id))
       setProjectToDelete(null)
+      setDeleteAlertOpen(false)
+      toast.success("Project berhasil dihapus")
+    } catch {
+      toast.error("Terjadi kesalahan saat menghapus project")
+    } finally {
+      setDeleteLoading(false)
     }
-    setDeleteAlertOpen(false)
+  }
+
+  const resetCreateForm = () => {
+    setCreateName("")
+    setCreateClientId(PLACEHOLDER)
+    setCreateStatus("not_started")
+    setCreateStartDate("")
+    setCreateEndDate("")
+    setCreateBudget("")
+    setCreateEstimatedHrs("")
+    setCreateDescription("")
+    setCreateTags("")
+    setCreateUserIds(new Set())
+  }
+
+  const handleCreateProject = async () => {
+    if (!createName.trim()) {
+      toast.error("Nama project wajib diisi")
+      return
+    }
+    const clientName = createClientId && createClientId !== PLACEHOLDER
+      ? customers.find((c) => c.id === createClientId)?.name ?? null
+      : null
+    const userNames = employees
+      .filter((e) => createUserIds.has(e.id))
+      .map((e) => e.name)
+    try {
+      setCreating(true)
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createName.trim(),
+          clientName,
+          status: createStatus,
+          startDate: createStartDate || null,
+          endDate: createEndDate || null,
+          budget: createBudget ? Number(createBudget) : 0,
+          estimatedHrs: createEstimatedHrs ? Number(createEstimatedHrs) : 0,
+          description: createDescription.trim() || null,
+          tags: createTags.trim() || null,
+          users: userNames,
+        }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? "Gagal membuat project")
+        return
+      }
+      const created = json.data
+      setProjects((prev) => [{
+        id: String(created.id),
+        name: String(created.name),
+        status: String(created.status),
+        users: Array.isArray(created.users) ? created.users : [],
+        completion: Number(created.completion) ?? 0,
+        description: created.description ?? "",
+        startDate: created.startDate ?? undefined,
+        endDate: created.endDate ?? undefined,
+      }, ...prev])
+      resetCreateForm()
+      setCreateOpen(false)
+      toast.success("Project berhasil dibuat")
+    } catch {
+      toast.error("Terjadi kesalahan saat membuat project")
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const openEditDialog = (project: Project) => {
+    setEditProject(project)
+    setEditName(project.name)
+    setEditClientId(
+      project.clientName && customers.some((c) => c.name === project.clientName)
+        ? customers.find((c) => c.name === project.clientName)!.id
+        : PLACEHOLDER
+    )
+    setEditStatus(project.status || "not_started")
+    setEditStartDate(project.startDate ?? "")
+    setEditEndDate(project.endDate ?? "")
+    setEditBudget(project.budget != null ? String(project.budget) : "")
+    setEditEstimatedHrs(project.estimatedHrs != null ? String(project.estimatedHrs) : "")
+    setEditDescription(project.description ?? "")
+    setEditTags(project.tags ?? "")
+    setEditUserIds(new Set(employees.filter((e) => project.users?.includes(e.name)).map((e) => e.id)))
+    setEditOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editProject) return
+    if (!editName.trim()) {
+      toast.error("Nama project wajib diisi")
+      return
+    }
+    const clientName = editClientId && editClientId !== PLACEHOLDER
+      ? customers.find((c) => c.id === editClientId)?.name ?? null
+      : null
+    const userNames = employees.filter((e) => editUserIds.has(e.id)).map((e) => e.name)
+    try {
+      setSavingEdit(true)
+      const res = await fetch(`/api/projects/${encodeURIComponent(editProject.id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          clientName,
+          status: editStatus,
+          startDate: editStartDate || null,
+          endDate: editEndDate || null,
+          budget: editBudget ? Number(editBudget) : 0,
+          estimatedHrs: editEstimatedHrs ? Number(editEstimatedHrs) : 0,
+          description: editDescription.trim() || null,
+          tags: editTags.trim() || null,
+          users: userNames,
+        }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? "Gagal memperbarui project")
+        return
+      }
+      const updated = json.data
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === editProject.id
+            ? {
+                id: String(updated.id),
+                name: String(updated.name),
+                status: String(updated.status),
+                users: Array.isArray(updated.users) ? updated.users : [],
+                completion: Number(updated.completion) ?? 0,
+                description: updated.description ?? "",
+                startDate: updated.startDate ?? undefined,
+                endDate: updated.endDate ?? undefined,
+                clientName: updated.clientName,
+                budget: updated.budget,
+                estimatedHrs: updated.estimatedHrs,
+                tags: updated.tags,
+              }
+            : p
+        )
+      )
+      setEditOpen(false)
+      setEditProject(null)
+      toast.success("Project berhasil diperbarui")
+    } catch {
+      toast.error("Terjadi kesalahan saat memperbarui project")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const toggleCreateUser = (id: string) => {
+    setCreateUserIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const toggleEditUser = (id: string) => {
+    setEditUserIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   // Filtered data
@@ -217,6 +472,15 @@ export default function ProjectsPage() {
     setStatusFilter(status === 'all' ? '' : status)
     setCurrentPage(1)
   }
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.role) setUserRole(data.role)
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <>
@@ -287,141 +551,160 @@ export default function ProjectsPage() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  {/* Add Project */}
-                  <Dialog>
+                  {/* Add Project (hidden for client role) */}
+                  {!isClientRole && (
+                  <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetCreateForm(); }}>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="shadow-none h-7 px-4 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
+                      <Button size="sm" className="shadow-none h-7 px-4 bg-blue-500 text-white hover:bg-blue-600 border-0">
                         <IconPlus className="mr-2 h-3 w-3" />
                         Add Project
                       </Button>
                     </DialogTrigger>
-                  <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                      <DialogTitle>Create Project</DialogTitle>
-                      <DialogDescription>
-                        Masukkan informasi project baru sesuai modul Project ERP.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="projectName">
-                          Project Name <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="projectName"
-                          placeholder="Implementasi ERP PT Maju Jaya"
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>Create Project</DialogTitle>
+                        <DialogDescription>
+                          Masukkan informasi project baru sesuai modul Project ERP.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                          <Label htmlFor="startDate">Start Date</Label>
-                          <Input id="startDate" type="date" />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="endDate">End Date</Label>
-                          <Input id="endDate" type="date" />
-                        </div>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="projectImage">
-                          Project Image <span className="text-red-500">*</span>
-                        </Label>
-                        <Input id="projectImage" type="file" required />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="client">Client</Label>
-                          <select
-                            id="client"
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <option value="">Select Client</option>
-                            <option value="1">PT Maju Jaya</option>
-                            <option value="2">CV Kreatif Digital</option>
-                          </select>
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="user">
-                            User <span className="text-red-500">*</span>
-                          </Label>
-                          <select
-                            id="user"
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            required
-                            multiple
-                          >
-                            <option value="1">Budi Santoso</option>
-                            <option value="2">Sari Wijaya</option>
-                            <option value="3">Ahmad Fauzi</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="budget">Budget</Label>
+                          <Label htmlFor="projectName">Project Name <span className="text-red-500">*</span></Label>
                           <Input
-                            id="budget"
-                            type="number"
-                            placeholder="450000000"
+                            id="projectName"
+                            placeholder="Implementasi ERP PT Maju Jaya"
+                            value={createName}
+                            onChange={(e) => setCreateName(e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label>Client</Label>
+                            <Select value={createClientId} onValueChange={setCreateClientId}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Select client (optional)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={PLACEHOLDER}>None</SelectItem>
+                                {customers.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>Status</Label>
+                            <Select value={createStatus} onValueChange={setCreateStatus}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PROJECT_STATUSES.map((s) => (
+                                  <SelectItem key={s} value={s}>{statusMap[s]?.label ?? s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="startDate">Start Date</Label>
+                            <Input
+                              id="startDate"
+                              type="date"
+                              value={createStartDate}
+                              onChange={(e) => setCreateStartDate(e.target.value)}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="endDate">End Date</Label>
+                            <Input
+                              id="endDate"
+                              type="date"
+                              value={createEndDate}
+                              onChange={(e) => setCreateEndDate(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="budget">Budget (IDR)</Label>
+                            <Input
+                              id="budget"
+                              type="number"
+                              min={0}
+                              step={1}
+                              placeholder="450000000"
+                              value={createBudget}
+                              onChange={(e) => setCreateBudget(e.target.value)}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="estimatedHrs">Estimated Hours</Label>
+                            <Input
+                              id="estimatedHrs"
+                              type="number"
+                              min={0}
+                              step={0.5}
+                              placeholder="120"
+                              value={createEstimatedHrs}
+                              onChange={(e) => setCreateEstimatedHrs(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Team members (optional)</Label>
+                          <div className="rounded-md border border-input p-3 max-h-32 overflow-y-auto space-y-2">
+                            {employees.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">No employees loaded.</p>
+                            ) : (
+                              employees.map((e) => (
+                                <div key={e.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`create-user-${e.id}`}
+                                    checked={createUserIds.has(e.id)}
+                                    onCheckedChange={() => toggleCreateUser(e.id)}
+                                  />
+                                  <label htmlFor={`create-user-${e.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                                    {e.name}
+                                  </label>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            placeholder="Enter description"
+                            rows={4}
+                            value={createDescription}
+                            onChange={(e) => setCreateDescription(e.target.value)}
+                            className="resize-none"
                           />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="estimatedHrs">Estimated Hours</Label>
+                          <Label htmlFor="tag">Tags (comma-separated)</Label>
                           <Input
-                            id="estimatedHrs"
-                            type="number"
-                            placeholder="120"
+                            id="tag"
+                            placeholder="ERP, Finance, HRM"
+                            value={createTags}
+                            onChange={(e) => setCreateTags(e.target.value)}
                           />
                         </div>
                       </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="description">Description</Label>
-                        <textarea
-                          id="description"
-                          className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                          placeholder="Enter Description"
-                          rows={4}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="tag">Tag</Label>
-                        <Input id="tag" placeholder="ERP, Finance, HRM" />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="status">Status</Label>
-                        <select
-                          id="status"
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <option value="not_started">Not Started</option>
-                          <option value="on_hold">On Hold</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="cancel">Cancel</option>
-                          <option value="finished">Finished</option>
-                        </select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="shadow-none h-7"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="blue"
-                        size="sm"
-                        className="shadow-none h-7"
-                      >
-                        Create
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => setCreateOpen(false)} disabled={creating}>
+                          Cancel
+                        </Button>
+                        <Button type="button" variant="blue" size="sm" className="shadow-none h-7" disabled={!createName.trim() || creating} onClick={handleCreateProject}>
+                          {creating ? "Creating..." : "Create"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  )}
                 </div>
               </CardHeader>
             </Card>
@@ -438,7 +721,7 @@ export default function ProjectsPage() {
                       placeholder="Search projects..."
                       value={search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="h-9 bg-gray-50 pl-9 pr-9 shadow-none border-0 focus-visible:border-0 focus-visible:ring-0 hover:bg-gray-100"
+                      className="h-9 pl-9 pr-9 bg-gray-50 border-0 shadow-none focus-visible:border-0 focus-visible:ring-0 hover:bg-gray-100"
                     />
                     {search.length > 0 && (
                       <Button
@@ -538,23 +821,28 @@ export default function ProjectsPage() {
                                     <IconEye className="h-3 w-3" />
                                   </Link>
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
-                                  title="Edit"
-                                >
-                                  <IconPencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shadow-none h-7 w-7 p-0 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
-                                  title="Delete"
-                                  onClick={() => openDeleteConfirm(project)}
-                                >
-                                  <IconTrash className="h-3 w-3" />
-                                </Button>
+                                {!isClientRole && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="shadow-none h-7 w-7 p-0 bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                                      title="Edit"
+                                      onClick={() => openEditDialog(project)}
+                                    >
+                                      <IconPencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="shadow-none h-7 w-7 p-0 bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+                                      title="Delete"
+                                      onClick={() => openDeleteConfirm(project)}
+                                    >
+                                      <IconTrash className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -627,7 +915,7 @@ export default function ProjectsPage() {
                             ))}
                           </div>
                         </div>
-                        <div className="mt-auto pt-3 border-t">
+                        <div className="mt-auto pt-3 border-t space-y-3">
                           <div className="flex justify-between items-center">
                             <div>
                               <h6 className="text-sm font-semibold">
@@ -642,6 +930,16 @@ export default function ProjectsPage() {
                               <p className="text-xs text-muted-foreground">Due</p>
                             </div>
                           </div>
+                          {!isClientRole && (
+                            <div className="flex items-center gap-2 pt-2 border-t">
+                              <Button variant="outline" size="sm" className="h-7 w-7 p-0 flex-1 shadow-none bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200" title="Edit" onClick={() => openEditDialog(project)}>
+                                <IconPencil className="h-3 w-3" />
+                              </Button>
+                              <Button variant="outline" size="sm" className="h-7 w-7 p-0 flex-1 shadow-none bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200" title="Delete" onClick={() => openDeleteConfirm(project)}>
+                                <IconTrash className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -665,6 +963,99 @@ export default function ProjectsPage() {
               </div>
             )}
 
+      <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) setEditProject(null); }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>Ubah informasi project.</DialogDescription>
+          </DialogHeader>
+          {editProject && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Project Name <span className="text-red-500">*</span></Label>
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Project name" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Client</Label>
+                  <Select value={editClientId} onValueChange={setEditClientId}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Client (optional)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={PLACEHOLDER}>None</SelectItem>
+                      {customers.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Status</Label>
+                  <Select value={editStatus} onValueChange={setEditStatus}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PROJECT_STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>{statusMap[s]?.label ?? s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Start Date</Label>
+                  <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>End Date</Label>
+                  <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Budget (IDR)</Label>
+                  <Input type="number" min={0} step={1} value={editBudget} onChange={(e) => setEditBudget(e.target.value)} placeholder="0" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Estimated Hours</Label>
+                  <Input type="number" min={0} step={0.5} value={editEstimatedHrs} onChange={(e) => setEditEstimatedHrs(e.target.value)} placeholder="0" />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Team members</Label>
+                <div className="rounded-md border border-input p-3 max-h-32 overflow-y-auto space-y-2">
+                  {employees.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No employees loaded.</p>
+                  ) : (
+                    employees.map((e) => (
+                      <div key={e.id} className="flex items-center space-x-2">
+                        <Checkbox id={`edit-user-${e.id}`} checked={editUserIds.has(e.id)} onCheckedChange={() => toggleEditUser(e.id)} />
+                        <label htmlFor={`edit-user-${e.id}`} className="text-sm font-medium leading-none cursor-pointer">{e.name}</label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Description</Label>
+                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={4} className="resize-none" placeholder="Description" />
+              </div>
+              <div className="grid gap-2">
+                <Label>Tags (comma-separated)</Label>
+                <Input value={editTags} onChange={(e) => setEditTags(e.target.value)} placeholder="ERP, Finance, HRM" />
+              </div>
+            </div>
+          )}
+          {editProject && (
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" className="shadow-none h-7" onClick={() => setEditOpen(false)} disabled={savingEdit}>Cancel</Button>
+              <Button type="button" variant="blue" size="sm" className="shadow-none h-7" disabled={!editName.trim() || savingEdit} onClick={handleSaveEdit}>
+                {savingEdit ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteAlertOpen} onOpenChange={(open) => { setDeleteAlertOpen(open); if (!open) setProjectToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -674,12 +1065,9 @@ export default function ProjectsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
-            >
-              Hapus
+            <AlertDialogCancel disabled={deleteLoading}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white" disabled={deleteLoading}>
+              {deleteLoading ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

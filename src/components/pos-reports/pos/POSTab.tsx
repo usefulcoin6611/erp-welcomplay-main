@@ -1,41 +1,33 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import dynamic from "next/dynamic"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Loader2, Search, RotateCcw, FileText, Warehouse as WarehouseIcon } from "lucide-react"
+import { Search, RotateCcw, FileText, Warehouse as WarehouseIcon, Loader2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { REPORT_CARD_CLASS, REPORT_TAB_TRIGGER_CLASS } from "../shared-styles"
-
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
+import { REPORT_CARD_CLASS } from "../shared-styles"
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-const baseChartOptions = {
-  chart: {
-    type: "area" as const,
-    toolbar: { show: false },
-    dropShadow: { enabled: true, color: "#000", top: 18, left: 7, blur: 10, opacity: 0.2 },
+const posChartConfig = {
+  amount: {
+    label: "Amount",
+    color: "#6fd944",
   },
-  dataLabels: { enabled: false },
-  stroke: { width: 2, curve: "smooth" as const },
-  colors: ["#6fd944"],
-  grid: { strokeDashArray: 4 },
-  legend: { show: false },
-  tooltip: { y: { formatter: (v: number) => `Rp ${v.toLocaleString("id-ID")}` } },
-}
+} satisfies ChartConfig
 
 type Warehouse = { id: string; name: string }
 type Customer = { id: string; name: string }
 type ChartDataPoint = { date: string; amount: number }
 
 type ReportTabContentProps = {
+  period: "daily" | "monthly"
+  onPeriodChange: (v: "daily" | "monthly") => void
   isMonthly: boolean
   startDate: string
   endDate: string
@@ -56,13 +48,14 @@ type ReportTabContentProps = {
   reportTitle: string
   chartTitle: string
   chartDescription: string
-  chartOptions: object
-  chartSeries: { name: string; data: number[] }[]
+  chartData: ChartDataPoint[]
   mounted: boolean
   loading: boolean
 }
 
 function ReportTabContent({
+  period,
+  onPeriodChange,
   isMonthly,
   startDate,
   endDate,
@@ -83,8 +76,7 @@ function ReportTabContent({
   reportTitle,
   chartTitle,
   chartDescription,
-  chartOptions,
-  chartSeries,
+  chartData,
   mounted,
   loading,
 }: ReportTabContentProps) {
@@ -92,34 +84,46 @@ function ReportTabContent({
     <div className="space-y-6 mt-6">
       <Card className={REPORT_CARD_CLASS}>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+          <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+            <div className="space-y-2 min-w-[140px]">
+              <Label htmlFor="period">Period</Label>
+              <Select value={period} onValueChange={(v) => onPeriodChange(v as "daily" | "monthly")}>
+                <SelectTrigger className="h-10 w-full">
+                  <SelectValue placeholder="Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {isMonthly ? (
               <>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[140px]">
                   <Label htmlFor="startMonth">Start Month</Label>
-                  <Input id="startMonth" type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="h-10" />
+                  <Input id="startMonth" type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="h-10 w-full" />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[140px]">
                   <Label htmlFor="endMonth">End Month</Label>
-                  <Input id="endMonth" type="month" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="h-10" />
+                  <Input id="endMonth" type="month" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="h-10 w-full" />
                 </div>
               </>
             ) : (
               <>
-                <div className="space-y-3">
+                <div className="space-y-2 min-w-[140px]">
                   <Label htmlFor="startDate">Start Date</Label>
-                  <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-10" />
+                  <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-10 w-full" />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2 min-w-[140px]">
                   <Label htmlFor="endDate">End Date</Label>
-                  <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-10" />
+                  <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-10 w-full" />
                 </div>
               </>
             )}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[140px]">
               <Label htmlFor="warehouse">Warehouse</Label>
               <Select value={warehouse} onValueChange={setWarehouse}>
-                <SelectTrigger className="h-10">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -130,10 +134,10 @@ function ReportTabContent({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-[140px]">
               <Label htmlFor="customer">Customer</Label>
               <Select value={customer} onValueChange={setCustomer}>
-                <SelectTrigger className="h-10">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -144,11 +148,11 @@ function ReportTabContent({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={onApply} disabled={loading} className="flex-1 h-10 bg-blue-600 text-white hover:bg-blue-700 shadow-none">
+            <div className="ml-auto flex gap-2 shrink-0">
+              <Button onClick={onApply} disabled={loading} className="h-10 min-w-[90px] shadow-none bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" />Apply</>}
               </Button>
-              <Button onClick={onReset} variant="destructive" className="h-10">
+              <Button onClick={onReset} variant="outline" className="h-10 shrink-0 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
@@ -194,7 +198,21 @@ function ReportTabContent({
         </CardHeader>
         <CardContent className="pt-4">
           {mounted && !loading ? (
-            <Chart options={chartOptions} series={chartSeries} type="area" height={320} />
+            <ChartContainer config={posChartConfig} className="h-[320px] w-full">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="posFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6fd944" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6fd944" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} />
+                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(v) => (String(v).length > 4 ? String(v).slice(0, 3) : v)} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(v) => `Rp ${Number(v).toLocaleString("id-ID", { maximumFractionDigits: 0 })}`} />
+                <ChartTooltip content={<ChartTooltipContent formatter={(v) => `Rp ${Number(v).toLocaleString("id-ID", { minimumFractionDigits: 0 })}`} />} />
+                <Area type="monotone" dataKey="amount" stroke="#6fd944" strokeWidth={2} fill="url(#posFill)" />
+              </AreaChart>
+            </ChartContainer>
           ) : (
             <Skeleton className="h-[320px] w-full" />
           )}
@@ -206,8 +224,7 @@ function ReportTabContent({
 
 export function POSTab() {
   const [mounted, setMounted] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
-  const [activeSubTab, setActiveSubTab] = useState("daily")
+  const [activeSubTab, setActiveSubTab] = useState<"daily" | "monthly">("daily")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [startMonth, setStartMonth] = useState("")
@@ -274,11 +291,6 @@ export function POSTab() {
     fetchReportData("monthly")
   }, [])
 
-  const handleDownload = () => {
-    setIsDownloading(true)
-    setTimeout(() => setIsDownloading(false), 2000)
-  }
-
   const handleApply = () => {
     fetchReportData(activeSubTab)
   }
@@ -292,116 +304,40 @@ export function POSTab() {
     setCustomer("all")
   }
 
-  // Build chart data from API response
-  const dailyData = dailyChartData.map((d) => d.amount)
-  const dailyCategories = dailyChartData.map((d) => d.date)
-  const monthlyData = monthlyChartData.map((d) => d.amount)
-  const monthlyCategories = monthlyChartData.map((d) => d.date)
-
-  const dailyChartOptions = {
-    ...baseChartOptions,
-    xaxis: { categories: dailyCategories.length > 0 ? dailyCategories : Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`), title: { text: "Days" } },
-    yaxis: { title: { text: "Amount (IDR)" } },
-  }
-  const monthlyChartOptions = {
-    ...baseChartOptions,
-    xaxis: { categories: monthlyCategories.length > 0 ? monthlyCategories : MONTHS, title: { text: "Months" } },
-    yaxis: { title: { text: "Amount (IDR)" } },
+  const handlePeriodChange = (v: "daily" | "monthly") => {
+    setActiveSubTab(v)
+    fetchReportData(v)
   }
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <Card className={REPORT_CARD_CLASS}>
-        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">POS Report</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Daily and monthly sales analysis with customer tracking</p>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDownloading ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Downloading...</>
-                  ) : (
-                    <><Download className="h-4 w-4 mr-2" /> Download PDF</>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download report as PDF</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </CardContent>
-      </Card>
-
-      <Tabs value={activeSubTab} onValueChange={(v) => { setActiveSubTab(v); fetchReportData(v) }}>
-        <TabsList className="grid w-full max-w-md grid-cols-2 h-9 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
-          <TabsTrigger value="daily" className={REPORT_TAB_TRIGGER_CLASS}>Daily</TabsTrigger>
-          <TabsTrigger value="monthly" className={REPORT_TAB_TRIGGER_CLASS}>Monthly</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="daily">
-          <ReportTabContent
-            isMonthly={false}
-            startDate={startDate}
-            endDate={endDate}
-            startMonth={startMonth}
-            endMonth={endMonth}
-            warehouse={warehouse}
-            customer={customer}
-            warehouses={warehouses}
-            customers={customers}
-            setStartDate={setStartDate}
-            setEndDate={setEndDate}
-            setStartMonth={setStartMonth}
-            setEndMonth={setEndMonth}
-            setWarehouse={setWarehouse}
-            setCustomer={setCustomer}
-            onApply={handleApply}
-            onReset={handleReset}
-            reportTitle="Daily POS Report"
-            chartTitle="Daily POS"
-            chartDescription="Sales trends over the selected date range"
-            chartOptions={dailyChartOptions}
-            chartSeries={[{ name: "POS", data: dailyData.length > 0 ? dailyData : [] }]}
-            mounted={mounted}
-            loading={loading}
-          />
-        </TabsContent>
-
-        <TabsContent value="monthly">
-          <ReportTabContent
-            isMonthly={true}
-            startDate={startDate}
-            endDate={endDate}
-            startMonth={startMonth}
-            endMonth={endMonth}
-            warehouse={warehouse}
-            customer={customer}
-            warehouses={warehouses}
-            customers={customers}
-            setStartDate={setStartDate}
-            setEndDate={setEndDate}
-            setStartMonth={setStartMonth}
-            setEndMonth={setEndMonth}
-            setWarehouse={setWarehouse}
-            setCustomer={setCustomer}
-            onApply={handleApply}
-            onReset={handleReset}
-            reportTitle="Monthly POS Report"
-            chartTitle="Monthly POS"
-            chartDescription="Sales trends across selected months"
-            chartOptions={monthlyChartOptions}
-            chartSeries={[{ name: "POS", data: monthlyData.length > 0 ? monthlyData : [] }]}
-            mounted={mounted}
-            loading={loading}
-          />
-        </TabsContent>
-      </Tabs>
+      <ReportTabContent
+        period={activeSubTab}
+        onPeriodChange={handlePeriodChange}
+        isMonthly={activeSubTab === "monthly"}
+        startDate={startDate}
+        endDate={endDate}
+        startMonth={startMonth}
+        endMonth={endMonth}
+        warehouse={warehouse}
+        customer={customer}
+        warehouses={warehouses}
+        customers={customers}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+        setStartMonth={setStartMonth}
+        setEndMonth={setEndMonth}
+        setWarehouse={setWarehouse}
+        setCustomer={setCustomer}
+        onApply={handleApply}
+        onReset={handleReset}
+        reportTitle={activeSubTab === "daily" ? "Daily POS Report" : "Monthly POS Report"}
+        chartTitle={activeSubTab === "daily" ? "Daily POS" : "Monthly POS"}
+        chartDescription={activeSubTab === "daily" ? "Sales trends over the selected date range" : "Sales trends across selected months"}
+        chartData={activeSubTab === "daily" ? (dailyChartData.length > 0 ? dailyChartData : []) : (monthlyChartData.length > 0 ? monthlyChartData : [])}
+        mounted={mounted}
+        loading={loading}
+      />
     </div>
   )
 }

@@ -110,7 +110,7 @@ function CreateStageButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-9 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
+        <Button size="sm" className="h-9 px-4 shadow-none bg-blue-500 text-white hover:bg-blue-600 border-0">
           <IconPlus className="mr-2 h-4 w-4" />
           Create Stage
         </Button>
@@ -185,7 +185,7 @@ function CreateBugStatusButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-9 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
+        <Button size="sm" className="h-9 px-4 shadow-none bg-blue-500 text-white hover:bg-blue-600 border-0">
           <IconPlus className="mr-2 h-4 w-4" />
           Create Bug Status
         </Button>
@@ -743,7 +743,7 @@ function ProjectSystemSetupContent() {
         items={tabs}
         defaultTabId={activeTab}
         value={activeTab}
-        activeColor="bg-cyan-600"
+        activeColor="bg-gray-600"
         action={action}
         onChange={handleTabChange}
       />

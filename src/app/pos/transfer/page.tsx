@@ -3,12 +3,16 @@
 // Sentinel value for "no selection" in Select components
 const NO_SELECTION = '__none__'
 
+function toSelectValue(val: string | null | undefined): string {
+  return val && val !== '' ? val : NO_SELECTION
+}
+
 function fromSelectValue(val: string): string | null {
   return val === NO_SELECTION ? null : val
 }
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Plus, Search, X, Trash, Loader2, ArrowRight } from 'lucide-react'
+import { Plus, Search, X, Trash, Loader2, ArrowRight, Eye, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { POSPageLayout } from '@/components/pos-page-layout'
 import { Card, CardContent } from '@/components/ui/card'
@@ -95,6 +99,7 @@ export default function POSTransferPage() {
 
   // Form state
   const [openForm, setOpenForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [formFromWarehouseId, setFormFromWarehouseId] = useState(NO_SELECTION)
   const [formToWarehouseId, setFormToWarehouseId] = useState(NO_SELECTION)
@@ -103,6 +108,11 @@ export default function POSTransferPage() {
   const [formNote, setFormNote] = useState('')
   const [formTransferDate, setFormTransferDate] = useState('')
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
+  // View state
+  const [viewDetail, setViewDetail] = useState<Transfer | null>(null)
+  const [openView, setOpenView] = useState(false)
+  const [loadingDetail, setLoadingDetail] = useState(false)
 
   // Delete state
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -164,6 +174,7 @@ export default function POSTransferPage() {
   // ─── Form Helpers ───────────────────────────────────────────────────────────
 
   const resetForm = () => {
+    setEditingId(null)
     setFormFromWarehouseId(NO_SELECTION)
     setFormToWarehouseId(NO_SELECTION)
     setFormProductId(NO_SELECTION)
@@ -176,6 +187,68 @@ export default function POSTransferPage() {
   const openCreateForm = () => {
     resetForm()
     setOpenForm(true)
+  }
+
+  const openEditForm = async (id: string) => {
+    setLoadingDetail(true)
+    try {
+      const res = await fetch(`/api/pos/transfers/${id}`)
+      const data = await res.json()
+      if (!data.success) {
+        toast.error(data.message ?? 'Failed to load transfer')
+        return
+      }
+      const t = data.data
+      setEditingId(t.id)
+      setFormFromWarehouseId(toSelectValue(t.fromWarehouseId))
+      setFormToWarehouseId(toSelectValue(t.toWarehouseId))
+      setFormProductId(toSelectValue(t.productId))
+      setFormQuantity(Number(t.quantity) || 1)
+      setFormNote(t.note ?? '')
+      setFormTransferDate(t.transferDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10))
+      setFormErrors({})
+      setOpenForm(true)
+    } catch {
+      toast.error('Failed to load transfer')
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
+
+  const handleView = async (id: string) => {
+    setLoadingDetail(true)
+    setOpenView(true)
+    try {
+      const res = await fetch(`/api/pos/transfers/${id}`)
+      const data = await res.json()
+      if (data.success) {
+        const t = data.data
+        setViewDetail({
+          id: t.id,
+          transferId: t.transferId,
+          fromWarehouseId: t.fromWarehouseId,
+          fromWarehouseName: t.fromWarehouseName ?? '—',
+          toWarehouseId: t.toWarehouseId,
+          toWarehouseName: t.toWarehouseName ?? '—',
+          productId: t.productId,
+          productName: t.productName ?? '—',
+          productSku: t.productSku ?? '',
+          quantity: Number(t.quantity) || 0,
+          note: t.note ?? null,
+          branchId: t.branchId ?? null,
+          transferDate: t.transferDate ?? '',
+          createdAt: t.createdAt ?? '',
+        })
+      } else {
+        toast.error(data.message ?? 'Failed to load transfer')
+        setOpenView(false)
+      }
+    } catch {
+      toast.error('Failed to load transfer')
+      setOpenView(false)
+    } finally {
+      setLoadingDetail(false)
+    }
   }
 
   // ─── Validation ─────────────────────────────────────────────────────────────
@@ -219,22 +292,27 @@ export default function POSTransferPage() {
         transferDate: formTransferDate,
       }
 
-      const res = await fetch('/api/pos/transfers', {
-        method: 'POST',
+      const isEdit = !!editingId
+      const url = isEdit ? `/api/pos/transfers/${editingId}` : '/api/pos/transfers'
+      const method = isEdit ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
 
       if (data.success) {
-        toast.success(`✅ Transfer ${data.data.transferId} created successfully`)
+        toast.success(isEdit ? '✅ Transfer updated successfully' : `✅ Transfer ${data.data.transferId} created successfully`)
         setOpenForm(false)
+        setEditingId(null)
         fetchTransfers()
       } else {
-        toast.error(data.message ?? 'Failed to create transfer')
+        toast.error(data.message ?? (isEdit ? 'Failed to update transfer' : 'Failed to create transfer'))
       }
     } catch {
-      toast.error('Failed to create transfer')
+      toast.error(editingId ? 'Failed to update transfer' : 'Failed to create transfer')
     } finally {
       setSubmitting(false)
     }
@@ -323,7 +401,16 @@ export default function POSTransferPage() {
                 ) : (
                   paginatedData.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="px-4 py-3 text-sm font-medium text-blue-600">{row.transferId}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 shadow-none text-blue-600 border-blue-200 hover:bg-blue-50"
+                          onClick={() => handleView(row.id)}
+                        >
+                          {row.transferId}
+                        </Button>
+                      </TableCell>
                       <TableCell className="px-4 py-3 text-sm">{row.fromWarehouseName}</TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <ArrowRight className="h-4 w-4 text-muted-foreground mx-auto" />
@@ -338,15 +425,36 @@ export default function POSTransferPage() {
                       <TableCell className="px-4 py-3 text-sm text-right font-medium">{row.quantity}</TableCell>
                       <TableCell className="px-4 py-3 text-sm">{formatDate(row.transferDate)}</TableCell>
                       <TableCell className="px-4 py-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                          title="Delete"
-                          onClick={() => { setDeleteId(row.id); setDeleteTransferId(row.transferId) }}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-100"
+                            title="View"
+                            onClick={() => handleView(row.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                            title="Edit"
+                            disabled={loadingDetail}
+                            onClick={() => openEditForm(row.id)}
+                          >
+                            {loadingDetail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                            title="Delete"
+                            onClick={() => { setDeleteId(row.id); setDeleteTransferId(row.transferId) }}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -368,11 +476,11 @@ export default function POSTransferPage() {
         </CardContent>
       </Card>
 
-      {/* ─── Create Transfer Dialog ───────────────────────────────────────────── */}
-      <Dialog open={openForm} onOpenChange={setOpenForm}>
+      {/* ─── Create / Edit Transfer Dialog ────────────────────────────────────── */}
+      <Dialog open={openForm} onOpenChange={(open) => { if (!open) setEditingId(null); setOpenForm(open) }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Warehouse Transfer</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Warehouse Transfer' : 'Create Warehouse Transfer'}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -511,13 +619,78 @@ export default function POSTransferPage() {
               </Button>
               <Button type="submit" variant="blue" className="shadow-none" disabled={submitting}>
                 {submitting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+                ) : editingId ? (
+                  'Update Transfer'
                 ) : (
                   'Create Transfer'
                 )}
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── View Detail Dialog ───────────────────────────────────────────────── */}
+      <Dialog open={openView} onOpenChange={setOpenView}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{viewDetail?.transferId ?? 'Transfer Detail'}</DialogTitle>
+          </DialogHeader>
+          {loadingDetail ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : viewDetail ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">From Warehouse</Label>
+                  <p className="text-sm font-medium">{viewDetail.fromWarehouseName}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">To Warehouse</Label>
+                  <p className="text-sm font-medium">{viewDetail.toWarehouseName}</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Product</Label>
+                <div>
+                  <p className="text-sm font-medium">{viewDetail.productName}</p>
+                  {viewDetail.productSku && <p className="text-xs text-muted-foreground font-mono">{viewDetail.productSku}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Quantity</Label>
+                  <p className="text-sm font-medium">{viewDetail.quantity}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Transfer Date</Label>
+                  <p className="text-sm">{formatDate(viewDetail.transferDate)}</p>
+                </div>
+              </div>
+              {viewDetail.note && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Note</Label>
+                  <p className="text-sm text-muted-foreground">{viewDetail.note}</p>
+                </div>
+              )}
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" className="shadow-none" onClick={() => setOpenView(false)}>Close</Button>
+            {viewDetail && (
+              <Button
+                variant="blue"
+                className="shadow-none"
+                onClick={() => { setOpenView(false); openEditForm(viewDetail.id) }}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

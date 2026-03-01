@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { mockPayrollData, type PayrollData } from './constants';
+import { useState, useEffect, useCallback } from 'react';
+import type { PayrollData } from './constants';
 
 export interface PayrollFilters {
   type: 'monthly' | 'daily';
@@ -10,51 +10,95 @@ export interface PayrollFilters {
   employeeId: string;
 }
 
+export interface PayrollFilterOptions {
+  branches: { value: string; label: string }[];
+  departments: { value: string; label: string }[];
+  employees: { value: string; label: string; employeeId?: string }[];
+}
+
+const defaultFilterOptions: PayrollFilterOptions = {
+  branches: [{ value: 'all', label: 'All Branch' }],
+  departments: [{ value: 'all', label: 'All Department' }],
+  employees: [{ value: 'all', label: 'All Employee' }],
+};
+
 export function usePayrollData() {
   const [filters, setFilters] = useState<PayrollFilters>({
     type: 'monthly',
     month: new Date().toISOString().slice(0, 7),
     year: new Date().getFullYear().toString(),
-    branchId: '',
-    departmentId: '',
-    employeeId: '',
+    branchId: 'all',
+    departmentId: 'all',
+    employeeId: 'all',
   });
 
-  const [allData, setAllData] = useState<PayrollData[]>([]);
+  const [filterOptions, setFilterOptions] = useState<PayrollFilterOptions>(defaultFilterOptions);
+  const [data, setData] = useState<PayrollData[]>([]);
+  const [summary, setSummary] = useState({
+    totalBasicSalary: 0,
+    totalAllowances: 0,
+    totalDeductions: 0,
+    totalNetSalary: 0,
+    totalEmployees: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    setAllData(mockPayrollData);
+  const fetchFilters = useCallback(async () => {
+    const res = await fetch('/api/hrm/reports/filters');
+    const json = await res.json();
+    if (!json?.success || !json?.data) return;
+    const d = json.data;
+    setFilterOptions({
+      branches: [{ value: 'all', label: 'All Branch' }, ...(d.branches || [])],
+      departments: [{ value: 'all', label: 'All Department' }, ...(d.departments || [])],
+      employees: [{ value: 'all', label: 'All Employee' }, ...(d.employees || [])],
+    });
   }, []);
 
-  const filteredData = useMemo(() => {
-    return allData.filter((item) => {
-      if (filters.branchId && filters.branchId !== 'all' && item.branch.toLowerCase() !== filters.branchId) {
-        return false;
+  const fetchPayroll = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const params = new URLSearchParams();
+      params.set('month', filters.month);
+      if (filters.branchId && filters.branchId !== 'all') params.set('branchId', filters.branchId);
+      if (filters.departmentId && filters.departmentId !== 'all') params.set('departmentId', filters.departmentId);
+      if (filters.employeeId && filters.employeeId !== 'all') params.set('employeeId', filters.employeeId);
+      const res = await fetch(`/api/hrm/reports/payroll?${params.toString()}`);
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        setError(true);
+        setData([]);
+        setSummary({ totalBasicSalary: 0, totalAllowances: 0, totalDeductions: 0, totalNetSalary: 0, totalEmployees: 0 });
+        return;
       }
-      if (filters.departmentId && filters.departmentId !== 'all' && item.department.toLowerCase() !== filters.departmentId) {
-        return false;
-      }
-      if (filters.employeeId && filters.employeeId !== 'all' && item.employeeId.toLowerCase() !== filters.employeeId.toLowerCase()) {
-        return false;
-      }
-      return true;
-    });
-  }, [filters]);
+      setData(json.data ?? []);
+      setSummary(json.summary ?? { totalBasicSalary: 0, totalAllowances: 0, totalDeductions: 0, totalNetSalary: 0, totalEmployees: 0 });
+    } catch {
+      setError(true);
+      setData([]);
+      setSummary({ totalBasicSalary: 0, totalAllowances: 0, totalDeductions: 0, totalNetSalary: 0, totalEmployees: 0 });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters.month, filters.branchId, filters.departmentId, filters.employeeId]);
 
-  const summary = useMemo(() => {
-    return {
-      totalBasicSalary: filteredData.reduce((sum, item) => sum + item.basicSalary, 0),
-      totalAllowances: filteredData.reduce((sum, item) => sum + item.allowances, 0),
-      totalDeductions: filteredData.reduce((sum, item) => sum + item.deductions, 0),
-      totalNetSalary: filteredData.reduce((sum, item) => sum + item.netSalary, 0),
-      totalEmployees: filteredData.length,
-    };
-  }, [filteredData]);
+  useEffect(() => {
+    fetchFilters();
+  }, [fetchFilters]);
+
+  useEffect(() => {
+    fetchPayroll();
+  }, [fetchPayroll]);
 
   return {
     filters,
     setFilters,
-    data: filteredData,
+    data,
     summary,
+    filterOptions,
+    loading,
+    error,
   };
 }

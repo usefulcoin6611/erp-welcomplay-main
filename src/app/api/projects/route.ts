@@ -94,6 +94,13 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const role = (session.user as { role?: string }).role;
+    if (role === "client") {
+      return NextResponse.json(
+        { success: false, message: "Client role cannot create projects." },
+        { status: 403 }
+      );
+    }
 
     const userId = (session.user as any).id as string | undefined;
     const branchId = ((session.user as any).branchId as string | null) || null;

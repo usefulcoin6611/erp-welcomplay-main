@@ -59,6 +59,7 @@ import { seedProjectTasks } from "./seeds/project-tasks";
 import { seedTimesheets } from "./seeds/timesheets";
 import { seedBugs } from "./seeds/bugs";
 import { seedTimeTrackers } from "./seeds/time-trackers";
+import { seedZoomMeetings } from "./seeds/zoom-meetings";
 import { ensureLeaveRequestSchema } from "./seeds/schema-leave-request";
 import { ensureTrainingSchema } from "./seeds/schema-training";
 import { seedLeaveRequests } from "./seeds/leave-requests";
@@ -148,14 +149,15 @@ async function main() {
     await seedDeals(prisma);
     await seedCrmPipelines(prisma);
     await seedFormBuilder(prisma);
-    await seedContracts(prisma);
     await seedProjects(prisma);
+    await seedContracts(prisma);
     await seedProjectTasks(prisma);
     await seedTimesheets(prisma);
     await seedBugs(prisma);
     await seedTimeTrackers(prisma);
     await seedWarehouses(prisma);
     await seedTransfers(prisma);
+    await seedZoomMeetings(prisma);
     console.log("Full seeding process completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);

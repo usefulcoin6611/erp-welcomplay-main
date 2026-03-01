@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 // Modern minimalist input styling
 const modernInputClass = cn(
@@ -2178,17 +2179,21 @@ function SectionCard({ title, description, children }: SectionCardProps) {
 }
 
 function SystemSettingsSection() {
+  const [displayShipping, setDisplayShipping] = useState(true)
+  const [footerNote, setFooterNote] = useState('')
+
   return (
     <SectionCard
       title="System Settings"
       description="Edit your system details"
     >
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        {/* Date and Time Format */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="site_date_format">Date Format</Label>
             <Select defaultValue="M j, Y">
-              <SelectTrigger id="site_date_format">
+              <SelectTrigger id="site_date_format" className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -2202,7 +2207,7 @@ function SystemSettingsSection() {
           <div className="space-y-2">
             <Label htmlFor="site_time_format">Time Format</Label>
             <Select defaultValue="g:i A">
-              <SelectTrigger id="site_time_format">
+              <SelectTrigger id="site_time_format" className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -2212,25 +2217,92 @@ function SystemSettingsSection() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="customer_prefix">Customer Prefix</Label>
-            <Input id="customer_prefix" placeholder="Enter Customer Prefix" />
+        </div>
+
+        {/* Prefix settings - two columns: Left then Right as per reference */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer_prefix">Customer Prefix</Label>
+              <Input id="customer_prefix" defaultValue="#CUST" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="proposal_prefix">Proposal Prefix</Label>
+              <Input id="proposal_prefix" defaultValue="#PROP" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bill_prefix">Bill Prefix</Label>
+              <Input id="bill_prefix" defaultValue="#BILL" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="purchase_prefix">Purchase Prefix</Label>
+              <Input id="purchase_prefix" defaultValue="#PUR" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="journal_prefix">Journal Prefix</Label>
+              <Input id="journal_prefix" defaultValue="#JUR" className="h-9" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="vendor_prefix">Vendor Prefix</Label>
-            <Input id="vendor_prefix" placeholder="Enter Vendor Prefix" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="proposal_prefix">Proposal Prefix</Label>
-            <Input id="proposal_prefix" placeholder="Enter Proposal Prefix" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="invoice_prefix">Invoice Prefix</Label>
-            <Input id="invoice_prefix" placeholder="Enter Invoice Prefix" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="vendor_prefix">Vendor Prefix</Label>
+              <Input id="vendor_prefix" defaultValue="#VEND" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invoice_prefix">Invoice Prefix</Label>
+              <Input id="invoice_prefix" defaultValue="#INVO" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quotation_prefix">Quotation Prefix</Label>
+              <Input id="quotation_prefix" defaultValue="#QUO" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pos_prefix">Pos Prefix</Label>
+              <Input id="pos_prefix" placeholder="Enter Pos Prefix" className="h-9" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="expense_prefix">Expense Prefix</Label>
+              <Input id="expense_prefix" defaultValue="#EXP" className="h-9" />
+            </div>
           </div>
         </div>
+
+        {/* Display Shipping toggle */}
+        <div className="flex items-center justify-between rounded-md border px-4 py-3">
+          <Label htmlFor="display_shipping" className="text-sm font-medium cursor-pointer">
+            Display Shipping in Proposal / Invoice / Bill
+          </Label>
+          <Switch
+            id="display_shipping"
+            checked={displayShipping}
+            onCheckedChange={setDisplayShipping}
+          />
+        </div>
+
+        {/* Footer Title */}
+        <div className="space-y-2">
+          <Label htmlFor="footer_title">Proposal/Invoice/Bill/Purchase/POS Footer Title</Label>
+          <Input
+            id="footer_title"
+            placeholder="Enter Footer Title"
+            className="h-9"
+          />
+        </div>
+
+        {/* Footer Note - rich text */}
+        <div className="space-y-2">
+          <RichTextEditor
+            id="footer_note"
+            label="Proposal/Invoice/Bill/Purchase/POS Footer Note"
+            value={footerNote}
+            onChange={setFooterNote}
+            placeholder="Write Here.."
+            minHeight="180px"
+          />
+        </div>
+
         <div className="flex justify-end pt-4 border-t">
-          <Button type="submit" variant="blue" className="shadow-none">
+          <Button type="submit" variant="blue" className="shadow-none bg-blue-500 hover:bg-blue-600">
             <Save className="mr-2 h-4 w-4" /> Save Changes
           </Button>
         </div>

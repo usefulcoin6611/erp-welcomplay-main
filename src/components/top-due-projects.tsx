@@ -2,54 +2,29 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { useProjectDashboard } from "@/contexts/project-dashboard-context"
+
+const statusLabelMap: Record<string, string> = {
+  on_going: 'In Progress',
+  on_hold: 'On Hold',
+  complete: 'Complete',
+  cancelled: 'Cancelled',
+}
 
 export function TopDueProjects() {
   const t = useTranslations('projectDashboard.topDueProjects')
-
-  // Mock data
-  const projects = [
-    {
-      name: 'Dashboard UI',
-      budget: '$ 600.00',
-      endDate: '20 Jul 2027',
-      status: 'on_hold',
-      statusLabel: 'On Hold',
-      image: '/avatars/01.png'
-    },
-    {
-      name: 'Bootstrap Framework',
-      budget: '$ 900.00',
-      endDate: '20 Jul 2026',
-      status: 'complete',
-      statusLabel: 'Complete',
-      image: '/avatars/02.png'
-    },
-    {
-      name: 'dadadsdad',
-      budget: '$ 0.00',
-      endDate: '30 Oct 2025',
-      status: 'on_going',
-      statusLabel: 'In Progress',
-      image: '/avatars/03.png'
-    },
-    {
-      name: 'Application UI',
-      budget: '$ 800.00',
-      endDate: '20 Jul 2025',
-      status: 'on_going',
-      statusLabel: 'In Progress',
-      image: '/avatars/04.png'
-    },
-    {
-      name: 'Website Redesign',
-      budget: '$ 600.00',
-      endDate: '20 Jul 2025',
-      status: 'on_going',
-      statusLabel: 'In Progress',
-      image: '/avatars/05.png'
-    }
-  ]
+  const { data, loading } = useProjectDashboard()
+  const projects = data.topDueProjects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    budget: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.budget),
+    endDate: p.endDate ? new Date(p.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-',
+    status: p.status,
+    statusLabel: statusLabelMap[p.status] ?? p.status,
+  }))
 
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, string> = {
@@ -59,6 +34,15 @@ export function TopDueProjects() {
       'cancelled': 'bg-red-500',
     }
     return statusMap[status] || 'bg-gray-500'
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader><CardTitle>{t('title')}</CardTitle></CardHeader>
+        <CardContent><Skeleton className="h-[200px] w-full" /></CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -91,20 +75,18 @@ export function TopDueProjects() {
                     </td>
                   </tr>
                 ) : (
-                  projects.map((project, index) => (
-                    <tr key={index} className="border-b transition-colors hover:bg-muted/50">
+                  projects.map((project) => (
+                    <tr key={project.id} className="border-b transition-colors hover:bg-muted/50">
                       <td className="p-4 align-middle">
-                        <div className="flex items-center gap-3">
-                          <img 
-                            src={project.image || '/placeholder-project.png'} 
-                            alt={project.name}
-                            className="w-10 h-10 rounded border-2 border-primary"
-                          />
+                        <Link href={`/projects/project/${project.id}`} className="flex items-center gap-3 hover:opacity-80">
+                          <div className="w-10 h-10 rounded border-2 border-primary bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">
+                            {project.name.slice(0, 2).toUpperCase()}
+                          </div>
                           <div>
                             <h6 className="font-semibold mb-0">{project.name}</h6>
                             <p className="text-sm text-green-600 mb-0">{project.budget}</p>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="p-4 align-middle">{project.endDate}</td>
                       <td className="p-4 align-middle">

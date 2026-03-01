@@ -79,12 +79,13 @@ import POSReportsPage from '@/app/pos/reports/page'
 
 ## Charts
 
-All charts use ApexCharts with the following configuration:
-- **Type**: Area charts for trend visualization
+All charts use the shadcn UI Chart component (Recharts) with the following configuration:
+- **Components**: `ChartContainer`, `ChartTooltip`, `ChartTooltipContent` from `@/components/ui/chart`
+- **Types**: Bar chart (Warehouse), Area charts for trend visualization (Purchase, POS, POS VS Purchase)
 - **Height**: Consistent 320px height
 - **Colors**: Brand colors (#6fd944 for primary, #ffa21d for profit)
-- **Features**: Drop shadows, smooth curves, tooltips with currency formatting
-- **Responsive**: Auto-resize based on container width
+- **Features**: Cartesian grid, smooth curves, tooltips with IDR currency formatting
+- **Responsive**: ResponsiveContainer from Recharts
 
 ## Data Flow
 

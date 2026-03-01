@@ -4,6 +4,7 @@ export type Contract = {
   subject: string
   client: string
   project: string
+  projectId?: string | null
   type: string
   value: number
   startDate: string

@@ -14,17 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { branches, departments, employees } from './constants';
-import type { AttendanceFilters as Filters } from './useAttendanceData';
+import type { AttendanceFilters as Filters, AttendanceFilterOptions } from './useAttendanceData';
 
 interface AttendanceFiltersProps {
   filters: Filters;
+  filterOptions: AttendanceFilterOptions;
   onFilterChange: (filters: Filters) => void;
   onReset: () => void;
   onExport: () => void;
 }
 
-function AttendanceFilters({ filters, onFilterChange, onReset, onExport }: AttendanceFiltersProps) {
+function AttendanceFilters({ filters, filterOptions, onFilterChange, onReset, onExport }: AttendanceFiltersProps) {
+  const { branches, departments, employees } = filterOptions;
   const handleEmployeeChange = (value: string) => {
     // Handle multi-select
     if (value === 'all') {
@@ -51,7 +52,7 @@ function AttendanceFilters({ filters, onFilterChange, onReset, onExport }: Atten
         {/* Branch */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Branch</Label>
-          <Select value={filters.branchId} onValueChange={(value: string) => onFilterChange({ ...filters, branchId: value })}>
+          <Select value={filters.branchId || 'all'} onValueChange={(value: string) => onFilterChange({ ...filters, branchId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Select Branch" />
             </SelectTrigger>
@@ -68,7 +69,7 @@ function AttendanceFilters({ filters, onFilterChange, onReset, onExport }: Atten
         {/* Department */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Department</Label>
-          <Select value={filters.departmentId} onValueChange={(value: string) => onFilterChange({ ...filters, departmentId: value })}>
+          <Select value={filters.departmentId || 'all'} onValueChange={(value: string) => onFilterChange({ ...filters, departmentId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
@@ -85,7 +86,7 @@ function AttendanceFilters({ filters, onFilterChange, onReset, onExport }: Atten
         {/* Employee - Multi-select simulation */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Employee</Label>
-          <Select value={filters.employeeId[0] || ''} onValueChange={handleEmployeeChange}>
+          <Select value={filters.employeeId?.[0] || 'all'} onValueChange={handleEmployeeChange}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Select Employee" />
             </SelectTrigger>

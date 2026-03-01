@@ -19,6 +19,8 @@ type MenuItem = {
   icon?: TablerIcon
   isActive?: boolean
   items?: MenuItem[]
+  /** Badge count (e.g. unread); shown next to label when > 0 */
+  badge?: number
 }
 
 interface SidebarMenuProps {
@@ -162,6 +164,7 @@ const MenuItemComponent = ({
 
   // Leaf: gaya aktif penuh (dengan bg) hanya untuk item daun yang URL-nya cocok pathname
   const activeLeafClass = isActive ? getActiveStyleByLevel(level) : 'text-sidebar-foreground'
+  const showBadge = typeof item.badge === 'number' && item.badge > 0
   return (
     <Link href={item.url} className="block">
       <motion.div
@@ -179,7 +182,15 @@ const MenuItemComponent = ({
             <item.icon className="h-4 w-4 shrink-0" />
           </motion.div>
         )}
-        <span>{item.title}</span>
+        <span className="flex-1 min-w-0 truncate">{item.title}</span>
+        {showBadge && (
+          <span
+            className="shrink-0 min-w-[1.125rem] h-[1.125rem] flex items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-semibold px-1.5"
+            aria-label={`${item.badge} unread`}
+          >
+            {item.badge! > 99 ? '99+' : item.badge}
+          </span>
+        )}
       </motion.div>
     </Link>
   )

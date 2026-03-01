@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import {
   Card,
   CardContent,
@@ -54,6 +55,7 @@ export function ContractDetailClient({ contract }: ContractDetailClientProps) {
   const [commentText, setCommentText] = useState('')
   const [notesText, setNotesText] = useState('')
   const [localStatus, setLocalStatus] = useState(contract.status)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [comments, setComments] = useState<ContractComment[]>(() => getContractComments(contract.id))
   const [notes, setNotes] = useState<ContractNote[]>(() => getContractNotes(contract.id))
   const [attachments, setAttachments] = useState<ContractAttachment[]>(() => getContractAttachments(contract.id))
@@ -63,6 +65,30 @@ export function ContractDetailClient({ contract }: ContractDetailClientProps) {
   const attachmentCount = attachments.length
   const commentCount = comments.length
   const notesCount = notes.length
+
+  const handleStatusChange = async (newStatus: string) => {
+    setLocalStatus(newStatus)
+    try {
+      setUpdatingStatus(true)
+      const res = await fetch(`/api/contracts/${encodeURIComponent(contract.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? 'Gagal mengubah status')
+        setLocalStatus(contract.status)
+        return
+      }
+      toast.success('Status berhasil diubah')
+    } catch {
+      toast.error('Terjadi kesalahan')
+      setLocalStatus(contract.status)
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
 
   const scrollToSection = (id: string) => {
     setActiveSection(id)
@@ -175,7 +201,8 @@ export function ContractDetailClient({ contract }: ContractDetailClientProps) {
               {CONTRACT_STATUS_OPTIONS.map((opt) => (
                 <DropdownMenuItem
                   key={opt}
-                  onClick={() => setLocalStatus(opt)}
+                  onClick={() => handleStatusChange(opt)}
+                  disabled={updatingStatus || localStatus === opt}
                 >
                   {getContractStatusDisplay(opt)}
                 </DropdownMenuItem>

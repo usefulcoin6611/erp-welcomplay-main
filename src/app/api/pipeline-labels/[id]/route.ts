@@ -47,7 +47,7 @@ export async function PUT(
 
     const { name, color } = validation.data
 
-    const existing = await (prisma as any).pipelineLabel.findUnique({
+    const existing = await prisma.pipelineLabel.findUnique({
       where: { id },
     })
 
@@ -58,7 +58,7 @@ export async function PUT(
       )
     }
 
-    const updated = await (prisma as any).pipelineLabel.update({
+    const updated = await prisma.pipelineLabel.update({
       where: { id },
       data: {
         name,
@@ -106,7 +106,7 @@ export async function DELETE(
       )
     }
 
-    const existing = await (prisma as any).pipelineLabel.findUnique({
+    const existing = await prisma.pipelineLabel.findUnique({
       where: { id },
     })
 
@@ -117,7 +117,7 @@ export async function DELETE(
       )
     }
 
-    await (prisma as any).pipelineLabel.delete({
+    await prisma.pipelineLabel.delete({
       where: { id },
     })
 

@@ -1,19 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import dynamic from "next/dynamic"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Download, Loader2, Warehouse, Package } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { REPORT_CARD_CLASS } from "../shared-styles"
+import { Warehouse, Package } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type WarehouseData = {
   id: string
@@ -23,7 +22,6 @@ type WarehouseData = {
 
 export function WarehouseTab() {
   const [mounted, setMounted] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
   const [warehouses, setWarehouses] = useState<WarehouseData[]>([])
   const [totalProducts, setTotalProducts] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -46,80 +44,28 @@ export function WarehouseTab() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleDownload = () => {
-    setIsDownloading(true)
-    setTimeout(() => {
-      setIsDownloading(false)
-    }, 2000)
-  }
-
   const totalWarehouse = warehouses.length
   const warehouseNames = warehouses.map((w) => w.name)
   // For chart: show equal distribution as placeholder (no per-warehouse stock tracking yet)
   const productData = warehouses.map(() => Math.round(totalProducts / Math.max(1, warehouses.length)))
 
-  const chartOptions = {
-    chart: {
-      type: 'bar' as const,
-      toolbar: { show: false },
-    },
-    dataLabels: { enabled: false },
-    stroke: { width: 2, curve: 'smooth' as const },
-    colors: ['#6fd944'],
-    xaxis: {
-      categories: warehouseNames.length > 0 ? warehouseNames : ['No Warehouses'],
-      title: { text: 'Warehouse' },
-    },
-    yaxis: { title: { text: 'Product Count' } },
-    grid: { strokeDashArray: 4 },
-    legend: { show: false },
-    tooltip: { y: { formatter: (value: number) => `${value} products` } },
-  }
+  const chartData =
+    warehouseNames.length > 0
+      ? warehouseNames.map((name, i) => ({ name, products: productData[i] ?? 0 }))
+      : [{ name: "No Warehouses", products: 0 }]
 
-  const chartSeries = [{ name: 'Product', data: productData.length > 0 ? productData : [0] }]
+  const chartConfig = {
+    products: {
+      label: "Product Count",
+      color: "#6fd944",
+    },
+  } satisfies ChartConfig
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header with Download */}
-      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">Warehouse Report</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Overview of product distribution across warehouse locations
-            </p>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="shadow-none bg-blue-500 hover:bg-blue-600 text-white shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Downloading...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download report as PDF</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </CardContent>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-          <CardContent className="p-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className={REPORT_CARD_CLASS}>
+          <CardContent className="p-4 px-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-pink-100 dark:bg-pink-900/50">
                 <Warehouse className="h-6 w-6 text-pink-600 dark:text-pink-400" />
@@ -134,8 +80,8 @@ export function WarehouseTab() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-          <CardContent className="p-5">
+        <Card className={REPORT_CARD_CLASS}>
+          <CardContent className="p-4 px-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/50">
                 <Warehouse className="h-6 w-6 text-orange-600 dark:text-orange-400" />
@@ -154,8 +100,8 @@ export function WarehouseTab() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-          <CardContent className="p-5">
+        <Card className={REPORT_CARD_CLASS}>
+          <CardContent className="p-4 px-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
                 <Package className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -175,20 +121,22 @@ export function WarehouseTab() {
         </Card>
       </div>
 
-      {/* Chart */}
-      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
-        <CardHeader className="px-5 pt-5 pb-3">
-          <h3 className="text-base font-semibold text-foreground">Warehouse Report</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Product distribution by warehouse location</p>
+      <Card className={REPORT_CARD_CLASS}>
+        <CardHeader className="px-6 pb-2">
+          <CardTitle className="text-base font-semibold">Product distribution</CardTitle>
+          <CardDescription>By warehouse location</CardDescription>
         </CardHeader>
-        <CardContent className="px-5 pb-5 pt-0">
+        <CardContent className="px-6 pt-0 pb-6">
           {mounted && !loading ? (
-            <Chart
-              options={chartOptions}
-              series={chartSeries}
-              type="bar"
-              height={320}
-            />
+            <ChartContainer config={chartConfig} className="h-[320px] w-full">
+              <BarChart accessibilityLayer data={chartData}>
+                <CartesianGrid vertical={false} strokeDasharray="4 4" />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent formatter={(v) => `${v} products`} />} />
+                <Bar dataKey="products" fill="var(--color-products)" radius={4} />
+              </BarChart>
+            </ChartContainer>
           ) : (
             <Skeleton className="h-[320px] w-full" />
           )}

@@ -1,16 +1,17 @@
 "use client"
 
 import Link from "next/link"
-import { 
-  Users, 
-  UserCheck, 
-  Building, 
-  Briefcase, 
-  CheckCircle, 
-  XCircle, 
+import { useEffect, useState } from "react"
+import {
+  Users,
+  UserCheck,
+  Building,
+  Briefcase,
+  CheckCircle,
+  XCircle,
   GraduationCap,
   Award,
-  BookOpen
+  BookOpen,
 } from "lucide-react"
 import { useTranslations } from "next-intl"
 
@@ -19,7 +20,7 @@ interface StatItem {
   value: number
   icon: React.ReactNode
   link?: string
-  color?: 'blue' | 'green' | 'orange' | 'red' | 'purple'
+  color?: "blue" | "green" | "orange" | "red" | "purple"
   bgColor?: string
 }
 
@@ -41,24 +42,56 @@ interface StatsCardsProps {
   }
 }
 
-export function StatsCards({
-  staffStats = {
-    totalStaff: 45,
-    totalEmployee: 35,
-    totalClient: 10
-  },
-  jobStats = {
-    totalJobs: 24,
-    activeJobs: 18,
-    inactiveJobs: 6
-  },
-  trainingStats = {
-    totalTrainer: 8,
-    activeTraining: 5,
-    doneTraining: 12
+const defaultStaffStats = { totalStaff: 0, totalEmployee: 0, totalClient: 0 }
+const defaultJobStats = { totalJobs: 0, activeJobs: 0, inactiveJobs: 0 }
+const defaultTrainingStats = { totalTrainer: 0, activeTraining: 0, doneTraining: 0 }
+
+export function StatsCards(props: StatsCardsProps) {
+  const t = useTranslations("hrmDashboard.statsCards")
+  const [staffStats, setStaffStats] = useState(props.staffStats ?? defaultStaffStats)
+  const [jobStats, setJobStats] = useState(props.jobStats ?? defaultJobStats)
+  const [trainingStats, setTrainingStats] = useState(
+    props.trainingStats ?? defaultTrainingStats
+  )
+  const [loading, setLoading] = useState(!props.staffStats && !props.jobStats && !props.trainingStats)
+
+  useEffect(() => {
+    if (props.staffStats !== undefined && props.jobStats !== undefined && props.trainingStats !== undefined) {
+      setStaffStats(props.staffStats)
+      setJobStats(props.jobStats)
+      setTrainingStats(props.trainingStats)
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    fetch("/api/hrm-dashboard")
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json?.success || !json?.data) return
+        const d = json.data
+        setStaffStats(d.staffStats ?? defaultStaffStats)
+        setJobStats(d.jobStats ?? defaultJobStats)
+        setTrainingStats(d.trainingStats ?? defaultTrainingStats)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [props.staffStats, props.jobStats, props.trainingStats])
+
+  if (loading) {
+    return (
+      <div className="space-y-5 animate-pulse">
+        <div className="h-20 rounded-lg bg-muted/60" />
+        <div className="h-20 rounded-lg bg-muted/60" />
+        <div className="h-20 rounded-lg bg-muted/60" />
+      </div>
+    )
   }
-}: StatsCardsProps) {
-  const t = useTranslations('hrmDashboard.statsCards')
 
   const getBgAndIconClasses = (color?: string) => {
     switch (color) {

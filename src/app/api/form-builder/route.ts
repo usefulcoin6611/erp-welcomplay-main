@@ -7,6 +7,8 @@ import { z } from "zod";
 const formSchema = z.object({
   name: z.string().min(1, "Nama form wajib diisi"),
   code: z.string().min(1, "Kode form wajib diisi"),
+  isActive: z.boolean().optional().default(true),
+  isLeadActive: z.boolean().optional().default(false),
 });
 
 export async function GET(request: NextRequest) {
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, code } = validation.data;
+    const { name, code, isActive, isLeadActive } = validation.data;
 
     const lastForm = await prisma.formBuilder.findFirst({
       orderBy: { createdAt: "desc" },
@@ -86,8 +88,8 @@ export async function POST(request: NextRequest) {
         formId,
         name,
         code,
-        isActive: true,
-        isLeadActive: false,
+        isActive: isActive ?? true,
+        isLeadActive: isLeadActive ?? false,
         responses: 0,
       },
     });

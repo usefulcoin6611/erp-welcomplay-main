@@ -89,12 +89,14 @@ type ProjectOption = {
 }
 
 export default function ContractPage() {
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [contracts, setContracts] = useState<ContractItem[]>([])
   const [loading, setLoading] = useState(false)
+  const isClientRole = userRole === "client"
   const [contractTypes, setContractTypes] = useState<ContractTypeOption[]>([])
   const [loadingContractTypes, setLoadingContractTypes] = useState(false)
   const [customers, setCustomers] = useState<CustomerOption[]>([])
@@ -108,14 +110,34 @@ export default function ContractPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [createSubject, setCreateSubject] = useState("")
   const [createClientName, setCreateClientName] = useState("")
-  const [createCustomerId, setCreateCustomerId] = useState("")
+  const PLACEHOLDER = "__none__"
+  const [createCustomerId, setCreateCustomerId] = useState(PLACEHOLDER)
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.role) setUserRole(data.role)
+      })
+      .catch(() => {})
+  }, [])
   const [createValue, setCreateValue] = useState("")
   const [createStartDate, setCreateStartDate] = useState("")
   const [createEndDate, setCreateEndDate] = useState("")
-  const [createType, setCreateType] = useState("")
+  const [createType, setCreateType] = useState(PLACEHOLDER)
   const [createDescription, setCreateDescription] = useState("")
-  const [createProjectId, setCreateProjectId] = useState("")
+  const [createProjectId, setCreateProjectId] = useState(PLACEHOLDER)
   const [creating, setCreating] = useState(false)
+  const [editSubject, setEditSubject] = useState("")
+  const [editClientName, setEditClientName] = useState("")
+  const [editCustomerId, setEditCustomerId] = useState("")
+  const [editValue, setEditValue] = useState("")
+  const [editType, setEditType] = useState("")
+  const [editStartDate, setEditStartDate] = useState("")
+  const [editEndDate, setEditEndDate] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [editProjectId, setEditProjectId] = useState("")
+  const [savingEdit, setSavingEdit] = useState(false)
 
   useEffect(() => {
     const fetchContracts = async () => {
@@ -239,18 +261,85 @@ export default function ContractPage() {
 
   const openEditDialog = (contract: Contract) => {
     setEditContract(contract)
+    setEditSubject(contract.subject)
+    setEditClientName(contract.client)
+    setEditValue(String(contract.value))
+    setEditType(contract.type)
+    setEditStartDate(contract.startDate)
+    setEditEndDate(contract.endDate)
+    setEditDescription(contract.description ?? "")
+    setEditProjectId(
+      contract.projectId ?? projects.find((p) => p.name === contract.project)?.id ?? PLACEHOLDER
+    )
+    setEditCustomerId(customers.find((c) => c.name === contract.client)?.id ?? PLACEHOLDER)
     setEditDialogOpen(true)
   }
+
+  const handleSaveEdit = async () => {
+    if (!editContract) return
+    if (!editSubject.trim() || !editClientName.trim() || !editType.trim() || !editStartDate || !editEndDate) {
+      toast.error("Subject, Client, Type, Start Date, dan End Date wajib diisi")
+      return
+    }
+    try {
+      setSavingEdit(true)
+      const res = await fetch(`/api/contracts/${encodeURIComponent(editContract.id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: editSubject.trim(),
+          clientName: editClientName.trim(),
+          value: Number(editValue) || 0,
+          type: editType.trim(),
+          startDate: editStartDate,
+          endDate: editEndDate,
+          description: editDescription.trim() || null,
+          projectId: editProjectId && editProjectId !== PLACEHOLDER ? editProjectId : null,
+        }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? "Gagal memperbarui kontrak")
+        return
+      }
+      const updated = json.data as ContractItem
+      setContracts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+      setEditDialogOpen(false)
+      setEditContract(null)
+      toast.success("Kontrak berhasil diperbarui")
+    } catch {
+      toast.error("Terjadi kesalahan saat memperbarui kontrak")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const openDeleteConfirm = (id: string) => {
     setDeleteContractId(id)
     setDeleteAlertOpen(true)
   }
 
-  const handleDelete = () => {
-    // Mock: in real app would call API
-    setDeleteContractId(null)
-    setDeleteAlertOpen(false)
+  const handleDelete = async () => {
+    if (!deleteContractId) return
+    try {
+      setDeleteLoading(true)
+      const res = await fetch(`/api/contracts/${encodeURIComponent(deleteContractId)}`, { method: "DELETE" })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message ?? "Gagal menghapus kontrak")
+        return
+      }
+      setContracts((prev) => prev.filter((c) => c.id !== deleteContractId))
+      setDeleteContractId(null)
+      setDeleteAlertOpen(false)
+      toast.success("Kontrak berhasil dihapus")
+    } catch {
+      toast.error("Terjadi kesalahan saat menghapus kontrak")
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const handleCreateContract = async () => {
@@ -261,8 +350,11 @@ export default function ContractPage() {
       !createStartDate ||
       !createEndDate ||
       !createType.trim() ||
+      createType === PLACEHOLDER ||
       creating
     ) {
+      if (!createClientName.trim()) toast.error("Pilih atau isi client")
+      else if (createType === PLACEHOLDER) toast.error("Pilih tipe kontrak")
       return
     }
 
@@ -281,7 +373,7 @@ export default function ContractPage() {
           startDate: createStartDate,
           endDate: createEndDate,
           description: createDescription.trim() || undefined,
-          projectId: createProjectId.trim() || undefined,
+          projectId: createProjectId && createProjectId !== PLACEHOLDER ? createProjectId : undefined,
         }),
       })
 
@@ -295,13 +387,13 @@ export default function ContractPage() {
       setContracts((prev) => [created, ...prev])
       setCreateSubject("")
       setCreateClientName("")
-      setCreateCustomerId("")
+      setCreateCustomerId(PLACEHOLDER)
       setCreateValue("")
       setCreateStartDate("")
       setCreateEndDate("")
-      setCreateType("")
+      setCreateType(PLACEHOLDER)
       setCreateDescription("")
-      setCreateProjectId("")
+      setCreateProjectId(PLACEHOLDER)
       setCreateDialogOpen(false)
       toast.success("Kontrak berhasil dibuat")
     } catch {
@@ -366,32 +458,34 @@ export default function ContractPage() {
                       <IconLayoutGrid className="h-3 w-3" />
                     </Button>
                   </div>
-                  {/* Action buttons - Import, Export, Add Contract */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-                    title="Import"
-                  >
-                    <IconFileImport className="mr-2 h-3 w-3" />
-                    Import
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
-                    title="Export"
-                  >
-                    <IconDownload className="mr-2 h-3 w-3" />
-                    Export
-                  </Button>
-                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4">
-                        <IconPlus className="mr-2 h-3 w-3" />
-                        Add Contract
+                  {/* Action buttons - Import, Export, Add Contract (hidden for client) */}
+                  {!isClientRole && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                        title="Import"
+                      >
+                        <IconFileImport className="mr-2 h-3 w-3" />
+                        Import
                       </Button>
-                    </DialogTrigger>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shadow-none h-7 px-4 bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                        title="Export"
+                      >
+                        <IconDownload className="mr-2 h-3 w-3" />
+                        Export
+                      </Button>
+                      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="blue" size="sm" className="shadow-none h-7 px-4">
+                            <IconPlus className="mr-2 h-3 w-3" />
+                            Add Contract
+                          </Button>
+                        </DialogTrigger>
                     <DialogContent className="sm:max-w-[560px]">
                       <DialogHeader>
                         <DialogTitle>Create Contract</DialogTitle>
@@ -413,7 +507,7 @@ export default function ContractPage() {
                           <div className="grid gap-2">
                             <Label htmlFor="client">Client</Label>
                             <Select
-                              value={createCustomerId}
+                              value={createCustomerId || PLACEHOLDER}
                               onValueChange={(value) => {
                                 setCreateCustomerId(value)
                                 const selected = customers.find((c) => c.id === value)
@@ -425,6 +519,7 @@ export default function ContractPage() {
                                 <SelectValue placeholder={loadingCustomers ? "Loading..." : "Select client"} />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value={PLACEHOLDER}>Select client</SelectItem>
                                 {customers.map((customer) => (
                                   <SelectItem key={customer.id} value={customer.id}>
                                     {customer.name}
@@ -448,7 +543,7 @@ export default function ContractPage() {
                           <div className="grid gap-2">
                             <Label htmlFor="project">Project</Label>
                             <Select
-                              value={createProjectId}
+                              value={createProjectId || PLACEHOLDER}
                               onValueChange={setCreateProjectId}
                               disabled={loadingProjects}
                             >
@@ -456,6 +551,7 @@ export default function ContractPage() {
                                 <SelectValue placeholder={loadingProjects ? "Loading..." : "Select project"} />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value={PLACEHOLDER}>Select project (optional)</SelectItem>
                                 {projects.map((project) => (
                                   <SelectItem key={project.id} value={project.id}>
                                     {project.name}
@@ -488,13 +584,14 @@ export default function ContractPage() {
                         <div className="grid gap-2">
                           <Label htmlFor="type">Contract Type</Label>
                           <Select
-                            value={createType}
+                            value={createType || PLACEHOLDER}
                             onValueChange={setCreateType}
                           >
                             <SelectTrigger id="type" className="h-9">
                               <SelectValue placeholder={loadingContractTypes ? "Loading..." : "Select contract type"} />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value={PLACEHOLDER}>Select contract type</SelectItem>
                               {contractTypes.map((type) => (
                                 <SelectItem key={type.id} value={type.name}>
                                   {type.name}
@@ -535,6 +632,7 @@ export default function ContractPage() {
                             !createStartDate ||
                             !createEndDate ||
                             !createType.trim() ||
+                            createType === PLACEHOLDER ||
                             creating
                           }
                           onClick={handleCreateContract}
@@ -542,8 +640,10 @@ export default function ContractPage() {
                           {creating ? "Saving..." : "Save Contract"}
                         </Button>
                       </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                      </Dialog>
+                    </>
+                  )}
                 </div>
               </CardHeader>
             </Card>
@@ -570,14 +670,10 @@ export default function ContractPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-6 w-[120px]">Contract ID</TableHead>
+                          <TableHead className="px-6 w-[100px]">Contract ID</TableHead>
                           <TableHead className="px-6">Subject</TableHead>
                           <TableHead className="px-6">Client</TableHead>
-                          <TableHead className="px-6">Project</TableHead>
-                          <TableHead className="px-6">Type</TableHead>
                           <TableHead className="px-6 text-right">Value</TableHead>
-                          <TableHead className="px-6">Start Date</TableHead>
-                          <TableHead className="px-6">End Date</TableHead>
                           <TableHead className="px-6">Status</TableHead>
                           <TableHead className="px-6 w-[100px] text-right">Action</TableHead>
                         </TableRow>
@@ -585,41 +681,35 @@ export default function ContractPage() {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={10} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                               Loading...
                             </TableCell>
                           </TableRow>
                         ) : paginatedData.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={10} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                               No contracts found.
                             </TableCell>
                           </TableRow>
                         ) : (
                           paginatedData.map((contract) => (
                             <TableRow key={contract.id}>
-                              <TableCell className="px-6 font-medium">
-                                <Link href={`/contract/${contract.id}`} className="text-blue-600 hover:underline">
-                                  {contract.contractNumber}
+                              <TableCell className="px-6 font-mono text-sm font-medium">
+                                {contract.contractNumber}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <Link href={`/contract/${contract.id}`} className="text-blue-600 hover:underline font-medium">
+                                  {contract.subject}
                                 </Link>
                               </TableCell>
-                              <TableCell className="px-6">{contract.subject}</TableCell>
                               <TableCell className="px-6">{contract.client}</TableCell>
-                              <TableCell className="px-6">{contract.project}</TableCell>
-                              <TableCell className="px-6">
-                                <Badge variant="outline" className="bg-gray-50">
-                                  {contract.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="px-6 text-right">
+                              <TableCell className="px-6 text-right font-medium">
                                 {new Intl.NumberFormat('id-ID', {
                                   style: 'currency',
                                   currency: 'IDR',
                                   minimumFractionDigits: 0,
                                 }).format(contract.value)}
                               </TableCell>
-                              <TableCell className="px-6">{contract.startDate}</TableCell>
-                              <TableCell className="px-6">{contract.endDate}</TableCell>
                               <TableCell className="px-6">
                                 <Badge
                                   variant="secondary"
@@ -629,26 +719,28 @@ export default function ContractPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="px-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
-                                    title="Edit"
-                                    onClick={() => openEditDialog(contract)}
-                                  >
-                                    <IconPencil className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
-                                    title="Delete"
-                                    onClick={() => openDeleteConfirm(contract.id)}
-                                  >
-                                    <IconTrash className="h-3 w-3" />
-                                  </Button>
-                                </div>
+                                {!isClientRole && (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="shadow-none h-7 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                                      title="Edit"
+                                      onClick={() => openEditDialog(contract)}
+                                    >
+                                      <IconPencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                      title="Delete"
+                                      onClick={() => openDeleteConfirm(contract.id)}
+                                    >
+                                      <IconTrash className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))
@@ -673,64 +765,77 @@ export default function ContractPage() {
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {paginatedData.map((contract) => (
-                  <Card key={contract.id} className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                      <div className="space-y-1">
-                        <CardTitle className="text-base font-semibold">
-                          <Link href={`/contract/${contract.id}`} className="hover:underline">
-                            {contract.subject}
-                          </Link>
-                        </CardTitle>
-                        <CardDescription className="font-mono text-xs">
-                          {contract.contractNumber}
-                        </CardDescription>
+                  <Card key={contract.id} className="overflow-hidden bg-white">
+                    <CardHeader className="pb-3 pt-4 px-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-mono text-xs font-medium text-foreground mb-1">
+                            {contract.contractNumber}
+                          </p>
+                          <CardTitle className="text-base font-semibold leading-tight">
+                            <Link href={`/contract/${contract.id}`} className="text-blue-600 hover:underline line-clamp-2">
+                              {contract.subject}
+                            </Link>
+                          </CardTitle>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className={contract.status === 'accept' ? 'bg-green-100 text-green-800 border-0 shrink-0' : 'bg-amber-100 text-amber-800 border-0 shrink-0'}
+                        >
+                          {contract.status === 'accept' ? 'Accepted' : contract.status}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className={contract.status === 'accept' ? 'bg-green-100 text-green-700 hover:bg-green-100/80 border-0' : ''}
-                      >
-                        {contract.status}
-                      </Badge>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <IconCalendar className="h-4 w-4" />
-                          <span>{contract.startDate} - {contract.endDate}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Client:</span>
-                          <span className="font-medium">{contract.client}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Value:</span>
-                          <span className="font-medium">
-                            {new Intl.NumberFormat('id-ID', {
-                              style: 'currency',
-                              currency: 'IDR',
-                              minimumFractionDigits: 0,
-                            }).format(contract.value)}
-                          </span>
-                        </div>
+                    <CardContent className="px-4 pb-4 pt-0 space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <IconCalendar className="h-4 w-4 shrink-0 text-foreground/70" />
+                        <span className="text-foreground">
+                          {contract.startDate && contract.endDate
+                            ? `${contract.startDate} – ${contract.endDate}`
+                            : '–'}
+                        </span>
                       </div>
-                      <div className="mt-4 flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 hover:bg-blue-50 h-8 w-8 p-0"
-                          onClick={() => openEditDialog(contract)}
-                        >
-                          <IconPencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
-                          onClick={() => openDeleteConfirm(contract.id)}
-                        >
-                          <IconTrash className="h-4 w-4" />
-                        </Button>
+                      <div className="flex justify-between items-baseline text-sm">
+                        <span className="text-foreground font-medium">Client</span>
+                        <span className="font-medium text-foreground truncate ml-2 max-w-[60%] text-right" title={contract.client}>
+                          {contract.client || '–'}
+                        </span>
                       </div>
+                      <div className="flex justify-between items-baseline text-sm pt-1 border-t border-gray-100">
+                        <span className="text-foreground font-medium">Value</span>
+                        <span className="font-semibold text-foreground">
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
+                          }).format(contract.value)}
+                        </span>
+                      </div>
+                      {!isClientRole && (
+                        <div className="flex items-center justify-end gap-2 pt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                            title="Edit"
+                            onClick={() => openEditDialog(contract)}
+                          >
+                            <IconPencil className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 shadow-none bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-100"
+                            title="Delete"
+                            onClick={() => openDeleteConfirm(contract.id)}
+                          >
+                            <IconTrash className="h-3.5 w-3.5 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -739,6 +844,125 @@ export default function ContractPage() {
           </div>
         </MainContentWrapper>
       </SidebarInset>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Edit Contract</DialogTitle>
+            <DialogDescription>Ubah informasi kontrak.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-subject">Subject</Label>
+              <Input
+                id="edit-subject"
+                value={editSubject}
+                onChange={(e) => setEditSubject(e.target.value)}
+                placeholder="Subject"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Client</Label>
+                <Select
+                  value={editCustomerId || PLACEHOLDER}
+                  onValueChange={(value) => {
+                    setEditCustomerId(value)
+                    const selected = customers.find((c) => c.id === value)
+                    setEditClientName(selected?.name ?? "")
+                  }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={PLACEHOLDER}>Select client</SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Value</Label>
+                <Input
+                  type="number"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Project</Label>
+                <Select
+                  value={editProjectId || PLACEHOLDER}
+                  onValueChange={setEditProjectId}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={PLACEHOLDER}>None</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Contract Type</Label>
+                <Select value={editType || PLACEHOLDER} onValueChange={setEditType}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={PLACEHOLDER}>Select type</SelectItem>
+                    {contractTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Description</Label>
+              <Input
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Description (optional)"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" className="shadow-none h-7" onClick={() => setEditDialogOpen(false)} disabled={savingEdit}>
+              Cancel
+            </Button>
+            <Button variant="blue" size="sm" className="shadow-none h-7" disabled={savingEdit} onClick={handleSaveEdit}>
+              {savingEdit ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
         <AlertDialogContent>
@@ -749,9 +973,9 @@ export default function ContractPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteContractId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+            <AlertDialogCancel onClick={() => setDeleteContractId(null)} disabled={deleteLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700" disabled={deleteLoading}>
+              {deleteLoading ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

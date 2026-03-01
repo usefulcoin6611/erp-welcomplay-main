@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import {
   Plus,
   Trash,
+  Pencil,
   Calendar as CalendarIcon,
   ExternalLink,
   Video,
@@ -22,6 +23,7 @@ import {
   Search,
 } from 'lucide-react'
 import { EventCalendar } from '@/components/event-calendar'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -58,7 +60,8 @@ import {
 interface ZoomMeeting {
   id: string
   title: string
-  project?: string
+  project?: string | null
+  projectId?: string | null
   users: Array<{
     id: string
     name: string
@@ -68,68 +71,21 @@ interface ZoomMeeting {
   duration: number
   join_url?: string
   start_url?: string
-  status: 'waiting' | 'started' | 'end'
+  status: 'waiting' | 'started' | 'ended'
   created_by: string
   can_start: boolean
 }
 
-// Mock data
-const mockMeetings: ZoomMeeting[] = [
-  {
-    id: '1',
-    title: 'Weekly Team Sync',
-    project: 'ERP Implementation',
-    users: [
-      { id: '1', name: 'John Doe', avatar: '' },
-      { id: '2', name: 'Jane Smith', avatar: '' },
-    ],
-    start_date: '2024-01-20T10:00:00',
-    duration: 60,
-    join_url: 'https://zoom.us/j/123456789',
-    start_url: 'https://zoom.us/s/123456789',
-    status: 'waiting',
-    created_by: '1',
-    can_start: true,
-  },
-  {
-    id: '2',
-    title: 'Project Review Meeting',
-    project: 'CRM Development',
-    users: [
-      { id: '3', name: 'Bob Johnson', avatar: '' },
-      { id: '4', name: 'Alice Williams', avatar: '' },
-    ],
-    start_date: '2024-01-18T14:30:00',
-    duration: 90,
-    join_url: 'https://zoom.us/j/987654321',
-    status: 'started',
-    created_by: '2',
-    can_start: false,
-  },
-  {
-    id: '3',
-    title: 'Client Presentation',
-    project: 'Website Redesign',
-    users: [{ id: '5', name: 'Charlie Brown', avatar: '' }],
-    start_date: '2024-01-15T09:00:00',
-    duration: 45,
-    status: 'end',
-    created_by: '3',
-    can_start: false,
-  },
-]
-
-const projects = ['ERP Implementation', 'CRM Development', 'Website Redesign', 'Mobile App']
-const mockUsers = [
-  { id: '1', name: 'John Doe' },
-  { id: '2', name: 'Jane Smith' },
-  { id: '3', name: 'Bob Johnson' },
-  { id: '4', name: 'Alice Williams' },
-]
+type ProjectOption = { id: string; name: string }
+type UserOption = { id: string; name: string; email?: string }
 
 export default function ZoomMeetingPage() {
-  const [meetings, setMeetings] = useState<ZoomMeeting[]>(mockMeetings)
+  const [meetings, setMeetings] = useState<ZoomMeeting[]>([])
+  const [loading, setLoading] = useState(true)
+  const [projects, setProjects] = useState<ProjectOption[]>([])
+  const [users, setUsers] = useState<UserOption[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [search, setSearch] = useState('')
   const [selectedProject, setSelectedProject] = useState<string>('')
@@ -137,6 +93,7 @@ export default function ZoomMeetingPage() {
   const [startTime, setStartTime] = useState('')
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [deleteMeetingId, setDeleteMeetingId] = useState<string | null>(null)
+  const [submitLoading, setSubmitLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     project_id: '',
@@ -148,9 +105,60 @@ export default function ZoomMeetingPage() {
     client_id: true,
   })
 
+  const fetchMeetings = useCallback(async () => {
+    try {
+      const params = new URLSearchParams()
+      if (selectedProject) params.set('projectId', selectedProject)
+      const res = await fetch(`/api/zoom?${params}`)
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data)) {
+        setMeetings(json.data.map((m: any) => ({
+          ...m,
+          project: m.project?.name ?? m.project ?? null,
+          status: m.status === 'end' ? 'ended' : m.status,
+        })))
+      }
+    } catch {
+      toast.error('Failed to load meetings')
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedProject])
+
+  useEffect(() => {
+    fetchMeetings()
+  }, [fetchMeetings])
+
+  useEffect(() => {
+    fetch('/api/projects')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setProjects(json.data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setUsers(json.data.map((u: { id: string; name?: string; email?: string }) => ({
+            id: u.id,
+            name: (u as any).name ?? (u as any).email ?? 'Unknown',
+            email: (u as any).email,
+          })))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
     if (!open) {
+      setEditingId(null)
       setFormData({
         title: '',
         project_id: '',
@@ -167,17 +175,119 @@ export default function ZoomMeetingPage() {
     }
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle form submission here
-    console.log('Form data:', formData)
-    handleDialogOpenChange(false)
+  const openEdit = (meeting: ZoomMeeting) => {
+    setEditingId(meeting.id)
+    const start = new Date(meeting.start_date)
+    setStartDate(start)
+    setStartTime(start.toTimeString().slice(0, 5))
+    setFormData({
+      title: meeting.title,
+      project_id: (meeting as any).projectDisplayId ?? (meeting as any).projectId ?? '',
+      user_id: meeting.users.map((u) => u.id),
+      start_date: meeting.start_date,
+      duration: String(meeting.duration),
+      password: '',
+      synchronize_type: false,
+      client_id: true,
+    })
+    setDialogOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    setMeetings(meetings.filter((m) => m.id !== id))
-    setDeleteMeetingId(null)
-    setDeleteAlertOpen(false)
+  const toStartAtISO = () => {
+    if (!formData.start_date) return ''
+    if (formData.start_date.includes('T')) return new Date(formData.start_date).toISOString()
+    const t = startTime || '00:00'
+    return new Date(`${formData.start_date}T${t}:00`).toISOString()
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.title.trim()) {
+      toast.error('Title is required')
+      return
+    }
+    // Creator is always a participant; additional participants optional
+    const startAt = toStartAtISO()
+    if (!startAt) {
+      toast.error('Start date and time are required')
+      return
+    }
+    const duration = Number(formData.duration)
+    if (!Number.isInteger(duration) || duration < 5 || duration > 480) {
+      toast.error('Duration must be between 5 and 480 minutes')
+      return
+    }
+    setSubmitLoading(true)
+    try {
+      if (editingId) {
+        const res = await fetch(`/api/zoom/${editingId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title.trim(),
+            projectId: formData.project_id || null,
+            startAt,
+            durationMinutes: duration,
+            password: formData.password || null,
+            syncGoogleCalendar: formData.synchronize_type,
+            inviteClient: formData.client_id,
+            participantUserIds: formData.user_id,
+          }),
+        })
+        const json = await res.json()
+        if (json.success) {
+          toast.success('Meeting updated successfully')
+          handleDialogOpenChange(false)
+          fetchMeetings()
+        } else {
+          toast.error(json.message ?? 'Failed to update meeting')
+        }
+      } else {
+        const res = await fetch('/api/zoom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title.trim(),
+            projectId: formData.project_id || null,
+            startAt,
+            durationMinutes: duration,
+            password: formData.password || null,
+            syncGoogleCalendar: formData.synchronize_type,
+            inviteClient: formData.client_id,
+            participantUserIds: formData.user_id,
+          }),
+        })
+        const json = await res.json()
+        if (json.success) {
+          toast.success('Meeting created successfully')
+          handleDialogOpenChange(false)
+          fetchMeetings()
+        } else {
+          toast.error(json.message ?? 'Failed to create meeting')
+        }
+      }
+    } catch {
+      toast.error('Request failed')
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/zoom/${id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (json.success) {
+        setMeetings((prev) => prev.filter((m) => m.id !== id))
+        setDeleteMeetingId(null)
+        setDeleteAlertOpen(false)
+        toast.success('Meeting deleted')
+      } else {
+        toast.error(json.message ?? 'Failed to delete meeting')
+      }
+    } catch {
+      toast.error('Request failed')
+    }
   }
 
   const openDeleteConfirm = (id: string) => {
@@ -295,12 +405,12 @@ export default function ZoomMeetingPage() {
                   </DialogTrigger>
                   <DialogContent className="max-w-3xl w-[90vw] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Create New Meeting</DialogTitle>
+                      <DialogTitle>{editingId ? 'Edit Meeting' : 'Create New Meeting'}</DialogTitle>
                       <DialogDescription>
-                        Create a new Zoom meeting. Fill in the required information.
+                        {editingId ? 'Update the Zoom meeting details.' : 'Create a new Zoom meeting. Fill in the required information.'}
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleCreateSubmit}>
+                    <form onSubmit={handleSubmit}>
                       <div className="grid gap-6 py-6">
                         <div className="space-y-2 sm:col-span-2">
                           <Label htmlFor="title">
@@ -320,28 +430,27 @@ export default function ZoomMeetingPage() {
                           <div className="space-y-2">
                             <Label htmlFor="project_id">Project</Label>
                             <Select
-                              value={formData.project_id}
+                              value={formData.project_id || '__none__'}
                               onValueChange={(value) => {
-                                setFormData({ ...formData, project_id: value })
-                                setSelectedProject(value)
+                                const v = value === '__none__' ? '' : value
+                                setFormData({ ...formData, project_id: v })
+                                setSelectedProject(v)
                               }}
                             >
                               <SelectTrigger id="project_id" className="bg-white text-foreground border border-input">
                                 <SelectValue placeholder="Select Project" />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="__none__">None</SelectItem>
                                 {projects.map((project) => (
-                                  <SelectItem
-                                    key={project}
-                                    value={project.toLowerCase().replace(' ', '_')}
-                                  >
-                                    {project}
+                                  <SelectItem key={project.id} value={project.id}>
+                                    {project.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Create project here. <span className="font-medium text-primary cursor-pointer">Create project</span>
+                              Optional. Link meeting to a project.
                             </p>
                           </div>
                           <div className="space-y-2">
@@ -349,17 +458,21 @@ export default function ZoomMeetingPage() {
                               Users <span className="text-red-500">*</span>
                             </Label>
                             <Select
-                              value={formData.user_id.join(',')}
+                              value={formData.user_id[0] ?? '__placeholder__'}
                               onValueChange={(value) => {
-                                const users = value ? value.split(',') : []
-                                setFormData({ ...formData, user_id: users })
+                                if (value === '__placeholder__') {
+                                  setFormData({ ...formData, user_id: [] })
+                                } else {
+                                  setFormData({ ...formData, user_id: [value] })
+                                }
                               }}
                             >
                               <SelectTrigger id="user_id" className="bg-white text-foreground border border-input">
                                 <SelectValue placeholder="Select User" />
                               </SelectTrigger>
                               <SelectContent>
-                                {mockUsers.map((user) => (
+                                <SelectItem value="__placeholder__">Select user</SelectItem>
+                                {users.map((user) => (
                                   <SelectItem key={user.id} value={user.id}>
                                     {user.name}
                                   </SelectItem>
@@ -367,7 +480,7 @@ export default function ZoomMeetingPage() {
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Create user here. <span className="font-medium text-primary cursor-pointer">Create user</span>
+                              At least one participant required.
                             </p>
                           </div>
                           <div className="space-y-2 sm:col-span-2">
@@ -487,7 +600,9 @@ export default function ZoomMeetingPage() {
                         >
                           Cancel
                         </Button>
-                        <Button type="submit" variant="blue" className="shadow-none bg-blue-500 hover:bg-blue-600 text-white">Create</Button>
+                        <Button type="submit" variant="blue" className="shadow-none bg-blue-500 hover:bg-blue-600 text-white" disabled={submitLoading}>
+                          {submitLoading ? 'Saving...' : editingId ? 'Update' : 'Create'}
+                        </Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
@@ -529,7 +644,19 @@ export default function ZoomMeetingPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredMeetings.map((meeting) => (
+                        {loading ? (
+                          Array.from({ length: 3 }).map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell colSpan={8} className="h-12 animate-pulse bg-muted/50" />
+                            </TableRow>
+                          ))
+                        ) : filteredMeetings.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                              No meetings found.
+                            </TableCell>
+                          </TableRow>
+                        ) : filteredMeetings.map((meeting) => (
                           <TableRow key={meeting.id}>
                             <TableCell className="font-medium">{meeting.title}</TableCell>
                             <TableCell>{meeting.project || '-'}</TableCell>
@@ -593,14 +720,24 @@ export default function ZoomMeetingPage() {
                             </TableCell>
                             <TableCell>{getStatusBadge(meeting)}</TableCell>
                             <TableCell className="text-end">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="shadow-none h-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200/60"
-                                onClick={() => openDeleteConfirm(meeting.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-8"
+                                  onClick={() => openEdit(meeting)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200/60"
+                                  onClick={() => openDeleteConfirm(meeting.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}

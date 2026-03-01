@@ -9,15 +9,15 @@ const LeaveFilters = dynamic(() => import('./LeaveFilters'), { ssr: false });
 const LeaveTable = dynamic(() => import('./LeaveTable'), { ssr: false });
 
 function LeaveTabComponent() {
-  const { filters, setFilters, data, summary } = useLeaveData();
+  const { filters, setFilters, data, summary, filterOptions, loading } = useLeaveData();
 
   const handleReset = () => {
     setFilters({
       type: 'monthly',
       month: new Date().toISOString().slice(0, 7),
       year: new Date().getFullYear().toString(),
-      branchId: '',
-      departmentId: '',
+      branchId: 'all',
+      departmentId: 'all',
     });
   };
 
@@ -29,6 +29,7 @@ function LeaveTabComponent() {
     <div className="flex flex-col gap-4">
       <LeaveFilters
         filters={filters}
+        filterOptions={filterOptions}
         onFilterChange={setFilters}
         onReset={handleReset}
         onExport={handleExport}
@@ -66,7 +67,11 @@ function LeaveTabComponent() {
         </div>
       </div>
 
-      <LeaveTable data={data} />
+      {loading ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">Loading leave data...</div>
+      ) : (
+        <LeaveTable data={data} />
+      )}
     </div>
   );
 }

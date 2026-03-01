@@ -11,21 +11,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { useTranslations } from 'next-intl'
-
-const incomeExpenseData = [
-  { month: "January", income: 8500000, expense: 6400000 },
-  { month: "February", income: 9200000, expense: 6800000 },
-  { month: "March", income: 7800000, expense: 7200000 },
-  { month: "April", income: 10500000, expense: 5800000 },
-  { month: "May", income: 8900000, expense: 6500000 },
-  { month: "June", income: 11000000, expense: 7800000 },
-  { month: "July", income: 9800000, expense: 8200000 },
-  { month: "August", income: 8600000, expense: 6800000 },
-  { month: "September", income: 11500000, expense: 7300000 },
-  { month: "October", income: 10500000, expense: 8500000 },
-  { month: "November", income: 9200000, expense: 7800000 },
-  { month: "December", income: 9800000, expense: 8200000 }
-]
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const chartConfig = {
   income: {
@@ -40,7 +27,38 @@ const chartConfig = {
 
 export function IncomeExpenseChart() {
   const t = useTranslations('accountDashboard.incomeExpense')
-  
+  const { data, loading } = useAccountDashboard()
+  const chartData = data.incomeExpenseChart.length ? data.incomeExpenseChart : [
+    { month: "January", income: 0, expense: 0 },
+    { month: "February", income: 0, expense: 0 },
+    { month: "March", income: 0, expense: 0 },
+    { month: "April", income: 0, expense: 0 },
+    { month: "May", income: 0, expense: 0 },
+    { month: "June", income: 0, expense: 0 },
+    { month: "July", income: 0, expense: 0 },
+    { month: "August", income: 0, expense: 0 },
+    { month: "September", income: 0, expense: 0 },
+    { month: "October", income: 0, expense: 0 },
+    { month: "November", income: 0, expense: 0 },
+    { month: "December", income: 0, expense: 0 },
+  ]
+
+  if (loading) {
+    return (
+      <Card className="border-gray-200 dark:border-gray-800">
+        <CardHeader className="pb-2 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 pb-1 pt-0">
+          <Skeleton className="h-[140px] w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-gray-200 dark:border-gray-800">
       <CardHeader className="pb-2 px-3 py-2">
@@ -61,7 +79,7 @@ export function IncomeExpenseChart() {
       </CardHeader>
       <CardContent className="px-2 pb-1 pt-0">
         <ChartContainer config={chartConfig} className="h-[140px] w-full -ml-6">
-          <BarChart accessibilityLayer data={incomeExpenseData}>
+          <BarChart accessibilityLayer data={chartData}>
             <CartesianGrid vertical={true} />
             <XAxis
               dataKey="month"

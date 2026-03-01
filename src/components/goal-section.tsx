@@ -2,55 +2,44 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { useTranslations } from 'next-intl'
 import { Target, TrendingUp } from 'lucide-react'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Goal {
   id: number
   name: string
   type: 'bill' | 'invoice' | 'payment' | 'revenue'
-  duration: {
-    start: string
-    end: string
-  }
+  duration: { start: string; end: string }
   current: number
   target: number
   progress: number
 }
 
-const mockGoals: Goal[] = [
-  {
-    id: 1,
-    name: 'Q4 Revenue Target',
-    type: 'revenue',
-    duration: { start: '01 Oct, 2025', end: '31 Dec, 2025' },
-    current: 750000000,
-    target: 1000000000,
-    progress: 75,
-  },
-  {
-    id: 2,
-    name: 'Invoice Collection Goal',
-    type: 'invoice',
-    duration: { start: '01 Nov, 2025', end: '30 Nov, 2025' },
-    current: 320000000,
-    target: 400000000,
-    progress: 80,
-  },
-  {
-    id: 3,
-    name: 'Bill Payment Target',
-    type: 'bill',
-    duration: { start: '01 Nov, 2025', end: '15 Nov, 2025' },
-    current: 180000000,
-    target: 250000000,
-    progress: 72,
-  },
-]
-
 export function GoalSection() {
   const t = useTranslations('accountDashboard.goal')
+  const { data, loading } = useAccountDashboard()
+  const goals: Goal[] = data.goals
+
+  if (loading) {
+    return (
+      <Card className="py-2">
+        <CardHeader className="px-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+        </CardHeader>
+        <CardContent className="px-3 py-2">
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -90,7 +79,10 @@ export function GoalSection() {
       </CardHeader>
       <CardContent className="px-3 py-2">
         <div className="space-y-4">
-          {mockGoals.map((goal, index) => (
+          {goals.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">{t('noGoals')}</p>
+          ) : (
+          goals.map((goal, index) => (
             <div key={goal.id}>
               {index > 0 && <div className="border-t -mx-3 mb-4"></div>}
               <div className="space-y-3">
@@ -148,7 +140,7 @@ export function GoalSection() {
                 </div>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </CardContent>
     </Card>

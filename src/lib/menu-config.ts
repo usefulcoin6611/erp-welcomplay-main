@@ -26,6 +26,7 @@ import {
   IconTool,
   IconPackage,
   IconMessage,
+  IconLayout,
   IconClockHour4,
 } from "@tabler/icons-react"
 import { UserRole } from "@/contexts/auth-context"
@@ -38,6 +39,8 @@ export interface MenuItem {
   items?: MenuItem[]
   /** Permission strings (from AccessProfile.permissions / REFERENCE_PERMISSIONS). User must have at least one to see this item when filtering by access profile. */
   permissions?: string[]
+  /** Optional badge count (e.g. unread messages). Rendered in sidebar when > 0. */
+  badge?: number
 }
 
 // Define which roles can access each menu item
@@ -104,7 +107,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
           {
             title: "Email Template",
             url: "/email_template",
-            icon: IconMessage,
+            icon: IconLayout,
           },
           
           // ========== LANDING PAGE ==========
@@ -289,9 +292,14 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             icon: IconHeadphones,
           },
           {
+            title: "Messenger",
+            url: "/messenger",
+            icon: IconMessage,
+          },
+          {
             title: "Templates",
             url: "#",
-            icon: IconMessage,
+            icon: IconLayout,
             items: [
               { title: "Notification Template", url: "/notifications" },
               { title: "Email Template", url: "/email_template" },
@@ -528,7 +536,7 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
           {
             title: "Email Template",
             url: "/email_template",
-            icon: IconMessage,
+            icon: IconLayout,
             permissions: ["manage company settings"],
           },
         ],

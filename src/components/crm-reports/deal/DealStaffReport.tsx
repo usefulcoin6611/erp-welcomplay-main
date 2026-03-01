@@ -54,55 +54,40 @@ export function DealStaffReport() {
     if (!validateDates()) return
 
     setIsGenerating(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    // Simulate generating staff report
-    const staffChartOptions: any = {
-      chart: {
-        type: 'bar',
-        height: 280,
-        toolbar: { show: false },
-        dropShadow: {
-          enabled: true,
-          color: '#000',
-          top: 18,
-          left: 7,
-          blur: 10,
-          opacity: 0.2
-        }
-      },
-      plotOptions: {
-        bar: {
-          borderRadius: 4,
-          horizontal: false,
-          columnWidth: '60%',
-        }
-      },
-      dataLabels: { enabled: false },
-      stroke: {
-        width: 2,
-        curve: 'smooth'
-      },
-      xaxis: {
-        categories: ['Budi Santoso', 'Dewi Lestari', 'Rina Mulyani', 'Agus Setiawan', 'Sari Wulandari']
-      },
-      colors: ['#10B981'],
-      grid: { strokeDashArray: 4 },
-      legend: { show: false }
+    setChartData(null)
+    try {
+      const params = new URLSearchParams({ type: 'deal', fromDate, toDate })
+      const res = await fetch(`/api/crm/reports?${params}`)
+      const json = await res.json()
+      if (!json.success || !json.data?.staff) {
+        setIsGenerating(false)
+        return
+      }
+      const { categories, series } = json.data.staff
+      const staffChartOptions: Record<string, unknown> = {
+        chart: {
+          type: 'bar',
+          height: 280,
+          toolbar: { show: false },
+          dropShadow: { enabled: true, color: '#000', top: 18, left: 7, blur: 10, opacity: 0.2 }
+        },
+        plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '60%' } },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, curve: 'smooth' },
+        xaxis: { categories: categories.length ? categories : ['No data'] },
+        colors: ['#10B981'],
+        grid: { strokeDashArray: 4 },
+        legend: { show: false }
+      }
+      setChartData({
+        options: staffChartOptions,
+        series: [{ name: 'Deals', data: series }]
+      })
+    } catch {
+      setChartData(null)
+    } finally {
+      setIsGenerating(false)
     }
-
-    const staffChartSeries = [{
-      name: 'Deals',
-      data: [28, 32, 38, 25, 30]
-    }]
-
-    setChartData({
-      options: staffChartOptions,
-      series: staffChartSeries
-    })
-    
-    setIsGenerating(false)
   }
 
   return (
@@ -162,7 +147,7 @@ export function DealStaffReport() {
             <Button 
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="bg-blue-500 hover:bg-blue-600 text-white w-full h-10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full h-10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>

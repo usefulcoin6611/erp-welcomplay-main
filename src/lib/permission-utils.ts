@@ -117,6 +117,7 @@ export function hasRouteAccess(
       '/settings',
       '/zoom',
       '/notifications',
+      '/messenger',
       '/email_template',
       '/leads',
       '/deals',

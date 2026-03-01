@@ -55,7 +55,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { IconArrowLeft, IconPencil, IconTrash, IconPlus } from '@tabler/icons-react'
+import { IconArrowLeft, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { toast } from "sonner"
 
 type FormField = {
@@ -243,15 +243,32 @@ export function FormDetailClient({ initialForm }: FormDetailClientProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-3 shadow-none bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-100"
+                    className="h-8 px-3 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                    asChild
                   >
-                    Edit Form
+                    <Link href={`/form_builder/${form.id}/edit`}>
+                      <IconPencil className="mr-1 h-4 w-4" />
+                      Edit Form
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 shadow-none bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200"
+                    asChild
+                  >
+                    <Link href={`/form_builder/${form.id}/response`}>
+                      View Responses
+                    </Link>
                   </Button>
                   <Button
                     size="sm"
                     className="h-8 px-3 bg-blue-500 hover:bg-blue-600 shadow-none"
+                    asChild
                   >
-                    Preview
+                    <Link href={`/form_builder/${form.id}/preview`} target="_blank" rel="noopener noreferrer">
+                      Preview
+                    </Link>
                   </Button>
                   <Button
                     asChild

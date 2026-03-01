@@ -83,6 +83,13 @@ type DealUser = {
   avatar: string
 }
 
+type CustomerOption = {
+  id: string
+  name: string
+  contact?: string | null
+  billingPhone?: string | null
+}
+
 type Deal = {
   id: string
   name: string
@@ -103,6 +110,8 @@ type Deal = {
   labels: DealLabel[]
   users: DealUser[]
 }
+
+const CLIENT_PLACEHOLDER_VALUE = "__none__"
 
 const getInitials = (name: string) => {
   return name
@@ -190,7 +199,29 @@ export default function DealsPage() {
   const [newClient, setNewClient] = useState("")
   const [newPrice, setNewPrice] = useState("")
   const [newPhone, setNewPhone] = useState("")
+  const [customers, setCustomers] = useState<CustomerOption[]>([])
+  const [selectedClientId, setSelectedClientId] = useState<string>(CLIENT_PLACEHOLDER_VALUE)
   const [isLoading, setIsLoading] = useState(false)
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
+
+  const loadCustomers = async () => {
+    try {
+      const res = await fetch("/api/customers", { cache: "no-store" })
+      const json = await res.json().catch(() => null)
+      if (json?.success && Array.isArray(json.data)) {
+        setCustomers(
+          json.data.map((c: { id: string; name: string; contact?: string | null; billingPhone?: string | null }) => ({
+            id: c.id,
+            name: c.name,
+            contact: c.contact ?? null,
+            billingPhone: c.billingPhone ?? null,
+          }))
+        )
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   const loadPipelines = async () => {
     try {
@@ -270,6 +301,7 @@ export default function DealsPage() {
   useEffect(() => {
     loadPipelines()
     loadDeals()
+    loadCustomers()
   }, [])
 
   const handleSaveDeal = async () => {
@@ -277,46 +309,78 @@ export default function DealsPage() {
       toast.error("Nama deal wajib diisi")
       return
     }
+    const payload = {
+      name: newDealName,
+      client: newClient || null,
+      phone: newPhone || null,
+      price: newPrice || null,
+      pipelineId: selectedPipeline || null,
+    }
     try {
-      const res = await fetch("/api/deals", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: newDealName,
-          client: newClient || null,
-          phone: newPhone || null,
-          price: newPrice || null,
-          pipelineId: selectedPipeline || null,
-        }),
+      const isEdit = Boolean(editingDeal)
+      const url = isEdit ? `/api/deals/${editingDeal!.id}` : "/api/deals"
+      const res = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       })
 
       const json = await res.json().catch(() => null)
 
       if (!res.ok || !json?.success) {
-        toast.error(json?.message || "Gagal menyimpan deal")
+        toast.error(json?.message || (isEdit ? "Gagal mengubah deal" : "Gagal menyimpan deal"))
         return
       }
 
-      const created = json.data as Deal
-      setDeals((prev) => [created, ...prev])
+      const data = json.data as Deal
+      if (isEdit) {
+        setDeals((prev) => prev.map((d) => (d.id === data.id ? data : d)))
+        toast.success("Deal berhasil diubah")
+      } else {
+        setDeals((prev) => [data, ...prev])
+        toast.success("Deal berhasil dibuat")
+      }
       setIsDialogOpen(false)
-      setNewDealName("")
-      setNewClient("")
-      setNewPrice("")
-      setNewPhone("")
-      toast.success("Deal berhasil dibuat")
+      resetForm()
     } catch {
       toast.error("Terjadi kesalahan sistem")
     }
   }
 
+  const handleClientSelect = (value: string) => {
+    setSelectedClientId(value)
+    if (value === "manual" || value === CLIENT_PLACEHOLDER_VALUE) {
+      setNewClient("")
+    } else {
+      const customer = customers.find((c) => c.id === value)
+      setNewClient(customer?.name ?? "")
+    }
+  }
+
+  const openEditDialog = (deal: Deal) => {
+    setEditingDeal(deal)
+    setNewDealName(deal.name)
+    setNewClient(deal.client ?? "")
+    setNewPhone(deal.phone ?? "")
+    setNewPrice(String(deal.price ?? ""))
+    const match = customers.find((c) => c.name === deal.client)
+    if (match) {
+      setSelectedClientId(match.id)
+      setNewClient(match.name)
+    } else {
+      setSelectedClientId(deal.client ? "manual" : CLIENT_PLACEHOLDER_VALUE)
+      setNewClient(deal.client ?? "")
+    }
+    setIsDialogOpen(true)
+  }
+
   const resetForm = () => {
+      setEditingDeal(null)
       setNewDealName("")
       setNewClient("")
       setNewPrice("")
       setNewPhone("")
+      setSelectedClientId(CLIENT_PLACEHOLDER_VALUE)
   }
 
   return (
@@ -408,16 +472,21 @@ export default function DealsPage() {
                       if (!open) resetForm()
                   }}>
                     <DialogTrigger asChild>
-                      <Button size="sm" variant="blue" className="shadow-none h-7 px-4">
+                      <Button
+                        size="sm"
+                        variant="blue"
+                        className="shadow-none h-7 px-4"
+                        onClick={() => { setEditingDeal(null); resetForm(); }}
+                      >
                         <IconPlus className="mr-2 h-3 w-3" />
                         Create Deal
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[560px]">
                     <DialogHeader>
-                      <DialogTitle>Create Deal</DialogTitle>
+                      <DialogTitle>{editingDeal ? "Edit Deal" : "Create Deal"}</DialogTitle>
                       <DialogDescription>
-                        Masukkan informasi deal baru seperti di modul Deals ERP.
+                        {editingDeal ? "Ubah informasi deal." : "Masukkan informasi deal baru seperti di modul Deals ERP."}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -432,13 +501,36 @@ export default function DealsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                          <Label htmlFor="client">Client Name</Label>
-                          <Input
-                            id="client"
-                            placeholder="PT Maju Jaya"
-                            value={newClient}
-                            onChange={(e) => setNewClient(e.target.value)}
-                          />
+                          <Label htmlFor="client">Client</Label>
+                          <Select
+                            value={selectedClientId}
+                            onValueChange={handleClientSelect}
+                          >
+                            <SelectTrigger id="client" className="w-full">
+                              <SelectValue placeholder="Pilih client..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={CLIENT_PLACEHOLDER_VALUE}>
+                                — Pilih client —
+                              </SelectItem>
+                              {customers.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="manual">
+                                Tulis manual...
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {selectedClientId === "manual" && (
+                            <Input
+                              placeholder="Nama client (manual)"
+                              value={newClient}
+                              onChange={(e) => setNewClient(e.target.value)}
+                              className="mt-1"
+                            />
+                          )}
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="phone">Phone</Label>
@@ -477,7 +569,7 @@ export default function DealsPage() {
                         Cancel
                       </Button>
                       <Button variant="blue" onClick={handleSaveDeal}>
-                        Create Deal
+                        {editingDeal ? "Update Deal" : "Create Deal"}
                       </Button>
                     </DialogFooter>
                     </DialogContent>
@@ -536,7 +628,9 @@ export default function DealsPage() {
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => openEditDialog(deal)}>
+                                            Edit
+                                          </DropdownMenuItem>
                                           <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                       </DropdownMenu>

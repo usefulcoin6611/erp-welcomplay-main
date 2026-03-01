@@ -1,9 +1,6 @@
-import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { AccountStatsCards } from '@/components/account-stats-cards'
 import { IncomeVsExpenseCard } from '@/components/income-vs-expense-card'
 import { AccountBalanceTable } from '@/components/account-balance-table'
@@ -19,9 +16,9 @@ import { InvoicesStatistics } from '@/components/invoices-statistics'
 import { RecentBillsSection } from '@/components/recent-bills-section'
 import { BillsStatistics } from '@/components/bills-statistics'
 import { GoalSection } from '@/components/goal-section'
+import { AccountDashboardProvider } from '@/contexts/account-dashboard-context'
 
 export default function AccountDashboardPage() {
-
   return (
     <SidebarProvider
       style={
@@ -34,20 +31,9 @@ export default function AccountDashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
+        <AccountDashboardProvider>
         <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-3 p-3">
-            {/* Quick link to Accounting Reports */}
-            <Card className="border-border/60 bg-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium">Accounting</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/accounting/reports">Reports</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
             {/* Top Section - Statistics Cards and Income Vs Expense Side by Side */}
             <div className="grid gap-3 xl:grid-cols-3">
               {/* Left Side - Statistics Cards */}
@@ -110,6 +96,7 @@ export default function AccountDashboardPage() {
             <GoalSection />
           </div>
         </div>
+        </AccountDashboardProvider>
       </SidebarInset>
     </SidebarProvider>
   )

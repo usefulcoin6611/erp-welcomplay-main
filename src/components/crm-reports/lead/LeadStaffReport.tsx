@@ -54,56 +54,40 @@ export function LeadStaffReport() {
     if (!validateDates()) return
 
     setIsGenerating(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Generate staff report
-    const staffChartOptions: any = {
-      chart: {
-        type: 'bar',
-        height: 280,
-        toolbar: { show: false },
-        dropShadow: {
-          enabled: true,
-          color: '#000',
-          top: 18,
-          left: 7,
-          blur: 10,
-          opacity: 0.2
-        }
-      },
-      plotOptions: {
-        bar: {
-          borderRadius: 4,
-          horizontal: false,
-          columnWidth: '60%',
-        }
-      },
-      dataLabels: { enabled: false },
-      stroke: {
-        width: 2,
-        curve: 'smooth'
-      },
-      xaxis: {
-        categories: ['Budi Santoso', 'Dewi Lestari', 'Rina Mulyani', 'Agus Setiawan', 'Sari Wulandari']
-      },
-      colors: ['#3B82F6'],
-      grid: { strokeDashArray: 4 },
-      legend: { show: false }
+    setChartData(null)
+    try {
+      const params = new URLSearchParams({ type: 'lead', fromDate, toDate })
+      const res = await fetch(`/api/crm/reports?${params}`)
+      const json = await res.json()
+      if (!json.success || !json.data?.staff) {
+        setIsGenerating(false)
+        return
+      }
+      const { categories, series } = json.data.staff
+      const staffChartOptions: Record<string, unknown> = {
+        chart: {
+          type: 'bar',
+          height: 280,
+          toolbar: { show: false },
+          dropShadow: { enabled: true, color: '#000', top: 18, left: 7, blur: 10, opacity: 0.2 }
+        },
+        plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '60%' } },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, curve: 'smooth' },
+        xaxis: { categories: categories.length ? categories : ['No data'] },
+        colors: ['#3B82F6'],
+        grid: { strokeDashArray: 4 },
+        legend: { show: false }
+      }
+      setChartData({
+        options: staffChartOptions,
+        series: [{ name: 'Leads', data: series }]
+      })
+    } catch {
+      setChartData(null)
+    } finally {
+      setIsGenerating(false)
     }
-
-    const staffChartSeries = [{
-      name: 'Leads',
-      data: [42, 38, 45, 35, 40]
-    }]
-
-    setChartData({
-      options: staffChartOptions,
-      series: staffChartSeries
-    })
-    
-    setIsGenerating(false)
   }
 
   return (

@@ -287,7 +287,7 @@ export default function ProjectReportPage() {
                 placeholder="Search projects..."
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9 h-9 w-[250px] bg-gray-50 border-gray-200 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
+                className="pl-9 h-9 w-[250px] bg-gray-50 border-0 shadow-none transition-colors hover:bg-gray-100 focus-visible:border-0 focus-visible:ring-0"
               />
             </div>
           </div>
