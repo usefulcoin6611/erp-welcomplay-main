@@ -54,7 +54,7 @@ export async function GET(
     const hasMore = messages.length > limit
     const list = hasMore ? messages.slice(0, limit) : messages
 
-    const data = list.map((m) => ({
+    const data = list.map((m: any) => ({
       id: m.id,
       content: m.content,
       createdAt: m.createdAt.toISOString(),
@@ -65,7 +65,7 @@ export async function GET(
         email: m.sender.email,
         image: m.sender.image ?? null,
       },
-      attachments: m.attachments.map((a) => ({
+      attachments: m.attachments.map((a: any) => ({
         id: a.id,
         fileUrl: a.fileUrl,
         fileName: a.fileName,
@@ -186,16 +186,38 @@ export async function POST(
       }),
     ])
 
-    // Write attachment files in parallel (only when there are attachments)
+    const { put } = await import('@vercel/blob')
+
+    // Write attachment files in parallel to Vercel Blob
     if (attachmentMeta.length > 0) {
-      const { writeFile, mkdir } = await import('fs/promises')
-      const path = await import('path')
-      const uploadDir = path.join(process.cwd(), UPLOAD_DIR)
-      await mkdir(uploadDir, { recursive: true })
       await Promise.all(
-        attachmentMeta.map((meta) => {
-          const filepath = path.join(uploadDir, meta.filename)
-          return writeFile(filepath, meta.buffer)
+        attachmentMeta.map(async (meta) => {
+          const blobPath = `messenger/${meta.filename}`
+
+          try {
+            const blob = await put(blobPath, meta.buffer, {
+              access: 'public',
+              contentType: meta.mimeType || 'application/octet-stream',
+            })
+            // Update the message attachment with the actual blob URL
+            await prisma.messageAttachment.updateMany({
+              where: {
+                messageId: message.id,
+                fileName: meta.fileName
+              },
+              data: {
+                fileUrl: blob.url
+              }
+            })
+
+            // Also update the object we return to the client
+            const attachedClientItem = message.attachments.find((a: any) => a.fileName === meta.fileName);
+            if (attachedClientItem) {
+              attachedClientItem.fileUrl = blob.url;
+            }
+          } catch (error) {
+            console.error('Failed to upload attachment to blob:', error)
+          }
         })
       )
     }
@@ -213,7 +235,7 @@ export async function POST(
           email: message.sender.email,
           image: message.sender.image ?? null,
         },
-        attachments: message.attachments.map((a) => ({
+        attachments: message.attachments.map((a: any) => ({
           id: a.id,
           fileUrl: a.fileUrl,
           fileName: a.fileName,
