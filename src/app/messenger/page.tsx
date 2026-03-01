@@ -175,7 +175,7 @@ export default function MessengerPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Poll for seen status and new messages when conversation is open
+  // Poll for new messages when conversation is open (full list, less frequent)
   useEffect(() => {
     if (!selectedConversation) return
     const interval = setInterval(() => {
@@ -189,6 +189,24 @@ export default function MessengerPage() {
         })
         .catch(() => {})
     }, 12000)
+    return () => clearInterval(interval)
+  }, [selectedConversation?.id])
+
+  // Poll for "seen" status frequently so "Seen" indicator updates without page refresh
+  useEffect(() => {
+    if (!selectedConversation) return
+    const pollSeen = () => {
+      fetch(`/api/messenger/conversations/${selectedConversation.id}/seen`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (json?.success) {
+            setOtherLastSeenAt(json.otherLastSeenAt ?? null)
+          }
+        })
+        .catch(() => {})
+    }
+    pollSeen()
+    const interval = setInterval(pollSeen, 2500)
     return () => clearInterval(interval)
   }, [selectedConversation?.id])
 
@@ -354,7 +372,8 @@ export default function MessengerPage() {
         setMessages((prev) =>
           prev.map((m) => (m.id === tempId ? msg : m))
         )
-        fetchConversations()
+        // Refresh conversation list in background so send flow feels instant
+        queueMicrotask(() => fetchConversations())
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== tempId))
         toast.error(json.message ?? 'Failed to send')

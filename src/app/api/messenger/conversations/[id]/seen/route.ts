@@ -4,6 +4,46 @@ import { auth } from '@/lib/auth-server'
 import { headers } from 'next/headers'
 
 /**
+ * GET /api/messenger/conversations/[id]/seen
+ * Returns the other participant's lastSeenAt so the client can show "Seen" without refetching all messages.
+ */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) {
+      return NextResponse.json({ success: false }, { status: 401 })
+    }
+
+    const currentUserId = (session.user as { id?: string }).id
+    if (!currentUserId) {
+      return NextResponse.json({ success: false }, { status: 401 })
+    }
+
+    const { id: conversationId } = await params
+
+    const otherParticipant = await prisma.conversationParticipant.findFirst({
+      where: {
+        conversationId,
+        userId: { not: currentUserId },
+      },
+      select: { lastSeenAt: true, lastSeenMessageId: true },
+    })
+
+    return NextResponse.json({
+      success: true,
+      otherLastSeenAt: otherParticipant?.lastSeenAt?.toISOString() ?? null,
+      otherLastSeenMessageId: otherParticipant?.lastSeenMessageId ?? null,
+    })
+  } catch (error) {
+    console.error('Messenger GET seen API error:', error)
+    return NextResponse.json({ success: false }, { status: 500 })
+  }
+}
+
+/**
  * PATCH /api/messenger/conversations/[id]/seen
  * Mark conversation as seen up to a message. Body: { lastSeenMessageId: string }
  */

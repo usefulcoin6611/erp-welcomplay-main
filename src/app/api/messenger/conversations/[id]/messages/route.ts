@@ -158,11 +158,6 @@ export async function POST(
       return NextResponse.json({ success: false, message: 'Conversation not found' }, { status: 404 })
     }
 
-    const { writeFile, mkdir } = await import('fs/promises')
-    const path = await import('path')
-    const uploadDir = path.join(process.cwd(), UPLOAD_DIR)
-    await mkdir(uploadDir, { recursive: true })
-
     const ts = Date.now()
     const attachmentMeta = attachmentFiles.map((f, i) => {
       const safeName = f.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')
@@ -191,12 +186,20 @@ export async function POST(
       }),
     ])
 
-    for (const meta of attachmentMeta) {
-      const filepath = path.join(uploadDir, meta.filename)
-      await writeFile(filepath, meta.buffer)
+    // Write attachment files in parallel (only when there are attachments)
+    if (attachmentMeta.length > 0) {
+      const { writeFile, mkdir } = await import('fs/promises')
+      const path = await import('path')
+      const uploadDir = path.join(process.cwd(), UPLOAD_DIR)
+      await mkdir(uploadDir, { recursive: true })
+      await Promise.all(
+        attachmentMeta.map((meta) => {
+          const filepath = path.join(uploadDir, meta.filename)
+          return writeFile(filepath, meta.buffer)
+        })
+      )
     }
 
-    // Re-fetch message with attachments (in case we created attachments in same tx - we did, so message.attachments is already populated)
     return NextResponse.json({
       success: true,
       data: {
