@@ -1,37 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const SETTING_KEY = "subscription_payment_settings";
+const SETTING_KEY = "system_email_notification_settings";
 
-type SubscriptionPaymentSettings = {
-  currency: string;
-  currency_symbol: string;
-  manually_enabled: boolean;
-  bank_transfer_enabled: boolean;
-  bank_details: string;
-  stripe_enabled: boolean;
-  stripe_key: string;
-  stripe_secret: string;
-  paypal_enabled: boolean;
-  paypal_mode: string;
-  paypal_client_id: string;
-  paypal_secret: string;
+type EmailNotificationSettings = {
+  notify_new_user: boolean;
+  notify_new_order: boolean;
+  notify_plan_expired: boolean;
+  notify_payment: boolean;
 };
 
-function getDefaultSettings(): SubscriptionPaymentSettings {
+function getDefaultSettings(): EmailNotificationSettings {
   return {
-    currency: "IDR",
-    currency_symbol: "Rp",
-    manually_enabled: false,
-    bank_transfer_enabled: true,
-    bank_details: "",
-    stripe_enabled: false,
-    stripe_key: "",
-    stripe_secret: "",
-    paypal_enabled: false,
-    paypal_mode: "sandbox",
-    paypal_client_id: "",
-    paypal_secret: "",
+    notify_new_user: true,
+    notify_new_order: true,
+    notify_plan_expired: true,
+    notify_payment: true,
   };
 }
 
@@ -48,7 +32,7 @@ export async function GET() {
       });
     }
 
-    let parsed: SubscriptionPaymentSettings | null = null;
+    let parsed: EmailNotificationSettings | null = null;
 
     try {
       parsed = JSON.parse(existing.value);
@@ -60,11 +44,11 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error loading subscription payment settings:", error);
+    console.error("Error loading email notification settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to load subscription payment settings",
+        message: "Failed to load email notification settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
@@ -74,10 +58,26 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<SubscriptionPaymentSettings>;
+    const body = (await request.json()) as Partial<EmailNotificationSettings>;
     const current = getDefaultSettings();
-    const merged: SubscriptionPaymentSettings = {
+
+    // Fetch existing settings to preserve missing values
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    let existingParsed = {} as EmailNotificationSettings;
+    if (existing) {
+      try {
+        existingParsed = JSON.parse(existing.value);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const merged: EmailNotificationSettings = {
       ...current,
+      ...existingParsed,
       ...body,
     };
 
@@ -91,11 +91,11 @@ export async function PUT(request: NextRequest) {
     });
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
-    console.error("Error saving subscription payment settings:", error);
+    console.error("Error saving email notification settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to save subscription payment settings",
+        message: "Failed to save email notification settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },

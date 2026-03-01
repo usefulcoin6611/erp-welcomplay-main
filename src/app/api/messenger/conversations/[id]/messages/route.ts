@@ -159,11 +159,47 @@ export async function POST(
     }
 
     const ts = Date.now()
-    const attachmentMeta = attachmentFiles.map((f, i) => {
-      const safeName = f.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')
-      const filename = `${ts}_${i}_${safeName}`
-      return { fileUrl: `/uploads/messenger/${filename}`, fileName: f.name, mimeType: f.mimeType, fileSize: f.size, filename, buffer: f.buffer }
-    })
+    const { put } = await import('@vercel/blob')
+
+    // Upload files to Vercel Blob first
+    const attachmentMeta = await Promise.all(
+      attachmentFiles.map(async (f, i) => {
+        const safeName = f.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')
+        const filename = `${ts}_${i}_${safeName}`
+        const blobPath = `messenger/${filename}`
+        let fileUrl = '/placeholder.svg'
+
+        try {
+          if (!process.env.BLOB_READ_WRITE_TOKEN) {
+            throw new Error("Missing BLOB_READ_WRITE_TOKEN");
+          }
+          const blob = await put(blobPath, f.buffer, {
+            access: 'public',
+            contentType: f.mimeType || 'application/octet-stream',
+          })
+          fileUrl = blob.url
+        } catch (error) {
+          console.warn('Vercel Blob upload failed, falling back to local file system:', error instanceof Error ? error.message : error)
+
+          try {
+            const fs = await import('fs/promises')
+            const path = await import('path')
+
+            const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'messenger')
+            await fs.mkdir(uploadDir, { recursive: true }).catch(() => { })
+
+            const localFilePath = path.join(uploadDir, filename)
+            await fs.writeFile(localFilePath, f.buffer)
+
+            fileUrl = `/uploads/messenger/${filename}`
+          } catch (fsError) {
+            console.error('Local fallback also failed:', fsError)
+          }
+        }
+
+        return { fileUrl, fileName: f.name, mimeType: f.mimeType, fileSize: f.size }
+      })
+    )
 
     const [message] = await prisma.$transaction([
       prisma.message.create({
@@ -185,42 +221,6 @@ export async function POST(
         data: { updatedAt: new Date() },
       }),
     ])
-
-    const { put } = await import('@vercel/blob')
-
-    // Write attachment files in parallel to Vercel Blob
-    if (attachmentMeta.length > 0) {
-      await Promise.all(
-        attachmentMeta.map(async (meta) => {
-          const blobPath = `messenger/${meta.filename}`
-
-          try {
-            const blob = await put(blobPath, meta.buffer, {
-              access: 'public',
-              contentType: meta.mimeType || 'application/octet-stream',
-            })
-            // Update the message attachment with the actual blob URL
-            await prisma.messageAttachment.updateMany({
-              where: {
-                messageId: message.id,
-                fileName: meta.fileName
-              },
-              data: {
-                fileUrl: blob.url
-              }
-            })
-
-            // Also update the object we return to the client
-            const attachedClientItem = message.attachments.find((a: any) => a.fileName === meta.fileName);
-            if (attachedClientItem) {
-              attachedClientItem.fileUrl = blob.url;
-            }
-          } catch (error) {
-            console.error('Failed to upload attachment to blob:', error)
-          }
-        })
-      )
-    }
 
     return NextResponse.json({
       success: true,

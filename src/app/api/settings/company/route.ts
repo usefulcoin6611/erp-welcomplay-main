@@ -1,37 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const SETTING_KEY = "subscription_payment_settings";
+const SETTING_KEY = "system_company_settings";
 
-type SubscriptionPaymentSettings = {
-  currency: string;
-  currency_symbol: string;
-  manually_enabled: boolean;
-  bank_transfer_enabled: boolean;
-  bank_details: string;
-  stripe_enabled: boolean;
-  stripe_key: string;
-  stripe_secret: string;
-  paypal_enabled: boolean;
-  paypal_mode: string;
-  paypal_client_id: string;
-  paypal_secret: string;
+type CompanySettings = {
+  company_name: string;
+  company_address: string;
+  company_city: string;
+  company_state: string;
+  company_zipcode: string;
+  company_country: string;
+  company_telephone: string;
+  registration_number: string;
+  company_start_time: string;
+  company_end_time: string;
+  timezone: string;
 };
 
-function getDefaultSettings(): SubscriptionPaymentSettings {
+function getDefaultSettings(): CompanySettings {
   return {
-    currency: "IDR",
-    currency_symbol: "Rp",
-    manually_enabled: false,
-    bank_transfer_enabled: true,
-    bank_details: "",
-    stripe_enabled: false,
-    stripe_key: "",
-    stripe_secret: "",
-    paypal_enabled: false,
-    paypal_mode: "sandbox",
-    paypal_client_id: "",
-    paypal_secret: "",
+    company_name: "",
+    company_address: "",
+    company_city: "",
+    company_state: "",
+    company_zipcode: "",
+    company_country: "",
+    company_telephone: "",
+    registration_number: "",
+    company_start_time: "09:00",
+    company_end_time: "18:00",
+    timezone: "UTC",
   };
 }
 
@@ -48,7 +46,7 @@ export async function GET() {
       });
     }
 
-    let parsed: SubscriptionPaymentSettings | null = null;
+    let parsed: CompanySettings | null = null;
 
     try {
       parsed = JSON.parse(existing.value);
@@ -60,11 +58,11 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error loading subscription payment settings:", error);
+    console.error("Error loading company settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to load subscription payment settings",
+        message: "Failed to load company settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
@@ -74,10 +72,25 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<SubscriptionPaymentSettings>;
+    const body = (await request.json()) as Partial<CompanySettings>;
     const current = getDefaultSettings();
-    const merged: SubscriptionPaymentSettings = {
+
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    let existingParsed = {};
+    if (existing) {
+      try {
+        existingParsed = JSON.parse(existing.value);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const merged: CompanySettings = {
       ...current,
+      ...existingParsed,
       ...body,
     };
 
@@ -91,11 +104,11 @@ export async function PUT(request: NextRequest) {
     });
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
-    console.error("Error saving subscription payment settings:", error);
+    console.error("Error saving company settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to save subscription payment settings",
+        message: "Failed to save company settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },

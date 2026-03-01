@@ -1,37 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const SETTING_KEY = "subscription_payment_settings";
+const SETTING_KEY = "system_currency_settings";
 
-type SubscriptionPaymentSettings = {
-  currency: string;
+type CurrencySettings = {
+  currency_code: string;
   currency_symbol: string;
-  manually_enabled: boolean;
-  bank_transfer_enabled: boolean;
-  bank_details: string;
-  stripe_enabled: boolean;
-  stripe_key: string;
-  stripe_secret: string;
-  paypal_enabled: boolean;
-  paypal_mode: string;
-  paypal_client_id: string;
-  paypal_secret: string;
+  currency_symbol_position: string;
+  decimal_number: string;
 };
 
-function getDefaultSettings(): SubscriptionPaymentSettings {
+function getDefaultSettings(): CurrencySettings {
   return {
-    currency: "IDR",
-    currency_symbol: "Rp",
-    manually_enabled: false,
-    bank_transfer_enabled: true,
-    bank_details: "",
-    stripe_enabled: false,
-    stripe_key: "",
-    stripe_secret: "",
-    paypal_enabled: false,
-    paypal_mode: "sandbox",
-    paypal_client_id: "",
-    paypal_secret: "",
+    currency_code: "USD",
+    currency_symbol: "$",
+    currency_symbol_position: "pre",
+    decimal_number: "2",
   };
 }
 
@@ -48,7 +32,7 @@ export async function GET() {
       });
     }
 
-    let parsed: SubscriptionPaymentSettings | null = null;
+    let parsed: CurrencySettings | null = null;
 
     try {
       parsed = JSON.parse(existing.value);
@@ -60,11 +44,11 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error loading subscription payment settings:", error);
+    console.error("Error loading currency settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to load subscription payment settings",
+        message: "Failed to load currency settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
@@ -74,10 +58,25 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<SubscriptionPaymentSettings>;
+    const body = (await request.json()) as Partial<CurrencySettings>;
     const current = getDefaultSettings();
-    const merged: SubscriptionPaymentSettings = {
+
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    let existingParsed = {};
+    if (existing) {
+      try {
+        existingParsed = JSON.parse(existing.value);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const merged: CurrencySettings = {
       ...current,
+      ...existingParsed,
       ...body,
     };
 
@@ -91,11 +90,11 @@ export async function PUT(request: NextRequest) {
     });
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
-    console.error("Error saving subscription payment settings:", error);
+    console.error("Error saving currency settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to save subscription payment settings",
+        message: "Failed to save currency settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },

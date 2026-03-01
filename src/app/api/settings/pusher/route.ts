@@ -1,37 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const SETTING_KEY = "subscription_payment_settings";
+const SETTING_KEY = "system_pusher_settings";
 
-type SubscriptionPaymentSettings = {
-  currency: string;
-  currency_symbol: string;
-  manually_enabled: boolean;
-  bank_transfer_enabled: boolean;
-  bank_details: string;
-  stripe_enabled: boolean;
-  stripe_key: string;
-  stripe_secret: string;
-  paypal_enabled: boolean;
-  paypal_mode: string;
-  paypal_client_id: string;
-  paypal_secret: string;
+type PusherSettings = {
+  pusher_app_id: string;
+  pusher_app_key: string;
+  pusher_app_secret: string;
+  pusher_app_cluster: string;
 };
 
-function getDefaultSettings(): SubscriptionPaymentSettings {
+function getDefaultSettings(): PusherSettings {
   return {
-    currency: "IDR",
-    currency_symbol: "Rp",
-    manually_enabled: false,
-    bank_transfer_enabled: true,
-    bank_details: "",
-    stripe_enabled: false,
-    stripe_key: "",
-    stripe_secret: "",
-    paypal_enabled: false,
-    paypal_mode: "sandbox",
-    paypal_client_id: "",
-    paypal_secret: "",
+    pusher_app_id: "",
+    pusher_app_key: "",
+    pusher_app_secret: "",
+    pusher_app_cluster: "",
   };
 }
 
@@ -48,7 +32,7 @@ export async function GET() {
       });
     }
 
-    let parsed: SubscriptionPaymentSettings | null = null;
+    let parsed: PusherSettings | null = null;
 
     try {
       parsed = JSON.parse(existing.value);
@@ -60,11 +44,11 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error loading subscription payment settings:", error);
+    console.error("Error loading pusher settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to load subscription payment settings",
+        message: "Failed to load pusher settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
@@ -74,12 +58,33 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<SubscriptionPaymentSettings>;
+    const body = (await request.json()) as Partial<PusherSettings>;
     const current = getDefaultSettings();
-    const merged: SubscriptionPaymentSettings = {
+
+    // Fetch existing settings to preserve missing values & passwords
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    let existingParsed = {} as PusherSettings;
+    if (existing) {
+      try {
+        existingParsed = JSON.parse(existing.value);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const merged: PusherSettings = {
       ...current,
+      ...existingParsed,
       ...body,
     };
+
+    // if the password is empty string from frontend, keep existing
+    if (!body.pusher_app_secret && existingParsed.pusher_app_secret) {
+      merged.pusher_app_secret = existingParsed.pusher_app_secret;
+    }
 
     await prisma.setting.upsert({
       where: { key: SETTING_KEY },
@@ -91,11 +96,11 @@ export async function PUT(request: NextRequest) {
     });
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
-    console.error("Error saving subscription payment settings:", error);
+    console.error("Error saving pusher settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to save subscription payment settings",
+        message: "Failed to save pusher settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },

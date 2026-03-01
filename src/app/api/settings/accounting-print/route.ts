@@ -1,20 +1,20 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-const SETTING_KEY = "accounting_print_settings"
+const SETTING_KEY = "accounting_print_settings";
 
 type SingleDocPrintSetting = {
-  template: string
-  qrDisplay: boolean
-  color: string
-  logoDataUrl?: string | null
-}
+  template: string;
+  qrDisplay: boolean;
+  color: string;
+  logoDataUrl?: string | null;
+};
 
 type AccountingPrintSettings = {
-  proposal: SingleDocPrintSetting
-  invoice: SingleDocPrintSetting
-  bill: SingleDocPrintSetting
-}
+  proposal: SingleDocPrintSetting;
+  invoice: SingleDocPrintSetting;
+  bill: SingleDocPrintSetting;
+};
 
 function getDefaultDocSettings(): SingleDocPrintSetting {
   return {
@@ -22,7 +22,7 @@ function getDefaultDocSettings(): SingleDocPrintSetting {
     qrDisplay: true,
     color: "#1e40af",
     logoDataUrl: null,
-  }
+  };
 }
 
 function getDefaultSettings(): AccountingPrintSettings {
@@ -30,38 +30,38 @@ function getDefaultSettings(): AccountingPrintSettings {
     proposal: getDefaultDocSettings(),
     invoice: getDefaultDocSettings(),
     bill: getDefaultDocSettings(),
-  }
+  };
 }
 
 export async function GET() {
   try {
     const existing = await prisma.setting.findUnique({
       where: { key: SETTING_KEY },
-    })
+    });
 
     if (!existing) {
       return NextResponse.json({
         success: true,
         data: getDefaultSettings(),
-      })
+      });
     }
 
-    let parsed: AccountingPrintSettings | null = null
+    let parsed: AccountingPrintSettings | null = null;
 
     try {
-      parsed = JSON.parse(existing.value)
+      parsed = JSON.parse(existing.value);
     } catch {
-      parsed = null
+      parsed = null;
     }
 
     const data: AccountingPrintSettings = {
       ...getDefaultSettings(),
       ...(parsed || {}),
-    }
+    };
 
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error loading accounting print settings:", error)
+    console.error("Error loading accounting print settings:", error);
     return NextResponse.json(
       {
         success: false,
@@ -69,14 +69,14 @@ export async function GET() {
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
-    )
+    );
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<AccountingPrintSettings>
-    const current = getDefaultSettings()
+    const body = (await request.json()) as Partial<AccountingPrintSettings>;
+    const current = getDefaultSettings();
 
     const merged: AccountingPrintSettings = {
       proposal: {
@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest) {
         ...current.bill,
         ...(body.bill || {}),
       },
-    }
+    };
 
     await prisma.setting.upsert({
       where: { key: SETTING_KEY },
@@ -100,11 +100,11 @@ export async function PUT(request: NextRequest) {
         key: SETTING_KEY,
         value: JSON.stringify(merged),
       },
-    })
+    });
 
-    return NextResponse.json({ success: true, data: merged })
+    return NextResponse.json({ success: true, data: merged });
   } catch (error) {
-    console.error("Error saving accounting print settings:", error)
+    console.error("Error saving accounting print settings:", error);
     return NextResponse.json(
       {
         success: false,
@@ -112,6 +112,6 @@ export async function PUT(request: NextRequest) {
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
-    )
+    );
   }
 }

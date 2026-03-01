@@ -1,37 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const SETTING_KEY = "subscription_payment_settings";
+const SETTING_KEY = "system_cache_settings";
 
-type SubscriptionPaymentSettings = {
-  currency: string;
-  currency_symbol: string;
-  manually_enabled: boolean;
-  bank_transfer_enabled: boolean;
-  bank_details: string;
-  stripe_enabled: boolean;
-  stripe_key: string;
-  stripe_secret: string;
-  paypal_enabled: boolean;
-  paypal_mode: string;
-  paypal_client_id: string;
-  paypal_secret: string;
+type CacheSettings = {
+  cache_enabled: boolean;
+  cache_size: string;
 };
 
-function getDefaultSettings(): SubscriptionPaymentSettings {
+function getDefaultSettings(): CacheSettings {
   return {
-    currency: "IDR",
-    currency_symbol: "Rp",
-    manually_enabled: false,
-    bank_transfer_enabled: true,
-    bank_details: "",
-    stripe_enabled: false,
-    stripe_key: "",
-    stripe_secret: "",
-    paypal_enabled: false,
-    paypal_mode: "sandbox",
-    paypal_client_id: "",
-    paypal_secret: "",
+    cache_enabled: false,
+    cache_size: "1024",
   };
 }
 
@@ -48,7 +28,7 @@ export async function GET() {
       });
     }
 
-    let parsed: SubscriptionPaymentSettings | null = null;
+    let parsed: CacheSettings | null = null;
 
     try {
       parsed = JSON.parse(existing.value);
@@ -60,11 +40,11 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error loading subscription payment settings:", error);
+    console.error("Error loading cache settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to load subscription payment settings",
+        message: "Failed to load cache settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
@@ -74,10 +54,26 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<SubscriptionPaymentSettings>;
+    const body = (await request.json()) as Partial<CacheSettings>;
     const current = getDefaultSettings();
-    const merged: SubscriptionPaymentSettings = {
+
+    // Fetch existing settings to preserve missing values & passwords
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    let existingParsed = {} as CacheSettings;
+    if (existing) {
+      try {
+        existingParsed = JSON.parse(existing.value);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const merged: CacheSettings = {
       ...current,
+      ...existingParsed,
       ...body,
     };
 
@@ -91,11 +87,11 @@ export async function PUT(request: NextRequest) {
     });
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
-    console.error("Error saving subscription payment settings:", error);
+    console.error("Error saving cache settings:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to save subscription payment settings",
+        message: "Failed to save cache settings",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },

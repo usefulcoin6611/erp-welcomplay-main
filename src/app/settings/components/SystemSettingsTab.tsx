@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense, type ReactNode } from 'react'
+import { useSettings } from '@/hooks/use-settings'
 import { useAuth } from '@/contexts/auth-context'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -82,10 +83,10 @@ const modernSelectTriggerClass = cn(
 
 // Brand Settings Component
 function BrandSettingsContent() {
-  const [formData, setFormData] = useState({
-    logo_dark: null as File | null,
-    logo_light: null as File | null,
-    favicon: null as File | null,
+  const { formData, setFormData, save } = useSettings('/api/settings/brand', {
+    logo_dark: '',
+    logo_light: '',
+    favicon: '',
     title_text: 'ERPGo SaaS',
     footer_text: 'ERPGo SaaS',
     default_language: 'en',
@@ -110,19 +111,25 @@ function BrandSettingsContent() {
     favicon: '',
   })
 
+  // Sync previews on load
+  useEffect(() => {
+    if (formData.logo_dark) setLogoPreview(prev => ({ ...prev, logo_dark: formData.logo_dark as string }))
+    if (formData.logo_light) setLogoPreview(prev => ({ ...prev, logo_light: formData.logo_light as string }))
+    if (formData.favicon) setLogoPreview(prev => ({ ...prev, favicon: formData.favicon as string }))
+  }, [formData.logo_dark, formData.logo_light, formData.favicon])
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [fieldToDelete, setFieldToDelete] = useState<'logo_dark' | 'logo_light' | 'favicon' | null>(null)
 
   const handleFileChange = (field: 'logo_dark' | 'logo_light' | 'favicon', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setFormData({ ...formData, [field]: file })
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview({ ...logoPreview, [field]: reader.result as string })
+        setFormData({ ...formData, [field]: reader.result as string })
       }
       reader.readAsDataURL(file)
-      // Reset file input untuk memungkinkan upload file yang sama lagi
       e.target.value = ''
     }
   }
@@ -134,7 +141,7 @@ function BrandSettingsContent() {
 
   const handleDeleteConfirm = () => {
     if (fieldToDelete) {
-      setFormData({ ...formData, [fieldToDelete]: null })
+      setFormData({ ...formData, [fieldToDelete]: '' })
       setLogoPreview({ ...logoPreview, [fieldToDelete]: '' })
       setExistingImages({ ...existingImages, [fieldToDelete]: '' })
       setDeleteDialogOpen(false)
@@ -154,8 +161,7 @@ function BrandSettingsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Brand settings:', formData)
-    alert('Brand settings saved!')
+    save()
   }
 
   const languages = [
@@ -447,11 +453,10 @@ function BrandSettingsContent() {
                         key={index}
                         type="button"
                         onClick={() => setFormData({ ...formData, primary_color: color })}
-                        className={`w-7 h-7 rounded border-2 transition-all ${
-                          formData.primary_color === color
-                            ? 'border-white ring-2 ring-blue-500 ring-offset-1'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
+                        className={`w-7 h-7 rounded border-2 transition-all ${formData.primary_color === color
+                          ? 'border-white ring-2 ring-blue-500 ring-offset-1'
+                          : 'border-gray-300 hover:border-gray-400'
+                          }`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
@@ -577,7 +582,7 @@ function BrandSettingsContent() {
 
 // Email Settings Component
 function EmailSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/email', {
     mail_driver: 'smtp',
     mail_host: 'smtp.gmail.com',
     mail_port: '587',
@@ -590,8 +595,7 @@ function EmailSettingsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Email settings:', formData)
-    alert('Email settings saved!')
+    save()
   }
 
   return (
@@ -849,215 +853,215 @@ function PaymentSettingsContent() {
           </CardHeader>
           <CardContent className="px-6 py-4">
             <form onSubmit={handleSubmitSubscription} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="currency" className="text-sm font-medium text-gray-700 dark:text-gray-300">Currency</Label>
-              <Input
-                id="currency"
-                value={subscriptionForm.currency}
-                placeholder="Enter Currency"
-                className={modernInputClass}
-                onChange={(e) =>
-                  setSubscriptionForm({ ...subscriptionForm, currency: e.target.value })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Note: Add currency code as per three-letter ISO code.{' '}
-                <a href="https://stripe.com/docs/currencies" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                  You can find out how to do that here.
-                </a>
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="currency_symbol" className="text-sm font-medium text-gray-700 dark:text-gray-300">Currency Symbol</Label>
-              <Input
-                id="currency_symbol"
-                value={subscriptionForm.currency_symbol}
-                placeholder="Enter Currency Symbol"
-                className={modernInputClass}
-                onChange={(e) =>
-                  setSubscriptionForm({ ...subscriptionForm, currency_symbol: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          {/* Payment Methods Accordion */}
-          <Accordion type="single" collapsible className="w-full">
-            {/* Manually */}
-            <AccordionItem value="manually">
-              <div className="flex items-center justify-between w-full pr-4 border-b">
-                <AccordionTrigger className="flex-1">
-                  <span>Manually</span>
-                </AccordionTrigger>
-                <div className="px-4" onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    checked={subscriptionForm.manually_enabled}
-                    onCheckedChange={(checked) =>
-                      setSubscriptionForm({ ...subscriptionForm, manually_enabled: checked })
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currency" className="text-sm font-medium text-gray-700 dark:text-gray-300">Currency</Label>
+                  <Input
+                    id="currency"
+                    value={subscriptionForm.currency}
+                    placeholder="Enter Currency"
+                    className={modernInputClass}
+                    onChange={(e) =>
+                      setSubscriptionForm({ ...subscriptionForm, currency: e.target.value })
                     }
-                    className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                   />
-                </div>
-              </div>
-              <AccordionContent>
-                <div className="pt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Requesting manual payment for the planned amount for the subscriptions plan.
+                  <p className="text-xs text-muted-foreground">
+                    Note: Add currency code as per three-letter ISO code.{' '}
+                    <a href="https://stripe.com/docs/currencies" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      You can find out how to do that here.
+                    </a>
                   </p>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Bank Transfer */}
-            <AccordionItem value="bank_transfer">
-              <div className="flex items-center justify-between w-full pr-4 border-b">
-                <AccordionTrigger className="flex-1">
-                  <span>Bank Transfer</span>
-                </AccordionTrigger>
-                <div className="px-4" onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    checked={subscriptionForm.bank_transfer_enabled}
-                    onCheckedChange={(checked) =>
-                      setSubscriptionForm({ ...subscriptionForm, bank_transfer_enabled: checked })
+                <div className="space-y-2">
+                  <Label htmlFor="currency_symbol" className="text-sm font-medium text-gray-700 dark:text-gray-300">Currency Symbol</Label>
+                  <Input
+                    id="currency_symbol"
+                    value={subscriptionForm.currency_symbol}
+                    placeholder="Enter Currency Symbol"
+                    className={modernInputClass}
+                    onChange={(e) =>
+                      setSubscriptionForm({ ...subscriptionForm, currency_symbol: e.target.value })
                     }
-                    className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                   />
                 </div>
               </div>
-              <AccordionContent>
-                <div className="pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="bank_details" className="text-sm font-medium text-gray-700 dark:text-gray-300">Bank Details</Label>
-                      <Textarea
-                        id="bank_details"
-                        value={subscriptionForm.bank_details}
-                        placeholder="Enter Your Bank Details"
-                        rows={4}
-                        className={modernTextareaClass}
-                        onChange={(e) =>
-                          setSubscriptionForm({ ...subscriptionForm, bank_details: e.target.value })
+
+              {/* Payment Methods Accordion */}
+              <Accordion type="single" collapsible className="w-full">
+                {/* Manually */}
+                <AccordionItem value="manually">
+                  <div className="flex items-center justify-between w-full pr-4 border-b">
+                    <AccordionTrigger className="flex-1">
+                      <span>Manually</span>
+                    </AccordionTrigger>
+                    <div className="px-4" onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                        checked={subscriptionForm.manually_enabled}
+                        onCheckedChange={(checked) =>
+                          setSubscriptionForm({ ...subscriptionForm, manually_enabled: checked })
                         }
+                        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Example : Bank : bank name {'</br>'} Account Number : 0000 0000 {'</br>'}
+                    </div>
+                  </div>
+                  <AccordionContent>
+                    <div className="pt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Requesting manual payment for the planned amount for the subscriptions plan.
                       </p>
                     </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+                  </AccordionContent>
+                </AccordionItem>
 
-            {/* Stripe */}
-            <AccordionItem value="stripe">
-              <div className="flex items-center justify-between w-full pr-4 border-b">
-                <AccordionTrigger className="flex-1">
-                  <span>Stripe</span>
-                </AccordionTrigger>
-                <div className="px-4" onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    checked={subscriptionForm.stripe_enabled}
-                    onCheckedChange={(checked) =>
-                      setSubscriptionForm({ ...subscriptionForm, stripe_enabled: checked })
-                    }
-                    className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                  />
-                </div>
-              </div>
-              <AccordionContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="stripe_key" className="text-sm font-medium text-gray-700 dark:text-gray-300">Stripe Key</Label>
-                    <Input
-                      id="stripe_key"
-                      value={subscriptionForm.stripe_key}
-                      placeholder="Enter Stripe Key"
-                      className={modernInputClass}
-                      onChange={(e) =>
-                        setSubscriptionForm({ ...subscriptionForm, stripe_key: e.target.value })
-                      }
-                    />
+                {/* Bank Transfer */}
+                <AccordionItem value="bank_transfer">
+                  <div className="flex items-center justify-between w-full pr-4 border-b">
+                    <AccordionTrigger className="flex-1">
+                      <span>Bank Transfer</span>
+                    </AccordionTrigger>
+                    <div className="px-4" onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                        checked={subscriptionForm.bank_transfer_enabled}
+                        onCheckedChange={(checked) =>
+                          setSubscriptionForm({ ...subscriptionForm, bank_transfer_enabled: checked })
+                        }
+                        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="stripe_secret" className="text-sm font-medium text-gray-700 dark:text-gray-300">Stripe Secret</Label>
-                    <Input
-                      id="stripe_secret"
-                      type="password"
-                      value={subscriptionForm.stripe_secret}
-                      placeholder="Enter Stripe Secret"
-                      className={modernInputClass}
-                      onChange={(e) =>
-                        setSubscriptionForm({ ...subscriptionForm, stripe_secret: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+                  <AccordionContent>
+                    <div className="pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="bank_details" className="text-sm font-medium text-gray-700 dark:text-gray-300">Bank Details</Label>
+                        <Textarea
+                          id="bank_details"
+                          value={subscriptionForm.bank_details}
+                          placeholder="Enter Your Bank Details"
+                          rows={4}
+                          className={modernTextareaClass}
+                          onChange={(e) =>
+                            setSubscriptionForm({ ...subscriptionForm, bank_details: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Example : Bank : bank name {'</br>'} Account Number : 0000 0000 {'</br>'}
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
 
-            {/* PayPal */}
-            <AccordionItem value="paypal">
-              <div className="flex items-center justify-between w-full pr-4 border-b">
-                <AccordionTrigger className="flex-1">
-                  <span>PayPal</span>
-                </AccordionTrigger>
-                <div className="px-4" onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    checked={subscriptionForm.paypal_enabled}
-                    onCheckedChange={(checked) =>
-                      setSubscriptionForm({ ...subscriptionForm, paypal_enabled: checked })
-                    }
-                    className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                  />
-                </div>
-              </div>
-              <AccordionContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="paypal_mode">PayPal Mode</Label>
-                    <Select
-                      value={subscriptionForm.paypal_mode}
-                      onValueChange={(value) =>
-                        setSubscriptionForm({ ...subscriptionForm, paypal_mode: value })
-                      }
-                    >
-                      <SelectTrigger id="paypal_mode" className={modernSelectTriggerClass}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sandbox">Sandbox</SelectItem>
-                        <SelectItem value="live">Live</SelectItem>
-                      </SelectContent>
-                    </Select>
+                {/* Stripe */}
+                <AccordionItem value="stripe">
+                  <div className="flex items-center justify-between w-full pr-4 border-b">
+                    <AccordionTrigger className="flex-1">
+                      <span>Stripe</span>
+                    </AccordionTrigger>
+                    <div className="px-4" onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                        checked={subscriptionForm.stripe_enabled}
+                        onCheckedChange={(checked) =>
+                          setSubscriptionForm({ ...subscriptionForm, stripe_enabled: checked })
+                        }
+                        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="paypal_client_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">PayPal Client ID</Label>
-                    <Input
-                      id="paypal_client_id"
-                      value={subscriptionForm.paypal_client_id}
-                      placeholder="Enter PayPal Client ID"
-                      className={modernInputClass}
-                      onChange={(e) =>
-                        setSubscriptionForm({ ...subscriptionForm, paypal_client_id: e.target.value })
-                      }
-                    />
+                  <AccordionContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="stripe_key" className="text-sm font-medium text-gray-700 dark:text-gray-300">Stripe Key</Label>
+                        <Input
+                          id="stripe_key"
+                          value={subscriptionForm.stripe_key}
+                          placeholder="Enter Stripe Key"
+                          className={modernInputClass}
+                          onChange={(e) =>
+                            setSubscriptionForm({ ...subscriptionForm, stripe_key: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stripe_secret" className="text-sm font-medium text-gray-700 dark:text-gray-300">Stripe Secret</Label>
+                        <Input
+                          id="stripe_secret"
+                          type="password"
+                          value={subscriptionForm.stripe_secret}
+                          placeholder="Enter Stripe Secret"
+                          className={modernInputClass}
+                          onChange={(e) =>
+                            setSubscriptionForm({ ...subscriptionForm, stripe_secret: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* PayPal */}
+                <AccordionItem value="paypal">
+                  <div className="flex items-center justify-between w-full pr-4 border-b">
+                    <AccordionTrigger className="flex-1">
+                      <span>PayPal</span>
+                    </AccordionTrigger>
+                    <div className="px-4" onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                        checked={subscriptionForm.paypal_enabled}
+                        onCheckedChange={(checked) =>
+                          setSubscriptionForm({ ...subscriptionForm, paypal_enabled: checked })
+                        }
+                        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="paypal_secret" className="text-sm font-medium text-gray-700 dark:text-gray-300">PayPal Secret</Label>
-                    <Input
-                      id="paypal_secret"
-                      type="password"
-                      value={subscriptionForm.paypal_secret}
-                      placeholder="Enter PayPal Secret"
-                      className={modernInputClass}
-                      onChange={(e) =>
-                        setSubscriptionForm({ ...subscriptionForm, paypal_secret: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                  <AccordionContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="paypal_mode">PayPal Mode</Label>
+                        <Select
+                          value={subscriptionForm.paypal_mode}
+                          onValueChange={(value) =>
+                            setSubscriptionForm({ ...subscriptionForm, paypal_mode: value })
+                          }
+                        >
+                          <SelectTrigger id="paypal_mode" className={modernSelectTriggerClass}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sandbox">Sandbox</SelectItem>
+                            <SelectItem value="live">Live</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="paypal_client_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">PayPal Client ID</Label>
+                        <Input
+                          id="paypal_client_id"
+                          value={subscriptionForm.paypal_client_id}
+                          placeholder="Enter PayPal Client ID"
+                          className={modernInputClass}
+                          onChange={(e) =>
+                            setSubscriptionForm({ ...subscriptionForm, paypal_client_id: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="paypal_secret" className="text-sm font-medium text-gray-700 dark:text-gray-300">PayPal Secret</Label>
+                        <Input
+                          id="paypal_secret"
+                          type="password"
+                          value={subscriptionForm.paypal_secret}
+                          placeholder="Enter PayPal Secret"
+                          className={modernInputClass}
+                          onChange={(e) =>
+                            setSubscriptionForm({ ...subscriptionForm, paypal_secret: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               <div className="flex justify-end pt-4 border-t">
                 <Button type="submit" variant="blue" className="shadow-none">
@@ -1165,12 +1169,12 @@ function PaymentSettingsContent() {
                             custom: prev.custom.map((g, i) =>
                               i === index
                                 ? {
-                                    ...g,
-                                    code: e.target.value
-                                      .toLowerCase()
-                                      .replace(/\s+/g, '_')
-                                      .replace(/[^a-z0-9_]/g, ''),
-                                  }
+                                  ...g,
+                                  code: e.target.value
+                                    .toLowerCase()
+                                    .replace(/\s+/g, '_')
+                                    .replace(/[^a-z0-9_]/g, ''),
+                                }
                                 : g,
                             ),
                           }))
@@ -1242,7 +1246,7 @@ function PaymentSettingsContent() {
 
 // Pusher Settings Component
 function PusherSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/pusher', {
     pusher_app_id: '',
     pusher_app_key: '',
     pusher_app_secret: '',
@@ -1251,8 +1255,7 @@ function PusherSettingsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Pusher settings:', formData)
-    alert('Pusher settings saved!')
+    save()
   }
 
   return (
@@ -1326,7 +1329,7 @@ function PusherSettingsContent() {
 
 // ReCaptcha Settings Component
 function ReCaptchaSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/recaptcha', {
     recaptcha_module: false,
     google_recaptcha_version: 'v2-checkbox',
     google_recaptcha_key: '',
@@ -1335,8 +1338,7 @@ function ReCaptchaSettingsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('ReCaptcha settings:', formData)
-    alert('ReCaptcha settings saved!')
+    save()
   }
 
   return (
@@ -1424,10 +1426,10 @@ function ReCaptchaSettingsContent() {
 
 // Storage Settings Component
 function StorageSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/storage', {
     storage_setting: 'local',
     local_storage_validation: [] as string[],
-    local_storage_max_upload_size: '',
+    local_storage_max_upload_size: '2048',
     s3_key: '',
     s3_secret: '',
     s3_region: '',
@@ -1435,7 +1437,7 @@ function StorageSettingsContent() {
     s3_url: '',
     s3_endpoint: '',
     s3_storage_validation: [] as string[],
-    s3_max_upload_size: '',
+    s3_max_upload_size: '2048',
     wasabi_key: '',
     wasabi_secret: '',
     wasabi_region: '',
@@ -1443,15 +1445,14 @@ function StorageSettingsContent() {
     wasabi_url: '',
     wasabi_root: '',
     wasabi_storage_validation: [] as string[],
-    wasabi_max_upload_size: '',
+    wasabi_max_upload_size: '2048',
   })
 
   const fileTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip']
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Storage settings:', formData)
-    alert('Storage settings saved!')
+    save()
   }
 
   return (
@@ -1780,21 +1781,28 @@ function StorageSettingsContent() {
 
 // SEO Settings Component
 function SEOSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/seo', {
     meta_title: '',
     meta_desc: '',
-    meta_image: null as File | null,
+    meta_image: null as string | null,
   })
 
+  // We could implement upload logic here, mocking for now as base64 string
   const [metaImagePreview, setMetaImagePreview] = useState('')
+
+  useEffect(() => {
+    if (formData.meta_image && typeof formData.meta_image === 'string') {
+      setMetaImagePreview(formData.meta_image)
+    }
+  }, [formData.meta_image]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setFormData({ ...formData, meta_image: file })
       const reader = new FileReader()
       reader.onloadend = () => {
         setMetaImagePreview(reader.result as string)
+        setFormData({ ...formData, meta_image: reader.result as string })
       }
       reader.readAsDataURL(file)
     }
@@ -1802,8 +1810,7 @@ function SEOSettingsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('SEO settings:', formData)
-    alert('SEO settings saved!')
+    save()
   }
 
   return (
@@ -1880,21 +1887,20 @@ function SEOSettingsContent() {
 
 // Cookie Settings Component
 function CookieSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/cookie', {
     enable_cookie: false,
     cookie_logging: false,
-    cookie_title: '',
-    cookie_description: '',
-    strictly_cookie_title: '',
-    strictly_cookie_description: '',
-    more_information_description: '',
+    cookie_title: 'We use cookies!',
+    cookie_description: 'Hi, this website uses essential cookies...',
+    strictly_cookie_title: 'Strictly necessary cookies',
+    strictly_cookie_description: 'These cookies are essential for the proper functioning of my website.',
+    more_information_description: 'For any queries...',
     contactus_url: '',
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Cookie settings:', formData)
-    alert('Cookie settings saved!')
+    save()
   }
 
   return (
@@ -2046,12 +2052,13 @@ function CookieSettingsContent() {
 
 // Cache Settings Component
 function CacheSettingsContent() {
-  const [cacheSize] = useState('0.00') // Mock cache size
+  const { formData, save } = useSettings('/api/settings/cache', { cache_size: '1024' })
+  const cacheSize = formData.cache_size
 
   const handleClearCache = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Clearing cache...')
-    alert('Cache cleared successfully!')
+    // Mock clearing
+    toast.success('Cache cleared successfully!')
   }
 
   return (
@@ -2091,9 +2098,9 @@ function CacheSettingsContent() {
 
 // Chat GPT Settings Component
 function ChatGPTSettingsContent() {
-  const [formData, setFormData] = useState({
+  const { formData, setFormData, save } = useSettings('/api/settings/chatgpt', {
     chat_gpt_key: '',
-    chat_gpt_model: '',
+    chat_gpt_model: 'gpt-3.5-turbo',
   })
 
   const aiModels = [
@@ -2104,8 +2111,7 @@ function ChatGPTSettingsContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Chat GPT settings:', formData)
-    alert('Chat GPT settings saved!')
+    save()
   }
 
   return (
@@ -2276,6 +2282,7 @@ function SystemSettingsSection() {
             id="display_shipping"
             checked={displayShipping}
             onCheckedChange={setDisplayShipping}
+            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
           />
         </div>
 
@@ -2740,8 +2747,8 @@ function SystemSettingsContent() {
   return (
     <div className="grid gap-4 xl:grid-cols-12">
       {/* Vertical Sidebar - col-xl-3 (25%) */}
-      <div className="xl:col-span-3">
-        <Card className="h-fit xl:sticky xl:top-6 rounded-lg">
+      <div className="xl:col-span-3 xl:sticky xl:top-24 self-start max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-none rounded-lg z-10">
+        <Card className="h-full rounded-lg">
           <CardContent className="p-2">
             <div className="space-y-1">
               {systemMenuItems.map((item) => (
