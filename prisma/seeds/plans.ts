@@ -1,6 +1,14 @@
 export async function seedPlans(prisma: any) {
   console.log("Seeding plans...")
 
+  const planDelegate = prisma?.plan
+  if (!planDelegate) {
+    console.warn(
+      "Prisma client has no 'plan' model. Run: pnpm prisma generate (or npx prisma generate) then re-run the seed."
+    )
+    return
+  }
+
   const plans = [
     {
       name: "Free Plan",
@@ -77,7 +85,7 @@ export async function seedPlans(prisma: any) {
   ]
 
   for (const plan of plans) {
-    await prisma.plan.upsert({
+    await planDelegate.upsert({
       where: { name: plan.name },
       update: {},
       create: plan,
