@@ -1,12 +1,15 @@
 'use client'
 
-import { useMemo, lazy, Suspense, useRef, useState } from 'react'
+import { useMemo, lazy, Suspense, useRef, useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Download, Loader2 } from 'lucide-react'
 
 // Lazy load tab components for better performance
 const LeadTab = lazy(() => import('@/components/crm-reports').then(m => ({ default: m.LeadTab })))
@@ -32,6 +35,23 @@ export default function CRMReportsPage() {
 
   // Get active tab from URL or default to 'lead'
   const activeTab = searchParams.get('tab') || 'lead'
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const handleDownload = useCallback(async () => {
+    setIsDownloading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 2000))
+      if (activeTab === 'lead') {
+        console.log('Downloading lead report as PDF...')
+      } else {
+        console.log('Downloading deal report as PDF...')
+      }
+    } catch (error) {
+      console.error('Download failed:', error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }, [activeTab])
 
   // Cache for tab content (to avoid Suspense fallback after first load)
   const tabContentCache = useRef<{[key: string]: React.ReactNode}>({})
@@ -93,15 +113,42 @@ export default function CRMReportsPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Smooth Tab Navigation with Animated Content */}
+        <div className="flex flex-1 flex-col bg-gray-100">
+          <div className="@container/main flex flex-1 flex-col gap-5 p-5">
+            {/* Smooth Tab Navigation with Download inline */}
             <SmoothTab
               items={reportTabs}
               defaultTabId={activeTab}
               activeColor="bg-white dark:bg-gray-700 shadow-xs"
               onChange={handleTabChange}
               onTabPreload={handleTabPreload}
+              action={
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        size="sm"
+                        className="shrink-0 h-9 bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDownloading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Download report as PDF</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              }
             />
           </div>
         </div>

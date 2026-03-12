@@ -35,6 +35,7 @@ const PayablesTabComponent = () => {
     agingSummaryTotals,
     handleTabChange,
     handleReset,
+    handleApplyFilters,
   } = usePayablesData()
 
   const payablesTabItems = useMemo(
@@ -56,8 +57,10 @@ const PayablesTabComponent = () => {
         setDateRange={setDateRange}
         isDateRangeOpen={isDateRangeOpen}
         setIsDateRangeOpen={setIsDateRangeOpen}
-        onApply={() => {}}
+        onApply={handleApplyFilters}
         onReset={handleReset}
+        selectedTab={selectedTab}
+        exportData={filteredData}
       />
 
       {/* Main Data Card with Tabs */}
@@ -93,7 +96,7 @@ const PayablesTabComponent = () => {
         </div>
 
         <CardContent className="pt-0">
-          <div style={{ minHeight: '400px' }}>
+          <div>
             {/* Vendor Balance Table */}
             {selectedTab === 'vendor-balance' && (
               <VendorBalanceTable 

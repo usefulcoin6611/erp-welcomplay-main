@@ -16,7 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { availableVendors, availableStatuses, type BillStatus } from './constants'
+import { availableStatuses, type BillStatus } from './constants'
+import { exportBillSummary } from '../utils/exportUtils'
 
 interface BillSummaryFiltersProps {
   dateRange: DateRange | undefined
@@ -29,6 +30,8 @@ interface BillSummaryFiltersProps {
   setSelectedStatus: (status: BillStatus | 'all') => void
   onApply: () => void
   onReset: () => void
+  vendorOptions?: string[]
+  exportData?: any[]
 }
 
 export function BillSummaryFilters({
@@ -42,7 +45,10 @@ export function BillSummaryFilters({
   setSelectedStatus,
   onApply,
   onReset,
+  vendorOptions,
+  exportData = [],
 }: BillSummaryFiltersProps) {
+  const dynamicVendors = vendorOptions || ['All']
   const dateRangeLabel = dateRange?.from
     ? dateRange.to
       ? `${format(dateRange.from, 'LLL dd, y')} - ${format(dateRange.to, 'LLL dd, y')}`
@@ -96,7 +102,7 @@ export function BillSummaryFilters({
                 <SelectValue placeholder="All Vendors" />
               </SelectTrigger>
               <SelectContent>
-                {availableVendors.map((vendor: string) => (
+                {dynamicVendors.map((vendor: string) => (
                   <SelectItem key={vendor} value={vendor}>
                     {vendor}
                   </SelectItem>
@@ -145,6 +151,7 @@ export function BillSummaryFilters({
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={() => exportBillSummary(exportData, 'bill-summary')}
             >
               <FileSpreadsheet className="w-4 h-4" />
               Export
@@ -152,6 +159,7 @@ export function BillSummaryFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={() => exportBillSummary(exportData, 'bill-summary')}
             >
               <FileDown className="w-4 h-4" />
               Download

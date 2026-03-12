@@ -30,6 +30,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
 
 interface BillData {
   id: number
@@ -40,24 +41,6 @@ interface BillData {
   amount: number
   status: 'paid' | 'unpaid' | 'overdue'
 }
-
-const mockBillData: BillData[] = [
-  { id: 1, number: 'BILL-2025-015', vendor: 'PT Telkom (Internet)', billDate: '12 Nov, 2025', dueDate: '26 Nov, 2025', amount: 8500000, status: 'unpaid' },
-  { id: 2, number: 'BILL-2025-014', vendor: 'Office Supplies Co', billDate: '11 Nov, 2025', dueDate: '25 Nov, 2025', amount: 5500000, status: 'paid' },
-  { id: 3, number: 'BILL-2025-013', vendor: 'Tech Equipment Ltd', billDate: '10 Nov, 2025', dueDate: '24 Nov, 2025', amount: 12750000, status: 'unpaid' },
-  { id: 4, number: 'BILL-2025-012', vendor: 'PLN (Electricity)', billDate: '09 Nov, 2025', dueDate: '23 Nov, 2025', amount: 6200000, status: 'paid' },
-  { id: 5, number: 'BILL-2025-011', vendor: 'Marketing Agency', billDate: '08 Nov, 2025', dueDate: '22 Nov, 2025', amount: 8900000, status: 'overdue' },
-  { id: 6, number: 'BILL-2025-010', vendor: 'Rental Services', billDate: '07 Nov, 2025', dueDate: '21 Nov, 2025', amount: 15000000, status: 'unpaid' },
-  { id: 7, number: 'BILL-2025-009', vendor: 'Utilities Provider', billDate: '06 Nov, 2025', dueDate: '20 Nov, 2025', amount: 3200000, status: 'paid' },
-  { id: 8, number: 'BILL-2025-008', vendor: 'Cleaning Services', billDate: '05 Nov, 2025', dueDate: '19 Nov, 2025', amount: 2800000, status: 'paid' },
-  { id: 9, number: 'BILL-2025-007', vendor: 'Security Services', billDate: '04 Nov, 2025', dueDate: '18 Nov, 2025', amount: 5600000, status: 'unpaid' },
-  { id: 10, number: 'BILL-2025-006', vendor: 'Software Subscription', billDate: '03 Nov, 2025', dueDate: '17 Nov, 2025', amount: 15000000, status: 'paid' },
-  { id: 11, number: 'BILL-2025-005', vendor: 'Office Furniture', billDate: '02 Nov, 2025', dueDate: '16 Nov, 2025', amount: 9800000, status: 'overdue' },
-  { id: 12, number: 'BILL-2025-004', vendor: 'Training Services', billDate: '01 Nov, 2025', dueDate: '15 Nov, 2025', amount: 7200000, status: 'paid' },
-  { id: 13, number: 'BILL-2025-003', vendor: 'Printing Services', billDate: '31 Oct, 2025', dueDate: '14 Nov, 2025', amount: 3500000, status: 'unpaid' },
-  { id: 14, number: 'BILL-2025-002', vendor: 'Catering Services', billDate: '30 Oct, 2025', dueDate: '13 Nov, 2025', amount: 4100000, status: 'overdue' },
-  { id: 15, number: 'BILL-2025-001', vendor: 'IT Maintenance', billDate: '29 Oct, 2025', dueDate: '12 Nov, 2025', amount: 11500000, status: 'paid' },
-]
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -70,21 +53,31 @@ function formatRupiah(amount: number) {
 export function RecentBillsSection() {
   const t = useTranslations('accountDashboard.recentBills')
   const headerT = useTranslations('header')
+  const { data, loading } = useAccountDashboard()
+  const billData: BillData[] = data.recentBills.map((b) => ({
+    id: b.id,
+    number: b.number,
+    vendor: b.vendor,
+    billDate: b.billDate,
+    dueDate: b.dueDate,
+    amount: b.amount,
+    status: b.status,
+  }))
 
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'billDate', desc: true }])
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return mockBillData
-    return mockBillData.filter(
+    if (!searchQuery) return billData
+    return billData.filter(
       (item) =>
         item.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
         formatRupiah(item.amount).toLowerCase().includes(searchQuery.toLowerCase()),
     )
-  }, [searchQuery])
+  }, [billData, searchQuery])
 
   const getStatusBadge = (status: 'paid' | 'unpaid' | 'overdue') => {
     const variants = {
@@ -175,6 +168,26 @@ export function RecentBillsSection() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
+
+  if (loading) {
+    return (
+      <Card className="py-2 xl:col-span-2">
+        <CardHeader className="px-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+        </CardHeader>
+        <CardTable>
+          <div className="px-3 py-2 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardTable>
+      </Card>
+    )
+  }
 
   return (
     <DataGrid table={table} recordCount={filteredData?.length || 0} tableLayout={{ cellBorder: true, dense: true }}>

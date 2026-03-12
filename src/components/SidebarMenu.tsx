@@ -19,10 +19,39 @@ type MenuItem = {
   icon?: TablerIcon
   isActive?: boolean
   items?: MenuItem[]
+  /** Badge count (e.g. unread); shown next to label when > 0 */
+  badge?: number
 }
 
 interface SidebarMenuProps {
   items: MenuItem[]
+}
+
+const normalizeUrl = (url: string) => {
+  const base = url.split("?")[0]
+  return base.endsWith("/") && base !== "/" ? base.slice(0, -1) : base
+}
+
+const isActiveUrl = (pathname: string, url: string) => {
+  if (!url || url === "#") return false
+  const base = normalizeUrl(url)
+  return pathname === base || pathname.startsWith(base + "/")
+}
+
+// Warna active: level 0 paling pekat → level terdalam paling pastel
+const getActiveStyleByLevel = (level: number) => {
+  switch (level) {
+    case 0: return 'bg-blue-200 text-blue-900'
+    case 1: return 'bg-blue-200 text-blue-800'
+    case 2: return 'bg-blue-100 text-blue-700'
+    default: return 'bg-blue-50 text-blue-600'
+  }
+}
+
+// Hover: bg hanya level 0, level 1+ hanya warna teks
+const getHoverStyleByLevel = (level: number) => {
+  if (level === 0) return 'hover:bg-blue-300 hover:text-blue-900'
+  return 'hover:text-blue-700'
 }
 
 const MenuItemComponent = ({ 
@@ -39,30 +68,24 @@ const MenuItemComponent = ({
   const pathname = usePathname()
   const itemKey = `${level}-${item.title}`
   const isOpen = openItems[itemKey]
-  const isActive = pathname === item.url
+  const isActive = isActiveUrl(pathname, item.url)
   const hasChildren = item.items && item.items.length > 0
   
   // Check if any child is active
   const childIsActive = hasChildren && item.items?.some(subItem => {
-    if (pathname === subItem.url) return true
+    if (isActiveUrl(pathname, subItem.url)) return true
     if (subItem.items) {
-      return subItem.items.some(subSub => pathname === subSub.url)
+      return subItem.items.some(subSub => isActiveUrl(pathname, subSub.url))
     }
     return false
   })
 
-  // Track manual close state
-  const [manualClosed, setManualClosed] = useState(false)
-  
-  // Reset manual close when navigating to different route
-  useEffect(() => {
-    setManualClosed(false)
-  }, [pathname])
-
-  // Keep dropdown open if child is active, unless manually closed
+  // Allow manual close even when a child is active
   const effectiveOpen = hasChildren
-    ? (isOpen && !manualClosed) || (childIsActive && !manualClosed)
-    : isOpen
+    ? isOpen !== undefined
+      ? isOpen
+      : Boolean(childIsActive)
+    : Boolean(isOpen)
   
   // Determine padding based on level for proper indentation
   const paddingLeft = level === 0 ? "pl-3" : level === 1 ? "pl-7" : level === 2 ? "pl-12" : "pl-16"
@@ -73,9 +96,16 @@ const MenuItemComponent = ({
         <Collapsible
           open={effectiveOpen}
           onOpenChange={(open) => {
-            setOpenItems(prev => ({ ...prev, [itemKey]: open }))
-            if (!open) setManualClosed(true)
-            else setManualClosed(false)
+            // Accordion behavior: only keep one open per level
+            setOpenItems((prev) => {
+              const next: Record<string, boolean> = { ...prev }
+              const levelPrefix = `${level}-`
+              Object.keys(next).forEach((k) => {
+                if (k.startsWith(levelPrefix)) next[k] = false
+              })
+              next[itemKey] = open
+              return next
+            })
           }}
         >
           <CollapsibleTrigger asChild>
@@ -83,9 +113,10 @@ const MenuItemComponent = ({
               className={`
                 flex items-center justify-between w-full py-2 px-3 
                 text-sm font-medium rounded-md cursor-pointer
-                hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
                 transition-all duration-300 ease-out
+                ${getHoverStyleByLevel(level)}
                 ${paddingLeft}
+                ${childIsActive ? 'text-blue-700' : 'text-sidebar-foreground'}
               `}
               whileTap={{ scale: 0.98 }}
             >
@@ -131,16 +162,18 @@ const MenuItemComponent = ({
     )
   }
 
-  // Leaf item (no children)
+  // Leaf: gaya aktif penuh (dengan bg) hanya untuk item daun yang URL-nya cocok pathname
+  const activeLeafClass = isActive ? getActiveStyleByLevel(level) : 'text-sidebar-foreground'
+  const showBadge = typeof item.badge === 'number' && item.badge > 0
   return (
-    <Link href={item.url}>
+    <Link href={item.url} className="block">
       <motion.div
         className={`
           flex items-center gap-2 w-full py-2 px-3 
           text-sm font-medium rounded-md transition-all duration-300 ease-out
-          hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
+          ${getHoverStyleByLevel(level)}
           ${paddingLeft}
-          ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground'}
+          ${activeLeafClass}
         `}
         initial={false}
       >
@@ -149,17 +182,58 @@ const MenuItemComponent = ({
             <item.icon className="h-4 w-4 shrink-0" />
           </motion.div>
         )}
-        <span>{item.title}</span>
+        <span className="flex-1 min-w-0 truncate">{item.title}</span>
+        {showBadge && (
+          <span
+            className="shrink-0 min-w-[1.125rem] h-[1.125rem] flex items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-semibold px-1.5"
+            aria-label={`${item.badge} unread`}
+          >
+            {item.badge! > 99 ? '99+' : item.badge}
+          </span>
+        )}
       </motion.div>
     </Link>
   )
 }
 
 function SidebarMenuInner({ items }: SidebarMenuProps) {
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>({
-    // Auto-open Dashboard by default
-    "0-Dashboard": true
-  })
+  const pathname = usePathname()
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({})
+
+  // Auto-open ONLY the current active branch (so other menus collapse)
+  useEffect(() => {
+    // Only update openItems if we are NOT currently manually interacting
+    // But since this effect depends on pathname, it runs on navigation.
+    // The issue "bouncing back" might happen if this effect resets state too aggressively 
+    // or if the navigation hasn't completed yet.
+
+    setOpenItems((prev) => {
+      const next: Record<string, boolean> = { ...prev }
+      
+      const walk = (nodes: MenuItem[], level: number): boolean => {
+        let anyActive = false
+        for (const node of nodes) {
+          const nodeKey = `${level}-${node.title}`
+          const nodeActive = isActiveUrl(pathname, node.url)
+
+          if (node.items && node.items.length > 0) {
+            const childActive = walk(node.items, level + 1)
+            // If child is active, parent MUST be open
+            if (childActive || nodeActive) {
+              next[nodeKey] = true
+              anyActive = true
+            }
+          } else if (nodeActive) {
+            anyActive = true
+          }
+        }
+        return anyActive
+      }
+
+      walk(items, 0)
+      return next
+    })
+  }, [pathname, items])
 
   return (
     <div className="flex flex-col space-y-1 p-2">

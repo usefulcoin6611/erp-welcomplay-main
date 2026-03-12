@@ -24,7 +24,7 @@ export default function PayablesPage() {
           <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div>
               <h1 className="text-2xl font-bold">Payables</h1>
-              <p className="text-sm text-muted-foreground mt-1">Track outstanding amounts to suppliers</p>
+              <p className="text-sm text-muted-foreground mt-1">Track outstanding amounts to vendors</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -35,7 +35,7 @@ export default function PayablesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">Rp 142,300,000</div>
-                  <p className="text-xs text-muted-foreground">Across all suppliers</p>
+                  <p className="text-xs text-muted-foreground">Across all vendors</p>
                 </CardContent>
               </Card>
 

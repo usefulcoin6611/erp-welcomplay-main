@@ -6,6 +6,7 @@ import { TasksOverview } from '@/components/tasks-overview'
 import { TopDueProjects } from '@/components/top-due-projects'
 import { TimesheetLoggedHours } from '@/components/timesheet-logged-hours'
 import { TopDueTasks } from '@/components/top-due-tasks'
+import { ProjectDashboardProvider } from '@/contexts/project-dashboard-context'
 import {
   SidebarInset,
   SidebarProvider,
@@ -13,6 +14,7 @@ import {
 
 export default function ProjectDashboardPage() {
   return (
+    <ProjectDashboardProvider>
     <SidebarProvider
       style={
         {
@@ -24,7 +26,7 @@ export default function ProjectDashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
             {/* Stats Cards */}
             <ProjectStatsCards />
@@ -51,5 +53,6 @@ export default function ProjectDashboardPage() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </ProjectDashboardProvider>
   )
 }

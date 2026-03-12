@@ -1,11 +1,9 @@
 import React from "react"
 import Link from "next/link"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -21,6 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconDownload, IconSearch } from "@tabler/icons-react"
+
+const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
 const projectReports = [
   {
@@ -59,73 +59,62 @@ export default function ProjectReportPage() {
   const totalHours = projectReports.reduce((sum, p) => sum + p.loggedHours, 0)
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Project Reports</h1>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 px-4 shadow-none"
-              >
-                <IconDownload className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </div>
+    <>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1 flex-1">
+            <CardTitle className="text-2xl font-semibold">Project Reports</CardTitle>
+            <CardDescription>
+              Ringkasan performa project: status, task, dan jam kerja.
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+          >
+            <IconDownload className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+        </CardHeader>
+      </Card>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Projects
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalProjects}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Logged Hours
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalHours}h</div>
-                </CardContent>
-              </Card>
-            </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className={CARD_STYLE}>
+          <CardHeader className="pb-2 px-6">
+            <CardTitle className="text-sm font-medium">Projects</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="text-2xl font-bold">{totalProjects}</div>
+          </CardContent>
+        </Card>
+        <Card className={CARD_STYLE}>
+          <CardHeader className="pb-2 px-6">
+            <CardTitle className="text-sm font-medium">Total Logged Hours</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="text-2xl font-bold">{totalHours}h</div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-                <CardTitle>Project Performance</CardTitle>
-                <div className="relative w-full max-w-xs">
-                  <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                  <Input placeholder="Search project..." className="h-9 pl-9" />
-                </div>
-              </CardHeader>
-              <CardContent>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 py-3.5">
+          <CardTitle>Project Performance</CardTitle>
+          <div className="relative w-full max-w-xs">
+            <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+            <Input placeholder="Search project..." className="h-9 pl-9 bg-gray-50 border-0 shadow-none focus-visible:border-0 focus-visible:ring-0" />
+          </div>
+        </CardHeader>
+        <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Tasks</TableHead>
-                        <TableHead className="text-right">
+                        <TableHead className="px-6">Project</TableHead>
+                        <TableHead className="px-6">Status</TableHead>
+                        <TableHead className="px-6">Tasks</TableHead>
+                        <TableHead className="text-right px-6">
                           Logged Hours
                         </TableHead>
                       </TableRow>
@@ -133,7 +122,7 @@ export default function ProjectReportPage() {
                     <TableBody>
                       {projectReports.map((row) => (
                         <TableRow key={row.id}>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <Link
                               href={`/projects/project/${row.id}`}
                               className="text-sm font-semibold text-primary hover:underline"
@@ -141,17 +130,17 @@ export default function ProjectReportPage() {
                               {row.project}
                             </Link>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <Badge className={getStatusClasses(row.status)}>
                               {row.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">
                               {row.tasksDone}/{row.tasksTotal}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right px-6">
                             <div className="text-sm font-medium">
                               {row.loggedHours}h
                             </div>
@@ -161,12 +150,9 @@ export default function ProjectReportPage() {
                     </TableBody>
                   </Table>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </CardContent>
+      </Card>
+    </>
   )
 }
 

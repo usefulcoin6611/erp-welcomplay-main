@@ -1,5 +1,5 @@
 export interface AccountStatementData {
-  id: number
+  id: string
   date: string
   amount: number
   description: string
@@ -7,7 +7,7 @@ export interface AccountStatementData {
 }
 
 export interface AccountSummary {
-  id: number
+  id: string
   holderName: string
   bankName?: string
   total: number

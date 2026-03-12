@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Eye, Calculator } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Calculator, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface Employee {
   id: string;
@@ -21,55 +24,34 @@ interface Employee {
 }
 
 export function SetSalaryContent() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  // Mock data - sesuai dengan struktur Laravel reference
-  const [employees] = useState<Employee[]>([
-    {
-      id: '1',
-      employeeId: 'EMP001',
-      name: 'John Doe',
-      payrollType: 'Monthly',
-      salary: 8000000,
-      allowances: 1500000,
-      deductions: 500000,
-      netSalary: 9000000,
-      department: 'IT',
-    },
-    {
-      id: '2',
-      employeeId: 'EMP002',
-      name: 'Jane Smith',
-      payrollType: 'Monthly',
-      salary: 7500000,
-      allowances: 1200000,
-      deductions: 400000,
-      netSalary: 8300000,
-      department: 'HR',
-    },
-    {
-      id: '3',
-      employeeId: 'EMP003',
-      name: 'Bob Johnson',
-      payrollType: 'Monthly',
-      salary: 9000000,
-      allowances: 2000000,
-      deductions: 600000,
-      netSalary: 10400000,
-      department: 'Finance',
-    },
-    {
-      id: '4',
-      employeeId: 'EMP004',
-      name: 'Alice Brown',
-      payrollType: 'Hourly',
-      salary: 6000000,
-      allowances: 800000,
-      deductions: 300000,
-      netSalary: 6500000,
-      department: 'Marketing',
-    },
-  ]);
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/hrm/payroll/set-salary');
+      const data = await response.json();
+      if (data.success) {
+        setEmployees(data.data);
+      } else {
+        toast.error(data.message || 'Failed to fetch employees');
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast.error('Failed to fetch employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
   const filteredData = employees.filter(
     (emp) =>
@@ -78,147 +60,55 @@ export function SetSalaryContent() {
       emp.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSetSalary = (employeeId: string) => {
-    console.log('Set salary for employee:', employeeId);
-    // TODO: Open modal or navigate to set salary page
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
   };
 
-  const handleViewDetails = (employeeId: string) => {
-    console.log('View details for employee:', employeeId);
-    // TODO: Open modal with salary details
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
   };
+
+  const handleSetSalary = (id: string) => {
+    router.push(`/hrm/payroll/set-salary/${id}/edit`);
+  };
+
+  // View details dihilangkan sesuai requirement (aksi hanya Set Salary)
+
+  const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search by name, employee ID, or department..."
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Employee List */}
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Payroll Type</TableHead>
-                <TableHead className="text-right">Base Salary</TableHead>
-                <TableHead className="text-right">Allowances</TableHead>
-                <TableHead className="text-right">Deductions</TableHead>
-                <TableHead className="text-right">Net Salary</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No employees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredData.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell>
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto font-medium text-primary"
-                        onClick={() => handleViewDetails(employee.id)}
-                      >
-                        {employee.employeeId}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
-                    <TableCell>{employee.department}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{employee.payrollType}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.salary)}
-                    </TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.allowances)}
-                    </TableCell>
-                    <TableCell className="text-right text-red-600">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.deductions)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                      }).format(employee.netSalary)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewDetails(employee.id)}
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSetSalary(employee.id)}
-                          title="Set Salary"
-                          className="bg-blue-500 hover:bg-blue-600 shadow-none"
-                        >
-                          <Calculator className="w-4 h-4 mr-1" />
-                          Set Salary
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Summary Statistics */}
+      {/* Summary Statistics - placement seragam dengan Leave/Performance/Training */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Employees</p>
                 <p className="text-2xl font-bold">{employees.length}</p>
               </div>
+              <Calculator className="w-8 h-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Base Salary</p>
@@ -234,8 +124,8 @@ export function SetSalaryContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Allowances</p>
@@ -251,8 +141,8 @@ export function SetSalaryContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Net Salary</p>
@@ -269,6 +159,123 @@ export function SetSalaryContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Employee List - search menyatu dengan table, kanan atas */}
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 px-4 py-3 border-b">
+          <CardTitle className="text-base font-medium">Set Salary</CardTitle>
+          <div className="relative w-56 shrink-0">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search name, ID, department..."
+              value={searchTerm}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
+              className="h-9 border-0 bg-gray-50 pl-9 pr-3 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 w-full"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3 font-medium">Employee Id</TableHead>
+                <TableHead className="px-4 py-3 font-medium">Name</TableHead>
+                <TableHead className="px-4 py-3 font-medium">Payroll Type</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Salary</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-right">Net Salary</TableHead>
+                <TableHead className="px-4 py-3 font-medium text-center w-[120px]">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    No employees found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedData.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell className="px-4 py-3 font-medium">{employee.employeeId}</TableCell>
+                    <TableCell className="px-4 py-3 font-medium">{employee.name}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <Badge variant="outline">{employee.payrollType}</Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(employee.salary)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right font-semibold">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(employee.netSalary)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="flex justify-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSetSalary(employee.id)}
+                          title="Set Salary"
+                          className="h-7 shadow-none bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
+                          <Calculator className="w-4 h-4 mr-1" />
+                          Set Salary
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

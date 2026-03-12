@@ -4,11 +4,16 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslations } from 'next-intl'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function InvoicesStatistics() {
   const t = useTranslations('accountDashboard.recentInvoices')
   const [activeTab, setActiveTab] = useState('weekly')
-  
+  const { data, loading } = useAccountDashboard()
+  const weeklyData = data.invoiceStats.weekly
+  const monthlyData = data.invoiceStats.monthly
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -17,19 +22,22 @@ export function InvoicesStatistics() {
     }).format(amount)
   }
 
-  const weeklyData = {
-    totalGenerated: 52200000,
-    totalPaid: 27700000,
-    totalDue: 24500000,
-  }
-
-  const monthlyData = {
-    totalGenerated: 225000000,
-    totalPaid: 148000000,
-    totalDue: 77000000,
-  }
-
   const currentData = activeTab === 'weekly' ? weeklyData : monthlyData
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <Skeleton className="h-8 w-full" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

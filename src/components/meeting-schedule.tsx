@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ColumnDef,
   getCoreRowModel,
@@ -36,33 +36,59 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslations } from 'next-intl';
 
 interface IMeeting {
-  id: number;
+  id: string;
   title: string;
   date: string;
   time: string;
 }
 
-const meetings: IMeeting[] = [
-  { id: 1, title: 'Weekly Sync', date: '06 Nov, 2025', time: '10:00 AM' },
-  { id: 2, title: 'Product Review', date: '08 Nov, 2025', time: '02:00 PM' },
-  { id: 3, title: 'All Hands', date: '12 Nov, 2025', time: '09:00 AM' },
-  { id: 4, title: 'One-on-One', date: '14 Nov, 2025', time: '11:30 AM' },
-  { id: 5, title: 'Sprint Planning', date: '18 Nov, 2025', time: '03:00 PM' },
-];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatMeetingDate(isoDate: string): string {
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  const day = d.getDate();
+  const month = MONTH_SHORT[d.getMonth()];
+  const year = d.getFullYear();
+  return `${String(day).padStart(2, '0')} ${month}, ${year}`;
+}
 
 export const MeetingSchedule = ({ compact }: { compact?: boolean }) => {
   const t = useTranslations('hrmDashboard.meetingSchedule');
   const headerT = useTranslations('header');
 
+  const [meetings, setMeetings] = useState<IMeeting[]>([]);
+  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 });
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch('/api/hrm/meetings')
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json?.success || !Array.isArray(json.data)) return;
+        setMeetings(
+          (json.data as { id: string; title: string; date: string; time: string }[]).map((m) => ({
+            id: m.id,
+            title: m.title,
+            date: formatMeetingDate(m.date),
+            time: m.time ?? '—',
+          }))
+        );
+      })
+      .catch(() => setMeetings([]))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   const filtered = useMemo(() => {
     if (!searchQuery) return meetings;
     return meetings.filter((m) => m.title.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [searchQuery]);
+  }, [meetings, searchQuery]);
 
   const columns = useMemo<ColumnDef<IMeeting>[]>(() => {
     const cols: ColumnDef<IMeeting>[] = [];
@@ -132,6 +158,26 @@ export const MeetingSchedule = ({ compact }: { compact?: boolean }) => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            {t('title')}
+          </CardTitle>
+        </CardHeader>
+        <CardTable>
+          <div className="p-4 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardTable>
+      </Card>
+    );
+  }
 
   return (
     <DataGrid table={table} recordCount={filtered?.length || 0} tableLayout={{ columnsPinnable: true, columnsVisibility: true, cellBorder: true, dense: !!compact }}>

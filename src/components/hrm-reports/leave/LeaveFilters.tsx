@@ -15,17 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { branches, departments } from './constants';
-import type { LeaveFilters as Filters } from './useLeaveData';
+import type { LeaveFilters as Filters, LeaveFilterOptions } from './useLeaveData';
 
 interface LeaveFiltersProps {
   filters: Filters;
+  filterOptions: LeaveFilterOptions;
   onFilterChange: (filters: Filters) => void;
   onReset: () => void;
   onExport: () => void;
 }
 
-function LeaveFilters({ filters, onFilterChange, onReset, onExport }: LeaveFiltersProps) {
+function LeaveFilters({ filters, filterOptions, onFilterChange, onReset, onExport }: LeaveFiltersProps) {
+  const { branches, departments } = filterOptions;
   return (
     <div className="flex flex-col gap-4 rounded-lg border bg-card px-4 py-2">
       <div className="flex flex-col lg:flex-row lg:items-end gap-3">
@@ -38,10 +39,10 @@ function LeaveFilters({ filters, onFilterChange, onReset, onExport }: LeaveFilte
             onValueChange={(value) => value && onFilterChange({ ...filters, type: value as 'monthly' | 'daily' })}
             className="justify-start"
           >
-            <ToggleGroupItem value="monthly" className="h-9 px-3 text-sm cursor-pointer data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600">
+            <ToggleGroupItem value="monthly" className="h-9 px-3 text-sm cursor-pointer bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600 data-[state=on]:hover:!text-white">
               Monthly
             </ToggleGroupItem>
-            <ToggleGroupItem value="daily" className="h-9 px-3 text-sm cursor-pointer data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600">
+            <ToggleGroupItem value="daily" className="h-9 px-3 text-sm cursor-pointer bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600 data-[state=on]:hover:!text-white">
               Daily
             </ToggleGroupItem>
           </ToggleGroup>
@@ -77,7 +78,7 @@ function LeaveFilters({ filters, onFilterChange, onReset, onExport }: LeaveFilte
         {/* Branch */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Branch</Label>
-          <Select value={filters.branchId} onValueChange={(value: string) => onFilterChange({ ...filters, branchId: value })}>
+          <Select value={filters.branchId || 'all'} onValueChange={(value: string) => onFilterChange({ ...filters, branchId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Select Branch" />
             </SelectTrigger>
@@ -94,7 +95,7 @@ function LeaveFilters({ filters, onFilterChange, onReset, onExport }: LeaveFilte
         {/* Department */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Department</Label>
-          <Select value={filters.departmentId} onValueChange={(value: string) => onFilterChange({ ...filters, departmentId: value })}>
+          <Select value={filters.departmentId || 'all'} onValueChange={(value: string) => onFilterChange({ ...filters, departmentId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Department" />
             </SelectTrigger>

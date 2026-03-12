@@ -1,200 +1,177 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Label } from '@/components/ui/label'
 import dynamic from 'next/dynamic'
 
-// Dynamically import Chart to avoid SSR issues
-const Chart = dynamic(() => import('react-apexcharts'), { 
+const Chart = dynamic(() => import('react-apexcharts'), {
   ssr: false,
   loading: () => <Skeleton className="h-[280px] w-full" />
 })
 
+const MONTHS = [
+  { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
+  { value: '4', label: 'April' }, { value: '5', label: 'May' }, { value: '6', label: 'June' },
+  { value: '7', label: 'July' }, { value: '8', label: 'August' }, { value: '9', label: 'September' },
+  { value: '10', label: 'October' }, { value: '11', label: 'November' }, { value: '12', label: 'December' },
+]
+
+type GeneralData = {
+  weeklyLabels: string[]
+  weeklySeries: number[]
+  sourcesCategories: string[]
+  sourcesSeries: number[]
+  monthlyCategories: string[]
+  monthlySeries: number[]
+}
+
 export function LeadGeneralReport() {
-  const [selectedMonth, setSelectedMonth] = useState('')
+  const now = new Date()
+  const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1))
+  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()))
   const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<GeneralData | null>(null)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ type: 'lead', month: selectedMonth, year: selectedYear })
+      const res = await fetch(`/api/crm/reports?${params}`)
+      const json = await res.json()
+      if (json.success && json.data?.general) setData(json.data.general)
+      else setData(null)
+    } catch {
+      setData(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedMonth, selectedYear])
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const handleMonthChange = (value: string) => {
-    setSelectedMonth(value)
-    // Here you would typically fetch new data based on selected month
+  useEffect(() => {
+    if (!mounted) return
+    fetchData()
+  }, [mounted, fetchData])
+
+  const handleMonthChange = (value: string) => setSelectedMonth(value)
+  const handleYearChange = (value: string) => setSelectedYear(value)
+
+  const weeklyChartOptions: Record<string, unknown> = {
+    chart: { type: 'pie', width: 350, height: 280, toolbar: { show: false } },
+    labels: data?.weeklyLabels ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    colors: ['#DBEAFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'],
+    legend: { position: 'bottom' },
+    dataLabels: { enabled: true },
+    responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }]
   }
 
-  // This Week Leads Conversions Chart
-  const weeklyChartOptions: any = {
+  const weeklyChartSeries = data?.weeklySeries ?? [0, 0, 0, 0, 0, 0, 0]
+
+  const sourcesChartOptions: Record<string, unknown> = {
     chart: {
-      type: 'line',
+      type: 'bar',
       height: 280,
       toolbar: { show: false },
-      dropShadow: {
-        enabled: true,
-        color: '#000',
-        top: 18,
-        left: 7,
-        blur: 10,
-        opacity: 0.2
-      }
+      dropShadow: { enabled: true, color: '#000', top: 18, left: 7, blur: 10, opacity: 0.2 }
     },
-    stroke: {
-      width: 3,
-      curve: 'smooth'
-    },
-    xaxis: {
-      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    },
-    colors: ['#3b82f6'],
+    plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '60%' } },
     dataLabels: { enabled: false },
+    stroke: { width: 2, curve: 'smooth' },
+    xaxis: { categories: data?.sourcesCategories?.length ? data.sourcesCategories : ['No data'], title: { text: 'Source' } },
+    colors: ['#3B82F6'],
     grid: { strokeDashArray: 4 },
     legend: { show: false }
   }
 
-  const weeklyChartSeries = [{
-    name: 'Leads',
-    data: [12, 19, 15, 25, 22, 18, 24]
-  }]
+  const sourcesChartSeries = [{ name: 'Source', data: data?.sourcesSeries?.length ? data.sourcesSeries : [0] }]
 
-  // Sources Conversion Chart
-  const sourcesChartOptions: any = {
-    chart: {
-      type: 'donut',
-      height: 280
-    },
-    labels: ['Website', 'Referral', 'Social Media', 'Email', 'Event', 'Direct'],
-    colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280'],
-    legend: {
-      position: 'bottom'
-    },
-    dataLabels: {
-      enabled: true
-    }
-  }
-
-  const sourcesChartSeries = [35, 25, 20, 10, 6, 4]
-
-  // Monthly Chart
-  const monthlyChartOptions: any = {
-    chart: {
-      type: 'bar',
-      height: 280,
-      toolbar: { show: false }
-    },
-    plotOptions: {
-      bar: {
-        borderRadius: 4,
-        horizontal: false,
-        columnWidth: '50%',
-      }
-    },
+  const monthlyChartOptions: Record<string, unknown> = {
+    chart: { type: 'bar', height: 280, toolbar: { show: false } },
+    plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '50%' } },
     dataLabels: { enabled: false },
-    stroke: {
-      show: true,
-      width: 2,
-      colors: ['transparent']
-    },
-    xaxis: {
-      categories: ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-    },
-    colors: ['#6fd944'],
+    stroke: { show: true, width: 2, colors: ['transparent'] },
+    xaxis: { categories: data?.monthlyCategories ?? ['Week 1', 'Week 2', 'Week 3', 'Week 4'] },
+    colors: ['#3B82F6'],
     fill: { opacity: 1 },
     grid: { strokeDashArray: 4 }
   }
 
-  const monthlyChartSeries = [{
-    name: 'Leads',
-    data: [44, 55, 57, 56]
-  }]
+  const monthlyChartSeries = [{ name: 'Leads', data: data?.monthlySeries ?? [0, 0, 0, 0] }]
 
-  const months = [
-    { value: '1', label: 'Januari' },
-    { value: '2', label: 'Februari' },
-    { value: '3', label: 'Maret' },
-    { value: '4', label: 'April' },
-    { value: '5', label: 'Mei' },
-    { value: '6', label: 'Juni' },
-    { value: '7', label: 'Juli' },
-    { value: '8', label: 'Agustus' },
-    { value: '9', label: 'September' },
-    { value: '10', label: 'Oktober' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'Desember' },
-  ]
+  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i)
 
   return (
-    <div className="space-y-6">
-      {/* This Week Leads Conversions */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">This Week Leads Conversions</h3>
-          <p className="text-sm text-muted-foreground">Lead acquisition trends for the current week</p>
+    <div className="space-y-5">
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">This Week Leads Conversions</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Lead acquisition trends for the current week</p>
         </CardHeader>
-        <CardContent className="pt-4">
-          {mounted && (
-            <Chart
-              options={weeklyChartOptions}
-              series={weeklyChartSeries}
-              type="line"
-              height={320}
-            />
+        <CardContent className="px-5 pb-5 pt-0">
+          {!mounted ? null : loading ? (
+            <Skeleton className="h-[320px] w-full" />
+          ) : (
+            <Chart options={weeklyChartOptions} series={weeklyChartSeries} type="pie" height={320} />
           )}
         </CardContent>
       </Card>
 
-      {/* Sources Conversion */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">Sources Conversion</h3>
-          <p className="text-sm text-muted-foreground">Lead distribution by acquisition source</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <h3 className="text-base font-semibold text-foreground">Sources Conversion</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Lead distribution by acquisition source</p>
         </CardHeader>
-        <CardContent className="pt-4">
-          {mounted && (
-            <Chart
-              options={sourcesChartOptions}
-              series={sourcesChartSeries}
-              type="donut"
-              height={320}
-            />
+        <CardContent className="px-5 pb-5 pt-0">
+          {!mounted ? null : loading ? (
+            <Skeleton className="h-[320px] w-full" />
+          ) : (
+            <Chart options={sourcesChartOptions} series={sourcesChartSeries} type="bar" height={320} />
           )}
         </CardContent>
       </Card>
 
-      {/* Monthly */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold tracking-tight">Monthly Performance</h3>
-              <p className="text-sm text-muted-foreground">Weekly breakdown of lead generation</p>
+      <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+        <CardHeader className="px-5 pt-5 pb-3 w-full">
+          <div className="flex flex-row items-center justify-between gap-4 w-full flex-wrap">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-foreground">Monthly Performance</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Weekly breakdown of lead generation</p>
             </div>
-            <div className="w-full sm:w-48">
+            <div className="flex shrink-0 gap-2">
               <Select value={selectedMonth} onValueChange={handleMonthChange}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select Month" />
+                <SelectTrigger className="h-9 w-36">
+                  <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
+                  {MONTHS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedYear} onValueChange={handleYearChange}>
+                <SelectTrigger className="h-9 w-28">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          {mounted && (
-            <Chart
-              options={monthlyChartOptions}
-              series={monthlyChartSeries}
-              type="bar"
-              height={320}
-            />
+        <CardContent className="px-5 pb-5 pt-0">
+          {!mounted ? null : loading ? (
+            <Skeleton className="h-[320px] w-full" />
+          ) : (
+            <Chart options={monthlyChartOptions} series={monthlyChartSeries} type="bar" height={320} />
           )}
         </CardContent>
       </Card>

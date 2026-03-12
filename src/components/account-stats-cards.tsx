@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Users, Truck, FileText, Receipt } from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface StatCard {
   titleKey: string
@@ -14,27 +16,36 @@ interface StatCard {
 
 export function AccountStatsCards() {
   const t = useTranslations('accountDashboard.stats')
-  
+  const { data, loading } = useAccountDashboard()
+  const { totalCustomers, totalVendors, totalInvoices, totalBills } = data.stats
+
   const stats: StatCard[] = [
-    { titleKey: 'totalCustomers', value: '0', icon: Users, href: '/customer' },
-    { titleKey: 'totalVendors', value: '0', icon: Truck, href: '/vendor' },
-    { titleKey: 'totalInvoices', value: '0', icon: FileText, href: '/invoice' },
-    { titleKey: 'totalBills', value: '0', icon: Receipt, href: '/bill' }
+    { titleKey: 'totalCustomers', value: String(totalCustomers), icon: Users, href: '/customer' },
+    { titleKey: 'totalVendors', value: String(totalVendors), icon: Truck, href: '/vendor' },
+    { titleKey: 'totalInvoices', value: String(totalInvoices), icon: FileText, href: '/invoice' },
+    { titleKey: 'totalBills', value: String(totalBills), icon: Receipt, href: '/bill' },
   ]
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="border-0 shadow-none bg-white dark:bg-gray-900/80">
+            <CardContent className="p-3">
+              <Skeleton className="h-12 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
       {stats.map((stat) => {
         const IconComponent = stat.icon
         return (
-          <Card key={stat.titleKey} className="relative overflow-hidden border border-gray-200 dark:border-gray-800 shadow-none hover:shadow-sm transition-shadow duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-              <div className="absolute top-2 right-2 w-10 h-10 opacity-5 dark:opacity-10">
-                <div className="w-full h-full bg-gray-400 dark:bg-gray-600 rounded-full"></div>
-              </div>
-              <div className="absolute -top-1 -right-1 w-12 h-12 opacity-5 dark:opacity-10">
-                <div className="w-full h-full bg-gray-400 dark:bg-gray-600 rounded-full"></div>
-              </div>
-            </div>
+          <Card key={stat.titleKey} className="relative overflow-hidden border-0 shadow-none bg-white dark:bg-gray-900/80">
             <CardContent className="relative p-3">
               <div className="flex items-start justify-between">
                 <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/20">

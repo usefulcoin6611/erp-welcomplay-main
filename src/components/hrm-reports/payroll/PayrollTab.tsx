@@ -9,16 +9,16 @@ const PayrollSummary = dynamic(() => import('./PayrollSummary'), { ssr: false })
 const PayrollTable = dynamic(() => import('./PayrollTable'), { ssr: false });
 
 function PayrollTabComponent() {
-  const { filters, setFilters, data, summary } = usePayrollData();
+  const { filters, setFilters, data, summary, filterOptions, loading } = usePayrollData();
 
   const handleReset = () => {
     setFilters({
       type: 'monthly',
       month: new Date().toISOString().slice(0, 7),
       year: new Date().getFullYear().toString(),
-      branchId: '',
-      departmentId: '',
-      employeeId: '',
+      branchId: 'all',
+      departmentId: 'all',
+      employeeId: 'all',
     });
   };
 
@@ -50,6 +50,7 @@ function PayrollTabComponent() {
     <div className="flex flex-col gap-4">
       <PayrollFilters
         filters={filters}
+        filterOptions={filterOptions}
         onFilterChange={setFilters}
         onReset={handleReset}
         onExport={handleExport}
@@ -87,7 +88,11 @@ function PayrollTabComponent() {
         </div>
       </div>
 
-      <PayrollTable data={data} />
+      {loading ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">Loading payroll data...</div>
+      ) : (
+        <PayrollTable data={data} />
+      )}
     </div>
   );
 }

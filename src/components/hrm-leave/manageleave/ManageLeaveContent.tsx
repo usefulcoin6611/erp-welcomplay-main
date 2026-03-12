@@ -1,19 +1,50 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus, Pencil, Trash2, Search, Calendar, CheckCircle, XCircle, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { toast } from 'sonner';
+
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 interface Leave {
   id: string;
-  employeeId: string;
+  employeeId: string;      // Employee code e.g. EMP001
+  employeeDbId: string;    // Employee.id (Prisma)
   employeeName: string;
+  leaveTypeId: string;
   leaveType: string;
   startDate: string;
   endDate: string;
@@ -23,134 +54,303 @@ interface Leave {
   appliedDate: string;
 }
 
+function splitReasonAndRemark(combined: string | null | undefined): {
+  reason: string;
+  remark: string;
+} {
+  if (!combined) {
+    return { reason: '', remark: '' };
+  }
+
+  const marker = '\n\nRemark:';
+  const index = combined.indexOf(marker);
+
+  if (index === -1) {
+    return { reason: combined, remark: '' };
+  }
+
+  const reason = combined.slice(0, index).trimEnd();
+  const remarkRaw = combined.slice(index + marker.length).trim();
+
+  return {
+    reason: reason || '',
+    remark: remarkRaw || '',
+  };
+}
+
 export function ManageLeaveContent() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; name: string; employeeId: string }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; name: string; daysPerYear: number }[]>([]);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [leaveToDelete, setLeaveToDelete] = useState<Leave | null>(null);
+  const [statusAlertOpen, setStatusAlertOpen] = useState(false);
+  const [pendingStatusAction, setPendingStatusAction] = useState<'Approved' | 'Rejected' | null>(null);
+  const [pendingStatusLeave, setPendingStatusLeave] = useState<Leave | null>(null);
+  
   const [formData, setFormData] = useState({
-    employeeName: '',
-    leaveType: '',
+    employeeId: '',
+    leaveType: '', // This will store ID
     startDate: '',
     endDate: '',
     reason: '',
+    remark: '',
   });
 
-  // Mock data
-  const [leaves, setLeaves] = useState<Leave[]>([
-    {
-      id: '1',
-      employeeId: 'EMP001',
-      employeeName: 'John Doe',
-      leaveType: 'Annual Leave',
-      startDate: '2024-03-15',
-      endDate: '2024-03-17',
-      days: 3,
-      reason: 'Family vacation',
-      status: 'Approved',
-      appliedDate: '2024-03-01',
-    },
-    {
-      id: '2',
-      employeeId: 'EMP002',
-      employeeName: 'Jane Smith',
-      leaveType: 'Sick Leave',
-      startDate: '2024-03-20',
-      endDate: '2024-03-21',
-      days: 2,
-      reason: 'Medical checkup',
-      status: 'Pending',
-      appliedDate: '2024-03-18',
-    },
-    {
-      id: '3',
-      employeeId: 'EMP003',
-      employeeName: 'Bob Wilson',
-      leaveType: 'Casual Leave',
-      startDate: '2024-03-10',
-      endDate: '2024-03-10',
-      days: 1,
-      reason: 'Personal matters',
-      status: 'Rejected',
-      appliedDate: '2024-03-08',
-    },
-  ]);
+  const fetchLeaveTypes = async () => {
+    try {
+      const response = await fetch('/api/hrm/leave-types');
+      const data = await response.json();
+      if (data.success) {
+        setLeaveTypes(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching leave types:', error);
+    }
+  };
+
+  const fetchLeaves = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/hrm/leaves');
+      const data = await response.json();
+      if (data.success) {
+        const mappedData = data.data.map((item: any) => {
+           const start = new Date(item.startDate);
+           const end = new Date(item.endDate);
+           const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
+           return {
+             id: item.id,
+             employeeId: item.employee?.employeeId || '-',
+             employeeDbId: item.employeeId,
+             employeeName: item.employee?.name || '-',
+             leaveTypeId: item.leaveType?.id || '',
+             leaveType: item.leaveType?.name || '-', // Assuming relation is included
+             startDate: item.startDate.split('T')[0],
+             endDate: item.endDate.split('T')[0],
+             days,
+             reason: item.reason,
+             status: item.status,
+             appliedDate: item.createdAt.split('T')[0],
+           };
+        });
+        setLeaves(mappedData);
+      } else {
+        toast.error(data.message || 'Failed to fetch leaves');
+      }
+    } catch (error) {
+      console.error('Error fetching leaves:', error);
+      toast.error('Failed to fetch leaves');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/hrm/payroll/set-salary'); // Reusing this endpoint to get employees list
+      const data = await response.json();
+      if (data.success) {
+        setEmployees(data.data.map((e: any) => ({ id: e.id, name: e.name, employeeId: e.employeeId })));
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+    fetchEmployees();
+    fetchLeaveTypes();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(true);
     setEditingId(null);
     setFormData({
-      employeeName: '',
+      employeeId: '',
       leaveType: '',
       startDate: '',
       endDate: '',
       reason: '',
+      remark: '',
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
-
-    if (editingId) {
-      setLeaves(
-        leaves.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                ...formData,
-                days,
-                status: 'Pending' as const,
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: Leave = {
-        id: Date.now().toString(),
-        employeeId: 'EMP' + Math.floor(Math.random() * 1000).toString().padStart(3, '0'),
-        ...formData,
-        days,
-        status: 'Pending',
-        appliedDate: new Date().toISOString().split('T')[0],
-      };
-      setLeaves([...leaves, newItem]);
+    
+    // Simple validation
+    if (
+      !formData.employeeId ||
+      !formData.leaveType ||
+      !formData.startDate ||
+      !formData.endDate ||
+      !formData.reason ||
+      !formData.remark
+    ) {
+        toast.error("Please fill all required fields");
+        return;
     }
-    setShowForm(false);
-    setFormData({
-      employeeName: '',
-      leaveType: '',
-      startDate: '',
-      endDate: '',
-      reason: '',
-    });
+
+    try {
+        const composedReason = `${formData.reason}\n\nRemark: ${formData.remark}`;
+        const payload = {
+            employeeId: formData.employeeId,
+            leaveTypeId: formData.leaveType, // This stores the ID
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            reason: composedReason,
+        };
+
+        const isEdit = Boolean(editingId);
+        const url = isEdit ? `/api/hrm/leaves/${editingId}` : '/api/hrm/leaves';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            toast.success(isEdit ? "Leave updated successfully" : "Leave requested successfully");
+            fetchLeaves();
+            setShowForm(false);
+            setFormData({
+                employeeId: '',
+                leaveType: '',
+                startDate: '',
+                endDate: '',
+                reason: '',
+                remark: '',
+            });
+            setEditingId(null);
+        } else {
+            toast.error(data.message || (isEdit ? "Failed to update leave" : "Failed to request leave"));
+        }
+    } catch (error) {
+        console.error("Error submitting leave:", error);
+        toast.error("An error occurred");
+    }
   };
 
   const handleEdit = (item: Leave) => {
-    setShowForm(true);
-    setEditingId(item.id);
+    const employee = employees.find(
+      (e) => e.id === item.employeeDbId || e.employeeId === item.employeeId,
+    );
+
+    const { reason, remark } = splitReasonAndRemark(item.reason);
+
     setFormData({
-      employeeName: item.employeeName,
-      leaveType: item.leaveType,
+      employeeId: employee ? employee.id : '',
+      leaveType: item.leaveTypeId || '',
       startDate: item.startDate,
       endDate: item.endDate,
-      reason: item.reason,
+      reason,
+      remark,
     });
+
+    setEditingId(item.id);
+    setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this leave request?')) {
-      setLeaves(leaves.filter((item) => item.id !== id));
+  const openDeleteDialog = (leave: Leave) => {
+    setLeaveToDelete(leave);
+    setDeleteAlertOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!leaveToDelete) {
+      setDeleteAlertOpen(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/hrm/leaves/${leaveToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Leave request deleted');
+        fetchLeaves();
+      } else {
+        toast.error(data.message || 'Failed to delete leave');
+      }
+    } catch (error) {
+      toast.error('Failed to delete leave');
+    } finally {
+      setDeleteAlertOpen(false);
+      setLeaveToDelete(null);
     }
   };
 
-  const handleApprove = (id: string) => {
-    setLeaves(leaves.map((item) => (item.id === id ? { ...item, status: 'Approved' as const } : item)));
+  const handleApprove = async (id: string) => {
+    try {
+        const response = await fetch(`/api/hrm/leaves/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Approved' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+            toast.success("Leave approved");
+            fetchLeaves();
+        } else {
+            toast.error(data.message);
+        }
+    } catch (error) {
+        toast.error("Failed to approve leave");
+    }
   };
 
-  const handleReject = (id: string) => {
-    setLeaves(leaves.map((item) => (item.id === id ? { ...item, status: 'Rejected' as const } : item)));
+  const handleReject = async (id: string) => {
+    try {
+        const response = await fetch(`/api/hrm/leaves/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Rejected' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+            toast.success("Leave rejected");
+            fetchLeaves();
+        } else {
+            toast.error(data.message);
+        }
+    } catch (error) {
+        toast.error("Failed to reject leave");
+    }
+  };
+
+  const openStatusDialog = (leave: Leave, action: 'Approved' | 'Rejected') => {
+    setPendingStatusLeave(leave);
+    setPendingStatusAction(action);
+    setStatusAlertOpen(true);
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!pendingStatusLeave || !pendingStatusAction) {
+      setStatusAlertOpen(false);
+      return;
+    }
+
+    if (pendingStatusAction === 'Approved') {
+      await handleApprove(pendingStatusLeave.id);
+    } else {
+      await handleReject(pendingStatusLeave.id);
+    }
+
+    setStatusAlertOpen(false);
+    setPendingStatusLeave(null);
+    setPendingStatusAction(null);
   };
 
   const filteredData = leaves.filter(
@@ -160,14 +360,28 @@ export function ManageLeaveContent() {
       leave.leaveType.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const leaveTypes = ['Annual Leave', 'Sick Leave', 'Casual Leave', 'Maternity Leave', 'Paternity Leave'];
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Requests</p>
@@ -177,8 +391,8 @@ export function ManageLeaveContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -189,8 +403,8 @@ export function ManageLeaveContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Approved</p>
@@ -201,8 +415,8 @@ export function ManageLeaveContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Rejected</p>
@@ -217,183 +431,276 @@ export function ManageLeaveContent() {
 
       {/* Add Button */}
       <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
+        <Button onClick={handleAdd} className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
           <Plus className="w-4 h-4 mr-2" />
           Apply Leave
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Apply'} Leave</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employeeName">Employee Name</Label>
-                  <Input
-                    id="employeeName"
-                    value={formData.employeeName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, employeeName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="leaveType">Leave Type</Label>
-                  <Select value={formData.leaveType} onValueChange={(value) => setFormData({ ...formData, leaveType: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select leave type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leaveTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, startDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, endDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
+      {/* Apply / Edit Leave Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({
+              employeeId: '',
+              leaveType: '',
+              startDate: '',
+              endDate: '',
+              reason: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Leave' : 'Apply Leave'}</DialogTitle>
+            <DialogDescription>
+              Isi detail pengajuan cuti sesuai dengan kebijakan perusahaan.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="employeeId">
+                  Employee <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.employeeId}
+                  onValueChange={(value) => setFormData({ ...formData, employeeId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.employeeId})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Create employee here.{' '}
+                  <Link
+                    href="/hrm/employees"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Create employee
+                  </Link>
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="reason">Reason</Label>
+                <Label htmlFor="leaveType">
+                  Leave Type <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.leaveType}
+                  onValueChange={(value) => setFormData({ ...formData, leaveType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select leave type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leaveTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                        {type.daysPerYear > 0 ? ` (${type.daysPerYear} days / year)` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Create leave type here.{' '}
+                  <Link
+                    href="/hrm/setup/leave-type"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Create leave type
+                  </Link>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="startDate">
+                  Start Date <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="reason"
-                  value={formData.reason}
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, reason: e.target.value })
+                    setFormData({ ...formData, startDate: e.target.value })
                   }
                   required
                 />
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
-                  {editingId ? 'Update' : 'Submit'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">
+                  End Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
+                  required
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">
+                Leave Reason <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="reason"
+                value={formData.reason}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
+                placeholder="Tuliskan alasan pengajuan cuti"
+                className="min-h-[100px]"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="remark">
+                Remark <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="remark"
+                value={formData.remark}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, remark: e.target.value })
+                }
+                placeholder="Catatan tambahan terkait pengajuan cuti"
+                className="min-h-[80px]"
+                required
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+              >
+                {editingId ? 'Update' : 'Submit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Leave List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
+      <Card className={cardClass}>
+        <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between gap-4">
+          <h3 className="text-sm font-medium">Leave Requests</h3>
+          <div className="relative w-full max-w-[280px] ml-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search by employee name, ID, or leave type..."
               value={searchTerm}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-0 bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Leave Type</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
-                <TableHead className="text-center">Days</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="px-4 py-3">Employee ID</TableHead>
+                <TableHead className="px-4 py-3">Employee Name</TableHead>
+                <TableHead className="px-4 py-3">Leave Type</TableHead>
+                <TableHead className="px-4 py-3">Applied On</TableHead>
+                <TableHead className="px-4 py-3">Start Date</TableHead>
+                <TableHead className="px-4 py-3">End Date</TableHead>
+                <TableHead className="px-4 py-3 text-center">Total Days</TableHead>
+                <TableHead className="px-4 py-3">Leave Reason</TableHead>
+                <TableHead className="px-4 py-3 text-center">Status</TableHead>
+                <TableHead className="px-4 py-3 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length === 0 ? (
+            {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No leave requests found
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground px-4 py-3">
+                  No leave requests found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData.map((leave) => (
+                paginatedData.map((leave) => (
                   <TableRow key={leave.id}>
-                    <TableCell className="font-medium">{leave.employeeId}</TableCell>
-                    <TableCell>{leave.employeeName}</TableCell>
-                    <TableCell>{leave.leaveType}</TableCell>
-                    <TableCell>{leave.startDate}</TableCell>
-                    <TableCell>{leave.endDate}</TableCell>
-                    <TableCell className="text-center">{leave.days}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{leave.reason}</TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="px-4 py-3 font-medium">{leave.employeeId}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.employeeName}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.leaveType}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.appliedDate}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.startDate}</TableCell>
+                    <TableCell className="px-4 py-3">{leave.endDate}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">{leave.days}</TableCell>
+                    <TableCell className="px-4 py-3 max-w-[200px] truncate">{leave.reason}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">
                       <Badge
                         className={
                           leave.status === 'Approved'
-                            ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                             : leave.status === 'Rejected'
-                            ? 'bg-red-100 text-red-700 hover:bg-red-100'
-                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
+                            ? 'bg-red-50 text-red-700 border-red-100'
+                            : 'bg-amber-50 text-amber-700 border-amber-100'
                         }
                       >
                         {leave.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         {leave.status === 'Pending' && (
                           <>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleApprove(leave.id)}
+                              onClick={() => openStatusDialog(leave, 'Approved')}
                               title="Approve"
-                              className="text-green-600 hover:text-green-700"
+                              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
                             >
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleReject(leave.id)}
+                              onClick={() => openStatusDialog(leave, 'Rejected')}
                               title="Reject"
-                              className="text-red-600 hover:text-red-700"
+                              className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                             >
                               <XCircle className="w-4 h-4" />
                             </Button>
                           </>
                         )}
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(leave)} title="Edit">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(leave)}
+                          title="Edit"
+                          className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(leave.id)}
+                          onClick={() => openDeleteDialog(leave)}
                           title="Delete"
-                          className="text-red-600 hover:text-red-700"
+                          className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -404,8 +711,88 @@ export function ManageLeaveContent() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Leave?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Leave request akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleDeleteConfirm}>
+              <span>Hapus</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={statusAlertOpen} onOpenChange={setStatusAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingStatusAction === 'Approved'
+                ? 'Approve Leave Request?'
+                : 'Reject Leave Request?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingStatusAction === 'Approved'
+                ? 'Apakah Anda yakin ingin menyetujui pengajuan cuti ini?'
+                : 'Apakah Anda yakin ingin menolak pengajuan cuti ini?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <AlertDialogCancel type="button">Batal</AlertDialogCancel>
+            <AlertDialogAction type="button" onClick={handleStatusConfirm}>
+              <span>{pendingStatusAction === 'Approved' ? 'Approve' : 'Reject'}</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

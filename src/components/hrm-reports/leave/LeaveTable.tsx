@@ -41,11 +41,15 @@ function LeaveTable({ data }: LeaveTableProps) {
   const getLeaveTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       annual: 'Annual Leave',
+      'annual-leave': 'Annual Leave',
       sick: 'Sick Leave',
+      'sick-leave': 'Sick Leave',
       emergency: 'Emergency Leave',
+      'emergency-leave': 'Emergency Leave',
       unpaid: 'Unpaid Leave',
+      'unpaid-leave': 'Unpaid Leave',
     };
-    return labels[type] || type;
+    return labels[type?.toLowerCase()] || (type ? type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Leave');
   };
 
   return (

@@ -1,9 +1,11 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FileText, ClipboardList, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { useProjectDashboard } from "@/contexts/project-dashboard-context"
 
 interface StatsCardProps {
   title: string
@@ -70,41 +72,57 @@ const StatCard = ({ title, total, percentage, icon, link, bgColor, textColor }: 
   return cardContent
 }
 
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)
+}
+
 export function ProjectStatsCards() {
   const t = useTranslations('projectDashboard.stats')
+  const { data, loading } = useProjectDashboard()
+  const { stats } = data
 
-  const stats = [
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[120px] w-full rounded-lg" />
+        ))}
+      </div>
+    )
+  }
+
+  const statItems = [
     {
       title: t('totalProjects'),
-      total: "0",
-      percentage: "0",
-  icon: <FileText className="w-6 h-6 text-cyan-500" />,
+      total: String(stats.totalProjects),
+      percentage: String(stats.projectCompletionPercent),
+      icon: <FileText className="w-6 h-6 text-cyan-500" />,
       link: "/projects",
-  bgColor: "bg-cyan-50",
-  textColor: "text-cyan-600"
+      bgColor: "bg-cyan-50",
+      textColor: "text-cyan-600"
     },
     {
       title: t('totalTasks'),
-      total: "0",
-      percentage: "0",
-  icon: <ClipboardList className="w-6 h-6 text-cyan-500" />,
-      link: "/tasks",
-  bgColor: "bg-cyan-50",
-  textColor: "text-cyan-600"
+      total: String(stats.totalTasks),
+      percentage: String(stats.taskCompletionPercent),
+      icon: <ClipboardList className="w-6 h-6 text-cyan-500" />,
+      link: "/taskboard",
+      bgColor: "bg-cyan-50",
+      textColor: "text-cyan-600"
     },
     {
       title: t('totalExpense'),
-      total: "Rp 0",
+      total: formatCurrency(stats.totalExpense),
       percentage: "0",
-  icon: <DollarSign className="w-6 h-6 text-cyan-500" />,
-  bgColor: "bg-cyan-50",
-  textColor: "text-cyan-600"
+      icon: <DollarSign className="w-6 h-6 text-cyan-500" />,
+      bgColor: "bg-cyan-50",
+      textColor: "text-cyan-600"
     }
   ]
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {stats.map((stat, index) => (
+      {statItems.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}
     </div>

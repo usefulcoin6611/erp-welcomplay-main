@@ -15,6 +15,7 @@ function ProductStockTabComponent() {
     setSelectedCategory,
     selectedStatus,
     setSelectedStatus,
+    categoryOptions,
     
     // Pagination states
     currentPage,
@@ -23,6 +24,7 @@ function ProductStockTabComponent() {
     setPageSize,
     
     // Data
+    filteredData,
     paginatedData,
     summaryStats,
     
@@ -45,6 +47,8 @@ function ProductStockTabComponent() {
         setSelectedStatus={setSelectedStatus}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        categoryOptions={categoryOptions}
+        exportData={filteredData}
       />
 
       {/* Statistics Cards */}

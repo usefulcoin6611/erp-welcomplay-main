@@ -97,7 +97,7 @@ export default function BugStatusPage() {
                 <CardTitle>Bug Status List</CardTitle>
                 <div className="relative w-full max-w-xs">
                   <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                  <Input placeholder="Search status..." className="h-9 pl-9" />
+                  <Input placeholder="Search status..." className="h-9 pl-9 bg-gray-50 border-0 shadow-none focus-visible:border-0 focus-visible:ring-0" />
                 </div>
               </CardHeader>
               <CardContent>

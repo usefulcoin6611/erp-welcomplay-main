@@ -4,6 +4,14 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Route project system: timesheet-list & projectstages pakai (project-system) layout. Yang lain tetap rewrite ke /projects/*
+  async rewrites() {
+    return [
+      { source: '/project', destination: '/projects' },
+      { source: '/time-tracker', destination: '/projects/time-tracker' },
+      { source: '/accounting/bill/edit/:id', destination: '/accounting/bill/create/:id' },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -16,6 +24,12 @@ const nextConfig = {
   },
   // Configure Turbopack (Next.js 16 default)
   turbopack: {},
+  // Webpack configuration for when using --webpack flag
+  webpack: (config, { isServer }) => {
+    // Only modify webpack config if needed
+    // Next.js handles CSS extraction automatically
+    return config;
+  },
   // Enable development mode features for MCP
   env: {
     MCP_ENABLED: 'true',

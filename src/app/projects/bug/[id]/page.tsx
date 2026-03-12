@@ -67,11 +67,12 @@ function getStatusClasses(status: string) {
 }
 
 interface BugDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function BugDetailPage({ params }: BugDetailPageProps) {
-  const id = Number(params.id)
+export default async function BugDetailPage({ params }: BugDetailPageProps) {
+  const { id: idParam } = await params
+  const id = Number(idParam)
   const bug = bugs.find((b) => b.id === id)
 
   if (!bug) {
@@ -90,30 +91,18 @@ export default function BugDetailPage({ params }: BugDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-100">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shadow-none"
-                >
-                  <Link href="/projects/bug/list">
-                    <IconArrowLeft className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold leading-tight flex items-center gap-2">
-                    <IconBug className="h-5 w-5 text-red-500" />
-                    {bug.title}
-                  </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>BUG-{bug.id}</span>
-                    <Separator orientation="vertical" className="h-4" />
-                    <span>{bug.project}</span>
-                  </div>
+              <div>
+                <h1 className="text-2xl font-bold leading-tight flex items-center gap-2">
+                  <IconBug className="h-5 w-5 text-red-500" />
+                  {bug.title}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span>BUG-{bug.id}</span>
+                  <Separator orientation="vertical" className="h-4" />
+                  <span>{bug.project}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -123,6 +112,11 @@ export default function BugDetailPage({ params }: BugDetailPageProps) {
                 <Badge className={getStatusClasses(bug.status)}>
                   {bug.status}
                 </Badge>
+                <Button asChild variant="outline" size="icon" className="h-8 w-8 shadow-none">
+                  <Link href="/projects/bug/list">
+                    <IconArrowLeft className="h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
             </div>
 

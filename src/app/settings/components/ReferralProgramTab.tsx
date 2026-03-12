@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Copy, Search, PiggyBank, Wallet } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { SimplePagination } from '@/components/ui/simple-pagination'
+import { PLAN_DATA } from '@/lib/plan-data'
 import {
   Select,
   SelectContent,
@@ -40,68 +43,60 @@ interface PayoutRequest {
   status: 'Approved' | 'Rejected' | 'In Progress'
 }
 
+const planPriceByName = (planName: string) =>
+  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
+
+const buildTransaction = (
+  id: string,
+  companyName: string,
+  planName: string,
+  commissionPercent: number,
+): Transaction => {
+  const planPrice = planPriceByName(planName)
+  return {
+    id,
+    company_name: companyName,
+    plan_name: planName,
+    plan_price: planPrice,
+    commission_percent: commissionPercent,
+    commission_amount: Math.round((planPrice * commissionPercent) / 100),
+  }
+}
+
 const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    company_name: 'Murray Group',
-    plan_name: 'Gold',
-    plan_price: 400,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
-  {
-    id: '2',
-    company_name: 'ABHISHEK DWIVEDI',
-    plan_name: 'Silver',
-    plan_price: 300,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
-  {
-    id: '3',
-    company_name: 'Shaine Mcdowell',
-    plan_name: 'Gold',
-    plan_price: 400,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
-  {
-    id: '4',
-    company_name: 'Nerea Hart',
-    plan_name: 'Gold',
-    plan_price: 400,
-    commission_percent: 10,
-    commission_amount: 0, // Will be calculated
-  },
+  buildTransaction('1', 'Murray Group', 'Gold', 10),
+  buildTransaction('2', 'ABHISHEK DWIVEDI', 'Silver', 10),
+  buildTransaction('3', 'Shaine Mcdowell', 'Gold', 10),
+  buildTransaction('4', 'Nerea Hart', 'Platinum', 10),
 ]
 
 const mockPayoutRequests: PayoutRequest[] = [
   {
     id: '1',
-    company_name: 'Workdo',
+    company_name: 'WelcomePlay',
     requested_date: '2024-04-10',
-    requested_amount: 30,
+    requested_amount: 50000,
     status: 'Approved',
   },
   {
     id: '2',
-    company_name: 'Workdo',
+    company_name: 'Welcomplay',
     requested_date: '2024-04-10',
-    requested_amount: 10,
+    requested_amount: 25000,
     status: 'Rejected',
   },
   {
     id: '3',
-    company_name: 'Workdo',
+    company_name: 'Welcomplay',
     requested_date: '2024-04-10',
-    requested_amount: 20,
+    requested_amount: 100000,
     status: 'Approved',
   },
   {
     id: '4',
-    company_name: 'Workdo',
+    company_name: 'Welcomplay',
     requested_date: '2024-04-10',
-    requested_amount: 50,
+    requested_amount: 75000,
     status: 'In Progress',
   },
 ]
@@ -113,9 +108,11 @@ function TransactionContent() {
   const [currentPage, setCurrentPage] = useState(1)
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount)
   }
 
@@ -141,7 +138,7 @@ function TransactionContent() {
   )
 
   return (
-    <Card className="shadow-none">
+    <Card>
       <CardHeader>
         <CardTitle>Referral Transaction</CardTitle>
       </CardHeader>
@@ -174,7 +171,7 @@ function TransactionContent() {
                 setSearch(e.target.value)
                 setCurrentPage(1)
               }}
-              className="pl-9 w-64"
+              className="pl-9 w-64 border-0 focus-visible:border-0 focus-visible:ring-0 bg-gray-50 hover:bg-gray-100 shadow-none"
             />
           </div>
         </div>
@@ -210,10 +207,14 @@ function TransactionContent() {
                     <TableRow key={transaction.id}>
                       <TableCell>{actualIndex}</TableCell>
                       <TableCell>{transaction.company_name}</TableCell>
-                      <TableCell>{transaction.plan_name}</TableCell>
-                      <TableCell>${formatCurrency(transaction.plan_price)}</TableCell>
+                      <TableCell>
+                        <Badge className={getPlanBadgeColors(transaction.plan_name)}>
+                          {transaction.plan_name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatCurrency(transaction.plan_price)}</TableCell>
                       <TableCell>{transaction.commission_percent}</TableCell>
-                      <TableCell>${formatCurrency(commissionAmount)}</TableCell>
+                      <TableCell>{formatCurrency(commissionAmount)}</TableCell>
                     </TableRow>
                   )
                 })
@@ -238,9 +239,11 @@ function TransactionContent() {
 // Payout Request Component
 function PayoutRequestContent() {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount)
   }
 
@@ -283,13 +286,13 @@ function PayoutRequestContent() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Total Commission Amount Card */}
-        <Card className="shadow-none bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800">
+        <Card className="bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Total Commission Amount</p>
                 <p className="text-3xl font-bold text-pink-700 dark:text-pink-300">
-                  ${formatCurrency(totalCommissionAmount)}
+                  {formatCurrency(totalCommissionAmount)}
                 </p>
               </div>
               <div className="bg-pink-100 dark:bg-pink-900 p-3 rounded-lg">
@@ -300,13 +303,13 @@ function PayoutRequestContent() {
         </Card>
 
         {/* Paid Amount Card */}
-        <Card className="shadow-none bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+        <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Paid Amount</p>
                 <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                  ${formatCurrency(paidAmount)}
+                  {formatCurrency(paidAmount)}
                 </p>
               </div>
               <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
@@ -318,7 +321,7 @@ function PayoutRequestContent() {
       </div>
 
       {/* Payout History Table */}
-      <Card className="shadow-none">
+      <Card>
         <CardHeader>
           <CardTitle>Payout History</CardTitle>
         </CardHeader>
@@ -348,7 +351,7 @@ function PayoutRequestContent() {
                       <TableCell>{request.company_name}</TableCell>
                       <TableCell>{request.requested_date}</TableCell>
                       <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell>${formatCurrency(request.requested_amount)}</TableCell>
+                      <TableCell>{formatCurrency(request.requested_amount)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -363,7 +366,7 @@ function PayoutRequestContent() {
 
 // GuideLine Component
 function ReferralSettingsContent() {
-  const [referralLink] = useState('https://demo.workdo.io/erpgo-saas/register?ref=672428')
+  const [referralLink] = useState('https://welcomplay.com')
   const [commissionPercent] = useState('10')
   const [commissionAmount] = useState('10')
 
@@ -373,7 +376,7 @@ function ReferralSettingsContent() {
   }
 
   return (
-    <Card className="shadow-none">
+    <Card>
       <CardContent className="pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Referral Instructions */}
@@ -383,8 +386,8 @@ function ReferralSettingsContent() {
             </h3>
             <ol className="space-y-3 list-decimal list-inside">
               <li className="text-sm">
-                Refer new users to us and earn ${commissionAmount} for each successful referral.
-                (${commissionAmount} - set commission amount)
+                Refer new users to us and earn {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(commissionAmount))} for each successful referral.
+                (Commission amount in Rupiah - set commission amount)
               </li>
               <li className="text-sm">Share your link and start earning today!</li>
             </ol>
@@ -432,8 +435,7 @@ function ReferralProgramContent() {
   ]
 
   const handleMenuClick = (itemId: string) => {
-    const currentTab = searchParams.get('tab') || 'referral-program'
-    router.push(`/settings?tab=${currentTab}&subtab=${itemId}`, { scroll: false })
+    router.push(`/settings?tab=referral-program&subtab=${itemId}`, { scroll: false })
   }
 
   const renderContent = () => {
@@ -453,7 +455,7 @@ function ReferralProgramContent() {
     <div className="grid gap-4 xl:grid-cols-12">
       {/* Vertical Sidebar - col-xl-3 (25%) */}
       <div className="xl:col-span-3">
-        <Card className="h-fit xl:sticky xl:top-6 shadow-none border-r">
+        <Card className="h-fit xl:sticky xl:top-6 border-r">
           <CardContent className="p-0">
             <div className="space-y-0">
               {referralMenuItems.map((item) => {

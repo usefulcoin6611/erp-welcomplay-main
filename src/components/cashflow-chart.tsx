@@ -10,15 +10,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-
-const cashflowData = [
-  { month: "January", income: 8500000, expense: 6400000 },
-  { month: "February", income: 9200000, expense: 6800000 },
-  { month: "March", income: 7800000, expense: 7200000 },
-  { month: "April", income: 10500000, expense: 5800000 },
-  { month: "May", income: 8900000, expense: 6500000 },
-  { month: "June", income: 11000000, expense: 7800000 },
-]
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const chartConfig = {
   income: {
@@ -31,9 +24,33 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+const fallbackCashflow = [
+  { month: "January", income: 0, expense: 0 },
+  { month: "February", income: 0, expense: 0 },
+  { month: "March", income: 0, expense: 0 },
+  { month: "April", income: 0, expense: 0 },
+  { month: "May", income: 0, expense: 0 },
+  { month: "June", income: 0, expense: 0 },
+]
+
 export function CashflowChart() {
   const t = useTranslations('accountDashboard.cashflow')
-  
+  const { data, loading } = useAccountDashboard()
+  const chartData = data.cashflowChart?.length ? data.cashflowChart : fallbackCashflow
+
+  if (loading) {
+    return (
+      <Card className="border-gray-200 dark:border-gray-800">
+        <CardHeader className="pb-1 px-3 py-2">
+          <Skeleton className="h-5 w-24" />
+        </CardHeader>
+        <CardContent className="px-2 py-1 pt-0">
+          <Skeleton className="h-40 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-gray-200 dark:border-gray-800">
       <CardHeader className="pb-1 px-3 py-2">
@@ -46,7 +63,7 @@ export function CashflowChart() {
         <ChartContainer config={chartConfig} className="h-40 w-full -ml-6">
           <LineChart
             accessibilityLayer
-            data={cashflowData}
+            data={chartData}
             margin={{
               left: 12,
               right: 12,

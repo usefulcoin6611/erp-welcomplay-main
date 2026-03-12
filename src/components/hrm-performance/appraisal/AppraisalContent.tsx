@@ -1,14 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Star, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Star, Eye, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { StarRatingDisplay } from '../StarRatingDisplay';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
+
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
 
 interface Appraisal {
   id: string;
@@ -19,6 +39,7 @@ interface Appraisal {
   targetRating: number;
   overallRating: number;
   appraisalDate: string;
+  period?: string;
 }
 
 export function AppraisalContent() {
@@ -36,42 +57,52 @@ export function AppraisalContent() {
     remarks: '',
   });
 
-  // Mock data
-  const [appraisals, setAppraisals] = useState<Appraisal[]>([
-    {
-      id: '1',
-      branch: 'Head Office',
-      department: 'IT',
-      designation: 'Senior Developer',
-      employee: 'John Doe',
-      targetRating: 4.0,
-      overallRating: 4.3,
-      appraisalDate: '2024-03-01',
-    },
-    {
-      id: '2',
-      branch: 'Branch A',
-      department: 'HR',
-      designation: 'HR Manager',
-      employee: 'Jane Smith',
-      targetRating: 4.5,
-      overallRating: 4.6,
-      appraisalDate: '2024-03-05',
-    },
-    {
-      id: '3',
-      branch: 'Head Office',
-      department: 'Finance',
-      designation: 'Accountant',
-      employee: 'Bob Wilson',
-      targetRating: 4.0,
-      overallRating: 3.8,
-      appraisalDate: '2024-03-10',
-    },
-  ]);
+  const [appraisals, setAppraisals] = useState<Appraisal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<
+    { id: string; name: string; branch: string; department: string; designation: string }[]
+  >([]);
+  const [viewItem, setViewItem] = useState<Appraisal | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const branches = ['Head Office', 'Branch A', 'Branch B'];
-  const employees = ['John Doe', 'Jane Smith', 'Bob Wilson', 'Alice Brown', 'Charlie Davis'];
+  const fetchAppraisals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/hrm/performance/appraisals');
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data))
+        setAppraisals(
+          json.data.map((a: { employee?: string; employeeId: string } & Appraisal) => ({
+            ...a,
+            employee: a.employee ?? '',
+          }))
+        );
+      else toast.error(json.message ?? 'Gagal memuat appraisal');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal memuat appraisal');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAppraisals(); }, [fetchAppraisals]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [bRes, eRes] = await Promise.all([fetch('/api/branches'), fetch('/api/hrm/assets/employees')]);
+        const bJson = await bRes.json();
+        const eJson = await eRes.json();
+        if (bJson.success && Array.isArray(bJson.data)) setBranches(bJson.data);
+        if (eJson.success && Array.isArray(eJson.data)) setEmployees(eJson.data);
+      } catch (_e) {}
+    })();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(true);
@@ -88,61 +119,52 @@ export function AppraisalContent() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const overallRating =
-      (parseFloat(formData.technicalRating) +
-        parseFloat(formData.leadershipRating) +
-        parseFloat(formData.teamworkRating) +
-        parseFloat(formData.communicationRating)) /
-      4;
+    setSubmitting(true);
+    try {
+      const selectedEmployee = employees.find((emp) => emp.id === formData.employee);
+      const existingAppraisal = editingId ? appraisals.find((a) => a.id === editingId) : undefined;
 
-    if (editingId) {
-      setAppraisals(
-        appraisals.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                branch: formData.branch,
-                employee: formData.employee,
-                appraisalDate: formData.appraisalDate,
-                overallRating: parseFloat(overallRating.toFixed(1)),
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: Appraisal = {
-        id: Date.now().toString(),
-        branch: formData.branch,
-        department: 'IT',
-        designation: 'Developer',
-        employee: formData.employee,
-        targetRating: 4.0,
-        overallRating: parseFloat(overallRating.toFixed(1)),
+      const department = selectedEmployee?.department ?? existingAppraisal?.department ?? '';
+      const designation = selectedEmployee?.designation ?? existingAppraisal?.designation ?? '';
+
+      const payload = {
+        employeeId: formData.employee,
+        branch: formData.branch || selectedEmployee?.branch || '',
+        department,
+        designation,
+        targetRating: 4,
         appraisalDate: formData.appraisalDate,
+        technicalRating: formData.technicalRating ? parseFloat(formData.technicalRating) : undefined,
+        leadershipRating: formData.leadershipRating ? parseFloat(formData.leadershipRating) : undefined,
+        teamworkRating: formData.teamworkRating ? parseFloat(formData.teamworkRating) : undefined,
+        communicationRating: formData.communicationRating ? parseFloat(formData.communicationRating) : undefined,
+        remarks: formData.remarks || undefined,
       };
-      setAppraisals([...appraisals, newItem]);
+      const url = editingId ? `/api/hrm/performance/appraisals/${editingId}` : '/api/hrm/performance/appraisals';
+      const res = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? (editingId ? 'Appraisal berhasil diperbarui' : 'Appraisal berhasil dibuat'));
+        setShowForm(false);
+        setEditingId(null);
+        fetchAppraisals();
+      } else toast.error(json.message ?? 'Gagal menyimpan');
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan');
+    } finally {
+      setSubmitting(false);
     }
-    setShowForm(false);
-    setFormData({
-      branch: '',
-      employee: '',
-      appraisalDate: '',
-      technicalRating: '',
-      leadershipRating: '',
-      teamworkRating: '',
-      communicationRating: '',
-      remarks: '',
-    });
   };
 
-  const handleEdit = (item: Appraisal) => {
+  const handleEdit = (item: Appraisal & { employeeId?: string }) => {
     setShowForm(true);
     setEditingId(item.id);
     setFormData({
       branch: item.branch,
-      employee: item.employee,
+      employee: (item as { employeeId?: string }).employeeId ?? item.employee ?? '',
       appraisalDate: item.appraisalDate,
       technicalRating: '',
       leadershipRating: '',
@@ -152,16 +174,42 @@ export function AppraisalContent() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this appraisal?')) {
-      setAppraisals(appraisals.filter((item) => item.id !== id));
+  const openDelete = (id: string) => setDeleteId(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/hrm/performance/appraisals/${deleteId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message ?? 'Appraisal berhasil dihapus');
+        setDeleteId(null);
+        fetchAppraisals();
+      } else toast.error(json.message ?? 'Gagal menghapus');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal menghapus');
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleView = (id: string) => {
-    console.log('View appraisal details:', id);
-    alert('View appraisal details - Feature to be implemented');
+    const item = appraisals.find((appraisal) => appraisal.id === id);
+    if (!item) {
+      toast.error('Appraisal tidak ditemukan');
+      return;
+    }
+    setViewItem(item);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const filteredData = appraisals.filter(
     (appraisal) =>
@@ -170,21 +218,23 @@ export function AppraisalContent() {
       appraisal.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRatingBadge = (rating: number, target: number) => {
-    if (rating >= target) {
-      return 'bg-green-100 text-green-700 hover:bg-green-100';
-    } else if (rating >= target - 0.5) {
-      return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
-    }
-    return 'bg-red-100 text-red-700 hover:bg-red-100';
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
   };
 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Appraisals</p>
@@ -194,8 +244,8 @@ export function AppraisalContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Average Rating</p>
@@ -208,8 +258,8 @@ export function AppraisalContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Exceeded Target</p>
@@ -220,8 +270,8 @@ export function AppraisalContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={cardClass}>
+          <CardContent className="px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Below Target</p>
@@ -236,213 +286,323 @@ export function AppraisalContent() {
 
       {/* Add Button */}
       <div className="flex justify-end items-center">
-        <Button onClick={handleAdd} className="bg-blue-500 hover:bg-blue-600 shadow-none">
+        <Button onClick={handleAdd} className="bg-blue-600 text-white hover:bg-blue-700 shadow-none">
           <Plus className="w-4 h-4 mr-2" />
           Create Appraisal
         </Button>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Create New'} Appraisal</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Branch</Label>
-                  <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employee">Employee</Label>
-                  <Select
-                    value={formData.employee}
-                    onValueChange={(value) => setFormData({ ...formData, employee: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((emp) => (
-                        <SelectItem key={emp} value={emp}>
-                          {emp}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="appraisalDate">Appraisal Date</Label>
-                  <Input
-                    id="appraisalDate"
-                    type="date"
-                    value={formData.appraisalDate}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, appraisalDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="technicalRating">Technical Skills (1-5)</Label>
-                  <Input
-                    id="technicalRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.technicalRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, technicalRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="leadershipRating">Leadership (1-5)</Label>
-                  <Input
-                    id="leadershipRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.leadershipRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, leadershipRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="teamworkRating">Teamwork (1-5)</Label>
-                  <Input
-                    id="teamworkRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.teamworkRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, teamworkRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="communicationRating">Communication (1-5)</Label>
-                  <Input
-                    id="communicationRating"
-                    type="number"
-                    min="1"
-                    max="5"
-                    step="0.1"
-                    value={formData.communicationRating}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData({ ...formData, communicationRating: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
+      {/* Add/Edit Modal */}
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (submitting) return;
+          setShowForm(open);
+          if (!open) {
+            setEditingId(null);
+            setFormData({
+              branch: '',
+              employee: '',
+              appraisalDate: '',
+              technicalRating: '',
+              leadershipRating: '',
+              teamworkRating: '',
+              communicationRating: '',
+              remarks: '',
+            });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit' : 'Create New'} Appraisal</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
+                <Label htmlFor="branch">Branch</Label>
+                <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="employee">Employee</Label>
+                <Select
+                  value={formData.employee}
+                  onValueChange={(value) => {
+                    const emp = employees.find((e) => e.id === value);
+                    setFormData({
+                      ...formData,
+                      employee: value,
+                      branch: emp?.branch ?? formData.branch,
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="appraisalDate">Appraisal Date</Label>
                 <Input
-                  id="remarks"
-                  value={formData.remarks}
+                  id="appraisalDate"
+                  type="date"
+                  value={formData.appraisalDate}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, remarks: e.target.value })
+                    setFormData({ ...formData, appraisalDate: e.target.value })
                   }
+                  required
                 />
               </div>
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="bg-blue-500 hover:bg-blue-600 shadow-none">
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="technicalRating">Technical Skills (1-5)</Label>
+                <Input
+                  id="technicalRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.technicalRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, technicalRating: e.target.value })
+                  }
+                  required
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              <div className="space-y-2">
+                <Label htmlFor="leadershipRating">Leadership (1-5)</Label>
+                <Input
+                  id="leadershipRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.leadershipRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, leadershipRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teamworkRating">Teamwork (1-5)</Label>
+                <Input
+                  id="teamworkRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.teamworkRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, teamworkRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="communicationRating">Communication (1-5)</Label>
+                <Input
+                  id="communicationRating"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={formData.communicationRating}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, communicationRating: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
 
-      {/* Appraisal List */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative mb-4">
+            <div className="space-y-2">
+              <Label htmlFor="remarks">Remarks</Label>
+              <Input
+                id="remarks"
+                value={formData.remarks}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, remarks: e.target.value })
+                }
+              />
+            </div>
+
+            <DialogFooter className="flex gap-2 pt-2">
+              <Button
+                type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-none"
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update' : 'Create'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} disabled={submitting}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Detail Modal */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>Appraisal Detail</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Branch</p>
+                  <p className="text-sm font-medium">{viewItem.branch}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Department</p>
+                  <p className="text-sm font-medium">{viewItem.department}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Designation</p>
+                  <p className="text-sm font-medium">{viewItem.designation}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Employee</p>
+                  <p className="text-sm font-medium">{viewItem.employee}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Appraisal Date</p>
+                  <p className="text-sm font-medium">{viewItem.appraisalDate}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Period</p>
+                  <p className="text-sm font-medium">{viewItem.period ?? '-'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Overall Rating</p>
+                <StarRatingDisplay rating={viewItem.overallRating} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Target Rating</p>
+                <p className="text-sm font-medium">{viewItem.targetRating.toFixed(1)}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus appraisal?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini tidak dapat dibatalkan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Appraisal List - reference: appraisal/index */}
+      <Card className={cardClass}>
+        <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between gap-4">
+          <h3 className="text-sm font-medium">Manage Appraisal</h3>
+          <div className="relative w-full max-w-[280px] ml-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search by branch, employee, or department..."
               value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10 border-0 bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Branch</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead className="text-center">Target Rating</TableHead>
-                <TableHead className="text-center">Overall Rating</TableHead>
-                <TableHead>Appraisal Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="px-4 py-3">Branch</TableHead>
+                <TableHead className="px-4 py-3">Department</TableHead>
+                <TableHead className="px-4 py-3">Designation</TableHead>
+                <TableHead className="px-4 py-3">Employee</TableHead>
+                <TableHead className="px-4 py-3 text-center">Target Rating</TableHead>
+                <TableHead className="px-4 py-3 text-center">Overall Rating</TableHead>
+                <TableHead className="px-4 py-3">Appraisal Date</TableHead>
+                <TableHead className="px-4 py-3 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length === 0 ? (
+              {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground px-4 py-3">
                     No appraisals found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredData.map((appraisal) => (
+                paginatedData.map((appraisal) => (
                   <TableRow key={appraisal.id}>
-                    <TableCell className="font-medium">{appraisal.branch}</TableCell>
-                    <TableCell>{appraisal.department}</TableCell>
-                    <TableCell>{appraisal.designation}</TableCell>
-                    <TableCell>{appraisal.employee}</TableCell>
-                    <TableCell className="text-center font-semibold">{appraisal.targetRating}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={getRatingBadge(appraisal.overallRating, appraisal.targetRating)}>
-                        {appraisal.overallRating}
-                      </Badge>
+                    <TableCell className="px-4 py-3 font-medium">{appraisal.branch}</TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.department}</TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.designation}</TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.employee}</TableCell>
+                    <TableCell className="px-4 py-3 text-center">
+                      <StarRatingDisplay rating={appraisal.targetRating} />
                     </TableCell>
-                    <TableCell>{appraisal.appraisalDate}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3 text-center">
+                      <StarRatingDisplay rating={appraisal.overallRating} />
+                    </TableCell>
+                    <TableCell className="px-4 py-3">{appraisal.appraisalDate}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleView(appraisal.id)} title="View">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleView(appraisal.id)}
+                          title="View"
+                          className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(appraisal)} title="Edit">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(appraisal)}
+                          title="Edit"
+                          className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(appraisal.id)}
+                          onClick={() => openDelete(appraisal.id)}
                           title="Delete"
-                          className="text-red-600 hover:text-red-700"
+                          className="bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -453,6 +613,42 @@ export function AppraisalContent() {
               )}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20 px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[60px]">
+                    <SelectItem value="5" className="justify-center">5</SelectItem>
+                    <SelectItem value="10" className="justify-center">10</SelectItem>
+                    <SelectItem value="20" className="justify-center">20</SelectItem>
+                    <SelectItem value="50" className="justify-center">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

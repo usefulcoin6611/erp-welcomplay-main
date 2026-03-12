@@ -23,10 +23,23 @@ function IncomeVsExpenseTabComponent() {
     periodLabel,
   } = useIncomeVsExpenseData()
 
+  const handleReset = () => {
+    handleFilterChange('period', 'monthly')
+    handleFilterChange('year', String(new Date().getFullYear()))
+    handleFilterChange('category', 'All')
+    handleFilterChange('customer', 'All')
+    handleFilterChange('vendor', 'All')
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Filters */}
-      <IncomeVsExpenseFilters filters={filters} onFilterChange={handleFilterChange} />
+      <IncomeVsExpenseFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onApply={() => {}} // filters auto-apply via useEffect
+        onReset={handleReset}
+      />
 
       {/* Info Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

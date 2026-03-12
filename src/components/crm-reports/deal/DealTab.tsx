@@ -2,16 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Download, ChevronRight, Loader2 } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ChevronRight } from 'lucide-react'
 import { DealGeneralReport } from './DealGeneralReport'
 import { DealStaffReport } from './DealStaffReport'
 import { DealPipelineReport } from './DealPipelineReport'
 
 export function DealTab() {
   const [activeSection, setActiveSection] = useState('general-report')
-  const [isDownloading, setIsDownloading] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   // Setup intersection observer for automatic active section detection
@@ -46,20 +43,6 @@ export function DealTab() {
     }
   }, [])
 
-  const handleDownload = async () => {
-    setIsDownloading(true)
-    try {
-      // Simulate PDF generation
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Downloading deal report as PDF...')
-      // Implement actual PDF download logic here
-    } catch (error) {
-      console.error('Download failed:', error)
-    } finally {
-      setIsDownloading(false)
-    }
-  }
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
@@ -75,55 +58,20 @@ export function DealTab() {
   }
 
   return (
-    <div className="w-full">
-      {/* Header with Download Button */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Deal Reports</h2>
-          <p className="text-sm text-muted-foreground mt-1">Comprehensive deal analytics and pipeline insights</p>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Download report as PDF</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+    <div className="w-full min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6">
         {/* Left Sidebar Navigation */}
-        <aside className="col-span-1 lg:col-span-3">
-          <Card className="sticky top-24 overflow-hidden shadow-sm">
+        <aside className="col-span-1 lg:col-span-3 min-w-0">
+          <Card className="sticky top-24 overflow-hidden shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
             <CardContent className="p-0">
               <nav className="flex flex-col" aria-label="Report sections">
                 <button
                   onClick={() => scrollToSection('general-report')}
-                  className={`group flex items-center justify-between px-4 py-3.5 text-left border-b hover:bg-muted/50 transition-all duration-200 relative ${
+                  className={`group flex items-center justify-between px-4 py-3.5 text-left border-b hover:bg-muted/50 transition-all duration-200 ${
                     activeSection === 'general-report' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium' : ''
                   }`}
                   aria-current={activeSection === 'general-report' ? 'true' : 'false'}
                 >
-                  {activeSection === 'general-report' && (
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 animate-in slide-in-from-left" />
-                  )}
                   <span className="flex-1 text-sm">General Report</span>
                   <ChevronRight className={`h-4 w-4 transition-transform group-hover:translate-x-1 ${
                     activeSection === 'general-report' ? 'text-blue-500' : ''
@@ -131,14 +79,11 @@ export function DealTab() {
                 </button>
                 <button
                   onClick={() => scrollToSection('staff-report')}
-                  className={`group flex items-center justify-between px-4 py-3.5 text-left border-b hover:bg-muted/50 transition-all duration-200 relative ${
+                  className={`group flex items-center justify-between px-4 py-3.5 text-left border-b hover:bg-muted/50 transition-all duration-200 ${
                     activeSection === 'staff-report' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium' : ''
                   }`}
                   aria-current={activeSection === 'staff-report' ? 'true' : 'false'}
                 >
-                  {activeSection === 'staff-report' && (
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 animate-in slide-in-from-left" />
-                  )}
                   <span className="flex-1 text-sm">Staff Report</span>
                   <ChevronRight className={`h-4 w-4 transition-transform group-hover:translate-x-1 ${
                     activeSection === 'staff-report' ? 'text-blue-500' : ''
@@ -146,14 +91,11 @@ export function DealTab() {
                 </button>
                 <button
                   onClick={() => scrollToSection('pipeline-report')}
-                  className={`group flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-all duration-200 relative ${
+                  className={`group flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-all duration-200 ${
                     activeSection === 'pipeline-report' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium' : ''
                   }`}
                   aria-current={activeSection === 'pipeline-report' ? 'true' : 'false'}
                 >
-                  {activeSection === 'pipeline-report' && (
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 animate-in slide-in-from-left" />
-                  )}
                   <span className="flex-1 text-sm">Pipeline Report</span>
                   <ChevronRight className={`h-4 w-4 transition-transform group-hover:translate-x-1 ${
                     activeSection === 'pipeline-report' ? 'text-blue-500' : ''
@@ -165,7 +107,7 @@ export function DealTab() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="col-span-1 lg:col-span-9 space-y-8">
+        <main className="col-span-1 lg:col-span-9 space-y-6 min-w-0">
           {/* General Report Section */}
           <section id="general-report" className="scroll-mt-28">
             <DealGeneralReport />

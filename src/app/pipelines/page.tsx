@@ -4,6 +4,7 @@ import React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import {
   SidebarInset,
   SidebarProvider,
@@ -11,12 +12,12 @@ import {
 import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import PipelineTab from './components/PipelineTab'
+import PipelineTab, { PipelineTabCreateButton } from './components/PipelineTab'
 import LeadStagesTab from './components/LeadStagesTab'
 import DealStagesTab from './components/DealStagesTab'
-import SourcesTab from './components/SourcesTab'
-import LabelsTab from './components/LabelsTab'
-import ContractTypeTab from './components/ContractTypeTab'
+import SourcesTab, { SourcesTabCreateButton } from './components/SourcesTab'
+import LabelsTab, { LabelsTabCreateButton } from './components/LabelsTab'
+import ContractTypeTab, { ContractTypeTabCreateButton } from './components/ContractTypeTab'
 
 function CRMSystemSetupContent() {
   const searchParams = useSearchParams()
@@ -84,11 +85,23 @@ function CRMSystemSetupContent() {
     },
   ], [])
 
+  const tabAction = {
+    pipelines: <PipelineTabCreateButton />,
+    'lead-stages': undefined,
+    'deal-stages': undefined,
+    sources: <SourcesTabCreateButton />,
+    labels: <LabelsTabCreateButton />,
+    'contract-type': <ContractTypeTabCreateButton />,
+  } as const
+  const action = tabAction[activeTab as keyof typeof tabAction] ?? undefined
+
   return (
     <SmoothTab
       items={tabs}
       defaultTabId={activeTab}
-      activeColor="bg-blue-50 dark:bg-blue-900"
+      value={activeTab}
+      activeColor="bg-white dark:bg-gray-700 shadow-xs"
+      action={action}
       onChange={handleTabChange}
     />
   )
@@ -107,19 +120,13 @@ export default function CRMSystemSetupPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">CRM System Setup</h1>
-              </div>
-            </div>
-
-            <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <Suspense fallback={<Skeleton className="h-12 w-64 rounded-lg" />}>
               <CRMSystemSetupContent />
             </Suspense>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

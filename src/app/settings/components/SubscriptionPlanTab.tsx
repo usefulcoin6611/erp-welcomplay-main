@@ -1,330 +1,306 @@
 "use client"
 
-import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Plus, Check, X, Pencil, CirclePlus, CircleMinus } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Check, X } from 'lucide-react'
 
-interface Plan {
+// Plan-specific styling (matches /plans page)
+function getPlanCardStyle(name: string) {
+  const n = name.toLowerCase()
+  if (n.includes('platinum')) {
+    return {
+      card: 'bg-gradient-to-b from-purple-50/80 to-white',
+      price: 'text-purple-600',
+      badge: 'bg-purple-100 text-purple-700',
+      limitsBg: 'bg-purple-50/60',
+    }
+  }
+  if (n.includes('gold')) {
+    return {
+      card: 'bg-gradient-to-b from-amber-50/80 to-white',
+      price: 'text-amber-600',
+      badge: 'bg-amber-100 text-amber-700',
+      limitsBg: 'bg-amber-50/60',
+    }
+  }
+  if (n.includes('silver')) {
+    return {
+      card: 'bg-gradient-to-b from-blue-50/80 to-white',
+      price: 'text-blue-600',
+      badge: 'bg-blue-100 text-blue-700',
+      limitsBg: 'bg-blue-50/60',
+    }
+  }
+  return {
+    card: 'bg-gradient-to-b from-zinc-50 to-white',
+    price: 'text-zinc-600',
+    badge: 'bg-zinc-100 text-zinc-700',
+    limitsBg: 'bg-zinc-100/80',
+  }
+}
+
+const modules = [
+  { key: 'account', label: 'Account' },
+  { key: 'crm', label: 'CRM' },
+  { key: 'hrm', label: 'HRM' },
+  { key: 'project', label: 'Project' },
+  { key: 'pos', label: 'POS' },
+  { key: 'chatgpt', label: 'ChatGPT' },
+]
+
+type PlanFromApi = {
   id: string
   name: string
   price: number
-  duration: string
-  trial_days: number
+  duration: 'lifetime' | 'month' | 'year'
   max_users: number
   max_customers: number
-  max_vendors: number
+  max_venders: number
   max_clients: number
   storage_limit: number
+  trial_days: number
+  is_disable: boolean
   account: boolean
   crm: boolean
   hrm: boolean
   project: boolean
   pos: boolean
   chatgpt: boolean
-  is_active: boolean
-  is_disable: boolean
 }
 
-const mockPlans: Plan[] = [
-  {
-    id: '1',
-    name: 'Free Plan',
-    price: 0,
-    duration: 'monthly',
-    trial_days: 0,
-    max_users: 5,
-    max_customers: 10,
-    max_vendors: 5,
-    max_clients: 5,
-    storage_limit: 100,
-    account: true,
-    crm: false,
-    hrm: false,
-    project: false,
-    pos: false,
-    chatgpt: false,
-    is_active: false,
-    is_disable: false,
-  },
-  {
-    id: '2',
-    name: 'Gold',
-    price: 49,
-    duration: 'monthly',
-    trial_days: 7,
-    max_users: 20,
-    max_customers: 50,
-    max_vendors: 20,
-    max_clients: 20,
-    storage_limit: 500,
-    account: true,
-    crm: true,
-    hrm: false,
-    project: true,
-    pos: false,
-    chatgpt: false,
-    is_active: false,
-    is_disable: false,
-  },
-  {
-    id: '3',
-    name: 'Silver',
-    price: 99,
-    duration: 'monthly',
-    trial_days: 14,
-    max_users: 50,
-    max_customers: 100,
-    max_vendors: 50,
-    max_clients: 50,
-    storage_limit: 1000,
-    account: true,
-    crm: true,
-    hrm: true,
-    project: true,
-    pos: true,
-    chatgpt: false,
-    is_active: true,
-    is_disable: false,
-  },
-  {
-    id: '4',
-    name: 'Platinum',
-    price: 199,
-    duration: 'monthly',
-    trial_days: 30,
-    max_users: -1,
-    max_customers: -1,
-    max_vendors: -1,
-    max_clients: -1,
-    storage_limit: -1,
-    account: true,
-    crm: true,
-    hrm: true,
-    project: true,
-    pos: true,
-    chatgpt: true,
-    is_active: false,
-    is_disable: false,
-  },
-]
-
 export function SubscriptionPlanTab() {
-  const [plans, setPlans] = useState<Plan[]>(mockPlans)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const router = useRouter()
+  const [plans, setPlans] = useState<PlanFromApi[]>([])
+  const [currentPlanName, setCurrentPlanName] = useState<string | null>(null)
+  const [currentPlanExpireDate, setCurrentPlanExpireDate] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const [plansRes, currentRes] = await Promise.all([
+          fetch('/api/plans', { cache: 'no-store' }),
+          fetch('/api/settings/current-plan', { cache: 'no-store' }),
+        ])
+
+        if (cancelled) return
+
+        const plansJson = await plansRes.json()
+        const currentJson = await currentRes.json()
+
+        if (!plansJson.success || !Array.isArray(plansJson.data)) {
+          setError(plansJson.message ?? 'Failed to load plans')
+          return
+        }
+
+        setPlans(plansJson.data as PlanFromApi[])
+        if (currentJson.success && currentJson.data != null) {
+          if (currentJson.data.plan != null) setCurrentPlanName(currentJson.data.plan as string)
+          if (currentJson.data.planExpireDate != null) setCurrentPlanExpireDate(currentJson.data.planExpireDate as string)
+        }
+      } catch {
+        if (!cancelled) setError('Failed to load subscription data')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const handleSubscribe = (planId: string) => {
+    router.push(`/plans/${planId}/subscribe`)
+  }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US').format(price)
+    if (price === 0) return 'Free'
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
+  const formatLimit = (limit: number) => (limit === -1 ? 'Unlimited' : limit.toString())
+  const formatStorage = (limit: number) => {
+    if (limit === -1) return 'Unlimited'
+    if (limit >= 1000) return `${(limit / 1000).toFixed(0)} GB`
+    return `${limit} MB`
+  }
+  const getDurationLabel = (duration: string) => {
+    if (duration === 'month') return 'Per Month'
+    if (duration === 'year') return 'Per Year'
+    if (duration === 'lifetime') return 'Lifetime'
+    return duration
   }
 
-  const getDurationLabel = (duration: string) => {
-    switch (duration) {
-      case 'monthly':
-        return 'Monthly'
-      case 'annual':
-        return 'Annual'
-      case 'lifetime':
-        return 'Lifetime'
-      default:
-        return duration
-    }
-  }
+  // Only show plans that super admin has enabled (not disabled)
+  const enabledPlans = plans.filter((p) => !p.is_disable)
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="shadow-none">
-              <Plus className="mr-2 h-4 w-4" /> Create Plan
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Plan</DialogTitle>
-              <DialogDescription>
-                Create a new subscription plan for your system
-              </DialogDescription>
-            </DialogHeader>
-            <form>
-              <div className="grid gap-4 py-4">
-                <p className="text-sm text-muted-foreground">
-                  Plan creation form would go here
+      {!loading && !error && currentPlanName != null && (
+        <div className="rounded-2xl overflow-hidden shadow-sm bg-white p-5 border border-border/50">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-slate-500 mb-0.5">Current plan</p>
+              <p className={`text-xl font-bold ${getPlanCardStyle(currentPlanName).price}`}>{currentPlanName}</p>
+              {currentPlanExpireDate && (
+                <p className="text-sm text-slate-600 mt-1">
+                  Expires: {new Date(currentPlanExpireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Create</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {plans.map((plan) => (
-          <Card key={plan.id} className="shadow-none relative">
-            <Badge className="absolute top-4 right-4 bg-primary">{plan.name}</Badge>
-            {plan.is_active && (
-              <div className="absolute top-4 left-4">
-                <div className="flex items-center gap-1 text-xs text-primary">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="font-medium">Active</span>
-                </div>
-              </div>
-            )}
-            <CardContent className="p-6">
-              <div className="text-center mb-4 mt-4">
-                <h1 className="text-3xl font-bold mb-2">
-                  ${formatPrice(plan.price)}
-                  <small className="text-sm font-normal text-muted-foreground">
-                    /{getDurationLabel(plan.duration)}
-                  </small>
-                </h1>
-                <p className="text-sm text-muted-foreground mb-1">
-                  Free Trial Days: {plan.trial_days}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Left Column */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CirclePlus className="h-4 w-4 text-primary" />
-                    <span>
-                      {plan.max_users === -1 ? 'Unlimited' : plan.max_users} Users
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CirclePlus className="h-4 w-4 text-primary" />
-                    <span>
-                      {plan.max_customers === -1 ? 'Unlimited' : plan.max_customers} Customers
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CirclePlus className="h-4 w-4 text-primary" />
-                    <span>
-                      {plan.max_vendors === -1 ? 'Unlimited' : plan.max_vendors} Vendors
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CirclePlus className="h-4 w-4 text-primary" />
-                    <span>
-                      {plan.max_clients === -1 ? 'Unlimited' : plan.max_clients} Clients
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CirclePlus className="h-4 w-4 text-primary" />
-                    <span>
-                      {plan.storage_limit === -1 ? 'Unlimited' : plan.storage_limit + ' MB'}{' '}
-                      Storage
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    {plan.account ? (
-                      <CirclePlus className="h-4 w-4 text-primary" />
-                    ) : (
-                      <CircleMinus className="h-4 w-4 text-destructive" />
-                    )}
-                    <span>{plan.account ? 'Enable' : 'Disable'} Account</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {plan.crm ? (
-                      <CirclePlus className="h-4 w-4 text-primary" />
-                    ) : (
-                      <CircleMinus className="h-4 w-4 text-destructive" />
-                    )}
-                    <span>{plan.crm ? 'Enable' : 'Disable'} CRM</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {plan.hrm ? (
-                      <CirclePlus className="h-4 w-4 text-primary" />
-                    ) : (
-                      <CircleMinus className="h-4 w-4 text-destructive" />
-                    )}
-                    <span>{plan.hrm ? 'Enable' : 'Disable'} HRM</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {plan.project ? (
-                      <CirclePlus className="h-4 w-4 text-primary" />
-                    ) : (
-                      <CircleMinus className="h-4 w-4 text-destructive" />
-                    )}
-                    <span>{plan.project ? 'Enable' : 'Disable'} Project</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {plan.pos ? (
-                      <CirclePlus className="h-4 w-4 text-primary" />
-                    ) : (
-                      <CircleMinus className="h-4 w-4 text-destructive" />
-                    )}
-                    <span>{plan.pos ? 'Enable' : 'Disable'} POS</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {plan.chatgpt ? (
-                      <CirclePlus className="h-4 w-4 text-primary" />
-                    ) : (
-                      <CircleMinus className="h-4 w-4 text-destructive" />
-                    )}
-                    <span>{plan.chatgpt ? 'Enable' : 'Disable'} Chat GPT</span>
-                  </div>
-                </div>
-              </div>
-
-              {plan.price > 0 && (
-                <div className="flex justify-end mb-4">
-                  <Switch
-                    checked={!plan.is_disable}
-                    onCheckedChange={(checked) => {
-                      setPlans(
-                        plans.map((p) =>
-                          p.id === plan.id ? { ...p, is_disable: !checked } : p
-                        )
-                      )
-                    }}
-                  />
-                </div>
               )}
+            </div>
+            <div className="flex items-center gap-2 text-green-600 font-medium">
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+              Active
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="flex gap-2 justify-center">
-                <Button variant="default" size="sm" className="shadow-none bg-info">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                {plan.id !== '1' && (
-                  <Button variant="destructive" size="sm" className="shadow-none">
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+      {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-2xl overflow-hidden shadow-sm bg-white p-6 border border-border/50">
+                <Skeleton className="h-5 w-20 mb-4" />
+                <Skeleton className="h-8 w-24 mb-2" />
+                <Skeleton className="h-4 w-16 mb-5" />
+                <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-2 mb-5">
+                  {[1, 2, 3, 4, 5].map((j) => (
+                    <Skeleton key={j} className="h-4 w-full" />
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2 mb-5">
+                  <Skeleton className="h-6 w-16 rounded-lg" />
+                  <Skeleton className="h-6 w-12 rounded-lg" />
+                  <Skeleton className="h-6 w-14 rounded-lg" />
+                </div>
+                <Skeleton className="h-9 w-full rounded-xl" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 px-6 py-8 text-center text-muted-foreground">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && enabledPlans.length === 0 && (
+        <div className="rounded-lg border border-border bg-muted/30 px-6 py-12 text-center text-muted-foreground">
+          No subscription plans are available at the moment. Please check back later.
+        </div>
+      )}
+
+      {!loading && !error && enabledPlans.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {enabledPlans.map((plan) => {
+              const isCurrentPlan = currentPlanName != null && plan.name === currentPlanName
+              const style = getPlanCardStyle(plan.name)
+              return (
+                <div
+                  key={plan.id}
+                  className={`group relative flex flex-col h-full ${style.card} rounded-2xl overflow-hidden shadow-sm`}
+                >
+                  <div className="flex flex-col flex-1 p-6">
+                    {/* Plan name pill + Active indicator */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${style.badge}`}>
+                        {plan.name}
+                      </span>
+                      {isCurrentPlan && (
+                        <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          Active
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-5">
+                      <div className={`text-3xl font-bold ${style.price}`}>
+                        {formatPrice(plan.price)}
+                      </div>
+                      <div className="text-sm text-slate-500 mt-1 font-medium">
+                        {plan.price === 0 ? 'See what we can do' : getDurationLabel(plan.duration)}
+                      </div>
+                      {plan.trial_days > 0 && (
+                        <div className="text-xs font-semibold text-slate-600 mt-2">
+                          {plan.trial_days} days trial
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Limits - with plan-specific tint */}
+                    <div className={`${style.limitsBg} rounded-xl px-4 py-3 space-y-2 mb-5`}>
+                      {[
+                        { label: 'Users', value: formatLimit(plan.max_users) },
+                        { label: 'Customers', value: formatLimit(plan.max_customers) },
+                        { label: 'Vendors', value: formatLimit(plan.max_venders) },
+                        { label: 'Clients', value: formatLimit(plan.max_clients) },
+                        { label: 'Storage', value: formatStorage(plan.storage_limit) },
+                      ].map((item) => (
+                        <div key={item.label} className="flex justify-between text-sm">
+                          <span className="text-slate-500">{item.label}</span>
+                          <span className="font-semibold text-slate-800">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Modules */}
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      {modules.map((mod) => {
+                        const enabled = plan[mod.key as keyof PlanFromApi] as boolean
+                        return (
+                          <span
+                            key={mod.key}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${enabled ? style.badge : 'text-slate-400 bg-slate-100'}`}
+                          >
+                            {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : <X className="h-3 w-3" strokeWidth={2} />}
+                            {mod.label}
+                          </span>
+                        )
+                      })}
+                    </div>
+
+                    {/* Action */}
+                    <div className="pt-4 mt-auto">
+                      {isCurrentPlan ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full h-9 text-xs font-semibold rounded-xl bg-green-50 text-green-700 border-green-100"
+                          disabled
+                        >
+                          <Check className="h-3 w-3 mr-1" /> Current Plan
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="blue"
+                          className="w-full h-9 text-xs font-semibold rounded-xl shadow-none"
+                          onClick={() => handleSubscribe(plan.id)}
+                        >
+                          Berlangganan
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+      )}
     </div>
   )
 }
-

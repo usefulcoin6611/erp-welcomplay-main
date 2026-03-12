@@ -1,37 +1,65 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { IncomeVsExpenseFilter } from '../constants'
-import {
-  monthlyMonthList,
-  quarterlyMonthList,
-  halfYearlyMonthList,
-  yearlyMonthList,
-  mockRevenueTotal,
-  mockInvoiceTotal,
-  mockPaymentTotal,
-  mockBillTotal,
-  mockQuarterlyRevenueTotal,
-  mockQuarterlyInvoiceTotal,
-  mockQuarterlyPaymentTotal,
-  mockQuarterlyBillTotal,
-  mockYearlyRevenueTotal,
-  mockYearlyInvoiceTotal,
-  mockYearlyPaymentTotal,
-  mockYearlyBillTotal,
-  calculateIncome,
-  calculateExpense,
-  calculateProfit,
-} from '../constants'
 
 export function useIncomeVsExpenseData() {
   const [filters, setFilters] = useState<IncomeVsExpenseFilter>({
     period: 'monthly',
-    year: '2025',
+    year: String(new Date().getFullYear()),
     category: 'All',
     customer: 'All',
     vendor: 'All',
   })
+
+  // API data state
+  const [monthList, setMonthList] = useState<string[]>([])
+  const [revenueTotal, setRevenueTotal] = useState<number[]>([])
+  const [invoiceTotal, setInvoiceTotal] = useState<number[]>([])
+  const [paymentTotal, setPaymentTotal] = useState<number[]>([])
+  const [billTotal, setBillTotal] = useState<number[]>([])
+  const [incomeTotal, setIncomeTotal] = useState<number[]>([])
+  const [expenseTotal, setExpenseTotal] = useState<number[]>([])
+  const [profitTotal, setProfitTotal] = useState<number[]>([])
+  const [chartData, setChartData] = useState<{ month: string; profit: number }[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      params.set('period', filters.period)
+      params.set('year', filters.year)
+      if (filters.category !== 'All') params.set('category', filters.category)
+      if (filters.customer !== 'All') params.set('customerId', filters.customer)
+      if (filters.vendor !== 'All') params.set('vendorId', filters.vendor)
+
+      const res = await fetch(`/api/reports/income-vs-expense?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch income vs expense data')
+      const json = await res.json()
+      if (json.success && json.data) {
+        setMonthList(json.data.monthList || [])
+        setRevenueTotal(json.data.revenueTotal || [])
+        setInvoiceTotal(json.data.invoiceTotal || [])
+        setPaymentTotal(json.data.paymentTotal || [])
+        setBillTotal(json.data.billTotal || [])
+        setIncomeTotal(json.data.incomeTotal || [])
+        setExpenseTotal(json.data.expenseTotal || [])
+        setProfitTotal(json.data.profitTotal || [])
+        setChartData(json.data.chartData || [])
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load income vs expense data')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleFilterChange = (key: keyof IncomeVsExpenseFilter, value: string) => {
     setFilters((prev) => ({
@@ -39,74 +67,6 @@ export function useIncomeVsExpenseData() {
       [key]: value,
     }))
   }
-
-  // Get data based on selected period
-  const getDataForPeriod = () => {
-    switch (filters.period) {
-      case 'quarterly':
-        return {
-          monthList: quarterlyMonthList,
-          revenueTotal: mockQuarterlyRevenueTotal,
-          invoiceTotal: mockQuarterlyInvoiceTotal,
-          paymentTotal: mockQuarterlyPaymentTotal,
-          billTotal: mockQuarterlyBillTotal,
-        }
-      case 'half-yearly':
-        // Half-yearly uses monthly data but grouped in 2 halves
-        const halfYearRevenueTotal = [
-          mockRevenueTotal.slice(0, 6).reduce((sum, val) => sum + val, 0),
-          mockRevenueTotal.slice(6).reduce((sum, val) => sum + val, 0),
-        ]
-        const halfYearInvoiceTotal = [
-          mockInvoiceTotal.slice(0, 6).reduce((sum, val) => sum + val, 0),
-          mockInvoiceTotal.slice(6).reduce((sum, val) => sum + val, 0),
-        ]
-        const halfYearPaymentTotal = [
-          mockPaymentTotal.slice(0, 6).reduce((sum, val) => sum + val, 0),
-          mockPaymentTotal.slice(6).reduce((sum, val) => sum + val, 0),
-        ]
-        const halfYearBillTotal = [
-          mockBillTotal.slice(0, 6).reduce((sum, val) => sum + val, 0),
-          mockBillTotal.slice(6).reduce((sum, val) => sum + val, 0),
-        ]
-        return {
-          monthList: ['H1', 'H2'],
-          revenueTotal: halfYearRevenueTotal,
-          invoiceTotal: halfYearInvoiceTotal,
-          paymentTotal: halfYearPaymentTotal,
-          billTotal: halfYearBillTotal,
-        }
-      case 'yearly':
-        return {
-          monthList: yearlyMonthList,
-          revenueTotal: mockYearlyRevenueTotal,
-          invoiceTotal: mockYearlyInvoiceTotal,
-          paymentTotal: mockYearlyPaymentTotal,
-          billTotal: mockYearlyBillTotal,
-        }
-      default: // monthly
-        return {
-          monthList: monthlyMonthList,
-          revenueTotal: mockRevenueTotal,
-          invoiceTotal: mockInvoiceTotal,
-          paymentTotal: mockPaymentTotal,
-          billTotal: mockBillTotal,
-        }
-    }
-  }
-
-  const periodData = getDataForPeriod()
-  
-  // Calculate income, expense, and profit totals
-  const incomeTotal = calculateIncome(periodData.revenueTotal, periodData.invoiceTotal)
-  const expenseTotal = calculateExpense(periodData.paymentTotal, periodData.billTotal)
-  const profitTotal = calculateProfit(incomeTotal, expenseTotal)
-
-  // Prepare chart data
-  const chartData = periodData.monthList.map((month, index) => ({
-    month,
-    profit: profitTotal[index],
-  }))
 
   // Get period label for display
   const getPeriodLabel = () => {
@@ -119,15 +79,17 @@ export function useIncomeVsExpenseData() {
   return {
     filters,
     handleFilterChange,
-    monthList: periodData.monthList,
-    revenueTotal: periodData.revenueTotal,
-    invoiceTotal: periodData.invoiceTotal,
-    paymentTotal: periodData.paymentTotal,
-    billTotal: periodData.billTotal,
+    monthList,
+    revenueTotal,
+    invoiceTotal,
+    paymentTotal,
+    billTotal,
     incomeTotal,
     expenseTotal,
     profitTotal,
     chartData,
     periodLabel: getPeriodLabel(),
+    loading,
+    error,
   }
 }

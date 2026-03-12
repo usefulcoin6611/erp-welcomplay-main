@@ -1,52 +1,98 @@
 "use client"
 
-import { useState, useMemo, Suspense } from 'react'
+import React from 'react'
+import { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { SmoothTab } from '@/components/ui/smooth-tab'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SystemSettingsTab } from './components/SystemSettingsTab'
 import { SubscriptionPlanTab } from './components/SubscriptionPlanTab'
-import { ReferralProgramTab } from './components/ReferralProgramTab'
 import { OrderTab } from './components/OrderTab'
+import { ReferralProgramTab } from './components/ReferralProgramTab'
 
 function SettingsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { user, isLoading } = useAuth()
+  const isCompany = user?.type === 'company'
   const tabParam = searchParams.get('tab')
-  const activeTab = tabParam || 'system-settings'
+  
+  // Validasi tab: hanya user company yang bisa akses settings
+  const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program'] // order = Subscription History
+  const isValidTab = isCompany && (!tabParam || companyTabs.includes(tabParam))
+  const activeTab = isValidTab ? (tabParam || 'system-settings') : 'system-settings'
 
-  const settingsTabs = useMemo(
-    () => [
-      {
-        id: 'system-settings',
-        title: 'System Setting',
-        content: <SystemSettingsTab />,
-      },
-      {
-        id: 'subscription-plan',
-        title: 'Setup Subscription Plan',
-        content: <SubscriptionPlanTab />,
-      },
-      {
-        id: 'referral-program',
-        title: 'Referral Program',
-        content: <ReferralProgramTab />,
-      },
-      {
-        id: 'order',
-        title: 'Order',
-        content: <OrderTab />,
-      },
-    ],
-    []
-  )
+  // Redirect jika user bukan company atau tab tidak valid
+  React.useEffect(() => {
+    if (isLoading) return // Tunggu sampai user data dimuat
 
-  // Handle tab change - update URL query params
+    if (!isCompany) {
+      router.replace('/')
+      return
+    }
+    if (!isValidTab && tabParam) {
+      router.replace(`/settings?tab=system-settings`, { scroll: false })
+    }
+  }, [isLoading, isCompany, isValidTab, tabParam, router])
+
   const handleTabChange = (tabId: string) => {
     router.push(`/settings?tab=${tabId}`, { scroll: false })
   }
+
+  const tabs = React.useMemo(
+    () => {
+      // Tampilkan 4 tab untuk user company
+      if (isCompany) {
+        return [
+          {
+            id: 'system-settings',
+            title: 'System Settings',
+            content: (
+              <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+                <SystemSettingsTab />
+              </Suspense>
+            ),
+          },
+          {
+            id: 'subscription-plan',
+            title: 'Subscription Plan',
+            content: (
+              <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+                <SubscriptionPlanTab />
+              </Suspense>
+            ),
+          },
+          {
+            id: 'order',
+            title: 'Subscription History',
+            content: (
+              <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+                <OrderTab />
+              </Suspense>
+            ),
+          },
+          {
+            id: 'referral-program',
+            title: 'Referral Program',
+            content: (
+              <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+                <ReferralProgramTab />
+              </Suspense>
+            ),
+          },
+        ]
+      }
+
+      // Jika bukan company, tidak ada tab
+      return []
+    },
+    [isCompany]
+  )
 
   return (
     <SidebarProvider
@@ -60,17 +106,21 @@ function SettingsContent() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Smooth Tab Navigation */}
-            <SmoothTab
-              items={settingsTabs}
-              defaultTabId={activeTab}
-              activeColor="bg-white dark:bg-gray-700 shadow-xs"
-              onChange={handleTabChange}
-            />
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            {isLoading ? (
+              <Skeleton className="h-[400px] w-full" />
+            ) : isCompany && tabs.length > 0 ? (
+              <SmoothTab
+                items={tabs}
+                value={activeTab}
+                defaultTabId={activeTab}
+                activeColor="bg-white dark:bg-gray-700 shadow-xs"
+                onChange={handleTabChange}
+              />
+            ) : null}
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )

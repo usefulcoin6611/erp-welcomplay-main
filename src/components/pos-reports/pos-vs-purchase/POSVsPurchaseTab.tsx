@@ -1,19 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import dynamic from "next/dynamic"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { useState, useEffect, useCallback } from "react"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { REPORT_CARD_CLASS } from "../shared-styles"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Download, Loader2, Search, RotateCcw, FileText, Clock } from "lucide-react"
+import { Search, RotateCcw, FileText, Clock, Loader2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import {
   Table,
   TableBody,
@@ -23,153 +19,130 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false })
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+type MonthlyData = {
+  month: string
+  pos: number
+  purchase: number
+  profit: number
+}
+
+function formatCurrency(value: number) {
+  return `Rp ${value.toLocaleString('id-ID')}`
+}
 
 export function POSVsPurchaseTab() {
   const [mounted, setMounted] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
-  const [selectedYear, setSelectedYear] = useState("2025")
+  const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()))
+  const [loading, setLoading] = useState(false)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const handleDownload = () => {
-    setIsDownloading(true)
-    setTimeout(() => {
-      setIsDownloading(false)
-    }, 2000)
-  }
+  const fetchData = useCallback(async (year: string) => {
+    setLoading(true)
+    try {
+      const startMonth = `${year}-01`
+      const endMonth = `${year}-12`
+
+      const [posRes, purchaseRes] = await Promise.all([
+        fetch(`/api/pos/reports?type=monthly&startMonth=${startMonth}&endMonth=${endMonth}`),
+        fetch(`/api/pos/reports?report=purchase&type=monthly&startMonth=${startMonth}&endMonth=${endMonth}`),
+      ])
+      const posData = await posRes.json()
+      const purchaseDataJson = await purchaseRes.json()
+
+      const posMonthlyMap: Record<string, number> = {}
+      if (posData.success && posData.data?.chartData) {
+        posData.data.chartData.forEach((d: { date: string; amount: number }) => {
+          const monthKey = d.date.slice(5, 7)
+          posMonthlyMap[monthKey] = (posMonthlyMap[monthKey] || 0) + d.amount
+        })
+      }
+
+      const purchaseMonthlyMap: Record<string, number> = {}
+      if (purchaseDataJson.success && purchaseDataJson.data?.chartData) {
+        purchaseDataJson.data.chartData.forEach((d: { date: string; amount: number }) => {
+          const monthKey = d.date.slice(5, 7)
+          purchaseMonthlyMap[monthKey] = (purchaseMonthlyMap[monthKey] || 0) + d.amount
+        })
+      }
+
+      const data: MonthlyData[] = MONTHS.map((month, idx) => {
+        const monthKey = String(idx + 1).padStart(2, "0")
+        const pos = posMonthlyMap[monthKey] || 0
+        const purchase = purchaseMonthlyMap[monthKey] || 0
+        return {
+          month,
+          pos: Math.round(pos * 100) / 100,
+          purchase: Math.round(purchase * 100) / 100,
+          profit: Math.round((pos - purchase) * 100) / 100,
+        }
+      })
+
+      setMonthlyData(data)
+    } catch (error) {
+      console.error("Error fetching POS vs Purchase data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData(selectedYear)
+  }, [fetchData, selectedYear])
 
   const handleApply = () => {
-    console.log('Apply filters:', { year: selectedYear })
+    fetchData(selectedYear)
   }
 
   const handleReset = () => {
-    setSelectedYear("2025")
+    const currentYear = String(new Date().getFullYear())
+    setSelectedYear(currentYear)
   }
 
-  // Mock data
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  
-  const posData = months.map(() => Math.floor(Math.random() * 4000) + 3000)
-  const purchaseData = months.map((_, i) => Math.floor(posData[i] * 0.6) + Math.floor(Math.random() * 500))
-  const profitData = posData.map((pos, i) => pos - purchaseData[i])
+  // Generate year options (current year and 4 previous years)
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i))
 
-  const chartOptions = {
-    chart: {
-      type: 'area' as const,
-      toolbar: { show: false },
-      dropShadow: {
-        enabled: true,
-        color: '#000',
-        top: 18,
-        left: 7,
-        blur: 10,
-        opacity: 0.2
-      }
-    },
-    dataLabels: { enabled: false },
-    stroke: {
-      width: 2,
-      curve: 'smooth' as const
-    },
-    colors: ['#ffa21d'],
-    xaxis: {
-      categories: months,
-      title: { text: 'Months' }
-    },
-    yaxis: {
-      title: { text: 'Profit' }
-    },
-    grid: { strokeDashArray: 4 },
-    legend: { show: false },
-    tooltip: {
-      y: {
-        formatter: (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-      }
-    }
-  }
+  const chartData = monthlyData
+  const posData = monthlyData.map((d) => d.pos)
+  const purchaseData = monthlyData.map((d) => d.purchase)
+  const profitData = monthlyData.map((d) => d.profit)
 
-  const chartSeries = [
-    {
-      name: 'Profit',
-      data: profitData
-    }
-  ]
-
-  const years = [
-    { value: '2023', label: '2023' },
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' }
-  ]
-
-  const formatCurrency = (value: number) => {
-    return `Rp ${value.toLocaleString('id-ID')}`
-  }
+  const profitChartConfig = {
+    profit: {
+      label: "Profit",
+      color: "#ffa21d",
+    },
+  } satisfies ChartConfig
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">POS VS Purchase Report</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Profitability analysis comparing sales revenue against purchase costs
-          </p>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Download report as PDF</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Filters */}
-      <Card>
+    <div className="w-full min-w-0 space-y-6">
+      <Card className={REPORT_CARD_CLASS}>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-            <div className="md:col-span-3"></div>
-            <div className="space-y-2">
+          <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+            <div className="space-y-2 min-w-[140px]">
               <Label htmlFor="year">Year</Label>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="h-10">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {years.map((year) => (
-                    <SelectItem key={year.value} value={year.value}>
-                      {year.label}
-                    </SelectItem>
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleApply} className="flex-1 h-10">
-                <Search className="h-4 w-4 mr-2" />
-                Apply
+            <div className="ml-auto flex gap-2 shrink-0">
+              <Button onClick={handleApply} disabled={loading} className="h-10 min-w-[90px] shadow-none bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" />Apply</>}
               </Button>
-              <Button onClick={handleReset} variant="destructive" className="h-10">
+              <Button onClick={handleReset} variant="outline" className="h-10 shrink-0 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
@@ -177,13 +150,12 @@ export function POSVsPurchaseTab() {
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className={REPORT_CARD_CLASS}>
+          <CardContent className="p-4 px-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/50">
-                <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
+                <FileText className="h-6 w-6 text-slate-600 dark:text-slate-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground">Report</p>
@@ -193,13 +165,13 @@ export function POSVsPurchaseTab() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={REPORT_CARD_CLASS}>
+          <CardContent className="p-4 px-6 flex flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/50">
-                <Clock className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
+                <Clock className="h-6 w-6 text-slate-600 dark:text-slate-400" />
               </div>
-              <div className="flex-1">
+              <div>
                 <p className="text-sm font-medium text-muted-foreground">Duration</p>
                 <h3 className="text-lg font-semibold mt-1">Jan {selectedYear} to Dec {selectedYear}</h3>
               </div>
@@ -208,81 +180,86 @@ export function POSVsPurchaseTab() {
         </Card>
       </div>
 
-      {/* Chart */}
-      <Card>
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">Monthly Profit Analysis</h3>
-          <p className="text-sm text-muted-foreground">Profit = POS - Purchase</p>
+      <Card className={REPORT_CARD_CLASS}>
+        <CardHeader className="px-6 pb-2">
+          <CardTitle className="text-base font-semibold">Monthly Profit Analysis</CardTitle>
+          <CardDescription>Profit = POS Revenue - Purchase Cost</CardDescription>
         </CardHeader>
-        <CardContent className="pt-4">
-          {mounted ? (
-            <Chart
-              options={chartOptions}
-              series={chartSeries}
-              type="area"
-              height={320}
-            />
+        <CardContent className="px-6 pt-0 pb-6">
+          {mounted && !loading ? (
+            <ChartContainer config={profitChartConfig} className="h-[320px] w-full">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ffa21d" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ffa21d" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(v) => `Rp ${Number(v).toLocaleString("id-ID", { maximumFractionDigits: 0 })}`} />
+                <ChartTooltip content={<ChartTooltipContent formatter={(v) => `Rp ${Number(v).toLocaleString("id-ID", { minimumFractionDigits: 0 })}`} />} />
+                <Area type="monotone" dataKey="profit" stroke="#ffa21d" strokeWidth={2} fill="url(#profitFill)" />
+              </AreaChart>
+            </ChartContainer>
           ) : (
             <Skeleton className="h-[320px] w-full" />
           )}
         </CardContent>
       </Card>
 
-      {/* Data Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold tracking-tight">Detailed Breakdown</h3>
-          <p className="text-sm text-muted-foreground">Monthly comparison of POS, Purchase, and Profit</p>
+      <Card className={REPORT_CARD_CLASS}>
+        <CardHeader className="px-6 pb-2">
+          <CardTitle className="text-base font-semibold">Detailed Breakdown</CardTitle>
+          <CardDescription>Monthly comparison of POS, Purchase, and Profit</CardDescription>
         </CardHeader>
-        <CardContent className="pt-4">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Type</TableHead>
-                  {months.map((month) => (
-                    <TableHead key={month} className="text-center">
-                      {month}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">POS</TableCell>
-                  {posData.map((value, i) => (
-                    <TableCell key={i} className="text-center">
-                      {formatCurrency(value)}
+        <CardContent className="px-6 pt-0 pb-6">
+          {loading ? (
+            <Skeleton className="h-[200px] w-full" />
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Type</TableHead>
+                    {MONTHS.map((month) => (
+                      <TableHead key={month} className="text-center min-w-[80px]">{month}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">POS</TableCell>
+                    {posData.map((value, i) => (
+                      <TableCell key={i} className="text-center text-xs">{formatCurrency(value)}</TableCell>
+                    ))}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Purchase</TableCell>
+                    {purchaseData.map((value, i) => (
+                      <TableCell key={i} className="text-center text-xs">{formatCurrency(value)}</TableCell>
+                    ))}
+                  </TableRow>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={13} className="text-sm text-muted-foreground">
+                      Profit = POS - Purchase
                     </TableCell>
-                  ))}
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Purchase</TableCell>
-                  {purchaseData.map((value, i) => (
-                    <TableCell key={i} className="text-center">
-                      {formatCurrency(value)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                <TableRow className="bg-muted/50">
-                  <TableCell colSpan={13} className="text-sm text-muted-foreground">
-                    Profit = POS - Purchase
-                  </TableCell>
-                </TableRow>
-                <TableRow className="font-semibold">
-                  <TableCell>Profit</TableCell>
-                  {profitData.map((value, i) => (
-                    <TableCell 
-                      key={i} 
-                      className={`text-center ${value > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                    >
-                      {formatCurrency(value)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+                  </TableRow>
+                  <TableRow className="font-semibold">
+                    <TableCell>Profit</TableCell>
+                    {profitData.map((value, i) => (
+                      <TableCell
+                        key={i}
+                        className={`text-center text-xs ${value > 0 ? 'text-green-600 dark:text-green-400' : value < 0 ? 'text-red-600 dark:text-red-400' : ''}`}
+                      >
+                        {formatCurrency(value)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

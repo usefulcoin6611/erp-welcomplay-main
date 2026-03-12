@@ -2,346 +2,152 @@
 
 import * as React from "react"
 import { useTranslations } from 'next-intl'
-import {
-  IconBell,
-  IconBellRinging,
-  IconBriefcase,
-  IconCalendar,
-  IconChevronRight,
-  IconDashboard,
-  IconFileText,
-  IconHome2,
-  IconInbox,
-  IconLayoutDashboard,
-  IconLifebuoy,
-  IconPlus,
-  IconSearch,
-  IconSettings,
-  IconShare,
-  IconShoppingCart,
-  IconTerminal,
-  IconUserCircle,
-  IconUsers,
-  IconUsersGroup,
-  IconCash,
-  IconHeadphones,
-  IconVideo,
-  IconSun,
-} from "@tabler/icons-react";
 
-import { NavMain } from '@/components/nav-main'
-import { SidebarMenu } from '@/components/SidebarMenu'
+import { SidebarMenu } from "@/components/SidebarMenu"
+import { SidebarSearch } from "@/components/sidebar-search"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar'
-import { NavSecondary } from '@/components/nav-secondary'
-import { NavUser } from '@/components/nav-user'
+  useSidebar,
+} from "@/components/ui/sidebar"
+import { NavSecondary } from "@/components/nav-secondary"
+import { NavUser } from "@/components/nav-user"
+import { useAuth } from '@/contexts/auth-context'
+import { getMenuByRole, filterMenuByPermissions } from '@/lib/menu-config'
+import type { MenuItem } from '@/lib/menu-config'
+
+function filterMenuByQuery(items: MenuItem[], query: string): MenuItem[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return items
+  return items
+    .filter((item) => {
+      const titleMatch = item.title.toLowerCase().includes(q)
+      if (item.items?.length) {
+        const hasMatchingChild = item.items.some(
+          (child) =>
+            child.title.toLowerCase().includes(q) ||
+            (child.items?.length &&
+              filterMenuByQuery(child.items, query).length > 0)
+        )
+        if (hasMatchingChild) return true
+      }
+      return titleMatch
+    })
+    .map((item) => {
+      if (!item.items?.length) return item
+      const filteredChildren = filterMenuByQuery(item.items, query)
+      return { ...item, items: filteredChildren }
+    })
+}
+
+function injectBadgeIntoItems(items: MenuItem[], url: string, badge: number): MenuItem[] {
+  if (badge <= 0) return items
+  return items.map((item) => {
+    if (item.url === url) {
+      return { ...item, badge }
+    }
+    if (item.items?.length) {
+      return { ...item, items: injectBadgeIntoItems(item.items, url, badge) }
+    }
+    return item
+  })
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const t = useTranslations('sidebar.menu');
-  
+  const t = useTranslations('sidebar.menu')
+  const { user } = useAuth()
+  const { sidebarSearchQuery } = useSidebar()
+  const [messengerUnreadCount, setMessengerUnreadCount] = React.useState(0)
+
+  // Poll messenger unread count for sidebar badge
+  React.useEffect(() => {
+    if (!user) return
+    const fetchUnread = () => {
+      fetch('/api/messenger/unread-count')
+        .then((r) => r.json())
+        .then((json) => {
+          if (json?.success && typeof json.count === 'number') {
+            setMessengerUnreadCount(json.count)
+          }
+        })
+        .catch(() => { })
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 15000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  // Get menu based on user role
+  const menuByRole = React.useMemo(
+    () => (user ? getMenuByRole(user.type, t) : { navMain: [], navSecondary: [] }),
+    [user?.type, t]
+  )
+
+  // When employee: filter by permissions if profile loaded; show minimal menu until permissions loaded to avoid leaking HRM
+  const menuData = React.useMemo(() => {
+    let navMain: MenuItem[]
+    if (user?.type === 'employee') {
+      if (user.permissions === undefined || user.permissions === null) {
+        // Permissions not yet loaded OR no profile: show minimal to avoid wrong access (e.g. HRM dashboard for non-HRM)
+        navMain = filterMenuByPermissions(menuByRole.navMain, [])
+      } else {
+        navMain = filterMenuByPermissions(menuByRole.navMain, user.permissions)
+      }
+      // Always show Support System, Zoom Meeting, and Messenger for employee
+      const alwaysShowUrls = ['/attendance', '/support', '/zoom', '/messenger']
+      const existingUrls = new Set(navMain.map((item) => item.url))
+      const toAppend = menuByRole.navMain.filter(
+        (item) => item.url && alwaysShowUrls.includes(item.url) && !existingUrls.has(item.url)
+      )
+      navMain = [...navMain, ...toAppend]
+    } else {
+      navMain = menuByRole.navMain
+    }
+    navMain = injectBadgeIntoItems(navMain, '/messenger', messengerUnreadCount)
+    return { ...menuByRole, navMain }
+  }, [user?.type, user?.permissions, menuByRole, messengerUnreadCount])
+
+  const filteredNavMain = React.useMemo(
+    () => filterMenuByQuery(menuData.navMain, sidebarSearchQuery),
+    [menuData.navMain, sidebarSearchQuery]
+  )
+
   const data = {
     user: {
-      name: "welcomplay",
-      email: "user@welcomplay.com",
-      avatar: "/avatars/logo.png",
+      name: user?.name || "Guest",
+      email: user?.email || "guest@example.com",
+      avatar: "",
     },
-    navMain: [
-      {
-        title: t("dashboard"),
-        url: "#", // No direct URL, only expand dropdown
-        icon: IconDashboard,
-        isActive: true,
-        items: [
-          {
-            title: t("accounting"),
-            url: "#", // No direct URL, only expand dropdown
-            items: [
-              { title: t("overview"), url: "/account-dashboard" },
-              {
-                title: t("reports"),
-                url: "/accounting/reports", // Direct link to unified Reports page
-              },
-            ],
-          },
-          {
-            title: t("hrm"),
-            url: "#", // No direct URL, only expand dropdown
-            items: [
-              { title: t("overview"), url: "/hrm-dashboard" },
-              {
-                title: t("reports"),
-                url: "/hrm/reports", // Direct link to unified Reports page
-              },
-            ],
-          },
-          {
-            title: t("crm"),
-            url: "#", // No direct URL, only expand dropdown
-            items: [
-              { title: t("overview"), url: "/crm-dashboard" },
-              { title: t("reports"), url: "/crm/reports" },
-            ],
-          },
-          {
-            title: t("project"),
-            url: "/project-dashboard",
-          },
-          {
-            title: t("pos"),
-            url: "#", // No direct URL, only expand dropdown
-            items: [
-              { title: t("overview"), url: "/pos-dashboard" },
-              {
-                title: t("reports"),
-                url: "/pos/reports",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        title: t("hrmSystem"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconUsers,
-        items: [
-          { 
-            title: t("employeeSetup"), 
-            url: "/hrm/employees",
-          },
-          { 
-            title: t("payrollSetup"), 
-            url: "/hrm/payroll",
-          },
-          { 
-            title: "Leave Management Setup", 
-            url: "/hrm/leave",
-          },
-          { 
-            title: "Performance Setup", 
-            url: "/hrm/performance",
-          },
-          { 
-            title: "Training Setup", 
-            url: "/hrm/training",
-          },
-          { 
-            title: "Recruitment Setup", 
-            url: "/hrm/recruitment",
-          },
-          { 
-            title: "HR Admin Setup", 
-            url: "/hrm/admin",
-          },
-          { title: "Event Setup", url: "/hrm/events" },
-          { title: "Meeting", url: "/hrm/meetings" },
-          { title: "Employees Asset Setup", url: "/hrm/assets" },
-          { title: "Document Setup", url: "/hrm/documents" },
-          { title: "Company Policy", url: "/hrm/policies" },
-          { title: "HRM System Setup", url: "/hrm/setup" },
-        ],
-      },
-      {
-        title: t("accountingSystem"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconFileText,
-        items: [
-          {
-            title: t("banking"),
-            url: "/accounting/bank-account",
-          },
-          { 
-            title: "Sales", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Customer", url: "/accounting/customer" },
-              { title: "Estimate", url: "/accounting/proposal" },
-              { title: "Invoice", url: "/accounting/invoice" },
-              { title: "Revenue", url: "/accounting/revenue" },
-              { title: "Credit Note", url: "/accounting/credit-note" },
-            ],
-          },
-          { 
-            title: "Purchases", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Supplier", url: "/accounting/vender" },
-              { title: "Bill", url: "/accounting/bill" },
-              { title: "Expense", url: "/accounting/expense" },
-              { title: "Payment", url: "/accounting/payment" },
-              { title: "Debit Note", url: "/accounting/debit-note" },
-            ],
-          },
-          { 
-            title: "Double Entry", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Chart of Accounts", url: "/accounting/chart-of-account" },
-              { title: "Journal Account", url: "/accounting/journal-entry" },
-              { title: "Ledger Summary", url: "/accounting/ledger" },
-              { title: "Balance Sheet", url: "/accounting/balance-sheet" },
-              { title: "Profit & Loss", url: "/accounting/profit-loss" },
-              { title: "Trial Balance", url: "/accounting/trial-balance" },
-            ],
-          },
-          { title: "Budget Planner", url: "/accounting/budget" },
-          { title: "Financial Goal", url: "/accounting/goal" },
-          { title: "Accounting Setup", url: "/accounting/setup" },
-          { title: "Print Settings", url: "/accounting/print-settings" },
-        ],
-      },
-      {
-        title: t("crmSystem"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconUsersGroup,
-        items: [
-          { title: t("leads"), url: "/leads" },
-          { title: t("deals"), url: "/deals" },
-          { title: t("formBuilder"), url: "/form_builder" },
-          { title: t("contract"), url: "/contract" },
-          { title: t("crmSystemSetup"), url: "/pipelines" },
-        ],
-      },
-      {
-        title: t("projectSystem"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconShare,
-        items: [
-          { title: "Projects", url: "/projects/project/list" },
-          { title: "Tasks", url: "/projects/task" },
-          { title: "Timesheet", url: "/projects/timesheet/list" },
-          { title: "Bug", url: "/projects/bug/list" },
-          { title: "Task Calendar", url: "/projects/task/calendar" },
-          { title: "Tracker", url: "/projects/time-tracker" },
-          { title: "Project Report", url: "/projects/reports/project" },
-          { 
-            title: "Project System Setup", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Project Stages", url: "/projects/setup" },
-              { title: "Task Stages", url: "/projects/task/stage" },
-              { title: "Bug Status", url: "/projects/bug/status" },
-            ],
-          },
-        ],
-      },
-      {
-        title: t("posSystem"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconCash,
-        items: [
-          { 
-            title: "Product & Services", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Product & Services", url: "/pos/products/list" },
-              { title: "Product Category", url: "/pos/products/category" },
-              { title: "Product Coupon", url: "/pos/products/coupon" },
-              { title: "Brand", url: "/pos/products/brand" },
-              { title: "Unit", url: "/pos/products/unit" },
-              { title: "Variant", url: "/pos/products/variant" },
-            ],
-          },
-          { 
-            title: "Purchase", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Purchase", url: "/pos/purchase/list" },
-              { title: "Purchase Return", url: "/pos/purchase/return" },
-            ],
-          },
-          { 
-            title: "Warehouse", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "Warehouse", url: "/pos/warehouse/list" },
-              { title: "Warehouse Transfer", url: "/pos/warehouse/transfer" },
-            ],
-          },
-          { 
-            title: "POS", 
-            url: "#", // Only dropdown, no direct navigation
-            items: [
-              { title: "POS", url: "/pos/sales/pos" },
-              { title: "POS Return", url: "/pos/sales/return" },
-            ],
-          },
-          { 
-            title: "Reports", 
-            url: "/pos/reports",
-          },
-          { title: "POS System Setup", url: "/pos/setup" },
-        ],
-      },
-      {
-        title: t("productSystem"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconShoppingCart,
-        items: [
-          { title: "Product & Services", url: "/products/services" },
-          { title: "Product Stock", url: "/products/stock" },
-        ],
-      },
-      {
-        title: t("userManagement"),
-        url: "#", // Only dropdown, no direct navigation
-        icon: IconUsers,
-        items: [
-          { title: "Users", url: "/users" },
-          { title: "Clients", url: "/users/clients" },
-          { title: "Roles", url: "/users/roles" },
-          { title: "Permissions", url: "/users/permissions" },
-        ],
-      },
-      {
-        title: t("supportSystem"),
-        url: "/support",
-        icon: IconHeadphones,
-      },
-    ],
-    navSecondary: [
-      {
-        title: "Zoom Meeting",
-        url: "/zoom",
-        icon: IconVideo,
-      },
-      {
-        title: "Notification Template",
-        url: "/notifications",
-        icon: IconBell,
-      },
-      {
-        title: "Settings",
-        url: "/settings",
-        icon: IconSettings,
-      },
-    ],
+    navMain: filteredNavMain,
+    navSecondary: menuData.navSecondary,
   }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
-        {/* SidebarMenu requires 'items' prop, so remove this usage */}
+      <SidebarHeader className="border-b border-sidebar-border/80 bg-sidebar/80">
         <SidebarMenuButton
           asChild
-          className="data-[slot=sidebar-menu-button]:!p-1.5"
+          className="data-[slot=sidebar-menu-button]:!px-3 !py-3 rounded-lg hover:bg-sidebar-accent"
         >
-          <a href="#">
-            <IconBriefcase className="!size-5" />
-            <span className="text-base font-semibold">WelcomplayERP</span>
+          <a href="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm">
+              N
+            </div>
+            <span className="text-base font-semibold text-sidebar-foreground truncate">Nexus ERP</span>
           </a>
         </SidebarMenuButton>
       </SidebarHeader>
-      <SidebarContent>
-  <SidebarMenu items={data.navMain} />
+      <SidebarContent className="scrollbar-thin">
+        <div className="group-data-[collapsible=icon]:hidden">
+          <SidebarSearch />
+        </div>
+        <SidebarMenu items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/80 bg-sidebar/50 pt-2">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>

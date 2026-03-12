@@ -1,12 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, FileText, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Search, FileText, Eye, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+const cardClass = 'rounded-lg border shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]';
+const statCardClass = 'rounded-lg border-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 
 interface Application {
   id: string;
@@ -16,50 +21,78 @@ interface Application {
   phone: string;
   appliedDate: string;
   stage: string;
+  stageId?: string;
   rating: number;
 }
 
+type JobOption = { id: string; title: string };
+type StageOption = { id: string; name: string };
+
 export function ApplicationsContent() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterJob, setFilterJob] = useState('all');
   const [filterStage, setFilterStage] = useState('all');
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [jobs, setJobs] = useState<JobOption[]>([]);
+  const [stages, setStages] = useState<StageOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Mock data
-  const [applications] = useState<Application[]>([
-    {
-      id: '1',
-      jobTitle: 'Senior Software Engineer',
-      applicantName: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+62 812-3456-7890',
-      appliedDate: '2024-02-15',
-      stage: 'Applied',
-      rating: 4,
-    },
-    {
-      id: '2',
-      jobTitle: 'Marketing Manager',
-      applicantName: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '+62 813-9876-5432',
-      appliedDate: '2024-02-10',
-      stage: 'Phone Screen',
-      rating: 5,
-    },
-    {
-      id: '3',
-      jobTitle: 'Senior Software Engineer',
-      applicantName: 'Mike Brown',
-      email: 'mike.brown@email.com',
-      phone: '+62 821-1234-5678',
-      appliedDate: '2024-02-18',
-      stage: 'Interview',
-      rating: 3,
-    },
-  ]);
+  const mapApp = (a: { jobTitle: string; stage: string; stageId?: string } & Application) => ({
+    id: a.id,
+    jobTitle: a.jobTitle,
+    applicantName: a.applicantName,
+    email: a.email,
+    phone: a.phone,
+    appliedDate: a.appliedDate,
+    stage: a.stage,
+    stageId: a.stageId,
+    rating: a.rating,
+  });
 
-  const jobs = ['All Jobs', 'Senior Software Engineer', 'Marketing Manager', 'Accountant'];
-  const stages = ['All Stages', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired', 'Rejected'];
+  const fetchApplications = useCallback(async (jobIdFilter: string, stageIdFilter: string) => {
+    const params = new URLSearchParams();
+    if (jobIdFilter !== 'all') params.set('jobId', jobIdFilter);
+    if (stageIdFilter !== 'all') params.set('stageId', stageIdFilter);
+    const res = await fetch(`/api/hrm/recruitment/applications?${params.toString()}`);
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data)) {
+      setApplications(json.data.map(mapApp));
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [jobsRes, stagesRes] = await Promise.all([
+        fetch('/api/hrm/recruitment/jobs'),
+        fetch('/api/job-stages'),
+      ]);
+      const jobsJson = await jobsRes.json();
+      const stagesJson = await stagesRes.json();
+      if (!cancelled) {
+        if (jobsJson.success && Array.isArray(jobsJson.data)) setJobs(jobsJson.data);
+        if (stagesJson.success && Array.isArray(stagesJson.data)) setStages(stagesJson.data);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const stageId =
+      filterStage === 'all' ? 'all' : stages.find((s) => s.name === filterStage)?.id ?? 'all';
+    fetchApplications(filterJob, stageId)
+      .catch(() => toast.error('Gagal memuat lamaran'))
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterJob, filterStage, stages, fetchApplications]);
 
   const filteredData = applications.filter((app) => {
     const matchesSearch =
@@ -70,6 +103,67 @@ export function ApplicationsContent() {
     const matchesStage = filterStage === 'all' || app.stage === filterStage;
     return matchesSearch && matchesJob && matchesStage;
   });
+
+  const handleView = (id: string) => {
+    router.push(`/hrm/recruitment/applications/${id}`);
+  };
+
+  const hiredStageId = stages.find((s) => s.name === 'Hired')?.id;
+  const rejectedStageId = stages.find((s) => s.name === 'Rejected')?.id;
+
+  const handleAccept = async (app: Application) => {
+    if (!hiredStageId) {
+      toast.error('Stage "Hired" tidak ditemukan. Tambah di Setup → Job Stage.');
+      return;
+    }
+    setUpdatingId(app.id);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${app.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stageId: hiredStageId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === app.id ? { ...a, stage: 'Hired', stageId: hiredStageId } : a))
+        );
+        toast.success(`${app.applicantName} diterima (Hired)`);
+      } else toast.error(json.message ?? 'Gagal mengubah stage');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengubah stage');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleReject = async (app: Application) => {
+    if (!rejectedStageId) {
+      toast.error('Stage "Rejected" tidak ditemukan. Tambah di Setup → Job Stage.');
+      return;
+    }
+    setUpdatingId(app.id);
+    try {
+      const res = await fetch(`/api/hrm/recruitment/applications/${app.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stageId: rejectedStageId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === app.id ? { ...a, stage: 'Rejected', stageId: rejectedStageId } : a))
+        );
+        toast.error(`${app.applicantName} ditolak (Rejected)`);
+      } else toast.error(json.message ?? 'Gagal mengubah stage');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengubah stage');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const getStageBadgeColor = (stage: string) => {
     switch (stage) {
@@ -98,12 +192,20 @@ export function ApplicationsContent() {
     ));
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards - separated, no border */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={statCardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Applications</p>
@@ -113,8 +215,8 @@ export function ApplicationsContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={statCardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">In Interview</p>
@@ -125,8 +227,8 @@ export function ApplicationsContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={statCardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Hired</p>
@@ -137,8 +239,8 @@ export function ApplicationsContent() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className={statCardClass}>
+          <CardContent className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Rejected</p>
@@ -151,61 +253,60 @@ export function ApplicationsContent() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+      {/* Manage Job Application - satu card: header (title + search + filter), content (grid) */}
+      <Card className={cardClass}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 pb-4">
+          <h3 className="text-base font-semibold shrink-0">Manage Job Application</h3>
+          <div className="flex flex-nowrap items-center gap-2 min-w-0">
+            <div className="relative shrink-0 w-[200px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search applicants..."
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
               />
             </div>
             <Select value={filterJob} onValueChange={setFilterJob}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by job" />
+              <SelectTrigger className="h-9 w-[160px] shrink-0">
+                <SelectValue placeholder="Job" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Jobs</SelectItem>
-                {jobs.slice(1).map((job) => (
-                  <SelectItem key={job} value={job}>
-                    {job}
+                {jobs.map((j) => (
+                  <SelectItem key={j.id} value={j.id}>
+                    {j.title}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={filterStage} onValueChange={setFilterStage}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by stage" />
+              <SelectTrigger className="h-9 w-[160px] shrink-0">
+                <SelectValue placeholder="Stage" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
-                {stages.slice(1).map((stage) => (
-                  <SelectItem key={stage} value={stage}>
-                    {stage}
+                {stages.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Applications Grid */}
+        </CardHeader>
+        <CardContent className="px-6 pt-0">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredData.length === 0 ? (
-          <Card className="col-span-full">
-            <CardContent className="pt-6">
+          <Card className={`col-span-full ${cardClass}`}>
+            <CardContent className="px-4 py-4">
               <p className="text-center py-8 text-muted-foreground">No applications found</p>
             </CardContent>
           </Card>
         ) : (
           filteredData.map((app) => (
-            <Card key={app.id}>
-              <CardContent className="pt-6 space-y-3">
+            <Card key={app.id} className={cardClass}>
+              <CardContent className="px-4 py-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold">{app.applicantName}</h3>
@@ -223,15 +324,34 @@ export function ApplicationsContent() {
                   {renderStars(app.rating)}
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-7 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                    onClick={() => handleView(app.id)}
+                  >
                     <Eye className="w-4 h-4 mr-1" />
                     View
                   </Button>
-                  <Button size="sm" variant="outline" title="Accept">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="Accept"
+                    className="h-7 shadow-none bg-green-100 text-green-800 hover:bg-green-200 border-green-200"
+                    onClick={() => handleAccept(app)}
+                    disabled={app.stage === 'Hired' || app.stage === 'Rejected' || updatingId === app.id}
+                  >
+                    {updatingId === app.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                   </Button>
-                  <Button size="sm" variant="outline" title="Reject">
-                    <XCircle className="w-4 h-4 text-red-600" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="Reject"
+                    className="h-7 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+                    onClick={() => handleReject(app)}
+                    disabled={app.stage === 'Hired' || app.stage === 'Rejected' || updatingId === app.id}
+                  >
+                    <XCircle className="w-4 h-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -239,6 +359,8 @@ export function ApplicationsContent() {
           ))
         )}
       </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

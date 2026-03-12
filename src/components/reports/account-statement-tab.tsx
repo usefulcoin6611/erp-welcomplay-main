@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState, memo } from 'react'
+import React, { useEffect, useMemo, useState, memo } from 'react'
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -28,31 +28,165 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useAccountStatementData } from './account-statement/hooks'
 import { getAccountStatementColumns } from './account-statement/columns'
-import { RevenueAccountCard } from './account-statement/components/RevenueAccountCard'
-import { PaymentAccountCard } from './account-statement/components/PaymentAccountCard'
+import { formatRupiah } from './utils/formatCurrency'
+
+function toCsvValue(value: string | number) {
+  const str = String(value ?? '')
+  if (str.includes('"')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  if (str.includes(',') || str.includes('\n') || str.includes('\r')) {
+    return `"${str}"`
+  }
+  return str
+}
+
+function downloadCsv(rows: (string | number)[][], filename: string) {
+  if (typeof window === 'undefined' || !rows.length) return
+  const csv = rows.map((row) => row.map(toCsvValue).join(',')).join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+function getDefaultDateRange(): DateRange {
+  const today = new Date()
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+  const from = new Date(currentMonthStart)
+  from.setMonth(from.getMonth() - 5)
+  const to = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  return { from, to }
+}
 
 export function AccountStatementTab() {
   const t = useTranslations('reports.accountStatement')
   const commonT = useTranslations('common')
   const headerT = useTranslations('header')
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2025, 5, 1),
-    to: new Date(2025, 10, 30),
-  })
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => getDefaultDateRange())
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState('all')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
+  const [accountOptions, setAccountOptions] = useState<{ id: string; chartAccountId: string; label: string }[]>([])
+
+  const startDate = useMemo(() => {
+    if (!dateRange?.from) return undefined
+    const from = dateRange.from
+    const monthStart = new Date(from.getFullYear(), from.getMonth(), 1)
+    return format(monthStart, 'yyyy-MM-dd')
+  }, [dateRange])
+
+  const endDate = useMemo(() => {
+    if (!dateRange?.from) return undefined
+    const to = dateRange.to ?? dateRange.from
+    const monthEnd = new Date(to.getFullYear(), to.getMonth() + 1, 0)
+    return format(monthEnd, 'yyyy-MM-dd')
+  }, [dateRange])
+
+  const durationLabel = useMemo(() => {
+    if (!dateRange?.from) return ''
+    const fromLabel = format(dateRange.from, 'LLL yyyy')
+    const toDate = dateRange.to ?? dateRange.from
+    const toLabel = format(toDate, 'LLL yyyy')
+    return `${fromLabel} to ${toLabel}`
+  }, [dateRange])
 
   // Use custom hook for data management
   const { statementData, revenueAccounts, paymentAccounts } = useAccountStatementData({
     searchQuery,
     selectedAccount,
     selectedCategory,
+    startDate,
+    endDate,
   })
+
+  const totalCash = useMemo(() => {
+    if (!statementData.length) return 0
+    return statementData.reduce((acc, item) => {
+      if (item.type === 'revenue') return acc + item.amount
+      if (item.type === 'payment') return acc - item.amount
+      return acc
+    }, 0)
+  }, [statementData])
+
+  const selectedAccountLabel = useMemo(() => {
+    if (selectedAccount === 'all') return ''
+    const option = accountOptions.find((o) => o.id === selectedAccount)
+    return option?.label ?? selectedAccount
+  }, [selectedAccount, accountOptions])
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (selectedCategory === 'all') return ''
+    if (selectedCategory === 'revenue') return t('revenue')
+    if (selectedCategory === 'payment') return t('payment')
+    return selectedCategory
+  }, [selectedCategory, t])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAccounts = async () => {
+      try {
+        const res = await fetch('/api/bank-accounts', { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json?.success || !Array.isArray(json.data)) return
+        const list = (json.data as any[]).map((b) => {
+          const id = String(b.id)
+          const chartAccountId = String(b.chartAccountId)
+          const label = b.bank ? `${b.name} - ${b.bank}` : String(b.name)
+          return { id, chartAccountId, label }
+        })
+        if (!cancelled) {
+          const sorted = list.sort((a, b) => a.label.localeCompare(b.label))
+          setAccountOptions(sorted)
+        }
+      } catch {
+      }
+    }
+
+    loadAccounts()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleExport = () => {
+    if (!statementData.length) return
+    const header = [t('date'), t('description'), t('amount'), t('type')]
+    const rows: (string | number)[][] = [header]
+    for (const item of statementData) {
+      rows.push([item.date, item.description, item.amount, item.type])
+    }
+    const filename = `account_statement_${new Date().toISOString().slice(0, 10)}.csv`
+    downloadCsv(rows, filename)
+  }
+
+  const handleDownload = () => {
+    const header = [t('category'), t('account'), t('report'), t('amount')]
+    const rows: (string | number)[][] = [header]
+    for (const acc of revenueAccounts) {
+      const label = acc.bankName ? `${acc.holderName} - ${acc.bankName}` : acc.holderName
+      rows.push([t('revenue'), label, t('revenueAccounts'), acc.total])
+    }
+    for (const acc of paymentAccounts) {
+      const label = acc.bankName ? `${acc.holderName} - ${acc.bankName}` : acc.holderName
+      rows.push([t('payment'), label, t('paymentAccounts'), acc.total])
+    }
+    if (rows.length <= 1) return
+    const filename = `account_statement_summary_${new Date().toISOString().slice(0, 10)}.csv`
+    downloadCsv(rows, filename)
+  }
 
   // Get columns
   const columns = useMemo(() => getAccountStatementColumns(t), [t])
@@ -72,13 +206,34 @@ export function AccountStatementTab() {
   })
 
   const handleReset = () => {
-    setDateRange({
-      from: new Date(2025, 5, 1),
-      to: new Date(2025, 10, 30),
-    })
+    setDateRange(getDefaultDateRange())
     setSelectedAccount('all')
     setSelectedCategory('all')
     setSearchQuery('')
+  }
+
+  type SummaryCardProps = {
+    icon: React.ReactNode
+    label: string
+    value: string
+  }
+
+  function SummaryCard({ icon, label, value }: SummaryCardProps) {
+    return (
+      <Card className="h-full shadow-none">
+        <CardContent className="px-0 py-1.5">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-500">
+              <div className="text-white">{icon}</div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">{label}</p>
+              <p className="text-sm text-foreground truncate">{value}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -146,9 +301,11 @@ export function AccountStatementTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="bca">BCA</SelectItem>
-                  <SelectItem value="mandiri">Mandiri</SelectItem>
+                  {accountOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -189,6 +346,7 @@ export function AccountStatementTab() {
                 variant="outline"
                 size="sm"
                 className="h-9 px-4 shadow-none"
+                onClick={handleExport}
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 {t('export')}
@@ -196,6 +354,7 @@ export function AccountStatementTab() {
               <Button
                 size="sm"
                 className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+                onClick={handleDownload}
               >
                 <FileDown className="w-4 h-4" />
                 {t('download')}
@@ -205,25 +364,41 @@ export function AccountStatementTab() {
         </CardContent>
       </Card>
 
-      {/* Revenue Accounts */}
-      <div>
-        <h3 className="text-lg font-semibold text-foreground/80 mb-4">{t('revenueAccounts')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {revenueAccounts.map((account) => (
-            <RevenueAccountCard key={account.id} account={account} />
-          ))}
-        </div>
-      </div>
-
-      {/* Payment Accounts */}
-      <div>
-        <h3 className="text-lg font-semibold text-foreground/80 mb-4">{t('paymentAccounts')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {paymentAccounts.map((account) => (
-            <PaymentAccountCard key={account.id} account={account} />
-          ))}
-        </div>
-      </div>
+      <Card className="shadow-none">
+        <CardContent className="px-3 py-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <SummaryCard
+              icon={<FileText className="w-4 h-4" />}
+              label={t('report')}
+              value={t('accountStatementSummary')}
+            />
+            {selectedAccountLabel && (
+              <SummaryCard
+                icon={<FileText className="w-4 h-4" />}
+                label={t('account')}
+                value={selectedAccountLabel}
+              />
+            )}
+            {selectedCategoryLabel && (
+              <SummaryCard
+                icon={<FileText className="w-4 h-4" />}
+                label={t('category')}
+                value={selectedCategoryLabel}
+              />
+            )}
+            <SummaryCard
+              icon={<CalendarIcon className="w-4 h-4" />}
+              label={t('duration')}
+              value={durationLabel}
+            />
+            <SummaryCard
+              icon={<FileSpreadsheet className="w-4 h-4" />}
+              label={t('totalCash')}
+              value={formatRupiah(totalCash)}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Transactions Table */}
       <DataGrid table={table} recordCount={statementData.length} tableLayout={{ cellBorder: true, dense: true }}>

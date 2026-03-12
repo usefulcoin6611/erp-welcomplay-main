@@ -76,7 +76,7 @@ export default function LedgerPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold">Ledger Summary</h1>
@@ -88,36 +88,36 @@ export default function LedgerPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="px-6 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Debit
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-6 pt-0">
                   <div className="text-2xl font-bold">
                     Rp {totalDebit.toLocaleString()}
                   </div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="px-6 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Credit
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-6 pt-0">
                   <div className="text-2xl font-bold">
                     Rp {totalCredit.toLocaleString()}
                   </div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="px-6 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Ending Balance
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-6 pt-0">
                   <div className="text-2xl font-bold">
                     Rp {endingBalance.toLocaleString()}
                   </div>
@@ -125,16 +125,16 @@ export default function LedgerPage() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+              <CardHeader className="px-6">
                 <CardTitle>Filters</CardTitle>
                 <CardDescription>
                   Pilih akun dan periode untuk melihat ledger.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <form className="flex flex-col gap-4 md:flex-row md:items-end">
-                  <div className="flex-1 min-w-0">
+              <CardContent className="px-6 py-4">
+                <form className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-[1fr_14rem_14rem_14rem] md:justify-start">
+                  <div className="min-w-0 space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       Search
                     </label>
@@ -146,12 +146,12 @@ export default function LedgerPage() {
                       />
                     </div>
                   </div>
-                  <div className="w-full md:w-52">
+                  <div className="space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       Account
                     </label>
                     <Select defaultValue="1000">
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full h-9 border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground">
                         <SelectValue placeholder="Select account" />
                       </SelectTrigger>
                       <SelectContent>
@@ -164,67 +164,67 @@ export default function LedgerPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-full md:w-40">
+                  <div className="space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       Start Date
                     </label>
-                    <Input type="date" />
+                    <Input type="date" className="h-9" />
                   </div>
-                  <div className="w-full md:w-40">
+                  <div className="space-y-2">
                     <label className="mb-1 block text-sm font-medium">
                       End Date
                     </label>
-                    <Input type="date" />
+                    <Input type="date" className="h-9" />
                   </div>
                 </form>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
+            <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white w-full">
+              <CardHeader className="px-6">
                 <CardTitle>Ledger Detail</CardTitle>
                 <CardDescription>
                   Daftar transaksi debit / kredit untuk akun terpilih.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Journal</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Debit</TableHead>
-                      <TableHead className="text-right">Credit</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
+                      <TableHead className="px-6">Date</TableHead>
+                      <TableHead className="px-6">Journal</TableHead>
+                      <TableHead className="px-6">Description</TableHead>
+                      <TableHead className="px-6 text-right">Debit</TableHead>
+                      <TableHead className="px-6 text-right">Credit</TableHead>
+                      <TableHead className="px-6 text-right">Balance</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {ledgerRows.map((row) => (
                       <TableRow key={row.id}>
-                        <TableCell>
+                        <TableCell className="px-6">
                           <div className="flex items-center gap-1 text-sm">
                             <IconCalendar className="h-3 w-3" />
                             <span>{row.date}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{row.journal}</TableCell>
-                        <TableCell>
+                        <TableCell className="px-6">{row.journal}</TableCell>
+                        <TableCell className="px-6">
                           <span className="text-sm text-muted-foreground">
                             {row.description}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-6 text-right">
                           {row.debit
                             ? `Rp ${row.debit.toLocaleString()}`
                             : '-'}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-6 text-right">
                           {row.credit
                             ? `Rp ${row.credit.toLocaleString()}`
                             : '-'}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="px-6 text-right font-medium">
                           Rp {row.balance.toLocaleString()}
                         </TableCell>
                       </TableRow>

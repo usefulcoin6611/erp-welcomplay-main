@@ -23,6 +23,8 @@ interface SmoothTabProps {
     value?: string;
     className?: string;
     activeColor?: string;
+    /** Optional action (e.g. Create button) rendered inline with the tab bar, aligned right */
+    action?: React.ReactNode;
     onChange?: (tabId: string) => void;
     onTabPreload?: (tabId: string) => void;
 }
@@ -53,7 +55,8 @@ export function SmoothTab({
     defaultTabId,
     value,
     className,
-    activeColor = "bg-cyan-600",
+    activeColor = "bg-gray-600",
+    action,
     onChange,
     onTabPreload,
 }: SmoothTabProps) {
@@ -179,26 +182,27 @@ export function SmoothTab({
     );
 
     return (
-        <div className="flex flex-col w-full gap-4">
-            {/* Tab Navigation */}
-            <div
-                ref={containerRef}
-                role="tablist"
-                aria-label="Report tabs"
-                className={cn(
-                                                "flex items-center justify-start gap-1 p-1 relative",
-                                                "bg-gray-100 dark:bg-gray-800 rounded-xl",
-                                                "overflow-x-auto overflow-y-hidden scrollbar-hide",
-                                                "transition-all duration-200",
-                                                "w-fit max-w-full",
-                                                className
-                                            )}
-                style={{
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                }}
-                                    >
+        <div className="flex flex-col w-full gap-2">
+            {/* Tab Navigation + Action inline */}
+            <div className="flex w-full items-center justify-between gap-2">
+                <div
+                    ref={containerRef}
+                    role="tablist"
+                    aria-label="Report tabs"
+                    className={cn(
+                        "flex items-center justify-start gap-1 p-1 relative min-w-0 shrink-0",
+                        "bg-gray-100 dark:bg-gray-800 rounded-xl",
+                        "overflow-x-auto overflow-y-hidden scrollbar-hide",
+                        "transition-all duration-200",
+                        "w-fit max-w-full",
+                        className
+                    )}
+                    style={{
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                    }}
+                >
                 {/* Sliding Background */}
                 {dimensions.width > 0 && (
                     <motion.div
@@ -240,31 +244,37 @@ export function SmoothTab({
                                 aria-controls={`panel-${item.id}`}
                                 id={`tab-${item.id}`}
                                 tabIndex={isSelected ? 0 : -1}
-                                onClick={() => handleTabClick(item.id)}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleTabClick(item.id);
+                                }}
                                 onKeyDown={(e) => handleKeyDown(e, item.id)}
                                 onMouseEnter={() => onTabPreload?.(item.id)}
                                 onFocus={() => onTabPreload?.(item.id)}
                                 className={cn(
-                                    "relative flex items-center justify-center rounded-lg z-[2]",
+                                    "relative flex items-center justify-center rounded-lg z-[10]",
                                     "py-2 text-xs sm:text-sm font-medium leading-none min-w-fit",
                                     "transition-colors duration-200 whitespace-nowrap cursor-pointer flex-shrink-0",
                                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
                                     "disabled:pointer-events-none disabled:opacity-50",
                                     isSelected
                                         ? "text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 shadow-xs pl-5 pr-3"
-                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 px-3"
+                                        : "text-gray-700 dark:text-gray-300 bg-gray-200/90 dark:bg-gray-700/80 hover:bg-gray-300/90 dark:hover:bg-gray-600/80 hover:text-gray-900 dark:hover:text-gray-100 px-3"
                                 )}
+                                style={{ pointerEvents: 'auto', position: 'relative', touchAction: 'manipulation' }}
                                 whileHover={!isSelected ? { scale: 1.02 } : undefined}
-                                whileTap={{ scale: 0.98 }}
                             >
                                 {item.title}
                             </motion.button>
                         );
                     })}
+                </div>
+                {action ? <div className="shrink-0">{action}</div> : null}
             </div>
 
-            {/* Content Area with Animation */}
-            <div className="flex-1 relative w-full overflow-hidden">
+            {/* Content Area with Animation - min-w-0 agar konten lebar (e.g. tabel) bisa scroll horizontal */}
+            <div className="flex-1 relative w-full min-w-0 overflow-visible">
                 <AnimatePresence
                     initial={false}
                     mode="wait"
@@ -281,9 +291,13 @@ export function SmoothTab({
                             duration: 0.3,
                             ease: [0.32, 0.72, 0, 1] as any,
                         }}
-                        className="w-full will-change-transform"
+                        className="w-full min-w-0 will-change-transform"
                     >
-                        {selectedItem?.content}
+                        {selectedItem ? (
+                            selectedItem.content
+                        ) : (
+                            <div>No content for tab: {selected}</div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>

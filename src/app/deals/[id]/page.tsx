@@ -46,11 +46,12 @@ const mockDeals = [
 ] as const
 
 interface DealDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function DealDetailPage({ params }: DealDetailPageProps) {
-  const deal = mockDeals.find((d) => d.id === params.id) ?? mockDeals[0]
+export default async function DealDetailPage({ params }: DealDetailPageProps) {
+  const { id } = await params
+  const deal = mockDeals.find((d) => d.id === id) ?? mockDeals[0]
 
   return (
     <SidebarProvider
@@ -64,27 +65,14 @@ export default function DealDetailPage({ params }: DealDetailPageProps) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-100">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3 shadow-none"
-                >
-                  <Link href="/deals">
-                    <IconArrowLeft className="mr-1 h-4 w-4" />
-                    Back
-                  </Link>
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold">{deal.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {deal.client} · {deal.id}
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold">{deal.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {deal.client} · {deal.id}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -99,6 +87,17 @@ export default function DealDetailPage({ params }: DealDetailPageProps) {
                   className="h-8 px-3 bg-blue-500 hover:bg-blue-600 shadow-none"
                 >
                   Mark as Won
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none"
+                >
+                  <Link href="/deals">
+                    <IconArrowLeft className="mr-1 h-4 w-4" />
+                    Back
+                  </Link>
                 </Button>
               </div>
             </div>

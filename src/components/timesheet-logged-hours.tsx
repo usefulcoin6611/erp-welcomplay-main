@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -8,20 +9,23 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTranslations } from "next-intl";
+import { useProjectDashboard } from "@/contexts/project-dashboard-context";
 
 export function TimesheetLoggedHours() {
   const t = useTranslations("projectDashboard.timesheetLoggedHours");
+  const { data, loading } = useProjectDashboard();
+  const chartData = data.timesheetLoggedHours.length
+    ? data.timesheetLoggedHours
+    : [{ day: "-", hours: 0, minutes: 0 }];
 
-  // Mock data for last 7 days
-  const data = [
-    { day: "Sun", hours: 40 },
-    { day: "Mon", hours: 90 },
-    { day: "Tue", hours: 50 },
-    { day: "Wed", hours: 80 },
-    { day: "Thu", hours: 50 },
-    { day: "Fri", hours: 60 },
-    { day: "Sat", hours: 30 },
-  ];
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader><CardTitle>{t("title")}</CardTitle></CardHeader>
+        <CardContent><Skeleton className="h-[240px] w-full" /></CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -37,7 +41,7 @@ export function TimesheetLoggedHours() {
         {/* Chart bars */}
         <TooltipProvider>
           <div className="space-y-3 py-2">
-            {data.map((item, index) => (
+            {chartData.map((item, index) => (
               <div key={index} className="flex items-center gap-4">
                 <div className="w-10 text-sm text-muted-foreground">
                   {item.day}
@@ -51,14 +55,14 @@ export function TimesheetLoggedHours() {
                           style={{ width: `${item.hours}%` }}
                         >
                           <span className="text-xs font-medium text-white">
-                            {item.hours}
+                            {item.minutes}
                           </span>
                         </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="font-semibold">{item.day}</p>
-                      <p className="text-sm">{item.hours} {t("hoursLogged")}</p>
+                      <p className="text-sm">{item.minutes} min {t("hoursLogged")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>

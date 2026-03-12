@@ -16,9 +16,9 @@ import { InvoicesStatistics } from '@/components/invoices-statistics'
 import { RecentBillsSection } from '@/components/recent-bills-section'
 import { BillsStatistics } from '@/components/bills-statistics'
 import { GoalSection } from '@/components/goal-section'
+import { AccountDashboardProvider } from '@/contexts/account-dashboard-context'
 
 export default function AccountDashboardPage() {
-
   return (
     <SidebarProvider
       style={
@@ -31,7 +31,8 @@ export default function AccountDashboardPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <AccountDashboardProvider>
+        <div className="flex flex-1 flex-col bg-gray-100">
           <div className="@container/main flex flex-1 flex-col gap-3 p-3">
             {/* Top Section - Statistics Cards and Income Vs Expense Side by Side */}
             <div className="grid gap-3 xl:grid-cols-3">
@@ -95,6 +96,7 @@ export default function AccountDashboardPage() {
             <GoalSection />
           </div>
         </div>
+        </AccountDashboardProvider>
       </SidebarInset>
     </SidebarProvider>
   )

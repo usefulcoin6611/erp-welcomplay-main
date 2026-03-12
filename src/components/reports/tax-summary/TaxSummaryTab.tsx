@@ -16,10 +16,19 @@ function TaxSummaryTabComponent() {
     dateRange,
   } = useTaxSummaryData()
 
+  const handleReset = () => {
+    handleYearChange(String(new Date().getFullYear()))
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Filters */}
-      <TaxSummaryFilters year={year} onYearChange={handleYearChange} />
+      <TaxSummaryFilters
+        year={year}
+        onYearChange={handleYearChange}
+        onApply={() => {}} // year change auto-triggers refetch via useEffect
+        onReset={handleReset}
+      />
 
       {/* Info Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">

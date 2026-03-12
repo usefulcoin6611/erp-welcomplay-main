@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
@@ -54,109 +54,93 @@ export function LeadStaffReport() {
     if (!validateDates()) return
 
     setIsGenerating(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Generate staff report
-    const staffChartOptions: any = {
-      chart: {
-        type: 'bar',
-        height: 280,
-        toolbar: { show: false },
-        dropShadow: {
-          enabled: true,
-          color: '#000',
-          top: 18,
-          left: 7,
-          blur: 10,
-          opacity: 0.2
-        }
-      },
-      plotOptions: {
-        bar: {
-          borderRadius: 4,
-          horizontal: false,
-          columnWidth: '60%',
-        }
-      },
-      dataLabels: { enabled: false },
-      stroke: {
-        width: 2,
-        curve: 'smooth'
-      },
-      xaxis: {
-        categories: ['Budi Santoso', 'Dewi Lestari', 'Rina Mulyani', 'Agus Setiawan', 'Sari Wulandari']
-      },
-      colors: ['#6fd944'],
-      grid: { strokeDashArray: 4 },
-      legend: { show: false }
+    setChartData(null)
+    try {
+      const params = new URLSearchParams({ type: 'lead', fromDate, toDate })
+      const res = await fetch(`/api/crm/reports?${params}`)
+      const json = await res.json()
+      if (!json.success || !json.data?.staff) {
+        setIsGenerating(false)
+        return
+      }
+      const { categories, series } = json.data.staff
+      const staffChartOptions: Record<string, unknown> = {
+        chart: {
+          type: 'bar',
+          height: 280,
+          toolbar: { show: false },
+          dropShadow: { enabled: true, color: '#000', top: 18, left: 7, blur: 10, opacity: 0.2 }
+        },
+        plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '60%' } },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, curve: 'smooth' },
+        xaxis: { categories: categories.length ? categories : ['No data'] },
+        colors: ['#3B82F6'],
+        grid: { strokeDashArray: 4 },
+        legend: { show: false }
+      }
+      setChartData({
+        options: staffChartOptions,
+        series: [{ name: 'Leads', data: series }]
+      })
+    } catch {
+      setChartData(null)
+    } finally {
+      setIsGenerating(false)
     }
-
-    const staffChartSeries = [{
-      name: 'Leads',
-      data: [42, 38, 45, 35, 40]
-    }]
-
-    setChartData({
-      options: staffChartOptions,
-      series: staffChartSeries
-    })
-    
-    setIsGenerating(false)
   }
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <h3 className="text-lg font-semibold tracking-tight">Staff Report</h3>
-        <p className="text-sm text-muted-foreground">Performance comparison across team members</p>
+    <Card className="shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] border-0 bg-white">
+      <CardHeader className="px-5 pt-5 pb-3">
+        <h3 className="text-base font-semibold text-foreground">Staff Report</h3>
+        <p className="text-sm text-muted-foreground mt-0.5">Performance comparison across team members</p>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="px-5 pb-5 pt-0">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-6">
           <div className="space-y-2">
-            <Label htmlFor="fromDate" className="text-sm font-medium">
-              From Date <span className="text-red-500">*</span>
-            </Label>
-            <Input
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="fromDate" className="text-sm font-medium">
+                From Date <span className="text-red-500">*</span>
+              </Label>
+              {errors.fromDate && (
+                <p id="fromDate-error" className="text-xs text-red-500">
+                  {errors.fromDate}
+                </p>
+              )}
+            </div>
+            <DatePicker
               id="fromDate"
-              type="date"
               value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value)
+              onValueChange={(v) => {
+                setFromDate(v)
                 setErrors(prev => ({ ...prev, fromDate: '' }))
               }}
-              className={`h-10 ${errors.fromDate ? 'border-red-500 focus:ring-red-500' : ''}`}
-              aria-invalid={!!errors.fromDate}
-              aria-describedby={errors.fromDate ? 'fromDate-error' : undefined}
+              placeholder="Pick from date"
+              hasError={!!errors.fromDate}
             />
-            {errors.fromDate && (
-              <p id="fromDate-error" className="text-xs text-red-500 mt-1.5">
-                {errors.fromDate}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="toDate" className="text-sm font-medium">
-              To Date <span className="text-red-500">*</span>
-            </Label>
-            <Input
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="toDate" className="text-sm font-medium">
+                To Date <span className="text-red-500">*</span>
+              </Label>
+              {errors.toDate && (
+                <p id="toDate-error" className="text-xs text-red-500">
+                  {errors.toDate}
+                </p>
+              )}
+            </div>
+            <DatePicker
               id="toDate"
-              type="date"
               value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value)
+              onValueChange={(v) => {
+                setToDate(v)
                 setErrors(prev => ({ ...prev, toDate: '' }))
               }}
-              className={`h-10 ${errors.toDate ? 'border-red-500 focus:ring-red-500' : ''}`}
-              aria-invalid={!!errors.toDate}
-              aria-describedby={errors.toDate ? 'toDate-error' : undefined}
+              placeholder="Pick to date"
+              hasError={!!errors.toDate}
             />
-            {errors.toDate && (
-              <p id="toDate-error" className="text-xs text-red-500 mt-1.5">
-                {errors.toDate}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label className="text-sm font-medium opacity-0 select-none">Action</Label>

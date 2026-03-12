@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslations } from 'next-intl'
+import { useAccountDashboard } from '@/contexts/account-dashboard-context'
 
 interface ExpenseData {
   id: number
@@ -36,24 +37,6 @@ interface ExpenseData {
   vendor: string
   amountDue: number
 }
-
-const mockExpenseData: ExpenseData[] = [
-  { id: 1, date: '12 Nov, 2025', vendor: 'PT Telkom (Internet)', amountDue: 8500000 },
-  { id: 2, date: '11 Nov, 2025', vendor: 'Office Supplies Co', amountDue: 5500000 },
-  { id: 3, date: '10 Nov, 2025', vendor: 'Tech Equipment Ltd', amountDue: 12750500 },
-  { id: 4, date: '09 Nov, 2025', vendor: 'PLN (Electricity)', amountDue: 6200000 },
-  { id: 5, date: '08 Nov, 2025', vendor: 'Marketing Agency', amountDue: 8300750 },
-  { id: 6, date: '07 Nov, 2025', vendor: 'Transport Services', amountDue: 4450250 },
-  { id: 7, date: '06 Nov, 2025', vendor: 'Utilities Provider', amountDue: 3200000 },
-  { id: 8, date: '05 Nov, 2025', vendor: 'Cleaning Services', amountDue: 2800000 },
-  { id: 9, date: '04 Nov, 2025', vendor: 'Security Services', amountDue: 5600000 },
-  { id: 10, date: '03 Nov, 2025', vendor: 'Software Subscription', amountDue: 15000000 },
-  { id: 11, date: '02 Nov, 2025', vendor: 'Office Furniture', amountDue: 9800000 },
-  { id: 12, date: '01 Nov, 2025', vendor: 'Training & Development', amountDue: 7200000 },
-  { id: 13, date: '31 Oct, 2025', vendor: 'Printing Services', amountDue: 3500000 },
-  { id: 14, date: '30 Oct, 2025', vendor: 'Catering Services', amountDue: 4100000 },
-  { id: 15, date: '29 Oct, 2025', vendor: 'IT Maintenance', amountDue: 11500000 },
-]
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -66,20 +49,22 @@ function formatRupiah(amount: number) {
 export function LatestExpenseTable() {
   const t = useTranslations('accountDashboard.latestExpense')
   const headerT = useTranslations('header')
+  const { data, loading } = useAccountDashboard()
+  const expenseData: ExpenseData[] = data.latestExpense
 
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }])
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return mockExpenseData
-    return mockExpenseData.filter(
+    if (!searchQuery) return expenseData
+    return expenseData.filter(
       (item) =>
         item.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
         formatRupiah(item.amountDue).toLowerCase().includes(searchQuery.toLowerCase()),
     )
-  }, [searchQuery])
+  }, [expenseData, searchQuery])
 
   const columns = useMemo<ColumnDef<ExpenseData>[]>(() => {
     return [
@@ -130,6 +115,26 @@ export function LatestExpenseTable() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
+
+  if (loading) {
+    return (
+      <Card className="py-2">
+        <CardHeader className="px-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        </CardHeader>
+        <CardTable>
+          <div className="px-3 py-2 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardTable>
+      </Card>
+    )
+  }
 
   return (
     <DataGrid table={table} recordCount={filteredData?.length || 0} tableLayout={{ cellBorder: true, dense: true }}>

@@ -2,7 +2,9 @@ export interface TaxSummaryFilter {
   year: string
 }
 
-export const yearList = ['2025', '2024', '2023', '2022', '2021']
+// Dynamic year list: current year + 4 previous years
+const currentYear = new Date().getFullYear()
+export const yearList = Array.from({ length: 5 }, (_, i) => String(currentYear - i))
 
 export const monthList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 

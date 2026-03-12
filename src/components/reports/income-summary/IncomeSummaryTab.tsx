@@ -19,6 +19,8 @@ function IncomeSummaryTabComponent() {
     setCategory,
     customer,
     setCustomer,
+    categoryOptions,
+    customerOptions,
 
     // Data
     revenueData,
@@ -46,6 +48,8 @@ function IncomeSummaryTabComponent() {
         setCustomer={setCustomer}
         onApply={handleApplyFilters}
         onReset={handleReset}
+        categoryOptions={categoryOptions}
+        customerOptions={customerOptions}
       />
 
       {/* Info Cards Row */}

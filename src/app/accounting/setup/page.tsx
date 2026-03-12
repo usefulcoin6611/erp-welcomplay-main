@@ -1,55 +1,101 @@
-import React from "react"
+'use client'
+
+import { lazy, Suspense, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SmoothTab } from '@/components/ui/smooth-tab'
+import { Skeleton } from '@/components/ui/skeleton'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 
-const settings = [
-  {
-    id: 'company',
-    name: 'Company Profile',
-    description: 'Nama perusahaan, alamat, dan informasi dasar.',
-    status: 'Completed',
-  },
-  {
-    id: 'fiscal',
-    name: 'Fiscal Year',
-    description: 'Periode pembukuan dan awal tahun fiskal.',
-    status: 'In Progress',
-  },
-  {
-    id: 'tax',
-    name: 'Tax Settings',
-    description: 'Pengaturan PPN, PPh, dan kode pajak.',
-    status: 'Pending',
-  },
-] as const
+const TaxesTab = lazy(() => import('@/components/accounting-setup/taxes-tab').then((m) => ({ default: m.TaxesTab })))
+const CategoryTab = lazy(() => import('@/components/accounting-setup/category-tab').then((m) => ({ default: m.CategoryTab })))
+const UnitTab = lazy(() => import('@/components/accounting-setup/unit-tab').then((m) => ({ default: m.UnitTab })))
+const CustomFieldTab = lazy(() => import('@/components/accounting-setup/custom-field-tab').then((m) => ({ default: m.CustomFieldTab })))
 
-function getStatusBadge(status: string) {
-  switch (status) {
-    case 'Completed':
-      return 'bg-green-100 text-green-700 border-none'
-    case 'In Progress':
-      return 'bg-blue-100 text-blue-700 border-none'
-    case 'Pending':
-    default:
-      return 'bg-gray-100 text-gray-700 border-none'
-  }
-}
+const TabLoadingSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-[90px] w-full" />
+    <Skeleton className="h-[380px] w-full" />
+  </div>
+)
 
 export default function AccountingSetupPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  const activeTab = searchParams.get('tab') || 'taxes'
+  const tabContentCache = useRef<{ [key: string]: React.ReactNode }>({})
+
+  function TabContentWithCache({
+    tabId,
+    Component,
+    cache,
+  }: {
+    tabId: string
+    Component: React.ComponentType
+    cache: Record<string, React.ReactNode>
+  }) {
+    const [mounted, setMounted] = useState(false)
+    if (cache[tabId]) return cache[tabId]
+    if (!mounted) {
+      setMounted(true)
+      cache[tabId] = <Component />
+    }
+    return <Component />
+  }
+
+  const setupTabs = useMemo(
+    () => [
+      {
+        id: 'taxes',
+        title: 'Taxes',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="taxes" Component={TaxesTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'category',
+        title: 'Category',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="category" Component={CategoryTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'unit',
+        title: 'Unit',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache tabId="unit" Component={UnitTab} cache={tabContentCache.current} />
+          </Suspense>
+        ),
+      },
+      {
+        id: 'custom-field',
+        title: 'Custom Field',
+        content: (
+          <Suspense fallback={<TabLoadingSkeleton />}>
+            <TabContentWithCache
+              tabId="custom-field"
+              Component={CustomFieldTab}
+              cache={tabContentCache.current}
+            />
+          </Suspense>
+        ),
+      },
+    ],
+    []
+  )
+
+  const handleTabChange = (tabId: string) => {
+    router.push(`/accounting/setup?tab=${tabId}`, { scroll: false })
+  }
+
   return (
     <SidebarProvider
       style={
@@ -62,112 +108,17 @@ export default function AccountingSetupPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Accounting Setup</h1>
-              </div>
-              <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                Save Changes
-              </Button>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Required Steps
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {settings.length}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Company Information</CardTitle>
-                <CardDescription>
-                  Data dasar yang digunakan di invoice, bill, dan laporan.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Company Name
-                  </label>
-                  <Input defaultValue="PT Contoh Sejahtera" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Fiscal Year Start
-                  </label>
-                  <Input type="date" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Core Settings</CardTitle>
-                <CardDescription>
-                  Checklist pengaturan penting akuntansi.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                {settings.map((item) => (
-                  <Card key={item.id} className="border border-dashed">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        {item.name}
-                      </CardTitle>
-                      <CardDescription>{item.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                      <Badge className={getStatusBadge(item.status)}>
-                        {item.status}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Defaults</CardTitle>
-                <CardDescription>
-                  Pengaturan default seperti mata uang dan bahasa.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Base Currency
-                  </label>
-                  <Input defaultValue="IDR" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Enable Tax Inclusive Pricing
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" className="h-4 w-4 rounded border" />
-                    <span className="text-sm text-muted-foreground">
-                      Harga sudah termasuk pajak
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <SmoothTab
+              items={setupTabs}
+              defaultTabId={activeTab}
+              onChange={handleTabChange}
+              activeColor="bg-white dark:bg-gray-700 shadow-xs"
+            />
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
 }
-

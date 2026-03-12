@@ -1,0 +1,2 @@
+-- No-op: attendance date column remains TIMESTAMP(3) (Prisma DateTime).
+-- This migration was added to satisfy Prisma migration history.

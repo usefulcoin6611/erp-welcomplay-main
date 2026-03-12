@@ -1,18 +1,15 @@
 "use client"
 
 import React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -20,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { IconCalendar, IconFilter } from "@tabler/icons-react"
+import { IconCalendar } from "@tabler/icons-react"
+
+const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
 const tasks = [
   {
@@ -64,89 +63,77 @@ function getPriorityClasses(priority: string) {
 
 export default function TaskCalendarPage() {
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Task Calendar</h1>
-              </div>
-              <div className="flex gap-2">
-                <Select defaultValue="local">
-                  <SelectTrigger className="w-[180px] h-9">
-                    <SelectValue placeholder="Calendar Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="local">Local Calendar</SelectItem>
-                    <SelectItem value="google">Google Calendar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Calendar</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[600px] rounded-md border border-dashed flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <IconCalendar className="h-12 w-12 mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        Calendar view akan ditampilkan di sini
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Menggunakan FullCalendar atau library calendar lainnya
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tasks</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {tasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="p-3 border rounded-md space-y-1 hover:bg-accent cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium">{task.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {task.project}
-                            </div>
-                          </div>
-                          <Badge className={getPriorityClasses(task.priority)}>
-                            {task.priority}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {task.startDate} - {task.endDate}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+    <>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1 flex-1">
+            <CardTitle className="text-2xl font-semibold">Task Calendar</CardTitle>
+            <CardDescription>
+              Lihat task dalam tampilan kalender. Pilih tipe kalender di bawah.
+            </CardDescription>
           </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+          <Select defaultValue="local">
+            <SelectTrigger className="w-[180px] h-9">
+              <SelectValue placeholder="Calendar Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="local">Local Calendar</SelectItem>
+              <SelectItem value="google">Google Calendar</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardHeader>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className={`md:col-span-2 ${CARD_STYLE}`}>
+          <CardHeader className="px-6 py-3.5">
+            <CardTitle>Calendar</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="h-[600px] rounded-md border border-dashed flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <IconCalendar className="h-12 w-12 mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Calendar view akan ditampilkan di sini
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Menggunakan FullCalendar atau library calendar lainnya
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={CARD_STYLE}>
+          <CardHeader className="px-6 py-3.5">
+            <CardTitle>Tasks</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="space-y-3">
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="p-3 border rounded-md space-y-1 hover:bg-accent cursor-pointer transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{task.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {task.project}
+                      </div>
+                    </div>
+                    <Badge className={getPriorityClasses(task.priority)}>
+                      {task.priority}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {task.startDate} - {task.endDate}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   )
 }

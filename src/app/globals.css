@@ -1,12 +1,11 @@
 /* Sidebar custom scrollbar - very thin */
 [data-slot="sidebar-content"] {
-  /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: var(--sidebar-accent) transparent;
 }
 [data-slot="sidebar-content"]::-webkit-scrollbar {
   width: 2px;
-  height: 2px; /* horizontal */
+  height: 2px;
   background: transparent;
 }
 [data-slot="sidebar-content"]::-webkit-scrollbar-thumb {
@@ -18,7 +17,6 @@
   background: var(--sidebar-accent-foreground);
 }
 
-/* Auto-hide effect: hide thumb when not hovering (WebKit) */
 [data-slot="sidebar-content"]:not(:hover)::-webkit-scrollbar-thumb {
   background: transparent;
 }
@@ -26,9 +24,25 @@
   background: transparent;
 }
 
-/* Optional: slightly fade in on hover */
 [data-slot="sidebar-content"]:hover::-webkit-scrollbar-thumb {
   background: var(--sidebar-accent);
+}
+
+[data-slot="select-content"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-accent) transparent;
+}
+[data-slot="select-content"]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+[data-slot="select-content"]::-webkit-scrollbar-thumb {
+  background: var(--sidebar-accent);
+  border-radius: 999px;
+}
+[data-slot="select-content"]::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-accent-foreground);
 }
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -70,14 +84,14 @@
   --account-tabs-active-text: oklch(0.30 0.15 145); /* Green-900 for active tab text */
   --account-tabs-hover: oklch(0.95 0.05 145); /* Green-50 for tab hover */
   --radius: 0.625rem;
-  --sidebar: oklch(0.98 0 0); /* very light gray */
+  --sidebar: oklch(0.985 0 0); /* very light gray (slightly darker than white) */
   --sidebar-foreground: oklch(0.25 0 0); /* dark gray text */
   --sidebar-primary: oklch(0.20 0 0); /* black */
   --sidebar-primary-foreground: oklch(0.98 0 0); /* white */
-  --sidebar-accent: oklch(0.92 0 0); /* light gray hover */
+  --sidebar-accent: oklch(0.96 0 0); /* light gray hover */
   --sidebar-accent-foreground: oklch(0.15 0 0); /* near-black text on hover */
-  --sidebar-accent-background: oklch(0.95 0 0); /* very light gray bg */
-  --sidebar-border: oklch(0.88 0 0); /* medium gray border */
+  --sidebar-accent-background: oklch(0.96 0 0); /* light gray bg */
+  --sidebar-border: oklch(0.93 0 0); /* light gray border */
   --sidebar-ring: oklch(0.60 0 0); /* medium gray ring */
 }
 
@@ -127,7 +141,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
+  --font-sans: var(--font-inter), 'Inter', system-ui, -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -171,9 +185,282 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  /* Global text rendering optimization for all text elements */
+  *:not(script):not(style):not(svg):not(path) {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   body {
     @apply bg-background text-foreground;
+    /* Optimized font rendering for Inter */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    font-kerning: normal;
+    /* Inter doesn't need text shadow - it's designed for screens */
   }
+  
+  /* Improve font rendering for PolySans */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* ERP Font Weight Hierarchy - Optimized for Inter */
+  
+  /* Base body text - optimal readability for ERP applications */
+  body, p, span, div, a, input, textarea, select {
+    font-weight: 400;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Headings hierarchy - clear visual hierarchy */
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-weight: 600;
+    letter-spacing: -0.019em;
+    line-height: 1.25;
+  }
+  
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.016em;
+    line-height: 1.3;
+  }
+  
+  h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.014em;
+    line-height: 1.35;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Normal weight - standard readable text */
+  .font-normal {
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Medium weight - for emphasis, labels, secondary headings */
+  .font-medium {
+    font-weight: 500;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Semibold - for important text, card titles */
+  .font-semibold {
+    font-weight: 600;
+    letter-spacing: -0.013em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Bold - for strong emphasis, primary headings */
+  .font-bold {
+    font-weight: 700;
+    letter-spacing: -0.018em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Small text - maintain readability */
+  .text-xs {
+    font-weight: 400;
+    letter-spacing: -0.008em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .text-sm {
+    font-weight: 400;
+    letter-spacing: -0.009em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Table cells - optimal for data display */
+  td {
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  th {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Labels - medium weight for clarity */
+  label {
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Buttons - medium weight for clear action */
+  button {
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* List elements - standard readable weight */
+  li, ul, ol, dl, dt, dd {
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Card titles - medium weight, tanpa border kiri (detail pages) */
+  [class*="CardTitle"], [class*="card-title"], [data-slot="card-title"] {
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    border-left: none;
+  }
+  [data-slot="card-header"] {
+    border-left: none;
+  }
+  /* Card content - normal weight; nilai/value pakai font-medium di inline */
+  [data-slot="card-content"] {
+    font-weight: 400;
+  }
+  
+  /* Badge and small UI elements - medium weight */
+  [class*="Badge"], [class*="badge"] {
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Input placeholders - lighter for distinction */
+  input::placeholder, textarea::placeholder {
+    font-weight: 400;
+    opacity: 0.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Additional retina optimization for high DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Inter renders beautifully on retina - maintain hierarchy */
+  body, p, span, div, a, input, textarea, select {
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+  }
+  
+  .font-normal {
+    font-weight: 400;
+  }
+  
+  .font-medium {
+    font-weight: 500;
+  }
+  
+  .font-semibold {
+    font-weight: 600;
+  }
+  
+  label, button {
+    font-weight: 500;
+  }
+  
+  .text-xs, .text-sm {
+    font-weight: 400;
+  }
+  
+  td {
+    font-weight: 400;
+  }
+  
+  th {
+    font-weight: 600;
+  }
+}
+
+/* Dark mode font optimization - Inter works well in dark mode */
+.dark {
+  /* Maintain same hierarchy in dark mode */
+  body, p, span, div, a, input, textarea, select {
+    font-weight: 400;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+  }
+  
+  /* Inter's design handles dark mode well without additional shadows */
+}
+
+/* Messenger: independent scroll areas with thin, modern scrollbar */
+[data-messenger-scroll] {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+[data-messenger-scroll]::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-messenger-scroll]::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-messenger-scroll]::-webkit-scrollbar-thumb {
+  background: oklch(0.75 0.02 250 / 0.4);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-messenger-scroll]::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.02 250 / 0.6);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dark [data-messenger-scroll]::-webkit-scrollbar-thumb {
+  background: oklch(0.45 0.02 250 / 0.5);
+}
+.dark [data-messenger-scroll]::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.02 250 / 0.7);
 }
 
 /* Scrollbar hide utility */
@@ -223,3 +510,40 @@
     animation: collapsible-up 0.2s cubic-bezier(0.32, 0.72, 0, 1);
   }
 }
+
+/* Rich HTML content (e.g. Job Description / Job Requirement from Quill) */
+.job-rich-content p {
+  margin: 0.25em 0;
+}
+.job-rich-content ul,
+.job-rich-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+.job-rich-content li {
+  margin: 0.125em 0;
+}
+.job-rich-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+.job-rich-content a:hover {
+  opacity: 0.9;
+}
+.job-rich-content strong {
+  font-weight: 600;
+}
+.job-rich-content h1 { font-size: 1.25em; font-weight: 600; margin: 0.5em 0; }
+.job-rich-content h2 { font-size: 1.125em; font-weight: 600; margin: 0.5em 0; }
+.job-rich-content h3 { font-size: 1em; font-weight: 600; margin: 0.5em 0; }
+
+/* Page transition optimizations */
+[data-slot="page-transition"] {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  isolation: isolate;
+}
+

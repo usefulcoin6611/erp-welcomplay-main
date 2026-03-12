@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+const SETTING_KEY = "system_currency_settings";
+
+type CurrencySettings = {
+  currency_code: string;
+  currency_symbol: string;
+  currency_symbol_position: string;
+  decimal_number: string;
+};
+
+function getDefaultSettings(): CurrencySettings {
+  return {
+    currency_code: "USD",
+    currency_symbol: "$",
+    currency_symbol_position: "pre",
+    decimal_number: "2",
+  };
+}
+
+export async function GET() {
+  try {
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    if (!existing) {
+      return NextResponse.json({
+        success: true,
+        data: getDefaultSettings(),
+      });
+    }
+
+    let parsed: CurrencySettings | null = null;
+
+    try {
+      parsed = JSON.parse(existing.value);
+    } catch {
+      parsed = null;
+    }
+
+    const data = { ...getDefaultSettings(), ...(parsed || {}) };
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error("Error loading currency settings:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to load currency settings",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = (await request.json()) as Partial<CurrencySettings>;
+    const current = getDefaultSettings();
+
+    const existing = await prisma.setting.findUnique({
+      where: { key: SETTING_KEY },
+    });
+
+    let existingParsed = {};
+    if (existing) {
+      try {
+        existingParsed = JSON.parse(existing.value);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const merged: CurrencySettings = {
+      ...current,
+      ...existingParsed,
+      ...body,
+    };
+
+    await prisma.setting.upsert({
+      where: { key: SETTING_KEY },
+      update: { value: JSON.stringify(merged) },
+      create: {
+        key: SETTING_KEY,
+        value: JSON.stringify(merged),
+      },
+    });
+    return NextResponse.json({ success: true, data: merged });
+  } catch (error) {
+    console.error("Error saving currency settings:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to save currency settings",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
+}

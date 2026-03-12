@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import { Calendar as CalendarIcon, RotateCcw, Search, FileSpreadsheet, FileDown } from 'lucide-react'
+import { exportPayables } from '../utils/exportUtils'
 
 interface PayablesFiltersProps {
   dateRange: DateRange | undefined
@@ -16,8 +17,9 @@ interface PayablesFiltersProps {
   setIsDateRangeOpen: (open: boolean) => void
   onApply: () => void
   onReset: () => void
-  onExport?: () => void
-  onDownload?: () => void
+  // Data for export
+  selectedTab?: string
+  exportData?: any[]
 }
 
 export function PayablesFilters({
@@ -25,7 +27,10 @@ export function PayablesFilters({
   setDateRange,
   isDateRangeOpen,
   setIsDateRangeOpen,
+  onApply,
   onReset,
+  selectedTab = 'vendor-balance',
+  exportData = [],
 }: PayablesFiltersProps) {
   const t = useTranslations('reports.payables')
 
@@ -83,6 +88,7 @@ export function PayablesFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={onApply}
             >
               <Search className="w-4 h-4" />
               {t('apply')}
@@ -99,6 +105,7 @@ export function PayablesFilters({
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={() => exportPayables(exportData, selectedTab, `payables-${selectedTab}`)}
             >
               <FileSpreadsheet className="w-4 h-4" />
               {t('export')}
@@ -106,6 +113,7 @@ export function PayablesFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={() => exportPayables(exportData, selectedTab, `payables-${selectedTab}`)}
             >
               <FileDown className="w-4 h-4" />
               {t('download')}

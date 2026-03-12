@@ -1,11 +1,11 @@
-import React from "react"
+"use client"
+
+import React, { useState } from "react"
 import Link from "next/link"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -32,6 +32,16 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,6 +49,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { IconPlus, IconSearch, IconGridDots, IconPencil, IconTrash } from "@tabler/icons-react"
+
+const CARD_STYLE = "shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]"
 
 const bugs = [
   {
@@ -95,41 +107,45 @@ function getStatusClasses(status: string) {
 
 export default function BugListPage() {
   const total = bugs.length
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
+  const [bugToDelete, setBugToDelete] = useState<typeof bugs[number] | null>(null)
+
+  const handleDeleteClick = (bug: typeof bugs[number]) => {
+    setBugToDelete(bug)
+    setDeleteAlertOpen(true)
+  }
+
+  const handleConfirmDelete = () => {
+    setBugToDelete(null)
+    setDeleteAlertOpen(false)
+  }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Bug Report</h1>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-4 shadow-none"
-                >
-                  <IconGridDots className="mr-2 h-4 w-4" />
-                  Kanban
+    <>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="px-6 flex flex-row items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1 flex-1">
+            <CardTitle className="text-2xl font-semibold">Bug Report</CardTitle>
+            <CardDescription>
+              Kelola laporan bug per project. Buat dan lacak status bug.
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-4 shadow-none"
+            >
+              <IconGridDots className="mr-2 h-4 w-4" />
+              Kanban
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-9 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200">
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  Create Bug
                 </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                      <IconPlus className="mr-2 h-4 w-4" />
-                      Create Bug
-                    </Button>
-                  </DialogTrigger>
+              </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                       <DialogTitle>Create Bug</DialogTitle>
@@ -226,71 +242,72 @@ export default function BugListPage() {
                       </Button>
                       <Button
                         type="button"
-                        className="bg-blue-500 hover:bg-blue-600 shadow-none"
+                        className="shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                       >
                         Create
                       </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-              </div>
-            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Bugs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{total}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Open Bugs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {bugs.filter((b) => b.status === "Open" || b.status === "In Progress").length}
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className={CARD_STYLE}>
+          <CardHeader className="pb-2 px-6">
+            <CardTitle className="text-sm font-medium">Total Bugs</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="text-2xl font-bold">{total}</div>
+          </CardContent>
+        </Card>
+        <Card className={CARD_STYLE}>
+          <CardHeader className="pb-2 px-6">
+            <CardTitle className="text-sm font-medium">Open Bugs</CardTitle>
+          </CardHeader>
+          <CardContent className="px-6">
+            <div className="text-2xl font-bold">
+              {bugs.filter((b) => b.status === "Open" || b.status === "In Progress").length}
             </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-                <CardTitle>Bug List</CardTitle>
-                <div className="relative w-full max-w-xs">
-                  <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                  <Input placeholder="Search bugs..." className="h-9 pl-9" />
-                </div>
-              </CardHeader>
-              <CardContent>
+      <Card className={CARD_STYLE}>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 py-3.5">
+          <CardTitle>Bug List</CardTitle>
+          <div className="relative w-full max-w-xs">
+            <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+            <Input placeholder="Search bugs..." className="h-9 pl-9 bg-gray-50 border-0 shadow-none focus-visible:border-0 focus-visible:ring-0" />
+          </div>
+        </CardHeader>
+        <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Bug Id</TableHead>
-                        <TableHead>Assign To</TableHead>
-                        <TableHead>Bug Title</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Created By</TableHead>
-                        <TableHead className="w-[120px]">Action</TableHead>
+                        <TableHead className="px-6">Bug Id</TableHead>
+                        <TableHead className="px-6">Assign To</TableHead>
+                        <TableHead className="px-6">Bug Title</TableHead>
+                        <TableHead className="px-6">Start Date</TableHead>
+                        <TableHead className="px-6">Due Date</TableHead>
+                        <TableHead className="px-6">Status</TableHead>
+                        <TableHead className="px-6">Priority</TableHead>
+                        <TableHead className="px-6">Created By</TableHead>
+                        <TableHead className="w-[120px] px-6">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {bugs.map((bug) => (
                         <TableRow key={bug.id}>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm font-medium">{bug.bugId}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{bug.assignTo}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <Link
                               href={`/projects/bug/${bug.id}`}
                               className="text-sm font-semibold text-primary hover:underline"
@@ -298,31 +315,31 @@ export default function BugListPage() {
                               {bug.title}
                             </Link>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{bug.startDate}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{bug.dueDate}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <Badge className={getStatusClasses(bug.status)}>
                               {bug.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <Badge className={getPriorityClasses(bug.priority)}>
                               {bug.priority}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="text-sm">{bug.createdBy}</div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="px-6">
                             <div className="flex gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 w-8 p-0 shadow-none"
+                                className="h-8 w-8 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
                                 title="Edit"
                               >
                                 <IconPencil className="h-4 w-4" />
@@ -330,8 +347,9 @@ export default function BugListPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 w-8 p-0 shadow-none text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-8 w-8 p-0 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
                                 title="Delete"
+                                onClick={() => handleDeleteClick(bug)}
                               >
                                 <IconTrash className="h-4 w-4" />
                               </Button>
@@ -342,12 +360,29 @@ export default function BugListPage() {
                     </TableBody>
                   </Table>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Bug?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bug &quot;{bugToDelete?.title}&quot; akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 

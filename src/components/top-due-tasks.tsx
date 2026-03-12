@@ -1,57 +1,15 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-
-interface DueTask {
-  id: number;
-  task: string;
-  project: string;
-  stage: "low" | "medium" | "high" | "critical";
-  completion: string;
-}
+import { useProjectDashboard } from "@/contexts/project-dashboard-context";
 
 export function TopDueTasks() {
   const t = useTranslations("projectDashboard.topDueTasks");
-
-  // Mock data matching the reference image
-  const dueTasks: DueTask[] = [
-    {
-      id: 1,
-      task: "Finish the logo design",
-      project: "Website Builder",
-      stage: "low",
-      completion: "0%",
-    },
-    {
-      id: 2,
-      task: "Define users and workflow",
-      project: "Website Launch",
-      stage: "high",
-      completion: "0%",
-    },
-    {
-      id: 3,
-      task: "Design Approval",
-      project: "Website Builder",
-      stage: "high",
-      completion: "0%",
-    },
-    {
-      id: 4,
-      task: "Identify event sources by resource type",
-      project: "Website Launch",
-      stage: "medium",
-      completion: "0%",
-    },
-    {
-      id: 5,
-      task: "Dashboard Issues",
-      project: "Website Launch",
-      stage: "critical",
-      completion: "0%",
-    },
-  ];
+  const { data, loading } = useProjectDashboard();
+  const dueTasks = data.topDueTasks;
 
   const getPriorityColor = (stage: string) => {
     const colors = {
@@ -64,14 +22,23 @@ export function TopDueTasks() {
   };
 
   const getPriorityLabel = (stage: string) => {
-    const labels = {
+    const labels: Record<string, string> = {
       low: t("low"),
       medium: t("medium"),
       high: t("high"),
       critical: t("critical"),
     };
-    return labels[stage as keyof typeof labels] || stage;
+    return labels[stage] || stage;
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader><CardTitle>{t("title")}</CardTitle></CardHeader>
+        <CardContent><Skeleton className="h-[200px] w-full" /></CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -82,7 +49,8 @@ export function TopDueTasks() {
         <div className="space-y-4">
           {dueTasks.length > 0 ? (
             dueTasks.map((task) => (
-              <div key={task.id} className="grid grid-cols-12 gap-4 py-3">
+              <Link key={task.id} href={`/projects/task/${task.id}`} className="block hover:opacity-80">
+              <div className="grid grid-cols-12 gap-4 py-3">
                 <div className="col-span-4">
                   <div className="text-xs text-muted-foreground mb-1">
                     {t("task")}:
@@ -117,6 +85,7 @@ export function TopDueTasks() {
                   <div className="font-semibold">{task.completion}</div>
                 </div>
               </div>
+              </Link>
             ))
           ) : (
             <div className="text-center py-8 text-muted-foreground">

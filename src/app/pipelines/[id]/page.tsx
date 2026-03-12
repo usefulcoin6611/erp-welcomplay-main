@@ -43,13 +43,14 @@ const mockPipelines = [
 ] as const
 
 interface PipelineDetailPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function PipelineDetailPage({
+export default async function PipelineDetailPage({
   params,
 }: PipelineDetailPageProps) {
-  const numericId = Number(params.id)
+  const { id } = await params
+  const numericId = Number(id)
   const pipeline =
     mockPipelines.find((p) => p.id === numericId) ?? mockPipelines[0]
 
@@ -65,10 +66,24 @@ export default function PipelineDetailPage({
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-100">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-2xl font-bold">{pipeline.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {pipeline.deals} deals · Rp{' '}
+                  {pipeline.value.toLocaleString()}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 shadow-none"
+                >
+                  Edit Pipeline
+                </Button>
                 <Button
                   asChild
                   variant="outline"
@@ -80,21 +95,7 @@ export default function PipelineDetailPage({
                     Back
                   </Link>
                 </Button>
-                <div>
-                  <h1 className="text-2xl font-bold">{pipeline.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {pipeline.deals} deals · Rp{' '}
-                    {pipeline.value.toLocaleString()}
-                  </p>
-                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 shadow-none"
-              >
-                Edit Pipeline
-              </Button>
             </div>
 
             <Card>

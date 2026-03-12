@@ -1,13 +1,24 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { SuppressPreloadWarnings } from '@/components/suppress-preload-warnings'
+import { AuthProvider } from '@/contexts/auth-context'
+import { AuthWrapper } from '@/components/auth-wrapper'
+import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+// Load Inter font - optimized for ERP/dashboard applications
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+  preload: true,
+  // Optimize for readability
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+})
 
 export const metadata: Metadata = {
   title: 'ERP Development',
@@ -29,10 +40,17 @@ export default async function RootLayout({children}: Props) {
 
   return (
     <html suppressHydrationWarning>
-      <body className={`font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased`} style={{ fontFeatureSettings: '"kern" 1, "liga" 1, "calt" 1', fontKerning: 'normal', fontVariantNumeric: 'tabular-nums' }} suppressHydrationWarning>
         <SuppressPreloadWarnings />
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <AuthProvider>
+              <AuthWrapper>
+                {children}
+              </AuthWrapper>
+            </AuthProvider>
+            <Toaster richColors position="top-center" />
+          </ThemeProvider>
         </NextIntlClientProvider>
         <Analytics />
       </body>

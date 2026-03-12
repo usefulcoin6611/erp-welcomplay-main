@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import { Calendar as CalendarIcon, RotateCcw, Search, FileSpreadsheet, FileDown } from 'lucide-react'
+import { exportReceivables } from '../utils/exportUtils'
 
 interface ReceivablesFiltersProps {
   dateRange: DateRange | undefined
@@ -15,6 +16,10 @@ interface ReceivablesFiltersProps {
   isDateRangeOpen: boolean
   setIsDateRangeOpen: (open: boolean) => void
   onReset: () => void
+  onApply?: () => void
+  // Data for export
+  selectedTab?: string
+  exportData?: any[]
 }
 
 export function ReceivablesFilters({
@@ -23,6 +28,9 @@ export function ReceivablesFilters({
   isDateRangeOpen,
   setIsDateRangeOpen,
   onReset,
+  onApply,
+  selectedTab = 'customer-balance',
+  exportData = [],
 }: ReceivablesFiltersProps) {
   const t = useTranslations('reports.receivables')
 
@@ -80,6 +88,7 @@ export function ReceivablesFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={onApply}
             >
               <Search className="w-4 h-4" />
               {t('apply')}
@@ -96,6 +105,7 @@ export function ReceivablesFilters({
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={() => exportReceivables(exportData, selectedTab, `receivables-${selectedTab}`)}
             >
               <FileSpreadsheet className="w-4 h-4" />
               {t('export')}
@@ -103,6 +113,7 @@ export function ReceivablesFilters({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={() => exportReceivables(exportData, selectedTab, `receivables-${selectedTab}`)}
             >
               <FileDown className="w-4 h-4" />
               {t('download')}

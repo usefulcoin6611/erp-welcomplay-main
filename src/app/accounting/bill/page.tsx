@@ -1,11 +1,9 @@
+import React from 'react'
 import Link from 'next/link'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import {
   Card,
   CardContent,
@@ -31,58 +29,55 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  IconCalendar,
-  IconSearch,
-} from '@tabler/icons-react'
+import { IconCalendar, IconSearch } from '@tabler/icons-react'
 
-// Mock bills similar to BillController::index/view
-const bills = [
-  {
-    id: 'BILL-2025-001',
-    vendor: 'PT Supply Berkah',
-    billDate: '2025-11-01',
-    dueDate: '2025-11-30',
-    category: 'Office Supplies',
-    total: 16095000,
-    status: 'Draft',
-  },
-  {
-    id: 'BILL-2025-002',
-    vendor: 'CV Logistik Nusantara',
-    billDate: '2025-11-03',
-    dueDate: '2025-12-03',
-    category: 'Logistics',
-    total: 9800000,
-    status: 'Sent',
-  },
-  {
-    id: 'BILL-2025-003',
-    vendor: 'PT Teknologi Digital',
-    billDate: '2025-11-05',
-    dueDate: '2025-11-20',
-    category: 'Services',
-    total: 12300000,
-    status: 'Partial',
-  },
-] as const
+type BillRow = {
+  id: string
+  billNumber: string
+  vendor: string
+  billDate: string
+  dueDate: string
+  category: string
+  total: number
+  status: string
+  statusLabel: string
+}
 
 function getBillStatusClasses(status: string) {
-  switch (status) {
-    case 'Draft':
+  const s = status.toLowerCase()
+  switch (s) {
+    case 'draft':
       return 'bg-gray-100 text-gray-700 border-none'
-    case 'Sent':
+    case 'sent':
       return 'bg-blue-100 text-blue-700 border-none'
-    case 'Partial':
+    case 'partial':
       return 'bg-yellow-100 text-yellow-700 border-none'
-    case 'Paid':
+    case 'unpaid':
+      return 'bg-amber-100 text-amber-700 border-none'
+    case 'paid':
       return 'bg-green-100 text-green-700 border-none'
     default:
       return 'bg-slate-100 text-slate-700 border-none'
   }
 }
 
-export default function BillPage() {
+async function fetchBills(): Promise<BillRow[]> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/bills`, {
+      cache: 'no-store',
+    })
+    const json = await res.json().catch(() => null)
+    if (!res.ok || !json?.success || !Array.isArray(json.data)) {
+      return []
+    }
+    return json.data as BillRow[]
+  } catch {
+    return []
+  }
+}
+
+export default async function BillPage() {
+  const bills = await fetchBills()
   const totalBills = bills.length
   const totalAmount = bills.reduce((sum, bill) => sum + bill.total, 0)
 
@@ -105,8 +100,11 @@ export default function BillPage() {
               <div>
                 <h1 className="text-3xl font-bold">Bills</h1>
               </div>
-              <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                Create Bill
+              <Button
+                asChild
+                className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              >
+                <Link href="/accounting/bill/create/new">Create Bill</Link>
               </Button>
             </div>
 
@@ -220,7 +218,7 @@ export default function BillPage() {
                             className="h-auto p-0 text-sm font-semibold"
                           >
                             <Link href={`/accounting/bill/${bill.id}`}>
-                              {bill.id}
+                              {bill.billNumber}
                             </Link>
                           </Button>
                         </TableCell>
@@ -240,7 +238,7 @@ export default function BillPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">{bill.category}</span>
+                          <span className="text-sm">{bill.category || '-'}</span>
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">
@@ -249,13 +247,28 @@ export default function BillPage() {
                         </TableCell>
                         <TableCell>
                           <Badge className={getBillStatusClasses(bill.status)}>
-                            {bill.status}
+                            {bill.statusLabel || bill.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-blue-50 text-blue-700 border-none">
-                            Detail
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 shadow-none bg-blue-50 text-blue-700 border-blue-100"
+                            >
+                              <Link href={`/accounting/bill/${bill.id}`}>View</Link>
+                            </Button>
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 shadow-none bg-cyan-50 text-cyan-700 border-cyan-100"
+                            >
+                              <Link href={`/accounting/bill/edit/${bill.billNumber}`}>Edit</Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

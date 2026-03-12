@@ -164,7 +164,7 @@ export default function PermissionsPage() {
             </div>
 
             {/* Permissions Table */}
-            <Card className="shadow-none">
+            <Card>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
@@ -211,5 +211,7 @@ export default function PermissionsPage() {
     </SidebarProvider>
   )
 }
+
+
 
 

@@ -9,14 +9,14 @@ const AttendanceFilters = dynamic(() => import('./AttendanceFilters'), { ssr: fa
 const AttendanceTable = dynamic(() => import('./AttendanceTable'), { ssr: false });
 
 function MonthlyAttendanceTabComponent() {
-  const { filters, setFilters, data, dates, summary } = useAttendanceData();
+  const { filters, setFilters, data, dates, summary, filterOptions, loading } = useAttendanceData();
 
   const handleReset = () => {
     setFilters({
       month: new Date().toISOString().slice(0, 7),
-      branchId: '',
-      departmentId: '',
-      employeeId: [],
+      branchId: 'all',
+      departmentId: 'all',
+      employeeId: ['all'],
     });
   };
 
@@ -35,6 +35,7 @@ function MonthlyAttendanceTabComponent() {
     <div className="flex flex-col gap-4">
       <AttendanceFilters
         filters={filters}
+        filterOptions={filterOptions}
         onFilterChange={setFilters}
         onReset={handleReset}
         onExport={handleExport}
@@ -100,7 +101,11 @@ function MonthlyAttendanceTabComponent() {
         </div>
       </div>
 
-      <AttendanceTable data={data} dates={dates} />
+      {loading ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">Loading attendance data...</div>
+      ) : (
+        <AttendanceTable data={data} dates={dates} />
+      )}
     </div>
   );
 }

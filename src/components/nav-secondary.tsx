@@ -17,7 +17,7 @@ export function NavSecondary({
   items: {
     title: string
     url: string
-    icon: Icon
+    icon?: Icon
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
@@ -30,7 +30,7 @@ export function NavSecondary({
               className="hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors duration-200 py-1.5"
             >
               <a href={item.url} className="text-neutral-700 dark:text-neutral-200">
-                <item.icon className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                {item.icon && <item.icon className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />}
                 <span className="font-medium">{item.title}</span>
               </a>
             </SidebarMenuButton>

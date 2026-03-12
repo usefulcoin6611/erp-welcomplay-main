@@ -8,6 +8,15 @@ interface PaymentAccountCardProps {
 }
 
 export function PaymentAccountCard({ account }: PaymentAccountCardProps) {
+  const title =
+    account.holderName === 'Cash'
+      ? account.holderName
+      : !account.holderName
+      ? 'Stripe / Paypal'
+      : account.bankName
+      ? `${account.holderName} - ${account.bankName}`
+      : account.holderName
+
   return (
     <Card className="overflow-hidden">
       <CardContent className="px-3 py-2">
@@ -16,10 +25,7 @@ export function PaymentAccountCard({ account }: PaymentAccountCardProps) {
             <Building2 className="w-5 h-5 text-red-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-1.5 truncate">
-              {account.holderName || 'Stripe / Paypal'}
-              {account.bankName && account.holderName && ` - ${account.bankName}`}
-            </p>
+            <p className="text-xs text-muted-foreground mb-1.5 truncate">{title}</p>
             <p className="text-base font-bold text-red-600">{formatRupiah(account.total)}</p>
           </div>
         </div>

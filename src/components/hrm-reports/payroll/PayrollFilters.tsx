@@ -15,17 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { branches, departments, employees } from './constants';
-import type { PayrollFilters as Filters } from './usePayrollData';
+import type { PayrollFilters as Filters, PayrollFilterOptions } from './usePayrollData';
 
 interface PayrollFiltersProps {
   filters: Filters;
+  filterOptions: PayrollFilterOptions;
   onFilterChange: (filters: Filters) => void;
   onReset: () => void;
   onExport: () => void;
 }
 
-function PayrollFilters({ filters, onFilterChange, onReset, onExport }: PayrollFiltersProps) {
+function PayrollFilters({ filters, filterOptions, onFilterChange, onReset, onExport }: PayrollFiltersProps) {
+  const { branches, departments, employees } = filterOptions;
   return (
     <div className="flex flex-col gap-4 rounded-lg border bg-card px-4 py-2">
       <div className="flex flex-col lg:flex-row lg:items-end gap-3">
@@ -38,10 +39,10 @@ function PayrollFilters({ filters, onFilterChange, onReset, onExport }: PayrollF
             onValueChange={(value) => value && onFilterChange({ ...filters, type: value as 'monthly' | 'daily' })}
             className="justify-start"
           >
-            <ToggleGroupItem value="monthly" className="h-9 px-3 text-sm cursor-pointer data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600">
+            <ToggleGroupItem value="monthly" className="h-9 px-3 text-sm cursor-pointer bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600 data-[state=on]:hover:!text-white">
               Monthly
             </ToggleGroupItem>
-            <ToggleGroupItem value="daily" className="h-9 px-3 text-sm cursor-pointer data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600">
+            <ToggleGroupItem value="daily" className="h-9 px-3 text-sm cursor-pointer bg-gray-100 text-foreground hover:bg-blue-50 hover:text-blue-700 data-[state=on]:!bg-blue-500 data-[state=on]:!text-white hover:data-[state=on]:!bg-blue-600 data-[state=on]:hover:!text-white">
               Daily
             </ToggleGroupItem>
           </ToggleGroup>
@@ -77,7 +78,7 @@ function PayrollFilters({ filters, onFilterChange, onReset, onExport }: PayrollF
         {/* Branch */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Branch</Label>
-          <Select value={filters.branchId} onValueChange={(value) => onFilterChange({ ...filters, branchId: value })}>
+          <Select value={filters.branchId || 'all'} onValueChange={(value) => onFilterChange({ ...filters, branchId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Select Branch" />
             </SelectTrigger>
@@ -94,7 +95,7 @@ function PayrollFilters({ filters, onFilterChange, onReset, onExport }: PayrollF
         {/* Department */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Department</Label>
-          <Select value={filters.departmentId} onValueChange={(value) => onFilterChange({ ...filters, departmentId: value })}>
+          <Select value={filters.departmentId || 'all'} onValueChange={(value) => onFilterChange({ ...filters, departmentId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
@@ -111,7 +112,7 @@ function PayrollFilters({ filters, onFilterChange, onReset, onExport }: PayrollF
         {/* Employee */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Employee</Label>
-          <Select value={filters.employeeId} onValueChange={(value) => onFilterChange({ ...filters, employeeId: value })}>
+          <Select value={filters.employeeId || 'all'} onValueChange={(value) => onFilterChange({ ...filters, employeeId: value })}>
             <SelectTrigger className="h-9 text-sm w-full lg:w-40">
               <SelectValue placeholder="Select Employee" />
             </SelectTrigger>

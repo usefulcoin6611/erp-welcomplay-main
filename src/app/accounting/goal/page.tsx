@@ -1,57 +1,290 @@
-import React from "react"
+'use client'
+
+import { useEffect, useState, useMemo } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '@/components/ui/sidebar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  IconCalendar,
-  IconPlus,
-} from '@tabler/icons-react'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { SimplePagination } from '@/components/ui/simple-pagination'
+import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
+import { toast } from 'sonner'
 
-const goals = [
-  {
-    id: 'GL-2025-001',
-    name: 'Tingkatkan Pendapatan 20%',
-    type: 'Revenue',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 200_000_000,
-    isDisplay: true,
-  },
-  {
-    id: 'GL-2025-002',
-    name: 'Kurangi Biaya Operasional 10%',
-    type: 'Expense',
-    from: '2025-01-01',
-    to: '2025-12-31',
-    amount: 80_000_000,
-    isDisplay: false,
-  },
-] as const
+const goalTypes = [
+  { value: 'Invoice', label: 'Invoice' },
+  { value: 'Bill', label: 'Bill' },
+  { value: 'Revenue', label: 'Revenue' },
+  { value: 'Payment', label: 'Payment' },
+]
+
+type FinancialGoal = {
+  id: string
+  name: string
+  type: string
+  from: string
+  to: string
+  amount: number
+  is_display: number
+}
+
+function formatPrice(amount: number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
 
 export default function FinancialGoalPage() {
-  const totalGoals = goals.length
-  const totalAmount = goals.reduce((sum, g) => sum + g.amount, 0)
+  const [goals, setGoals] = useState<FinancialGoal[]>([])
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingGoal, setEditingGoal] = useState<any>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [formData, setFormData] = useState({
+    name: '',
+    amount: '',
+    type: '',
+    from: '',
+    to: '',
+    is_display: true,
+  })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const loadGoals = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch('/api/financial-goals')
+        if (!res.ok) {
+          toast.error('Gagal memuat financial goal')
+          return
+        }
+        const json = await res.json().catch(() => null)
+        if (!json?.success || !Array.isArray(json.data)) {
+          toast.error(json?.message || 'Respon server tidak valid saat memuat financial goal')
+          return
+        }
+        setGoals(json.data)
+      } catch (error) {
+        toast.error('Terjadi kesalahan saat memuat financial goal')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadGoals()
+  }, [])
+
+  // Filter data
+  const filteredData = useMemo(() => {
+    if (!search.trim()) return goals
+    const q = search.trim().toLowerCase()
+    return goals.filter(
+      (goal) =>
+        goal.name.toLowerCase().includes(q) ||
+        goal.type.toLowerCase().includes(q) ||
+        goal.from.toLowerCase().includes(q) ||
+        goal.to.toLowerCase().includes(q)
+    )
+  }, [goals, search])
+
+  // Paginate data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    return filteredData.slice(startIndex, endIndex)
+  }, [filteredData, currentPage, pageSize])
+
+  const totalRecords = filteredData.length
+
+  const isFormValid =
+    formData.name.trim().length > 0 &&
+    formData.amount.trim().length > 0 &&
+    formData.type.trim().length > 0 &&
+    formData.from.trim().length > 0 &&
+    formData.to.trim().length > 0
+
+  const handleCreate = async () => {
+    if (!isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        type: formData.type,
+        from: formData.from,
+        to: formData.to,
+        amount: parseFloat(formData.amount),
+        is_display: formData.is_display ? 1 : 0,
+      }
+
+      const res = await fetch('/api/financial-goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal membuat financial goal')
+        return
+      }
+
+      const reloadRes = await fetch('/api/financial-goals')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setGoals(reloadJson.data)
+        }
+      }
+
+      toast.success('Financial goal berhasil dibuat')
+
+      setFormData({
+        name: '',
+        amount: '',
+        type: '',
+        from: '',
+        to: '',
+        is_display: true,
+      })
+      setCreateDialogOpen(false)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat membuat financial goal')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleEdit = (goal: FinancialGoal) => {
+    setEditingGoal(goal)
+    setFormData({
+      name: goal.name,
+      amount: goal.amount.toString(),
+      type: goal.type,
+      from: goal.from,
+      to: goal.to,
+      is_display: goal.is_display === 1,
+    })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdate = async () => {
+    if (!editingGoal || !isFormValid || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        id: editingGoal.id,
+        name: formData.name.trim(),
+        type: formData.type,
+        from: formData.from,
+        to: formData.to,
+        amount: parseFloat(formData.amount),
+        is_display: formData.is_display ? 1 : 0,
+      }
+
+      const res = await fetch('/api/financial-goals', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal memperbarui financial goal')
+        return
+      }
+
+      const reloadRes = await fetch('/api/financial-goals')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setGoals(reloadJson.data)
+        }
+      }
+
+      toast.success('Financial goal berhasil diperbarui')
+
+      setEditDialogOpen(false)
+      setEditingGoal(null)
+      setFormData({
+        name: '',
+        amount: '',
+        type: '',
+        from: '',
+        to: '',
+        is_display: true,
+      })
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat memperbarui financial goal')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const confirmDelete = (id: string) => {
+    setDeletingGoalId(id)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deletingGoalId) return
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/financial-goals?id=${encodeURIComponent(deletingGoalId)}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast.error(json?.message || 'Gagal menghapus financial goal')
+        return
+      }
+
+      const reloadRes = await fetch('/api/financial-goals')
+      if (reloadRes.ok) {
+        const reloadJson = await reloadRes.json().catch(() => null)
+        if (reloadJson?.success && Array.isArray(reloadJson.data)) {
+          setGoals(reloadJson.data)
+        }
+      }
+
+      toast.success('Financial goal berhasil dihapus')
+      setDeleteDialogOpen(false)
+      setDeletingGoalId(null)
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menghapus financial goal')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <SidebarProvider
@@ -65,135 +298,370 @@ export default function FinancialGoalPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">Financial Goal</h1>
-              </div>
-              <Button className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none">
-                <IconPlus className="mr-2 h-4 w-4" />
-                Create Goal
-              </Button>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Goals
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalGoals}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Target Amount
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    Rp {totalAmount.toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Filters</CardTitle>
-                <CardDescription>
-                  Filter financial goal berdasarkan periode.
-                </CardDescription>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            {/* Title Page */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">Financial Goal</CardTitle>
+                  <CardDescription>Manage your financial goals and dashboard visibility.</CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="blue" size="sm" className="shadow-none h-7 px-4" title="Create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Goal
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Goal</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">
+                              Name <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="name"
+                              placeholder="Enter Name"
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="amount">
+                              Amount <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="amount"
+                              type="number"
+                              step="0.01"
+                              placeholder="Enter Amount"
+                              value={formData.amount}
+                              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="type">
+                            Type <span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            value={formData.type}
+                            onValueChange={(value) => setFormData({ ...formData, type: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {goalTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="from">
+                              From <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="from"
+                              type="date"
+                              value={formData.from}
+                              onChange={(e) => setFormData({ ...formData, from: e.target.value })}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="to">
+                              To <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="to"
+                              type="date"
+                              value={formData.to}
+                              onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="is_display"
+                            checked={formData.is_display}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, is_display: checked as boolean })
+                            }
+                          />
+                          <Label htmlFor="is_display" className="cursor-pointer">
+                            Display On Dashboard
+                          </Label>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setCreateDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button variant="blue" onClick={handleCreate} disabled={!isFormValid} className="shadow-none">
+                          Create
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </CardHeader>
-              <CardContent>
-                <form className="flex flex-col gap-4 md:flex-row md:items-end">
-                  <div className="w-full md:w-44">
-                    <label className="mb-1 block text-sm font-medium">
-                      From
-                    </label>
-                    <Input type="date" />
-                  </div>
-                  <div className="w-full md:w-44">
-                    <label className="mb-1 block text-sm font-medium">
-                      To
-                    </label>
-                    <Input type="date" />
-                  </div>
-                </form>
-              </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Goal List</CardTitle>
-                <CardDescription>
-                  Daftar financial goal seperti modul Goal ERP.
-                </CardDescription>
+            {/* Goals Table */}
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6">
+                <CardTitle>Goals</CardTitle>
+                <div className="flex w-full max-w-md items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                    <Input
+                      placeholder="Search goals..."
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="h-9 border-0 bg-gray-50 pl-9 pr-9 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0"
+                    />
+                    {search.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearch('')
+                          setCurrentPage(1)
+                        }}
+                        className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Goal</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>From</TableHead>
-                      <TableHead>To</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Display</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {goals.map((g) => (
-                      <TableRow key={g.id}>
-                        <TableCell>
-                          <div className="text-sm font-semibold">
-                            {g.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {g.id}
-                          </div>
-                        </TableCell>
-                        <TableCell>{g.type}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <IconCalendar className="h-3 w-3" />
-                            <span>{g.from}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <IconCalendar className="h-3 w-3" />
-                            <span>{g.to}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          Rp {g.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          {g.isDisplay ? (
-                            <Badge className="bg-green-100 text-green-700 border-none">
-                              On Dashboard
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-gray-100 text-gray-700 border-none">
-                              Hidden
-                            </Badge>
-                          )}
-                        </TableCell>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table className="w-full min-w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-6">Name</TableHead>
+                        <TableHead className="px-6">Type</TableHead>
+                        <TableHead className="px-6">From</TableHead>
+                        <TableHead className="px-6">To</TableHead>
+                        <TableHead className="px-6">Amount</TableHead>
+                        <TableHead className="px-6">Is Dashboard Display</TableHead>
+                        <TableHead className="px-6">Action</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedData.length > 0 ? (
+                        paginatedData.map((goal) => (
+                          <TableRow key={goal.id}>
+                            <TableCell className="px-6 font-style">{goal.name}</TableCell>
+                            <TableCell className="px-6 font-style">{goal.type}</TableCell>
+                            <TableCell className="px-6 font-style">{goal.from}</TableCell>
+                            <TableCell className="px-6 font-style">{goal.to}</TableCell>
+                            <TableCell className="px-6 font-style">
+                              {formatPrice(goal.amount)}
+                            </TableCell>
+                            <TableCell className="px-6 font-style">
+                              <Badge
+                                className={
+                                  goal.is_display === 1
+                                    ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                    : 'bg-red-100 text-red-700 border-red-200'
+                                }
+                              >
+                                {goal.is_display === 1 ? 'Yes' : 'No'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-6">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-100"
+                                  title="Edit"
+                                  onClick={() => handleEdit(goal)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shadow-none h-7 bg-red-50 text-red-700 hover:bg-red-100 border-red-100"
+                                  title="Delete"
+                                  onClick={() => confirmDelete(goal.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="px-6 text-center py-8 text-muted-foreground">
+                            No goals found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="px-6 pb-6 pt-4">
+                  <SimplePagination
+                    totalCount={totalRecords}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                  />
+                </div>
               </CardContent>
             </Card>
+
+            {/* Edit Dialog (single instance) */}
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Goal</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name">
+                        Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-name"
+                        placeholder="Enter Name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-amount">
+                        Amount <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-amount"
+                        type="number"
+                        step="0.01"
+                        placeholder="Enter Amount"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-type">
+                      Type <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {goalTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-from">
+                        From <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-from"
+                        type="date"
+                        value={formData.from}
+                        onChange={(e) => setFormData({ ...formData, from: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-to">
+                        To <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="edit-to"
+                        type="date"
+                        value={formData.to}
+                        onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-is_display"
+                      checked={formData.is_display}
+                      onCheckedChange={(checked) =>
+                        setFormData({
+                          ...formData,
+                          is_display: checked as boolean,
+                        })
+                      }
+                    />
+                    <Label htmlFor="edit-is_display" className="cursor-pointer">
+                      Display On Dashboard
+                    </Label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="blue" onClick={handleUpdate} disabled={!isFormValid} className="shadow-none">
+                    Update
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are You Sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the financial goal.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
 }
-

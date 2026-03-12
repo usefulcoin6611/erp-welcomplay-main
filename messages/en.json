@@ -1,4 +1,7 @@
 {
+  "messenger": {
+    "messagesEncrypted": "Your personal messages are encrypted and private."
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Manage your projects and analytics",
@@ -73,6 +76,7 @@
       "posSystem": "POS System",
       "userManagement": "User Management",
       "productSystem": "Product System",
+      "myAttendance": "My Attendance",
       "supportSystem": "Support System",
       "meetingSystem": "Meeting System",
       "employeeSetup": "Employee Setup",
@@ -102,11 +106,16 @@
       "deals": "Deals",
       "formBuilder": "Form Builder",
       "contract": "Contract",
-      "crmSystemSetup": "CRM System Setup"
+      "crmSystemSetup": "CRM System Setup",
+      "tasks": "Tasks",
+      "bugs": "Bugs",
+      "users": "Users"
     }
   },
   "header": {
     "search": "Search...",
+    "searchMenuPlaceholder": "Search menu...",
+    "searchMenuResults": "Results",
     "notifications": "Notifications",
     "profile": "Profile",
     "logout": "Logout"
@@ -211,7 +220,8 @@
     },
     "storageLimit": {
       "title": "Storage Limit",
-      "used": "Used"
+      "used": "Used",
+      "notConfigured": "Storage limit not configured"
     },
     "recentInvoices": {
       "title": "Recent Invoices",
@@ -261,6 +271,7 @@
     },
     "goal": {
       "title": "Goal",
+      "noGoals": "No financial goals configured.",
       "name": "Name",
       "type": "Type",
       "duration": "Duration",
@@ -293,6 +304,10 @@
       "clockOut": "Clock Out",
       "clockInTime": "Clock In",
       "clockOutTime": "Clock Out",
+      "officeTime": "Office hours: {time}",
+      "statusWorking": "You are currently working.",
+      "statusCompleted": "Today's attendance is completed.",
+      "statusReady": "Please clock in to start your day.",
       "notClockInList": "Not Clock In List",
       "notClockInTitle": "Not Clock In",
       "notClockedBadge": "Not Clocked",
@@ -434,6 +449,7 @@
     },
     "leadStatus": {
       "title": "Lead Status",
+      "noData": "No leads yet",
       "draft": "Draft",
       "sent": "Sent",
       "open": "Open",
@@ -446,6 +462,7 @@
     },
     "dealStatus": {
       "title": "Deal Status",
+      "noData": "No deals yet",
       "initialContact": "Initial Contact",
       "qualification": "Qualification",
       "meeting": "Meeting",
@@ -587,7 +604,21 @@
       "enterBankIdentifierCode": "Enter bank identifier code",
       "enterBranchLocation": "Enter branch location",
       "enterTaxPayerId": "Enter tax payer id",
-      "employeeDetail": "Employee Detail"
+      "employeeDetail": "Employee Detail",
+      "joiningLetter": "Joining Letter",
+      "experienceCertificate": "Experience Certificate",
+      "noc": "NOC",
+      "pdf": "PDF",
+      "doc": "DOC",
+      "updateEmployee": "Update",
+      "backToDetail": "Back to Detail",
+      "chooseFileHere": "Choose file here",
+      "deleteConfirmTitle": "Delete employee?",
+      "deleteConfirmDescription": "This action cannot be undone. Are you sure you want to continue?",
+      "loadingEmployees": "Loading employees...",
+      "failedToLoadEmployees": "Failed to load employees",
+      "failedToDeleteEmployee": "Failed to delete employee",
+      "employeeDeleted": "Employee deleted successfully"
     }
   },
   "reports": {
@@ -616,7 +647,9 @@
       "transactions": "Transactions",
       "date": "DATE",
       "amount": "AMOUNT",
-      "description": "DESCRIPTION"
+      "description": "DESCRIPTION",
+      "accountStatementSummary": "Account Statement Summary",
+      "totalCash": "Total Cash"
     },
     "payables": {
       "title": "Payables Report",

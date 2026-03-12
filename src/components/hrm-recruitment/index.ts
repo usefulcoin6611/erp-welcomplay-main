@@ -1,6 +1,8 @@
 export { JobsTab } from './jobs/JobsTab'
+export { JobCreateTab } from './jobs/JobCreateTab'
 export { ApplicationsTab } from './applications/ApplicationsTab'
 export { CandidatesTab } from './candidates/CandidatesTab'
 export { OnboardingTab } from './onboarding/OnboardingTab'
 export { CustomQuestionsTab } from './questions/CustomQuestionsTab'
 export { InterviewScheduleTab } from './interviews/InterviewScheduleTab'
+export { CareerTab } from './career/CareerTab'

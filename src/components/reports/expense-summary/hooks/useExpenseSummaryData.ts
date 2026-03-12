@@ -1,11 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
-  mockPaymentData,
-  mockBillData,
-  mockQuarterlyPaymentData,
-  mockQuarterlyBillData,
-  mockYearlyPaymentData,
-  mockYearlyBillData,
   monthlyMonthList,
   quarterlyMonthList,
   halfYearlyMonthList,
@@ -15,57 +9,57 @@ import {
 } from '../constants'
 
 export function useExpenseSummaryData() {
-  // Filter states
   const [period, setPeriod] = useState<string>('monthly')
-  const [year, setYear] = useState<string>('2025')
+  const [year, setYear] = useState<string>(String(new Date().getFullYear()))
   const [category, setCategory] = useState<string>('All')
   const [vendor, setVendor] = useState<string>('All')
 
-  // Get appropriate data based on period
-  const { paymentData, billData, monthLabels } = useMemo(() => {
-    let payment: ExpenseData[] = []
-    let bill: ExpenseData[] = []
-    let labels: string[] = []
+  // API data state
+  const [paymentData, setPaymentData] = useState<ExpenseData[]>([])
+  const [billData, setBillData] = useState<ExpenseData[]>([])
+  const [monthLabels, setMonthLabels] = useState<string[]>(monthlyMonthList)
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(['All'])
+  const [vendorOptions, setVendorOptions] = useState<string[]>(['All'])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-    switch (period) {
-      case 'quarterly':
-        payment = mockQuarterlyPaymentData
-        bill = mockQuarterlyBillData
-        labels = quarterlyMonthList
-        break
-      case 'half-yearly':
-        payment = mockPaymentData
-        bill = mockBillData
-        labels = halfYearlyMonthList
-        break
-      case 'yearly':
-        payment = mockYearlyPaymentData
-        bill = mockYearlyBillData
-        labels = yearlyMonthList
-        break
-      case 'monthly':
-      default:
-        payment = mockPaymentData
-        bill = mockBillData
-        labels = monthlyMonthList
-        break
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      params.set('period', period)
+      params.set('year', year)
+      if (category !== 'All') params.set('category', category)
+      if (vendor !== 'All') params.set('vendorId', vendor)
+
+      const res = await fetch(`/api/reports/expense-summary?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch expense summary data')
+      const json = await res.json()
+      if (json.success && json.data) {
+        setPaymentData(json.data.paymentData || [])
+        setBillData(json.data.billData || [])
+        setMonthLabels(json.data.monthLabels || monthlyMonthList)
+        if (json.data.categories) setCategoryOptions(json.data.categories)
+        if (json.data.vendors) {
+          setVendorOptions(['All', ...json.data.vendors.filter((v: any) => v.id !== 'All').map((v: any) => v.name)])
+        }
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load expense summary data')
+    } finally {
+      setLoading(false)
     }
+  }, [period, year, category, vendor])
 
-    // Filter by category if not "All"
-    if (category !== 'All') {
-      payment = payment.filter((item) => item.category === category)
-      bill = bill.filter((item) => item.category === category)
-    }
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
-    return { paymentData: payment, billData: bill, monthLabels: labels }
-  }, [period, category])
-
-  // Calculate total expense
   const totalExpense = useMemo(() => {
     return calculateTotalExpense(paymentData, billData)
   }, [paymentData, billData])
 
-  // Format date range for display
   const formatDateRange = () => {
     if (period === 'yearly') {
       const years = yearlyMonthList
@@ -74,21 +68,18 @@ export function useExpenseSummaryData() {
     return `Jan ${year} to Dec ${year}`
   }
 
-  // Handlers
-  const handleApplyFilters = () => {
-    // Trigger re-render with current filter values
-    console.log('Applying filters:', { period, year, category, vendor })
-  }
+  const handleApplyFilters = useCallback(() => {
+    fetchData()
+  }, [fetchData])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setPeriod('monthly')
-    setYear('2025')
+    setYear(String(new Date().getFullYear()))
     setCategory('All')
     setVendor('All')
-  }
+  }, [])
 
   return {
-    // Filter states
     period,
     setPeriod,
     year,
@@ -97,16 +88,16 @@ export function useExpenseSummaryData() {
     setCategory,
     vendor,
     setVendor,
-
-    // Data
+    categoryOptions,
+    vendorOptions,
     paymentData,
     billData,
     totalExpense,
     monthLabels,
-
-    // Handlers
     handleApplyFilters,
     handleReset,
     formatDateRange,
+    loading,
+    error,
   }
 }

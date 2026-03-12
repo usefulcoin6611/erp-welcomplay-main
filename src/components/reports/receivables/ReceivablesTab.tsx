@@ -32,6 +32,7 @@ const ReceivablesTabComponent = () => {
     agingSummaryTotals,
     handleTabChange,
     handleReset,
+    handleApplyFilters,
   } = useReceivablesData()
 
   const receivablesTabItems = useMemo(
@@ -54,6 +55,9 @@ const ReceivablesTabComponent = () => {
         isDateRangeOpen={isDateRangeOpen}
         setIsDateRangeOpen={setIsDateRangeOpen}
         onReset={handleReset}
+        onApply={handleApplyFilters}
+        selectedTab={selectedTab}
+        exportData={filteredData}
       />
 
       {/* Main Data Card with Tabs */}
@@ -89,7 +93,7 @@ const ReceivablesTabComponent = () => {
         </div>
 
         <CardContent className="pt-0">
-          <div style={{ minHeight: '400px' }}>
+          <div>
             {/* Customer Balance Table */}
             {selectedTab === 'customer-balance' && (
               <CustomerBalanceTable 

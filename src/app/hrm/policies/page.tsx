@@ -1,16 +1,30 @@
 'use client';
 
-import { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { AppSidebar } from '@/components/app-sidebar';
-import { Separator } from '@/components/ui/separator';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SiteHeader } from '@/components/site-header';
+import { MainContentWrapper } from '@/components/main-content-wrapper';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -19,353 +33,800 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Plus, Pencil, Trash2, FileText, Download, Eye, Building2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  FileText,
+  Download,
+  Eye,
+  Building2,
+  X,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CompanyPolicy {
   id: number;
   branch: string;
   title: string;
+  description: string | null;
+  attachment?: string | null;
+}
+
+type PolicyFormData = {
+  branch: string;
+  title: string;
   description: string;
-  attachment?: string;
-  createdDate: string;
-  updatedDate: string;
+  attachment: File | null;
+};
+
+type BranchOption = {
+  id: number;
+  name: string;
+};
+
+const defaultFormData: PolicyFormData = {
+  branch: '',
+  title: '',
+  description: '',
+  attachment: null,
+};
+
+const statCardClass =
+  'rounded-lg border border-gray-200/80 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
+
+function getBranchLabel(value: string, branchOptions: BranchOption[]): string {
+  if (!value) return '-';
+  return (branchOptions.find((b) => b.name === value)?.name ?? value) || '-';
 }
 
 export default function CompanyPolicyPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
-    branch: '',
-    title: '',
-    description: '',
-    attachment: '',
-  });
+  const [formData, setFormData] = useState<PolicyFormData>(defaultFormData);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [policyToDelete, setPolicyToDelete] = useState<CompanyPolicy | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [policies, setPolicies] = useState<CompanyPolicy[]>([
-    {
-      id: 1,
-      branch: 'Head Office',
-      title: 'Work From Home Policy',
-      description: 'Guidelines for remote work arrangements, including eligibility criteria, equipment provision, and communication expectations.',
-      attachment: 'wfh-policy.pdf',
-      createdDate: '2023-01-15',
-      updatedDate: '2023-11-20',
-    },
-    {
-      id: 2,
-      branch: 'All Branches',
-      title: 'Code of Conduct',
-      description: 'Ethical standards and behavioral expectations for all employees, including conflict of interest, confidentiality, and professional conduct.',
-      attachment: 'code-of-conduct.pdf',
-      createdDate: '2022-06-10',
-      updatedDate: '2024-01-05',
-    },
-    {
-      id: 3,
-      branch: 'Jakarta Branch',
-      title: 'Attendance and Leave Policy',
-      description: 'Regulations regarding working hours, attendance tracking, leave types, and approval procedures.',
-      attachment: 'attendance-leave.pdf',
-      createdDate: '2023-03-20',
-      updatedDate: '2023-12-15',
-    },
-    {
-      id: 4,
-      branch: 'All Branches',
-      title: 'Health and Safety Policy',
-      description: 'Workplace safety protocols, emergency procedures, and health regulations to ensure employee well-being.',
-      createdDate: '2023-02-10',
-      updatedDate: '2023-10-25',
-    },
-    {
-      id: 5,
-      branch: 'Head Office',
-      title: 'Data Protection and Privacy Policy',
-      description: 'Guidelines for handling confidential information, customer data, and compliance with data protection regulations.',
-      attachment: 'data-protection.pdf',
-      createdDate: '2023-04-15',
-      updatedDate: '2024-01-10',
-    },
-  ]);
+  const [policies, setPolicies] = useState<CompanyPolicy[]>([]);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [currentAttachmentPath, setCurrentAttachmentPath] = useState<string | null>(null);
+  const [attachmentRemoved, setAttachmentRemoved] = useState(false);
+  const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingId !== null) {
-      setPolicies(
-        policies.map((policy) =>
-          policy.id === editingId
-            ? {
-                ...policy,
-                branch: formData.branch,
-                title: formData.title,
-                description: formData.description,
-                attachment: formData.attachment || undefined,
-                updatedDate: new Date().toISOString().split('T')[0],
-              }
-            : policy
-        )
-      );
-      setEditingId(null);
-    } else {
-      const newPolicy: CompanyPolicy = {
-        id: Math.max(0, ...policies.map((p) => p.id)) + 1,
-        branch: formData.branch,
-        title: formData.title,
-        description: formData.description,
-        attachment: formData.attachment || undefined,
-        createdDate: new Date().toISOString().split('T')[0],
-        updatedDate: new Date().toISOString().split('T')[0],
-      };
-      setPolicies([...policies, newPolicy]);
+  const fetchPolicies = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/hrm/policies');
+      const json = await res.json();
+      if (json.success) {
+        setPolicies(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat company policy');
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+      toast.error('Gagal memuat company policy');
+    } finally {
+      setIsLoading(false);
     }
-    setShowForm(false);
-    setFormData({ branch: '', title: '', description: '', attachment: '' });
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/branches');
+      const json = await res.json();
+      if (json.success) {
+        setBranches(json.data ?? []);
+      } else {
+        toast.error(json.message || 'Gagal memuat data branch');
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      toast.error('Gagal memuat data branch');
+    }
+  };
+
+  useEffect(() => {
+    fetchPolicies();
+    fetchBranches();
+  }, []);
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData({ ...defaultFormData });
+      setCurrentAttachmentPath(null);
+      setAttachmentRemoved(false);
+    }
+  };
+
+  const handleAdd = () => {
+    setEditingId(null);
+    setFormData({ ...defaultFormData });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.branch) {
+      toast.error('Branch wajib dipilih');
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast.error('Title wajib diisi');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const url =
+        editingId !== null ? `/api/hrm/policies/${editingId}` : '/api/hrm/policies';
+      const method = editingId !== null ? 'PUT' : 'POST';
+
+      const payload = new FormData();
+      payload.append('branch', formData.branch);
+      payload.append('title', formData.title.trim());
+      payload.append('description', formData.description.trim());
+      if (formData.attachment instanceof File) {
+        payload.append('attachment', formData.attachment);
+      }
+      if (editingId !== null) {
+        payload.append('attachmentRemoved', attachmentRemoved ? 'true' : 'false');
+      }
+
+      const res = await fetch(url, {
+        method,
+        body: payload,
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        toast.success(
+          json.message ||
+            (editingId !== null ? 'Company policy updated' : 'Company policy created'),
+        );
+        await fetchPolicies();
+        handleDialogOpenChange(false);
+      } else {
+        toast.error(json.message || 'Gagal menyimpan company policy');
+      }
+    } catch (error) {
+      console.error('Error submitting company policy:', error);
+      toast.error('Gagal menyimpan company policy');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (policy: CompanyPolicy) => {
     setFormData({
       branch: policy.branch,
       title: policy.title,
-      description: policy.description,
-      attachment: policy.attachment || '',
+      description: policy.description ?? '',
+      attachment: null,
     });
+    setCurrentAttachmentPath(policy.attachment ?? null);
+    setAttachmentRemoved(false);
     setEditingId(policy.id);
-    setShowForm(true);
+    setDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this policy?')) {
-      setPolicies(policies.filter((policy) => policy.id !== id));
-    }
+  const openDeleteConfirm = (policy: CompanyPolicy) => {
+    setPolicyToDelete(policy);
+    setDeleteAlertOpen(true);
   };
 
-  const filteredPolicies = policies.filter(
-    (policy) =>
-      policy.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.branch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleConfirmDelete = () => {
+    (async () => {
+      if (!policyToDelete) {
+        setDeleteAlertOpen(false);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/hrm/policies/${policyToDelete.id}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast.success(json.message || 'Company policy deleted');
+          await fetchPolicies();
+        } else {
+          toast.error(json.message || 'Gagal menghapus company policy');
+        }
+      } catch (error) {
+        console.error('Error deleting company policy:', error);
+        toast.error('Gagal menghapus company policy');
+      } finally {
+        setDeleteAlertOpen(false);
+        setPolicyToDelete(null);
+      }
+    })();
+  };
+
+  const filteredPolicies = useMemo(
+    () =>
+      policies.filter((p) => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return true;
+        return (
+          p.title.toLowerCase().includes(term) ||
+          getBranchLabel(p.branch, branches).toLowerCase().includes(term) ||
+          (p.description ?? '').toLowerCase().includes(term)
+        );
+      }),
+    [policies, branches, searchTerm],
   );
 
+  const totalItems = filteredPolicies.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedPolicies = filteredPolicies.slice(startIndex, endIndex);
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
+
   const totalPolicies = policies.length;
-  const policiesWithAttachments = policies.filter((p) => p.attachment).length;
-  const branches = [...new Set(policies.map((p) => p.branch))].length;
+  const withAttachments = policies.filter((p) => p.attachment).length;
+  const branchCount = new Set(policies.map((p) => p.branch)).size;
 
   return (
     <SidebarProvider
-      style={{
-        '--sidebar-width': 'calc(var(--spacing) * 72)',
-        '--header-height': 'calc(var(--spacing) * 12)',
-      } as React.CSSProperties}
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-          <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-            <h1 className="text-base font-medium">Company Policy</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
+        <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <MainContentWrapper>
+            <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+              {/* Title Card - reference: Manage Company Policy */}
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="px-6">
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl font-semibold">Company Policy</CardTitle>
+                    <CardDescription>
+                      Manage Company Policy. Kelola kebijakan perusahaan per branch, lampiran, dan deskripsi.
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Policies</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{totalPolicies}</div>
-                <p className="text-xs text-muted-foreground mt-1">Active policies</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">With Attachments</CardTitle>
-                <Download className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{policiesWithAttachments}</div>
-                <p className="text-xs text-muted-foreground mt-1">Documents available</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Branches Covered</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{branches}</div>
-                <p className="text-xs text-muted-foreground mt-1">Different locations</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Company Policies</h2>
-            <Button onClick={() => setShowForm(!showForm)} className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Policy
-            </Button>
-          </div>
-
-          <Card>
-            <CardContent className="space-y-4 pt-6">
-              {showForm && (
-                <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border bg-muted/50 p-4 md:p-6">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="branch">Branch</Label>
-                      <Input
-                        id="branch"
-                        value={formData.branch}
-                        onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                        placeholder="e.g., Head Office"
-                        required
-                      />
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className={statCardClass}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Policies</p>
+                        <p className="text-2xl font-bold">{totalPolicies}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-sky-100">
+                        <FileText className="w-5 h-5 text-sky-600" />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Policy Title</Label>
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="e.g., Work From Home Policy"
-                        required
-                      />
+                  </CardContent>
+                </Card>
+                <Card className={statCardClass}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">With Attachments</p>
+                        <p className="text-2xl font-bold text-blue-600">{withAttachments}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100">
+                        <Download className="w-5 h-5 text-blue-600" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Policy details and guidelines"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="attachment">Attachment (filename)</Label>
-                    <Input
-                      id="attachment"
-                      value={formData.attachment}
-                      onChange={(e) => setFormData({ ...formData, attachment: e.target.value })}
-                      placeholder="e.g., policy-document.pdf (optional)"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
-                      {editingId !== null ? 'Update' : 'Create'} Policy
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowForm(false);
-                        setEditingId(null);
-                        setFormData({ branch: '', title: '', description: '', attachment: '' });
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              )}
-
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search policies..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
+                  </CardContent>
+                </Card>
+                <Card className={statCardClass}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Branches Covered</p>
+                        <p className="text-2xl font-bold text-green-600">{branchCount}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-100">
+                        <Building2 className="w-5 h-5 text-green-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Branch</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Attachment</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPolicies.map((policy) => (
-                      <TableRow key={policy.id}>
-                        <TableCell>
-                          <Badge variant="secondary" className="whitespace-nowrap">{policy.branch}</Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{policy.title}</TableCell>
-                        <TableCell className="max-w-md">
-                          <p className="text-sm text-muted-foreground line-clamp-2">{policy.description}</p>
-                        </TableCell>
-                        <TableCell>
-                          {policy.attachment ? (
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                                title="Download"
+              {/* Table Card - reference: Branch, Title, Description, Attachment, Action */}
+              <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 px-6 py-3.5">
+                  <div className="flex w-full max-w-md items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search policies..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="h-9 pl-9 pr-9 border-0 bg-gray-50 shadow-none transition-colors hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+                      />
+                      {searchTerm.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                          onClick={() => {
+                            setSearchTerm('');
+                            setCurrentPage(1);
+                          }}
+                          aria-label="Clear search"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 px-4 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                    onClick={handleAdd}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="px-6">Branch</TableHead>
+                          <TableHead className="px-6">Title</TableHead>
+                          <TableHead className="px-6">Description</TableHead>
+                          <TableHead className="px-6">Attachment</TableHead>
+                          <TableHead className="px-6 text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {isLoading ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="px-6 text-center py-8 text-muted-foreground"
+                            >
+                              Loading policies...
+                            </TableCell>
+                          </TableRow>
+) : paginatedPolicies.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={5}
+                                className="px-6 text-center py-8 text-muted-foreground"
                               >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 hover:bg-gray-50 hover:text-gray-600"
-                                title="Preview"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </div>
+                                No policies found
+                              </TableCell>
+                            </TableRow>
                           ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(policy)}
-                              className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(policy.id)}
-                              className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-          </div>
+                            paginatedPolicies.map((policy) => (
+                            <TableRow key={policy.id}>
+                              <TableCell className="px-6">
+                                {getBranchLabel(policy.branch, branches)}
+                              </TableCell>
+                              <TableCell className="px-6 font-medium">{policy.title}</TableCell>
+                              <TableCell className="px-6 max-w-xs">
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {policy.description ?? '-'}
+                                </p>
+                              </TableCell>
+                              <TableCell className="px-6">
+                                {policy.attachment ? (
+                                  (() => {
+                                    const fileUrl = policy.attachment!.startsWith('/')
+                                      ? policy.attachment!
+                                      : `/uploads/companyPolicy/${policy.attachment}`;
+                                    return (
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200"
+                                          title="Download"
+                                          asChild
+                                        >
+                                          <a href={fileUrl} download>
+                                            <Download className="w-3.5 h-3.5" />
+                                          </a>
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 w-7 p-0 shadow-none bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                          title="Preview"
+                                          asChild
+                                        >
+                                          <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                          </a>
+                                        </Button>
+                                      </div>
+                                    );
+                                  })()
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="px-6">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200 border-sky-200"
+                                    onClick={() => handleEdit(policy)}
+                                    title="Edit"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0 shadow-none bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200"
+                                    onClick={() => openDeleteConfirm(policy)}
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 px-4 py-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Rows per page</span>
+                        <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                          <SelectTrigger className="w-20 px-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="min-w-[60px]">
+                            <SelectItem value="5" className="justify-center">5</SelectItem>
+                            <SelectItem value="10" className="justify-center">10</SelectItem>
+                            <SelectItem value="20" className="justify-center">20</SelectItem>
+                            <SelectItem value="50" className="justify-center">50</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8">
+                          <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8">
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground px-2">Page {currentPage} of {totalPages}</span>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8">
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </MainContentWrapper>
         </div>
       </SidebarInset>
+
+      {/* Create/Edit Dialog - reference: Branch (required), Title (required), Description, Attachment (file) */}
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId !== null ? 'Edit Company Policy' : 'Create New Company Policy'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingId !== null
+                ? 'Ubah kebijakan perusahaan.'
+                : 'Tambah kebijakan baru. Isi Branch dan Title yang wajib.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="branch">
+                    Branch <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.branch}
+                    onValueChange={(value) => setFormData({ ...formData, branch: value })}
+                  >
+                    <SelectTrigger id="branch">
+                      <SelectValue placeholder="Select Branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.length === 0 ? (
+                        <SelectItem value="__no-branch__" disabled>
+                          No branches available
+                        </SelectItem>
+                      ) : (
+                        branches.map((b) => (
+                          <SelectItem key={b.id} value={b.name}>
+                            {b.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create branch here.{' '}
+                    <Link
+                      href="/hrm/setup/branch"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Create branch
+                    </Link>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">
+                    Title <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter Title"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Enter Description"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="attachment">Attachment</Label>
+                <div className="relative">
+                  <label
+                    htmlFor="attachment"
+                    className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                      formData.attachment || isDraggingAttachment
+                        ? 'border-blue-400 bg-blue-50/50'
+                        : 'border-muted-foreground/25 bg-muted/5 hover:bg-muted/10'
+                    }`}
+                    onDragOver={(e: React.DragEvent<HTMLLabelElement>) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!isDraggingAttachment) {
+                        setIsDraggingAttachment(true);
+                      }
+                    }}
+                    onDragLeave={(e: React.DragEvent<HTMLLabelElement>) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (isDraggingAttachment) {
+                        setIsDraggingAttachment(false);
+                      }
+                    }}
+                    onDrop={(e: React.DragEvent<HTMLLabelElement>) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingAttachment(false);
+                      const file = e.dataTransfer.files?.[0] ?? null;
+                      if (file) {
+                        setFormData({
+                          ...formData,
+                          attachment: file,
+                        });
+                        setAttachmentRemoved(false);
+                      }
+                    }}
+                  >
+                    {formData.attachment ? (
+                      <div className="flex items-center gap-2 px-3 w-full">
+                        <FileText className="w-6 h-6 text-blue-500 shrink-0" />
+                        <div className="flex flex-col items-start min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate w-full max-w-[220px]">
+                            {formData.attachment.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {(formData.attachment.size / 1024 < 1024
+                              ? `${(formData.attachment.size / 1024).toFixed(1)} KB`
+                              : `${(formData.attachment.size / (1024 * 1024)).toFixed(2)} MB`)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 ml-2 text-muted-foreground hover:text-red-500 shrink-0 z-10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const input = document.getElementById(
+                              'attachment',
+                            ) as HTMLInputElement | null;
+                            if (input) input.value = '';
+                            setFormData({ ...formData, attachment: null });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-2">
+                        <Upload className="w-4 h-4 mb-1 text-blue-500" />
+                        <p className="text-xs text-muted-foreground">
+                          PDF, DOC, JPG, PNG (MAX. 10MB)
+                        </p>
+                      </div>
+                    )}
+                    <Input
+                      id="attachment"
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setFormData({
+                          ...formData,
+                          attachment: file,
+                        });
+                        if (file) {
+                          setAttachmentRemoved(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                {currentAttachmentPath && !attachmentRemoved && !formData.attachment && (
+                  <div className="mt-2 flex items-center justify-between rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-sky-600" />
+                      <span className="text-xs text-muted-foreground break-all">
+                        {currentAttachmentPath.split('/').pop()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const fileUrl = currentAttachmentPath.startsWith('/')
+                          ? currentAttachmentPath
+                          : `/uploads/companyPolicy/${currentAttachmentPath}`;
+                        return (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 p-0 shadow-none bg-sky-100 text-sky-800 hover:bg-sky-200"
+                              title="Download attachment"
+                              asChild
+                            >
+                              <a href={fileUrl} download>
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 p-0 shadow-none text-rose-700 hover:bg-rose-100"
+                              title="Remove attachment"
+                              onClick={() => {
+                                setAttachmentRemoved(true);
+                                setCurrentAttachmentPath(null);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+                {formData.attachment && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {formData.attachment.name}
+                  </p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleDialogOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="blue" className="shadow-none" disabled={isSubmitting}>
+                {isSubmitting
+                  ? 'Saving...'
+                  : editingId !== null
+                    ? 'Update'
+                    : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Company Policy?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{policyToDelete?.title}&quot; akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-rose-600 hover:bg-rose-700"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

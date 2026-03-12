@@ -23,7 +23,7 @@ import {
 import { IconCalendar } from '@tabler/icons-react'
 
 type DebitNoteDetailPageProps = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Mock debit note detail (mirroring how credit/debit notes are structured in Laravel)
@@ -58,8 +58,8 @@ function getDebitStatusClasses(status: string) {
   }
 }
 
-export default function DebitNoteDetailPage({ params }: DebitNoteDetailPageProps) {
-  const id = params.id
+export default async function DebitNoteDetailPage({ params }: DebitNoteDetailPageProps) {
+  const { id } = await params
   const note = mockDebitNote
 
   return (
@@ -74,8 +74,8 @@ export default function DebitNoteDetailPage({ params }: DebitNoteDetailPageProps
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+        <div className="flex flex-1 flex-col bg-gray-100">
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>

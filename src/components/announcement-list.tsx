@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ColumnDef,
   getCoreRowModel,
@@ -37,66 +37,63 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useTranslations } from 'next-intl';
 
 interface IData {
-  id: number;
+  id: string;
   title: string;
   description: string;
   start_date: string;
   end_date: string;
 }
 
-const data: IData[] = [
-  {
-    id: 1,
-    title: 'System Maintenance',
-    description: 'Planned system maintenance for core services.',
-    start_date: '01 Nov, 2025',
-    end_date: '01 Nov, 2025',
-  },
-  {
-    id: 2,
-    title: 'Holiday Notice',
-    description: 'Company holiday on the 25th – offices closed.',
-    start_date: '25 Dec, 2025',
-    end_date: '25 Dec, 2025',
-  },
-  {
-    id: 3,
-    title: 'Policy Update',
-    description: 'Updated remote-work policy available in HR portal.',
-    start_date: '10 Nov, 2025',
-    end_date: '10 Nov, 2025',
-  },
-  {
-    id: 4,
-    title: 'Office Relocation',
-    description: 'Head office will relocate to new building.',
-    start_date: '05 Jan, 2026',
-    end_date: '05 Jan, 2026',
-  },
-  {
-    id: 5,
-    title: 'Security Training',
-    description: 'Mandatory security awareness training for all staff.',
-    start_date: '15 Nov, 2025',
-    end_date: '30 Nov, 2025',
-  },
-];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatAnnouncementDate(isoDate: string): string {
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  const day = d.getDate();
+  const month = MONTH_SHORT[d.getMonth()];
+  const year = d.getFullYear();
+  return `${String(day).padStart(2, '0')} ${month}, ${year}`;
+}
 
 const AnnouncementList = ({ compact }: { compact?: boolean }) => {
   const t = useTranslations('hrmDashboard.announcementList');
   const headerT = useTranslations('header');
 
+  const [data, setData] = useState<IData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 });
   const [sorting, setSorting] = useState<SortingState>([{ id: 'start_date', desc: true }]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch('/api/hrm/admin/announcements')
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json?.success || !Array.isArray(json.data)) return;
+        setData(
+          (json.data as { id: string; title: string; startDate: string; endDate: string; description?: string }[]).map((a) => ({
+            id: a.id,
+            title: a.title,
+            description: a.description ?? '',
+            start_date: formatAnnouncementDate(a.startDate),
+            end_date: formatAnnouncementDate(a.endDate),
+          }))
+        );
+      })
+      .catch(() => setData([]))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
     return data.filter(
-      (item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      (item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()) || (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())),
     );
-  }, [searchQuery]);
+  }, [data, searchQuery]);
 
   const columns = useMemo<ColumnDef<IData>[]>(() => {
     const cols: ColumnDef<IData>[] = [];
@@ -195,6 +192,26 @@ const AnnouncementList = ({ compact }: { compact?: boolean }) => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M3 11V7a2 2 0 0 1 2-2h2l9-3v16l-9-3H5a2 2 0 0 1-2-2v-4z"/><path d="M16 8v8"/><circle cx="6" cy="15" r="2"/></svg>
+            {t('title')}
+          </CardTitle>
+        </CardHeader>
+        <CardTable>
+          <div className="p-4 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </CardTable>
+      </Card>
+    );
+  }
 
   return (
     <DataGrid table={table} recordCount={filteredData?.length || 0} tableLayout={{ columnsPinnable: true, columnsMovable: true, columnsVisibility: true, cellBorder: true, dense: !!compact }}>

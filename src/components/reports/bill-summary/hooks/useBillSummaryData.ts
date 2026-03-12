@@ -1,6 +1,21 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import type { DateRange } from 'react-day-picker'
-import { mockBills, type Bill, type BillStatus, type BillSummaryStats } from '../constants'
+import { format } from 'date-fns'
+import type { BillStatus, BillSummaryStats } from '../constants'
+
+export type Bill = {
+  id: string
+  billNumber: string
+  vendor: string
+  vendorId: string
+  category: string
+  date: string
+  dueDate: string
+  total: number
+  paidAmount: number
+  dueAmount: number
+  status: string
+}
 
 export const useBillSummaryData = () => {
   // Filter states
@@ -15,29 +30,44 @@ export const useBillSummaryData = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  // Filter and search bills
+  // API data state
+  const [bills, setBills] = useState<Bill[]>([])
+  const [vendors, setVendors] = useState<{ id: string; name: string }[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (dateRange?.from) params.set('startDate', format(dateRange.from, 'yyyy-MM-dd'))
+      if (dateRange?.to) params.set('endDate', format(dateRange.to, 'yyyy-MM-dd'))
+      if (selectedVendor !== 'All') params.set('vendorId', selectedVendor)
+      if (selectedStatus !== 'all') params.set('status', selectedStatus)
+      if (searchQuery) params.set('search', searchQuery)
+
+      const res = await fetch(`/api/reports/bill-summary?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch bill summary data')
+      const json = await res.json()
+      if (json.success && json.data) {
+        setBills(json.data.bills || [])
+        setVendors(json.data.vendors || [])
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load bill summary data')
+    } finally {
+      setLoading(false)
+    }
+  }, [dateRange, selectedVendor, selectedStatus, searchQuery])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // Filter and search bills (client-side for instant feedback)
   const filteredBills = useMemo(() => {
-    let filtered = [...mockBills]
-
-    // Filter by date range
-    if (dateRange?.from) {
-      filtered = filtered.filter((bill) => {
-        const billDate = new Date(bill.date)
-        const fromDate = dateRange.from!
-        const toDate = dateRange.to || dateRange.from!
-        return billDate >= fromDate && billDate <= toDate
-      })
-    }
-
-    // Filter by vendor
-    if (selectedVendor !== 'All') {
-      filtered = filtered.filter((bill) => bill.vendor === selectedVendor)
-    }
-
-    // Filter by status
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter((bill) => bill.status === selectedStatus)
-    }
+    let filtered = [...bills]
 
     // Search filter
     if (searchQuery) {
@@ -51,7 +81,7 @@ export const useBillSummaryData = () => {
     }
 
     return filtered
-  }, [dateRange, selectedVendor, selectedStatus, searchQuery])
+  }, [bills, searchQuery])
 
   // Calculate summary statistics
   const summaryStats: BillSummaryStats = useMemo(() => {
@@ -104,7 +134,13 @@ export const useBillSummaryData = () => {
   const handleApplyFilters = useCallback(() => {
     setCurrentPage(1)
     setIsDateRangeOpen(false)
-  }, [])
+    fetchData()
+  }, [fetchData])
+
+  // Vendor options for filter
+  const vendorOptions = useMemo(() => {
+    return ['All', ...vendors.map(v => v.name)]
+  }, [vendors])
 
   return {
     // Filter states
@@ -116,6 +152,9 @@ export const useBillSummaryData = () => {
     setSelectedVendor,
     selectedStatus,
     setSelectedStatus,
+    vendorOptions,
+    loading,
+    error,
     
     // UI states
     selectedTab,

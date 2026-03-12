@@ -24,6 +24,8 @@ interface TransactionFiltersProps {
   setSelectedCategory: (category: string) => void
   onApply: () => void
   onReset: () => void
+  accountOptions?: string[]
+  categoryOptions?: string[]
 }
 
 export function TransactionFilters({
@@ -37,7 +39,11 @@ export function TransactionFilters({
   setSelectedCategory,
   onApply,
   onReset,
+  accountOptions,
+  categoryOptions,
 }: TransactionFiltersProps) {
+  const accounts = accountOptions || availableAccounts
+  const categories = categoryOptions || availableCategories
   return (
     <Card className="shadow-none">
       <CardContent className="px-4 py-2">
@@ -74,7 +80,7 @@ export function TransactionFilters({
                 <SelectValue placeholder="All Accounts" />
               </SelectTrigger>
               <SelectContent>
-                {availableAccounts.map((account: string) => (
+                {accounts.map((account: string) => (
                   <SelectItem key={account} value={account}>
                     {account}
                   </SelectItem>
@@ -91,7 +97,7 @@ export function TransactionFilters({
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                {availableCategories.map((category: string) => (
+                {categories.map((category: string) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

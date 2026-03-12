@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -146,41 +147,46 @@ export default function NotificationTemplateDetailPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">{template.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage notification template settings
-                </p>
-              </div>
-            </div>
+        <MainContentWrapper>
+          <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-lg font-semibold">{template.name}</CardTitle>
+                  <CardDescription>
+                    Manage notification template settings.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+              <CardHeader className="px-6">
+                <CardTitle>Variables</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6 pb-6 pt-2">
+                <div className="space-y-2 text-sm">
+                  {Object.entries(template.variables).map(([label, variable]) => (
+                    <div
+                      key={variable}
+                      className="grid grid-cols-[1fr_auto] items-center gap-3 border-b pb-2 last:border-b-0 last:pb-0"
+                    >
+                      <span className="text-muted-foreground">{label}</span>
+                      <code className="text-primary font-mono rounded-md bg-blue-50 px-2 py-0.5">
+                        {`{${variable}}`}
+                      </code>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid gap-4 lg:grid-cols-4">
-              {/* Variables Card */}
-              <div className="lg:col-span-4">
-                <Card className="shadow-none">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Variables</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {Object.entries(template.variables).map(([label, variable]) => (
-                        <div key={variable} className="flex items-center justify-between">
-                          <span className="text-muted-foreground">{label}:</span>
-                          <code className="text-primary font-mono">{`{${variable}}`}</code>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Language Sidebar */}
               <div className="lg:col-span-1">
-                <Card className="shadow-none sticky top-4">
+                <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] sticky top-4">
+                  <CardHeader className="px-4 py-3">
+                    <CardTitle className="text-sm">Language</CardTitle>
+                  </CardHeader>
                   <CardContent className="p-0">
                     <div className="flex flex-col">
                       {languages.map((lang) => (
@@ -188,10 +194,10 @@ export default function NotificationTemplateDetailPage() {
                           key={lang.key}
                           onClick={() => setSelectedLanguage(lang.key)}
                           className={cn(
-                            'px-4 py-3 text-left text-sm transition-colors hover:bg-accent',
+                            'px-4 py-3 text-left text-sm transition-colors border-t',
                             selectedLanguage === lang.key
-                              ? 'bg-primary text-primary-foreground font-medium'
-                              : 'text-foreground'
+                              ? 'bg-blue-50 text-blue-700 font-medium border-l-2 border-blue-500'
+                              : 'text-foreground hover:bg-blue-50/50 hover:text-blue-700'
                           )}
                         >
                           {lang.label}
@@ -202,9 +208,11 @@ export default function NotificationTemplateDetailPage() {
                 </Card>
               </div>
 
-              {/* Form Content */}
               <div className="lg:col-span-3">
-                <Card className="shadow-none">
+                <Card className="shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+                  <CardHeader className="px-6">
+                    <CardTitle>Template Content</CardTitle>
+                  </CardHeader>
                   <CardContent className="p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div className="space-y-2">
@@ -236,7 +244,7 @@ export default function NotificationTemplateDetailPage() {
                         </p>
                       </div>
                       <div className="flex justify-end">
-                        <Button type="submit" className="shadow-none">
+                        <Button type="submit" variant="blue" className="shadow-none">
                           <Save className="mr-2 h-4 w-4" /> Save
                         </Button>
                       </div>
@@ -246,10 +254,12 @@ export default function NotificationTemplateDetailPage() {
               </div>
             </div>
           </div>
-        </div>
+        </MainContentWrapper>
       </SidebarInset>
     </SidebarProvider>
   )
 }
+
+
 
 

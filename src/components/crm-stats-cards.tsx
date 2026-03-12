@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Users, Handshake, FileText } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface StatsCardProps {
   title: string
@@ -12,9 +13,10 @@ interface StatsCardProps {
   link?: string
   bgColor: string
   textColor: string
+  isLoading?: boolean
 }
 
-const StatCard = ({ title, value, icon, link, bgColor, textColor }: StatsCardProps) => {
+const StatCard = ({ title, value, icon, link, bgColor, textColor, isLoading }: StatsCardProps) => {
   const cardContent = (
     <Card className={`relative overflow-hidden border-0 shadow-sm hover:shadow-lg transition-all duration-200 h-full ${bgColor}`}>
       {/* Background Wave SVG */}
@@ -39,7 +41,11 @@ const StatCard = ({ title, value, icon, link, bgColor, textColor }: StatsCardPro
             {icon}
           </div>
           <div className="text-right">
-            <h3 className={`text-xl font-semibold ${textColor}`}>{value}</h3>
+            {isLoading ? (
+              <Skeleton className="h-7 w-12 rounded" />
+            ) : (
+              <h3 className={`text-xl font-semibold ${textColor}`}>{value}</h3>
+            )}
           </div>
         </div>
         
@@ -61,34 +67,49 @@ const StatCard = ({ title, value, icon, link, bgColor, textColor }: StatsCardPro
   return cardContent
 }
 
-export function CRMStatsCards() {
-  const t = useTranslations('crmDashboard.stats')
+interface CRMStatsCardsProps {
+  totalLead?: number
+  totalDeal?: number
+  totalContract?: number
+  loading?: boolean
+}
+
+export function CRMStatsCards({
+  totalLead = 0,
+  totalDeal = 0,
+  totalContract = 0,
+  loading = false,
+}: CRMStatsCardsProps) {
+  const t = useTranslations("crmDashboard.stats")
 
   const stats = [
     {
-      title: t('totalLead'),
-      value: "0",
+      title: t("totalLead"),
+      value: String(totalLead),
       icon: <Users className="w-6 h-6 text-pink-600" />,
       link: "/crm/leads",
       bgColor: "bg-pink-50",
-      textColor: "text-pink-600"
+      textColor: "text-pink-600",
+      isLoading: loading,
     },
     {
-      title: t('totalDeal'),
-      value: "0",
+      title: t("totalDeal"),
+      value: String(totalDeal),
       icon: <Handshake className="w-6 h-6 text-green-600" />,
       link: "/crm/deals",
       bgColor: "bg-green-50",
-      textColor: "text-green-600"
+      textColor: "text-green-600",
+      isLoading: loading,
     },
     {
-      title: t('totalContract'),
-      value: "0",
+      title: t("totalContract"),
+      value: String(totalContract),
       icon: <FileText className="w-6 h-6 text-orange-600" />,
       link: "/crm/contracts",
       bgColor: "bg-orange-50",
-      textColor: "text-orange-600"
-    }
+      textColor: "text-orange-600",
+      isLoading: loading,
+    },
   ]
 
   return (

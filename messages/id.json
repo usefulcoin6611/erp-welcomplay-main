@@ -1,4 +1,7 @@
 {
+  "messenger": {
+    "messagesEncrypted": "Pesan pribadi Anda terenkripsi dan bersifat pribadi."
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Kelola proyek dan analitik Anda",
@@ -73,6 +76,7 @@
       "posSystem": "Sistem POS",
       "userManagement": "Manajemen Pengguna",
       "productSystem": "Sistem Produk",
+      "myAttendance": "Absensi Saya",
       "supportSystem": "Sistem Dukungan",
       "meetingSystem": "Sistem Rapat",
       "employeeSetup": "Pengaturan Karyawan",
@@ -102,11 +106,16 @@
       "deals": "Penawaran",
       "formBuilder": "Pembuat Formulir",
       "contract": "Kontrak",
-      "crmSystemSetup": "Pengaturan Sistem CRM"
+      "crmSystemSetup": "Pengaturan Sistem CRM",
+      "tasks": "Tugas",
+      "bugs": "Bug",
+      "users": "Pengguna"
     }
   },
   "header": {
     "search": "Cari...",
+    "searchMenuPlaceholder": "Cari menu...",
+    "searchMenuResults": "Hasil",
     "notifications": "Notifikasi",
     "profile": "Profil",
     "logout": "Keluar"
@@ -211,7 +220,8 @@
     },
     "storageLimit": {
       "title": "Batas Penyimpanan",
-      "used": "Terpakai"
+      "used": "Terpakai",
+      "notConfigured": "Batas penyimpanan belum dikonfigurasi"
     },
     "recentInvoices": {
       "title": "Faktur Terbaru",
@@ -261,6 +271,7 @@
     },
     "goal": {
       "title": "Target",
+      "noGoals": "Belum ada target keuangan yang dikonfigurasi.",
       "name": "Nama",
       "type": "Tipe",
       "duration": "Durasi",
@@ -293,6 +304,10 @@
       "clockOut": "Clock Out",
       "clockInTime": "Clock In",
       "clockOutTime": "Clock Out",
+      "officeTime": "Jam kerja: {time}",
+      "statusWorking": "Anda sedang dalam jam kerja.",
+      "statusCompleted": "Absensi hari ini sudah selesai.",
+      "statusReady": "Silakan lakukan clock in untuk memulai hari.",
       "notClockInList": "Daftar Belum Clock In",
       "notClockInTitle": "Belum Clock In",
       "notClockedBadge": "Belum Absen",
@@ -434,6 +449,7 @@
     },
     "leadStatus": {
       "title": "Status Lead",
+      "noData": "Belum ada lead",
       "draft": "Draft",
       "sent": "Terkirim",
       "open": "Open",
@@ -446,6 +462,7 @@
     },
     "dealStatus": {
       "title": "Status Deal",
+      "noData": "Belum ada deal",
       "initialContact": "Kontak Awal",
       "qualification": "Kualifikasi",
       "meeting": "Pertemuan",
@@ -587,7 +604,23 @@
       "enterBankIdentifierCode": "Masukkan kode identifikasi bank",
       "enterBranchLocation": "Masukkan lokasi cabang",
       "enterTaxPayerId": "Masukkan ID wajib pajak",
-      "employeeDetail": "Detail Karyawan"
+      "employeeDetail": "Detail Karyawan",
+      "joiningLetter": "Surat Bergabung",
+      "experienceCertificate": "Sertifikat Pengalaman",
+      "noc": "NOC",
+      "pdf": "PDF",
+      "doc": "DOC",
+      "edit": "Ubah",
+      "editEmployee": "Ubah Karyawan",
+      "updateEmployee": "Perbarui",
+      "backToDetail": "Kembali ke Detail",
+      "chooseFileHere": "Pilih file di sini",
+      "deleteConfirmTitle": "Hapus karyawan?",
+      "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin melanjutkan?",
+      "loadingEmployees": "Memuat data karyawan...",
+      "failedToLoadEmployees": "Gagal memuat data karyawan",
+      "failedToDeleteEmployee": "Gagal menghapus karyawan",
+      "employeeDeleted": "Karyawan berhasil dihapus"
     }
   },
   "reports": {
@@ -620,7 +653,9 @@
       "transactions": "Transaksi",
       "date": "TANGGAL",
       "amount": "JUMLAH",
-      "description": "DESKRIPSI"
+      "description": "DESKRIPSI",
+      "accountStatementSummary": "Ringkasan Laporan Akun",
+      "totalCash": "Total Kas"
     },
     "payables": {
       "title": "Laporan Hutang",
