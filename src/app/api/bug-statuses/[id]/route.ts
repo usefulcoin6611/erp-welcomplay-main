@@ -15,9 +15,10 @@ function isWriteAllowed(session: any) {
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,7 +48,7 @@ export async function PUT(
     const { title } = validation.data;
 
     const existing = await (prisma as any).bugStatus.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -58,7 +59,7 @@ export async function PUT(
     }
 
     const updated = await (prisma as any).bugStatus.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
       },
@@ -80,9 +81,10 @@ export async function PUT(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -95,7 +97,7 @@ export async function DELETE(
     }
 
     const existing = await (prisma as any).bugStatus.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -106,7 +108,7 @@ export async function DELETE(
     }
 
     await (prisma as any).bugStatus.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

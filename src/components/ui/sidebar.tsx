@@ -733,6 +733,7 @@ export {
   SidebarHeader,
   SidebarInput,
   SidebarInset,
+  SidebarMenu,
   SidebarMenuAction,
   SidebarMenuBadge,
   SidebarMenuButton,
