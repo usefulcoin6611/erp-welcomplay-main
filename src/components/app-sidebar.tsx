@@ -73,7 +73,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             setMessengerUnreadCount(json.count)
           }
         })
-        .catch(() => {})
+        .catch(() => { })
     }
     fetchUnread()
     const interval = setInterval(fetchUnread, 15000)
@@ -88,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // When employee: filter by permissions if profile loaded; show minimal menu until permissions loaded to avoid leaking HRM
   const menuData = React.useMemo(() => {
-    let navMain: typeof menuByRole.navMain
+    let navMain: MenuItem[]
     if (user?.type === 'employee') {
       if (user.permissions === undefined || user.permissions === null) {
         // Permissions not yet loaded OR no profile: show minimal to avoid wrong access (e.g. HRM dashboard for non-HRM)
@@ -119,7 +119,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     user: {
       name: user?.name || "Guest",
       email: user?.email || "guest@example.com",
-      avatar: "/avatars/logo.png",
+      avatar: "",
     },
     navMain: filteredNavMain,
     navSecondary: menuData.navSecondary,
@@ -134,9 +134,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         >
           <a href="/dashboard" className="flex items-center gap-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm">
-              W
+              N
             </div>
-            <span className="text-base font-semibold text-sidebar-foreground truncate">Welcomplay ERP</span>
+            <span className="text-base font-semibold text-sidebar-foreground truncate">Nexus ERP</span>
           </a>
         </SidebarMenuButton>
       </SidebarHeader>

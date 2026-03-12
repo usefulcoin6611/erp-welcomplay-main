@@ -123,7 +123,6 @@ export function NavUser({
             aria-label="Open user menu"
           >
             <Avatar className="h-9 w-9 rounded-lg border-2 border-sidebar-border shrink-0">
-              <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm font-medium">
                 {getInitials(user.name)}
               </AvatarFallback>
@@ -150,7 +149,6 @@ export function NavUser({
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex items-start gap-3 px-4 py-3">
               <Avatar className="h-11 w-11 rounded-xl border-2 border-border/80 shrink-0">
-                <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-xl bg-muted text-muted-foreground text-sm font-semibold">
                   {getInitials(user.name)}
                 </AvatarFallback>
