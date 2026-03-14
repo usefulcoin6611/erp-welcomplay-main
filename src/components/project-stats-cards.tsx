@@ -13,47 +13,30 @@ interface StatsCardProps {
   percentage: string
   icon: React.ReactNode
   link?: string
-  bgColor: string
-  textColor: string
 }
 
-const StatCard = ({ title, total, percentage, icon, link, bgColor, textColor }: StatsCardProps) => {
+const StatCard = ({ title, total, percentage, icon, link }: Omit<StatsCardProps, 'bgColor' | 'textColor'>) => {
   const t = useTranslations('projectDashboard.stats')
   
   const cardContent = (
-    <Card className={`relative overflow-hidden border-0 shadow-sm hover:shadow-lg transition-all duration-200 h-full ${bgColor}`}>
-      {/* Background Wave SVG */}
-      <svg 
-        className="absolute bottom-0 right-0 w-full h-[80px]" 
-        viewBox="0 0 135 80" 
-        fill="none"
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path 
-          d="M74.7692 35C27.8769 35 5.38462 65 0 80H135.692V0C134.923 11.6667 121.662 35 74.7692 35Z" 
-          fill="currentColor"
-          className={textColor === 'text-pink-600' ? 'text-pink-400' : textColor === 'text-green-600' ? 'text-green-400' : 'text-orange-400'}
-          opacity="0.4"
-        />
-      </svg>
+    <Card className="relative overflow-hidden border-0 shadow-none transition-all duration-200 h-full bg-white dark:bg-gray-900/50 group/card hover:bg-white/80 dark:hover:bg-gray-900/70">
       
-      <CardContent className="p-5 relative z-10">
+      <CardContent className="p-6 relative z-10">
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-card shadow-sm`}>
+          <div className="flex items-start gap-4 flex-1">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors group-hover/card:bg-primary group-hover/card:text-white">
               {icon}
             </div>
             <div className="flex-1">
-              <h2 className={`text-base font-medium ${textColor} mb-2`}>{title}</h2>
-              <h3 className={`text-xl font-semibold ${textColor}`}>{total}</h3>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 mb-1">{title}</h2>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">{total}</h3>
             </div>
           </div>
           
           <div className="text-right">
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-medium ${textColor}`}>{percentage}%</span>
-              <p className={`text-xs ${textColor} mb-0`}>{t('completed')}</p>
+            <div className="flex flex-col items-end">
+              <span className="text-lg font-black text-gray-900 dark:text-gray-100">{percentage}%</span>
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/70">{t('completed')}</p>
             </div>
           </div>
         </div>
@@ -85,7 +68,7 @@ export function ProjectStatsCards() {
     return (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-[120px] w-full rounded-lg" />
+          <Skeleton key={i} className="h-[120px] w-full rounded-xl border-0 shadow-none" />
         ))}
       </div>
     )
@@ -96,27 +79,21 @@ export function ProjectStatsCards() {
       title: t('totalProjects'),
       total: String(stats.totalProjects),
       percentage: String(stats.projectCompletionPercent),
-      icon: <FileText className="w-6 h-6 text-cyan-500" />,
+      icon: <FileText className="w-6 h-6" />,
       link: "/projects",
-      bgColor: "bg-cyan-50",
-      textColor: "text-cyan-600"
     },
     {
       title: t('totalTasks'),
       total: String(stats.totalTasks),
       percentage: String(stats.taskCompletionPercent),
-      icon: <ClipboardList className="w-6 h-6 text-cyan-500" />,
+      icon: <ClipboardList className="w-6 h-6" />,
       link: "/taskboard",
-      bgColor: "bg-cyan-50",
-      textColor: "text-cyan-600"
     },
     {
       title: t('totalExpense'),
       total: formatCurrency(stats.totalExpense),
       percentage: "0",
-      icon: <DollarSign className="w-6 h-6 text-cyan-500" />,
-      bgColor: "bg-cyan-50",
-      textColor: "text-cyan-600"
+      icon: <DollarSign className="w-6 h-6" />,
     }
   ]
 

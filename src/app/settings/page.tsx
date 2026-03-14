@@ -21,7 +21,7 @@ function SettingsContent() {
   const { user, isLoading } = useAuth()
   const isCompany = user?.type === 'company'
   const tabParam = searchParams.get('tab')
-  
+
   // Validasi tab: hanya user company yang bisa akses settings
   const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program'] // order = Subscription History
   const isValidTab = isCompany && (!tabParam || companyTabs.includes(tabParam))
@@ -104,7 +104,7 @@ function SettingsContent() {
       }
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="overflow-visible">
         <SiteHeader />
         <MainContentWrapper>
           <div className="@container/main flex flex-1 flex-col gap-4 p-4 bg-gray-100">
@@ -117,6 +117,7 @@ function SettingsContent() {
                 defaultTabId={activeTab}
                 activeColor="bg-white dark:bg-gray-700 shadow-xs"
                 onChange={handleTabChange}
+                stickyNav
               />
             ) : null}
           </div>

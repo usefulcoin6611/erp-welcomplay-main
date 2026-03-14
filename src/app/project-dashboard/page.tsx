@@ -27,28 +27,30 @@ export default function ProjectDashboardPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col bg-gray-100">
-          <div className="@container/main flex flex-1 flex-col gap-6 p-6">
+          <div className="@container/main flex flex-1 flex-col gap-8 p-6 lg:p-8">
             {/* Stats Cards */}
             <ProjectStatsCards />
             
             {/* Project Status and Tasks Overview */}
-            <div className="grid gap-6 lg:grid-cols-12">
-              <div className="lg:col-span-4">
+            <div className="grid gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-12 xl:col-span-4">
                 <ProjectStatus />
               </div>
-              <div className="lg:col-span-8">
+              <div className="lg:col-span-12 xl:col-span-8">
                 <TasksOverview />
               </div>
             </div>
 
             {/* Top Due Projects and Timesheet Logged Hours */}
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-8 lg:grid-cols-2">
               <TopDueProjects />
               <TimesheetLoggedHours />
             </div>
 
             {/* Top Due Tasks - Full Width */}
-            <TopDueTasks />
+            <div className="w-full">
+              <TopDueTasks />
+            </div>
           </div>
         </div>
       </SidebarInset>

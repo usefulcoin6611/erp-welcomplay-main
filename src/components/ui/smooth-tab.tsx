@@ -27,6 +27,8 @@ interface SmoothTabProps {
     action?: React.ReactNode;
     onChange?: (tabId: string) => void;
     onTabPreload?: (tabId: string) => void;
+    /** Whether the tab navigation bar should be sticky during scroll */
+    stickyNav?: boolean;
 }
 
 const slideVariants = {
@@ -59,6 +61,7 @@ export function SmoothTab({
     action,
     onChange,
     onTabPreload,
+    stickyNav = false,
 }: SmoothTabProps) {
     const isControlled = typeof value === 'string';
     const [uncontrolled, setUncontrolled] = React.useState<string>(
@@ -126,7 +129,7 @@ export function SmoothTab({
 
         window.addEventListener("resize", handleResize);
         container?.addEventListener("scroll", handleScroll);
-        
+
         return () => {
             clearTimeout(timeoutId);
             clearTimeout(resizeTimeout);
@@ -169,8 +172,8 @@ export function SmoothTab({
         } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
             e.preventDefault();
             const currentIndex = items.findIndex((item) => item.id === selected);
-            const nextIndex = e.key === "ArrowRight" 
-                ? (currentIndex + 1) % items.length 
+            const nextIndex = e.key === "ArrowRight"
+                ? (currentIndex + 1) % items.length
                 : (currentIndex - 1 + items.length) % items.length;
             handleTabClick(items[nextIndex].id);
         }
@@ -184,7 +187,10 @@ export function SmoothTab({
     return (
         <div className="flex flex-col w-full gap-2">
             {/* Tab Navigation + Action inline */}
-            <div className="flex w-full items-center justify-between gap-2">
+            <div className={cn(
+                "flex w-full items-center justify-between gap-2 transition-all duration-200",
+                stickyNav && "sticky top-0 z-40 bg-gray-100/95 dark:bg-gray-800/95 backdrop-blur-md py-2"
+            )}>
                 <div
                     ref={containerRef}
                     role="tablist"
@@ -203,33 +209,33 @@ export function SmoothTab({
                         msOverflowStyle: 'none'
                     }}
                 >
-                {/* Sliding Background */}
-                {dimensions.width > 0 && (
-                    <motion.div
-                        className={cn(
-                            "absolute rounded-lg z-[1] pointer-events-none",
-                            activeColor
-                        )}
-                        initial={false}
-                        animate={{
-                            width: dimensions.width - 8,
-                            x: dimensions.left + 4,
-                            opacity: 1,
-                        }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 35,
-                        }}
-                        style={{ 
-                            height: "calc(100% - 8px)", 
-                            top: "4px",
-                        }}
-                    />
-                )}
+                    {/* Sliding Background */}
+                    {dimensions.width > 0 && (
+                        <motion.div
+                            className={cn(
+                                "absolute rounded-lg z-[1] pointer-events-none",
+                                activeColor
+                            )}
+                            initial={false}
+                            animate={{
+                                width: dimensions.width - 8,
+                                x: dimensions.left + 4,
+                                opacity: 1,
+                            }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 35,
+                            }}
+                            style={{
+                                height: "calc(100% - 8px)",
+                                top: "4px",
+                            }}
+                        />
+                    )}
 
-                {/* Tab Buttons */}
-                {items.map((item) => {
+                    {/* Tab Buttons */}
+                    {items.map((item) => {
                         const isSelected = selected === item.id;
                         return (
                             <motion.button
@@ -291,7 +297,7 @@ export function SmoothTab({
                             duration: 0.3,
                             ease: [0.32, 0.72, 0, 1] as any,
                         }}
-                        className="w-full min-w-0 will-change-transform"
+                        className="w-full min-w-0"
                     >
                         {selectedItem ? (
                             selectedItem.content

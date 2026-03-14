@@ -2745,9 +2745,9 @@ function SystemSettingsContent() {
   )
 
   return (
-    <div className="grid gap-4 xl:grid-cols-12">
-      {/* Vertical Sidebar - col-xl-3 (25%) */}
-      <div className="xl:col-span-3 xl:sticky xl:top-24 self-start max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-none rounded-lg z-10">
+    <div className="grid gap-4 lg:grid-cols-12">
+      {/* Vertical Sidebar - col-lg-3 (25%) */}
+      <div className="lg:col-span-3 lg:sticky lg:top-[60px] self-start max-h-[calc(100vh-80px)] overflow-y-auto scrollbar-none rounded-lg z-10 transition-all duration-200">
         <Card className="h-full rounded-lg">
           <CardContent className="p-2">
             <div className="space-y-1">
@@ -2766,8 +2766,8 @@ function SystemSettingsContent() {
         </Card>
       </div>
 
-      {/* Content Area - col-xl-9 (75%) */}
-      <div className="xl:col-span-9 space-y-4">
+      {/* Content Area - col-lg-9 (75%) */}
+      <div className="lg:col-span-9 space-y-4">
         <div id="brand-settings">
           <BrandSettingsContent />
         </div>

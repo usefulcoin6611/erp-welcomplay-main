@@ -21,37 +21,60 @@ export function TasksOverview() {
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>{t("title")}</span>
-          <span className="text-sm font-normal text-muted-foreground">
+    <Card className="h-full border-0 shadow-none bg-white dark:bg-gray-900/50">
+      <CardHeader className="p-6 pb-3">
+        <CardTitle className="flex items-center justify-between w-full">
+          <span className="text-base font-semibold">{t("title")}</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60 text-right">
             {t("subtitle")}
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Area
-              type="monotone"
-              dataKey="tasks"
-              stroke="#3b82f6"
-              fillOpacity={1}
-              fill="url(#colorTasks)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      <CardContent className="p-6 pt-3">
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
+              <XAxis 
+                dataKey="day" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fontWeight: 500 }}
+                className="text-muted-foreground"
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fontWeight: 500 }}
+                className="text-muted-foreground"
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                  borderRadius: '8px', 
+                  border: '1px solid #e5e7eb',
+                  boxShadow: 'none',
+                  fontSize: '12px'
+                }} 
+              />
+              <Area
+                type="monotone"
+                dataKey="tasks"
+                stroke="#06b6d4"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorTasks)"
+                activeDot={{ r: 4, strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );
