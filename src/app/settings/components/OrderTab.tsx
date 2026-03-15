@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
-import { Search, FileText } from 'lucide-react'
+import { Search, FileText, ArrowLeft } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -16,12 +17,17 @@ import {
 } from '@/components/ui/table'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { PaymentInstructionView } from '@/components/payment/PaymentInstructionView'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
 interface Order {
   id: string
   order_id: string
   name: string
   plan_name: string
+  plan_id: string
   price: number
   status: string
   payment_type: string
@@ -47,14 +53,16 @@ const getStatusLabel = (status: string) => {
 }
 
 export function OrderTab() {
+  const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
-  const [totalRecords, setTotalRecords] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [fetchingInstruction, setFetchingInstruction] = useState<string | null>(null)
 
   const fetchHistory = useCallback(async () => {
     setLoading(true)
@@ -113,9 +121,16 @@ export function OrderTab() {
       maximumFractionDigits: 0,
     }).format(price)
   }
+  const handleViewInstruction = (order: Order) => {
+    if (order.plan_id) {
+       router.push(`/plans/${order.plan_id}/subscribe?orderId=${order.order_id}`)
+    } else {
+       toast.error('Gagal memproses instruksi: Plan ID tidak ditemukan')
+    }
+  }
 
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardHeader>
         <CardTitle>Subscription History</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -188,7 +203,26 @@ export function OrderTab() {
                         <TableCell>{formatDate(order.date)}</TableCell>
                         <TableCell className="text-center">{order.coupon ?? '-'}</TableCell>
                         <TableCell>
-                          {order.receipt ? (
+                          {(order.status === 'Pending' && order.payment_type !== 'Bank Transfer') ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-[10px] h-7 font-bold px-2 flex gap-1"
+                              onClick={() => handleViewInstruction(order)}
+                              disabled={fetchingInstruction === order.order_id}
+                            >
+                              {fetchingInstruction === order.order_id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Lihat Instruksi'}
+                            </Button>
+                          ) : (order.status === 'success' || order.status === 'succeeded' || order.status === 'Approved') ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50 text-[10px] h-7 font-bold px-2 flex gap-1"
+                              onClick={() => handleViewInstruction(order)}
+                            >
+                              <FileText className="h-3 w-3" /> Lihat Receipt
+                            </Button>
+                          ) : order.receipt ? (
                             order.payment_type === 'Manually' ? (
                               <p className="text-xs text-muted-foreground">
                                 Manually plan upgraded by Super Admin

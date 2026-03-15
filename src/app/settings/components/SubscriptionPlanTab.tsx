@@ -117,6 +117,7 @@ export function SubscriptionPlanTab() {
   }, [])
 
   const handleSubscribe = (planId: string) => {
+    if (!planId) return
     router.push(`/plans/${planId}/subscribe`)
   }
 
@@ -148,7 +149,7 @@ export function SubscriptionPlanTab() {
   return (
     <div className="space-y-4">
       {!loading && !error && currentPlanName != null && (
-        <div className="rounded-2xl overflow-hidden shadow-sm bg-white p-5 border border-border/50">
+        <div className="rounded-2xl overflow-hidden bg-white p-5 border border-border/50">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-slate-500 mb-0.5">Current plan</p>
@@ -159,10 +160,6 @@ export function SubscriptionPlanTab() {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 text-green-600 font-medium">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-              Active
-            </div>
           </div>
         </div>
       )}
@@ -170,7 +167,7 @@ export function SubscriptionPlanTab() {
       {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-2xl overflow-hidden shadow-sm bg-white p-6 border border-border/50">
+              <div key={i} className="rounded-2xl overflow-hidden bg-white p-6 border border-border/50">
                 <Skeleton className="h-5 w-20 mb-4" />
                 <Skeleton className="h-8 w-24 mb-2" />
                 <Skeleton className="h-4 w-16 mb-5" />
@@ -210,7 +207,7 @@ export function SubscriptionPlanTab() {
               return (
                 <div
                   key={plan.id}
-                  className={`group relative flex flex-col h-full ${style.card} rounded-2xl overflow-hidden shadow-sm`}
+                  className={`group relative flex flex-col h-full ${style.card} rounded-2xl overflow-hidden`}
                 >
                   <div className="flex flex-col flex-1 p-6">
                     {/* Plan name pill + Active indicator */}
@@ -218,12 +215,6 @@ export function SubscriptionPlanTab() {
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${style.badge}`}>
                         {plan.name}
                       </span>
-                      {isCurrentPlan && (
-                        <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          Active
-                        </div>
-                      )}
                     </div>
 
                     {/* Price */}

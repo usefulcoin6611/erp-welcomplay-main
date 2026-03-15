@@ -76,11 +76,20 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ]);
 
-    const data = orders.map((o) => ({
+    // Fetch plan IDs based on plan names since there's no direct relation
+    const planNames = [...new Set(orders.map((o: any) => o.planName))];
+    const plans = await prisma.plan.findMany({
+      where: { name: { in: planNames } },
+      select: { id: true, name: true }
+    });
+    const planMap = Object.fromEntries(plans.map((p: any) => [p.name, p.id]));
+
+    const data = orders.map((o: any) => ({
       id: o.id,
       order_id: o.orderId,
       name: o.userName,
       plan_name: o.planName,
+      plan_id: planMap[o.planName] || null,
       price: Number(o.price),
       status: o.paymentStatus,
       payment_type: o.paymentType,

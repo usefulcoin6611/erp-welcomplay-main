@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { getRedirectPathByRole } from '@/lib/auth-utils'
-import { hasRouteAccess, getRequiredRoleForRoute, hasRole } from '@/lib/permission-utils'
+import { hasRouteAccess, getRequiredRoleForRoute, hasRole, hasActivePlan, PLAN_EXEMPT_ROUTES } from '@/lib/permission-utils'
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password']
@@ -66,24 +66,53 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     
     // If authenticated and trying to access login page, redirect to appropriate dashboard
     if (isAuthenticated && pathname === '/login' && user) {
-      const redirectPath = getRedirectPathByRole(user.type)
+      // Special case: Company owner without branchId should go to setup-company
+      if (user.type === 'company' && !user.branchId) {
+        router.replace('/setup-company')
+        return
+      }
+
+      const redirectPath = getRedirectPathByRole(user as any)
       redirectingRef.current = true
       redirectingToRef.current = redirectPath
       router.replace(redirectPath)
       timeoutRef.current = setTimeout(() => {
         redirectingRef.current = false
         redirectingToRef.current = null
-      }, 1000) // Increased timeout to prevent race
+      }, 1000)
       return
     }
 
     // If authenticated, check route access based on role
     if (isAuthenticated && user && !isPublicRoute) {
+      // ✅ SETUP REDIRECT: Company without branchId must go to setup-company
+      if (user.type === 'company') {
+        if (!user.branchId && pathname !== '/setup-company') {
+          router.replace('/setup-company')
+          return
+        }
+        if (user.branchId && pathname === '/setup-company') {
+          // If no active plan, go directly to settings instead of flashing dashboard
+          const redirectPath = getRedirectPathByRole(user as any)
+          router.replace(redirectPath)
+          return
+        }
+      }
+
       // Check if user has access to this route
-      const hasAccess = hasRouteAccess(pathname, user.type, user.permissions)
+      const hasAccess = hasRouteAccess(pathname, user)
       
       if (!hasAccess) {
-        const redirectPath = getRedirectPathByRole(user.type)
+        // Special case: if denied due to plan, redirect to subscription settings
+        if (user.type === 'company' && user.branchId && !hasActivePlan(user)) {
+           const exempt = PLAN_EXEMPT_ROUTES.some(r => pathname === r || (r !== '/' && pathname.startsWith(r)))
+           if (!exempt) {
+             router.replace('/settings?tab=subscription-plan')
+             return
+           }
+        }
+
+        const redirectPath = getRedirectPathByRole(user as any)
         redirectingRef.current = true
         redirectingToRef.current = redirectPath
         router.replace(redirectPath)
@@ -97,7 +126,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       // Check route-specific role requirements
       const routeRequiredRole = getRequiredRoleForRoute(pathname)
       if (routeRequiredRole && !hasRole(user.type, routeRequiredRole)) {
-        const redirectPath = getRedirectPathByRole(user.type)
+        const redirectPath = getRedirectPathByRole(user as any)
         redirectingRef.current = true
         redirectingToRef.current = redirectPath
         router.replace(redirectPath)
@@ -142,12 +171,27 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     
     // If authenticated, check route access based on role
     if (isAuthenticated && user && !isPublicRoute) {
+      // ✅ SETUP REDIRECT: Company without branchId must go to setup-company
+      if (user.type === 'company' && !user.branchId && pathname !== '/setup-company') {
+        router.replace('/setup-company')
+        return
+      }
+
       // Check if user has access to this route
-      const hasAccess = hasRouteAccess(pathname, user.type, user.permissions)
+      const hasAccess = hasRouteAccess(pathname, user)
       
       if (!hasAccess) {
+        // Special case: if denied due to plan, redirect to subscription settings
+        if (user.type === 'company' && user.branchId && !hasActivePlan(user)) {
+           const exempt = PLAN_EXEMPT_ROUTES.some(r => pathname === r || (r !== '/' && pathname.startsWith(r)))
+           if (!exempt) {
+             router.replace('/settings?tab=subscription-plan')
+             return
+           }
+        }
+
         // User navigated to unauthorized route - redirect
-        const redirectPath = getRedirectPathByRole(user.type)
+        const redirectPath = getRedirectPathByRole(user as any)
         redirectingRef.current = true
         redirectingToRef.current = redirectPath
         router.replace(redirectPath)
@@ -162,7 +206,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       const routeRequiredRole = getRequiredRoleForRoute(pathname)
       if (routeRequiredRole && !hasRole(user.type, routeRequiredRole)) {
         // User navigated to unauthorized route - redirect
-        const redirectPath = getRedirectPathByRole(user.type)
+        const redirectPath = getRedirectPathByRole(user as any)
         redirectingRef.current = true
         redirectingToRef.current = redirectPath
         router.replace(redirectPath)
@@ -220,6 +264,21 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     )
+  }
+
+  // ✅ PREVENT FLASH: Check route access synchronously before rendering children
+  // This blocks unauthorized pages from rendering while useEffect handles the redirect
+  if (isAuthenticated && user && !isPublicRoute) {
+    const hasAccess = hasRouteAccess(pathname, user)
+    
+    // If no access (e.g. at /dashboard but plan expired), show loader instead of the page
+    if (!hasAccess) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      )
+    }
   }
 
   // ✅ Pastikan public routes selalu render, bahkan jika isLoading=true

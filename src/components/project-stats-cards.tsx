@@ -17,14 +17,13 @@ interface StatsCardProps {
 
 const StatCard = ({ title, total, percentage, icon, link }: Omit<StatsCardProps, 'bgColor' | 'textColor'>) => {
   const t = useTranslations('projectDashboard.stats')
-  
+
   const cardContent = (
-    <Card className="relative overflow-hidden border-0 shadow-none transition-all duration-200 h-full bg-white dark:bg-gray-900/50 group/card hover:bg-white/80 dark:hover:bg-gray-900/70">
-      
-      <CardContent className="p-6 relative z-10">
+    <Card className="relative overflow-hidden border-0 shadow-none transition-all duration-200 h-full bg-white dark:bg-gray-900/50 group/card dark:hover:bg-gray-800/50">
+      <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4 flex-1">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors group-hover/card:bg-primary group-hover/card:text-white">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-all duration-300 group-hover/card:bg-blue-600 group-hover/card:text-white group-hover/card:shadow-blue-500/30">
               {icon}
             </div>
             <div className="flex-1">
@@ -32,10 +31,10 @@ const StatCard = ({ title, total, percentage, icon, link }: Omit<StatsCardProps,
               <h3 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">{total}</h3>
             </div>
           </div>
-          
+
           <div className="text-right">
             <div className="flex flex-col items-end">
-              <span className="text-lg font-black text-gray-900 dark:text-gray-100">{percentage}%</span>
+              <span className="text-lg font-black text-blue-600 dark:text-blue-400">{percentage}%</span>
               <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/70">{t('completed')}</p>
             </div>
           </div>

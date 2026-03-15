@@ -186,7 +186,7 @@ function BrandSettingsContent() {
   ]
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Brand Settings</CardTitle>
       </CardHeader>
@@ -599,7 +599,7 @@ function EmailSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Email Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -844,7 +844,7 @@ function PaymentSettingsContent() {
   return (
     <div className="space-y-6">
       {isSuperAdmin && (
-        <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+        <Card className="rounded-lg shadow-none">
           <CardHeader className="px-6 py-4 rounded-t-lg">
             <CardTitle className="text-base font-medium leading-none">Subscription Payment Settings</CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -1074,7 +1074,7 @@ function PaymentSettingsContent() {
       )
       }
 
-      <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+      <Card className="rounded-lg shadow-none">
         <CardHeader className="px-6 py-4 rounded-t-lg">
           <CardTitle className="text-base font-medium leading-none">Company Payment Gateway Settings</CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -1259,7 +1259,7 @@ function PusherSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Pusher Settings</CardTitle>
       </CardHeader>
@@ -1342,7 +1342,7 @@ function ReCaptchaSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 !flex !flex-row !items-start !justify-between">
         <div>
           <CardTitle className="text-base font-medium leading-none">ReCaptcha Settings</CardTitle>
@@ -1456,7 +1456,7 @@ function StorageSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Storage Settings</CardTitle>
       </CardHeader>
@@ -1814,7 +1814,7 @@ function SEOSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">SEO Settings</CardTitle>
       </CardHeader>
@@ -1904,7 +1904,7 @@ function CookieSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 !flex !flex-row !items-center !justify-between">
         <CardTitle className="text-base font-medium leading-none">Cookie Settings</CardTitle>
         <div className="flex items-center gap-2">
@@ -2062,7 +2062,7 @@ function CacheSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Cache Settings</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -2115,7 +2115,7 @@ function ChatGPTSettingsContent() {
   }
 
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">Chat GPT Settings</CardTitle>
       </CardHeader>
@@ -2174,7 +2174,7 @@ type SectionCardProps = {
 
 function SectionCard({ title, description, children }: SectionCardProps) {
   return (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">{title}</CardTitle>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
@@ -2734,7 +2734,7 @@ function SystemSettingsContent() {
   ]
 
   const PlaceholderSection = ({ title }: { title: string }) => (
-    <Card className="rounded-lg shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]">
+    <Card className="rounded-lg shadow-none">
       <CardHeader className="px-6 py-4 rounded-t-lg">
         <CardTitle className="text-base font-medium leading-none">{title}</CardTitle>
       </CardHeader>

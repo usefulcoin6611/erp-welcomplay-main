@@ -14,6 +14,9 @@ export interface User {
   permissions?: string[] | null
   /** Access profile display name when assigned. */
   accessProfileName?: string | null
+  plan?: string | null
+  planExpireDate?: Date | string | null
+  isActive?: boolean
   created_at?: string
   updated_at?: string
 }
@@ -54,6 +57,9 @@ export const authService = {
       avatar: data.user.image || undefined,
       branchId: (data.user as any).branchId,
       departmentId: (data.user as any).departmentId,
+      plan: (data.user as any).plan,
+      planExpireDate: (data.user as any).planExpireDate,
+      isActive: (data.user as any).isActive,
     };
 
     if (typeof window !== 'undefined') {
@@ -91,6 +97,9 @@ export const authService = {
       avatar: session.user.image || undefined,
       branchId: (session.user as any).branchId,
       departmentId: (session.user as any).departmentId,
+      plan: (session.user as any).plan,
+      planExpireDate: (session.user as any).planExpireDate,
+      isActive: (session.user as any).isActive,
     };
 
     if (typeof window !== 'undefined') {

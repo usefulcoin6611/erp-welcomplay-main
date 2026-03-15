@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-const globalForPrisma = global as unknown as { prisma?: PrismaClient };
+const globalForPrisma = global as unknown as { prisma?: InstanceType<typeof PrismaClient> };
 
 const connectionString =
   process.env.DATABASE_URL ??
@@ -18,7 +18,7 @@ function createPrismaClient() {
 }
 
 // Invalidate cached client if it lacks new models (schema was updated)
-const requiredModels = ["leaveRequest", "employeeAllowance", "hrmAward", "source"];
+const requiredModels = ["leaveRequest", "employeeAllowance", "hrmAward", "source", "branch"];
 if (globalForPrisma.prisma) {
   const missing = requiredModels.filter((m) => !(m in (globalForPrisma.prisma as any)));
   if (missing.length > 0) {
@@ -37,3 +37,4 @@ if (
 }
 
 export const prisma = globalForPrisma.prisma;
+

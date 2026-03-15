@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { useProjectDashboard } from "@/contexts/project-dashboard-context"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Search } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
 
 const statusLabelMap: Record<string, string> = {
   on_going: 'In Progress',
@@ -38,7 +39,7 @@ export function TopDueProjects() {
   
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
-
+  const [search, setSearch] = useState('')
   const allProjects = data.topDueProjects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -48,9 +49,14 @@ export function TopDueProjects() {
     statusLabel: statusLabelMap[p.status] ?? p.status,
   }))
 
-  const totalPages = Math.ceil(allProjects.length / pageSize)
+  const filteredProjects = allProjects.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.statusLabel.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totalPages = Math.ceil(filteredProjects.length / pageSize)
   const startIndex = (currentPage - 1) * pageSize
-  const projects = allProjects.slice(startIndex, startIndex + pageSize)
+  const projects = filteredProjects.slice(startIndex, startIndex + pageSize)
 
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, string> = {
@@ -75,8 +81,20 @@ export function TopDueProjects() {
 
   return (
     <Card className="border-0 shadow-none bg-white dark:bg-gray-900/50 flex flex-col h-full">
-      <CardHeader className="p-6 pb-3">
+      <CardHeader className="p-6 pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base font-semibold">{t('title')}</CardTitle>
+        <div className="relative w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+          <Input 
+            placeholder="Search projects..." 
+            className="pl-9 h-9 rounded-full border-0 bg-muted/40 shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setCurrentPage(1)
+            }}
+          />
+        </div>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col">
         <div className="px-6 flex-1">
@@ -125,29 +143,8 @@ export function TopDueProjects() {
         {/* Pagination Controls */}
         <div className="p-6 pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Rows per page</span>
-              <Select
-                value={String(pageSize)}
-                onValueChange={(val) => {
-                  setPageSize(Number(val))
-                  setCurrentPage(1)
-                }}
-              >
-                <SelectTrigger className="h-8 w-[70px] text-[10px] font-bold border-0 bg-muted/30 shadow-none focus:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border shadow-none">
-                  {[5, 10, 20, 50].map((size) => (
-                    <SelectItem key={size} value={String(size)} className="text-[10px] font-bold">
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {startIndex + 1}-{Math.min(startIndex + pageSize, allProjects.length)} OF {allProjects.length}
+              {filteredProjects.length > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + pageSize, filteredProjects.length)} OF {filteredProjects.length}
             </span>
           </div>
 

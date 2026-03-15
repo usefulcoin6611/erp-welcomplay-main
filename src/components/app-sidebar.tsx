@@ -18,6 +18,7 @@ import { NavUser } from "@/components/nav-user"
 import { useAuth } from '@/contexts/auth-context'
 import { getMenuByRole, filterMenuByPermissions } from '@/lib/menu-config'
 import type { MenuItem } from '@/lib/menu-config'
+import { hasRouteAccess } from '@/lib/permission-utils'
 
 function filterMenuByQuery(items: MenuItem[], query: string): MenuItem[] {
   const q = query.trim().toLowerCase()
@@ -106,9 +107,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     } else {
       navMain = menuByRole.navMain
     }
+
+    // Filter by plan access for all roles (Soft Locking in UI)
+    const filterByPlan = (items: MenuItem[]): MenuItem[] => {
+      return (items || [])
+        .map(item => {
+           // If item has children, filter children first
+           if (item.items?.length) {
+             const filteredChildren = filterByPlan(item.items)
+             // If all children hidden, check if the parent itself has a URL we can check
+             if (filteredChildren.length === 0 && item.url === '#') return null
+             return { ...item, items: filteredChildren }
+           }
+           
+           // Check access for direct URL
+           if (item.url && item.url !== '#') {
+             if (!hasRouteAccess(item.url, user as any)) return null
+           }
+           
+           return item
+        })
+        .filter((item): item is MenuItem => item !== null)
+    }
+
+    navMain = filterByPlan(navMain)
     navMain = injectBadgeIntoItems(navMain, '/messenger', messengerUnreadCount)
     return { ...menuByRole, navMain }
-  }, [user?.type, user?.permissions, menuByRole, messengerUnreadCount])
+  }, [user, user?.type, user?.permissions, user?.plan, user?.planExpireDate, menuByRole, messengerUnreadCount])
 
   const filteredNavMain = React.useMemo(
     () => filterMenuByQuery(menuData.navMain, sidebarSearchQuery),

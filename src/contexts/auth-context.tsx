@@ -18,6 +18,9 @@ export interface User {
   permissions?: string[] | null
   /** Access profile display name when assigned. */
   accessProfileName?: string | null
+  plan?: string | null
+  planExpireDate?: Date | string | null
+  isActive?: boolean
   created_at?: string
   updated_at?: string
 }
@@ -28,7 +31,7 @@ interface AuthContextType {
   isLoading: boolean
   login: (credentials: LoginCredentials) => Promise<LoginResponse>
   logout: () => Promise<void>
-  refreshUser: () => Promise<void>
+  refreshUser: () => Promise<User | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -186,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * Refresh user data from API (including access profile permissions for employee/company)
    */
-  const refreshUser = useCallback(async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<User | null> => {
     try {
       const userData = await authService.getCurrentUser()
       if (userData) {
@@ -196,12 +199,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           nextUser = { ...userData, permissions: permissions ?? null, accessProfileName: accessProfileName ?? null }
         }
         setUser(nextUser)
+        return nextUser
       } else {
         await logout()
+        return null
       }
     } catch (error) {
       console.error('Refresh user error:', error)
       await logout()
+      return null
     }
   }, [logout])
 

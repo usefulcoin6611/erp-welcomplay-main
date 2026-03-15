@@ -7,120 +7,120 @@ datasource db {
 }
 
 model User {
-  id               String      @id @default(cuid())
-  name             String?
-  email            String      @unique
-  emailVerified    Boolean     @default(false)
-  image            String?
-  password         String?
-  role             String      @default("employee")
-  branchId         String?
-  departmentId     String?
-  accessProfileId  String?
-  plan             String?     // Subscription plan name (for company role)
-  planExpireDate   DateTime?   // Plan expiry date
-  isActive         Boolean     @default(true)
-  isEnableLogin    Boolean     @default(true)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  accounts         Account[]
-  createdContracts Contract[]
-  createdCustomers Customer[]  @relation("CreatedBy")
-  accessProfile    AccessProfile? @relation(fields: [accessProfileId], references: [id], onDelete: SetNull)
-  employee         Employee?
-  createdLeads     Lead[]      @relation("LeadCreatedBy")
-  ownedLeads       Lead[]      @relation("LeadOwner")
-  sessions         Session[]
-  loginDetails     LoginDetail[]
-  branch           Branch?     @relation(fields: [branchId], references: [id])
-  department       Department? @relation(fields: [departmentId], references: [id])
-  createdVendors   Vendor[]
-  createdSupportTickets SupportTicket[] @relation("SupportCreatedBy")
-  assignedSupportTickets SupportTicket[] @relation("SupportAssignedTo")
-  supportReplies   SupportReply[]
-  orders           Order[]
-  conversationParticipants ConversationParticipant[]
-  messagesSent    Message[]
-  zoomMeetingsCreated ZoomMeeting[] @relation("ZoomMeetingCreatedBy")
+  id                        String                    @id @default(cuid())
+  name                      String?
+  email                     String                    @unique
+  emailVerified             Boolean                   @default(false)
+  image                     String?
+  password                  String?
+  role                      String                    @default("employee")
+  branchId                  String?
+  departmentId              String?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  accessProfileId           String?
+  plan                      String?
+  planExpireDate            DateTime?
+  isActive                  Boolean                   @default(true)
+  isEnableLogin             Boolean                   @default(true)
+  accounts                  Account[]
+  createdContracts          Contract[]
+  conversationParticipants  ConversationParticipant[]
+  createdCustomers          Customer[]                @relation("CreatedBy")
+  employee                  Employee?
+  createdLeads              Lead[]                    @relation("LeadCreatedBy")
+  ownedLeads                Lead[]                    @relation("LeadOwner")
+  loginDetails              LoginDetail[]
+  messagesSent              Message[]
+  orders                    Order[]
+  sessions                  Session[]
+  supportReplies            SupportReply[]
+  assignedSupportTickets    SupportTicket[]           @relation("SupportAssignedTo")
+  createdSupportTickets     SupportTicket[]           @relation("SupportCreatedBy")
+  accessProfile             AccessProfile?            @relation(fields: [accessProfileId], references: [id])
+  branch                    Branch?                   @relation(fields: [branchId], references: [id])
+  department                Department?               @relation(fields: [departmentId], references: [id])
+  createdVendors            Vendor[]
+  zoomMeetingsCreated       ZoomMeeting[]             @relation("ZoomMeetingCreatedBy")
   zoomMeetingParticipations ZoomMeetingParticipant[]
 
   @@map("user")
 }
 
 model SupportTicket {
-  id          String    @id @default(cuid())
-  ticketCode  String    @unique
-  subject     String
-  description String?
-  attachment  String?
-  status      String    @default("Open") // Open, On Hold, Close
-  priority    String    @default("Medium") // Low, Medium, High, Critical
-  endDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  createdById String
+  id           String         @id @default(cuid())
+  ticketCode   String         @unique
+  subject      String
+  description  String?
+  attachment   String?
+  status       String         @default("Open")
+  priority     String         @default("Medium")
+  endDate      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdById  String
   assignUserId String?
-  createdBy   User      @relation("SupportCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  assignUser  User?     @relation("SupportAssignedTo", fields: [assignUserId], references: [id], onDelete: SetNull)
-  replies     SupportReply[]
+  replies      SupportReply[]
+  assignUser   User?          @relation("SupportAssignedTo", fields: [assignUserId], references: [id])
+  createdBy    User           @relation("SupportCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@map("support_ticket")
 }
 
 model SupportReply {
-  id             String        @id @default(cuid())
-  message        String
-  createdAt      DateTime      @default(now())
+  id              String        @id @default(cuid())
+  message         String
+  createdAt       DateTime      @default(now())
   supportTicketId String
-  userId         String
-  supportTicket  SupportTicket @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  supportTicket   SupportTicket @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("support_reply")
 }
 
 /// Messenger: 1:1 conversations between users.
 model Conversation {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String                    @id @default(cuid())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
   participants ConversationParticipant[]
-  messages  Message[]
+  messages     Message[]
 
   @@map("conversation")
 }
 
 model ConversationParticipant {
-  id                 String    @id @default(cuid())
-  conversationId     String
-  userId             String
-  joinedAt           DateTime  @default(now())
-  lastSeenMessageId  String?
-  lastSeenAt         DateTime?
-  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lastSeenMessage    Message?     @relation("LastSeenMessage", fields: [lastSeenMessageId], references: [id], onDelete: SetNull)
+  id                String       @id @default(cuid())
+  conversationId    String
+  userId            String
+  joinedAt          DateTime     @default(now())
+  lastSeenMessageId String?
+  lastSeenAt        DateTime?
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lastSeenMessage   Message?     @relation("LastSeenMessage", fields: [lastSeenMessageId], references: [id])
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
-  @@map("conversation_participant")
   @@index([userId])
   @@index([conversationId])
+  @@map("conversation_participant")
 }
 
 model Message {
-  id             String       @id @default(cuid())
+  id             String                    @id @default(cuid())
   conversationId String
   senderId       String
-  content        String       @default("")
-  createdAt      DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String                    @default("")
+  createdAt      DateTime                  @default(now())
   lastSeenBy     ConversationParticipant[] @relation("LastSeenMessage")
+  conversation   Conversation              @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User                      @relation(fields: [senderId], references: [id], onDelete: Cascade)
   attachments    MessageAttachment[]
 
-  @@map("message")
   @@index([conversationId])
   @@index([senderId])
+  @@map("message")
 }
 
 model MessageAttachment {
@@ -132,8 +132,8 @@ model MessageAttachment {
   fileSize  Int?
   message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
-  @@map("message_attachment")
   @@index([messageId])
+  @@map("message_attachment")
 }
 
 /// Access profile per branch: name + permission set. Assignable to users (User.accessProfileId).
@@ -142,47 +142,52 @@ model AccessProfile {
   id          String   @id @default(cuid())
   name        String
   branchId    String
-  permissions Json     @default("[]") // array of permission strings (REFERENCE_PERMISSIONS)
+  permissions Json     @default("[]")
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   users       User[]
 
-  @@map("access_profile")
   @@index([branchId])
+  @@map("access_profile")
 }
 
 model Branch {
-  id              String           @id @default(cuid())
-  name            String
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  bankAccounts    BankAccount[]
-  bankTransfers   BankTransfer[]
-  bill            Bill[]
-  budgetPlans     BudgetPlan[]
-  categories      Category[]
-  chartOfAccounts ChartOfAccount[]
-  warehouses          Warehouse[]
-  posOrders           PosOrder[]
-  barcodeSettings     BarcodeSetting[]
-  warehouseTransfers  WarehouseTransfer[]
-  customers       Customer[]
-  deals           Deal[]
-  departments     Department[]
-  expenses        Expense[]
-  financialGoals  FinancialGoal[]
-  jobs            Job[]
-  journalEntries  JournalEntry[]
-  leads           Lead[]
-  payments        Payment[]
-  pipelines       Pipeline[]
-  products        Product[]
-  accessProfiles  AccessProfile[]
-  users           User[]
-  vendors         Vendor[]
-  sources         Source[]
+  id                 String              @id @default(cuid())
+  name               String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  address            String?
+  email              String?
+  logo               String?
+  phone              String?
+  website            String?
+  accessProfiles     AccessProfile[]
+  bankAccounts       BankAccount[]
+  bankTransfers      BankTransfer[]
+  barcodeSettings    BarcodeSetting[]
+  bill               Bill[]
+  budgetPlans        BudgetPlan[]
+  categories         Category[]
+  chartOfAccounts    ChartOfAccount[]
+  customers          Customer[]
+  deals              Deal[]
+  departments        Department[]
+  expenses           Expense[]
+  financialGoals     FinancialGoal[]
+  jobs               Job[]
+  journalEntries     JournalEntry[]
+  leads              Lead[]
+  payments           Payment[]
+  pipelines          Pipeline[]
+  posOrders          PosOrder[]
+  products           Product[]
+  sources            Source[]
+  users              User[]
+  vendors            Vendor[]
+  warehouses         Warehouse[]
+  warehouseTransfers WarehouseTransfer[]
 
   @@map("branch")
 }
@@ -201,46 +206,44 @@ model Department {
 }
 
 model Designation {
-  id             String        @id @default(cuid())
-  name           String
-  departmentId   String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  department     Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  hrmPromotions  HrmPromotion[]
+  id            String         @id @default(cuid())
+  name          String
+  departmentId  String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  department    Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  hrmPromotions HrmPromotion[]
 
   @@map("designation")
 }
 
 model LeaveType {
-  id          String   @id @default(cuid())
-  name        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  daysPerYear Int      @default(0)
-
+  id            String         @id @default(cuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  daysPerYear   Int            @default(0)
   leaveRequests LeaveRequest[]
 
   @@map("leave_type")
 }
 
 model LeaveRequest {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   employeeId  String
   leaveTypeId String
   startDate   DateTime
   endDate     DateTime
   reason      String?
-  status      String   @default("Pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("Pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
 
-  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  leaveType  LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
-
-  @@map("leave_request")
   @@index([employeeId])
   @@index([leaveTypeId])
+  @@map("leave_request")
 }
 
 model DocumentType {
@@ -264,27 +267,27 @@ model PayslipType {
 }
 
 model Payslip {
-  id                  String      @id @default(cuid())
+  id                  String       @id @default(cuid())
   employeeId          String
-  salaryMonth         String      // YYYY-MM
-  basicSalary         Float       @default(0)
-  allowance           Float       @default(0)
-  commission          Float       @default(0)
-  loan                Float       @default(0)
-  saturationDeduction Float      @default(0)
-  otherPayment       Float       @default(0)
-  overtime            Float       @default(0)
-  netSalary           Float       @default(0)
-  status              Int         @default(0) // 0 = Unpaid, 1 = Paid
+  salaryMonth         String
+  basicSalary         Float        @default(0)
+  allowance           Float        @default(0)
+  commission          Float        @default(0)
+  loan                Float        @default(0)
+  saturationDeduction Float        @default(0)
+  otherPayment        Float        @default(0)
+  overtime            Float        @default(0)
+  netSalary           Float        @default(0)
+  status              Int          @default(0)
   payslipTypeId       String?
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
-  employee            Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  payslipType         PayslipType? @relation(fields: [payslipTypeId], references: [id], onDelete: SetNull)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  employee            Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payslipType         PayslipType? @relation(fields: [payslipTypeId], references: [id])
 
-  @@map("payslip")
   @@index([employeeId])
   @@index([salaryMonth])
+  @@map("payslip")
 }
 
 model GoalType {
@@ -298,11 +301,10 @@ model GoalType {
 }
 
 model TrainingType {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   trainings Training[]
 
   @@map("training_type")
@@ -310,67 +312,63 @@ model TrainingType {
 
 /// Master data Trainer untuk modul Training HRM.
 model Trainer {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   branch    String
   firstName String
   lastName  String
   contact   String
-  email     String   @unique
+  email     String     @unique
   expertise String?
   address   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  trainings Training[]
 
   @@map("trainer")
-
-  trainings Training[]
 }
 
 /// Jadwal Training per karyawan.
 model Training {
-  id            String   @id @default(cuid())
-  branch        String
-  trainerOption String   // Internal | External
+  id             String       @id @default(cuid())
+  branch         String
+  trainerOption  String
   trainingTypeId String
-  employeeId    String
-  trainerId     String
-  status        String   @default("Pending") // Pending, Started, Completed, Terminated
-  startDate     DateTime
-  endDate       DateTime
-  cost          Float    @default(0)
-  description   String?
-  performance   String?  // Not Concluded, Satisfactory, Average, Poor, Excellent
-  remarks       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  employeeId     String
+  trainerId      String
+  status         String       @default("Pending")
+  startDate      DateTime
+  endDate        DateTime
+  cost           Float        @default(0)
+  description    String?
+  performance    String?
+  remarks        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  employee       Employee     @relation(fields: [employeeId], references: [id])
+  trainer        Trainer      @relation(fields: [trainerId], references: [id])
+  trainingType   TrainingType @relation(fields: [trainingTypeId], references: [id])
 
-  trainingType TrainingType @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
-  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  trainer      Trainer      @relation(fields: [trainerId], references: [id], onDelete: Restrict)
-
-  @@map("training")
   @@index([trainingTypeId])
   @@index([employeeId])
   @@index([trainerId])
+  @@map("training")
 }
 
 model AwardType {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   awards    HrmAward[]
 
   @@map("award_type")
 }
 
 model TerminationType {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id           String           @id @default(cuid())
+  name         String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   terminations HrmTermination[]
 
   @@map("termination_type")
@@ -378,38 +376,36 @@ model TerminationType {
 
 /// HR Admin: Award records
 model HrmAward {
-  id            String   @id @default(cuid())
-  employeeId    String
-  awardTypeId   String
-  date          DateTime
-  gift          String
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  employeeId  String
+  awardTypeId String
+  date        DateTime
+  gift        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  awardType   AwardType @relation(fields: [awardTypeId], references: [id])
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  awardType  AwardType  @relation(fields: [awardTypeId], references: [id], onDelete: Restrict)
-
-  @@map("hrm_award")
   @@index([employeeId])
   @@index([awardTypeId])
+  @@map("hrm_award")
 }
 
 /// HR Admin: Transfer records
 model HrmTransfer {
-  id            String   @id @default(cuid())
-  employeeId    String
-  branch        String
-  department    String
-  transferDate  DateTime
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  employeeId   String
+  branch       String
+  department   String
+  transferDate DateTime
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("hrm_transfer")
   @@index([employeeId])
+  @@map("hrm_transfer")
 }
 
 /// HR Admin: Resignation records
@@ -421,11 +417,10 @@ model HrmResignation {
   reason          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("hrm_resignation")
   @@index([employeeId])
+  @@map("hrm_resignation")
 }
 
 /// HR Admin: Travel/Trip records
@@ -439,50 +434,47 @@ model HrmTravel {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("hrm_travel")
   @@index([employeeId])
+  @@map("hrm_travel")
 }
 
 /// HR Admin: Promotion records
 model HrmPromotion {
-  id             String    @id @default(cuid())
-  employeeId     String
-  designationId  String?
-  title          String
-  promotionDate  DateTime
-  description    String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String       @id @default(cuid())
+  employeeId    String
+  title         String
+  promotionDate DateTime
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  designationId String?
+  designation   Designation? @relation(fields: [designationId], references: [id])
+  employee      Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  designation  Designation? @relation(fields: [designationId], references: [id], onDelete: SetNull)
-
-  @@map("hrm_promotion")
   @@index([employeeId])
   @@index([designationId])
+  @@map("hrm_promotion")
 }
 
 /// HR Admin: Complaint records
 model HrmComplaint {
-  id               String   @id @default(cuid())
-  employeeFromId   String
+  id                 String   @id @default(cuid())
+  employeeFromId     String
   complaintAgainstId String
-  title            String
-  date             DateTime
-  description      String?
-  status           String   @default("Pending") // Pending, In Progress, Resolved
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  title              String
+  date               DateTime
+  description        String?
+  status             String   @default("Pending")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  complaintAgainst   Employee @relation("ComplaintAgainst", fields: [complaintAgainstId], references: [id], onDelete: Cascade)
+  employeeFrom       Employee @relation("ComplaintFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
 
-  employeeFrom      Employee @relation("ComplaintFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
-  complaintAgainst  Employee @relation("ComplaintAgainst", fields: [complaintAgainstId], references: [id], onDelete: Cascade)
-
-  @@map("hrm_complaint")
   @@index([employeeFromId])
   @@index([complaintAgainstId])
+  @@map("hrm_complaint")
 }
 
 /// HR Admin: Warning records
@@ -495,105 +487,100 @@ model HrmWarning {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  employee    Employee @relation("WarningEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  warningBy   Employee @relation("WarningBy", fields: [warningById], references: [id], onDelete: Cascade)
 
-  employee   Employee @relation("WarningEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
-  warningBy  Employee @relation("WarningBy", fields: [warningById], references: [id], onDelete: Cascade)
-
-  @@map("hrm_warning")
   @@index([employeeId])
   @@index([warningById])
+  @@map("hrm_warning")
 }
 
 /// HR Admin: Termination records
 model HrmTermination {
-  id               String   @id @default(cuid())
-  employeeId       String
+  id                String          @id @default(cuid())
+  employeeId        String
   terminationTypeId String
-  noticeDate       DateTime
-  terminationDate  DateTime
-  description      String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  noticeDate        DateTime
+  terminationDate   DateTime
+  description       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  employee          Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  terminationType   TerminationType @relation(fields: [terminationTypeId], references: [id])
 
-  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  terminationType TerminationType @relation(fields: [terminationTypeId], references: [id], onDelete: Restrict)
-
-  @@map("hrm_termination")
   @@index([employeeId])
   @@index([terminationTypeId])
+  @@map("hrm_termination")
 }
 
 /// HR Admin: Announcement records
 model HrmAnnouncement {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   branch      String
   department  String
-  employeeId  String?
   startDate   DateTime
   endDate     DateTime
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  employeeId  String?
+  employee    Employee? @relation(fields: [employeeId], references: [id])
 
-  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-
-  @@map("hrm_announcement")
   @@index([employeeId])
+  @@map("hrm_announcement")
 }
 
 /// HR Admin: Holiday records. DB still has legacy "date" column (NOT NULL) from initial migration.
 model HrmHoliday {
   id          String   @id @default(cuid())
   name        String
-  date        DateTime // legacy column kept for DB compatibility; use startDate/endDate for range
-  startDate   DateTime
-  endDate     DateTime
+  date        DateTime
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  startDate   DateTime
+  endDate     DateTime
 
   @@map("hrm_holiday")
 }
 
 /// HR: Company event records
 model HrmEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   branch      String
   department  String
   employeeId  String?
   startDate   DateTime
   endDate     DateTime
-  color       String   @default("blue")
+  color       String    @default("blue")
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  employee    Employee? @relation(fields: [employeeId], references: [id])
 
-  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-
-  @@map("hrm_event")
   @@index([employeeId])
+  @@map("hrm_event")
 }
 
 model HrmMeeting {
-  id           String   @id @default(cuid())
-  title        String
-  branch        String
-  department    String
-  employeeId    String
-  meetingDate   DateTime
-  meetingTime   String
-  note         String?
-  status       String   @default("Scheduled")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  branch      String
+  department  String
+  employeeId  String
+  meetingDate DateTime
+  meetingTime String
+  note        String?
+  status      String   @default("Scheduled")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("hrm_meeting")
   @@index([employeeId])
   @@index([meetingDate])
+  @@map("hrm_meeting")
 }
 
 model JobCategory {
@@ -816,16 +803,16 @@ model Attendance {
   employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, date])
-  @@map("attendance")
   @@index([employeeId])
   @@index([date])
+  @@map("attendance")
 }
 
 model Employee {
-  id                    String                 @id @default(cuid())
-  employeeId            String                 @unique
+  id                    String                        @id @default(cuid())
+  employeeId            String                        @unique
   name                  String
-  email                 String                 @unique
+  email                 String                        @unique
   phone                 String
   dateOfBirth           DateTime
   gender                String
@@ -835,7 +822,7 @@ model Employee {
   designation           String
   dateOfJoining         DateTime
   lastLogin             DateTime?
-  isActive              Boolean                @default(true)
+  isActive              Boolean                       @default(true)
   salaryType            String?
   basicSalary           Float?
   documentsCertificate  String?
@@ -846,66 +833,65 @@ model Employee {
   bankIdentifierCode    String?
   branchLocation        String?
   taxPayerId            String?
-  userId                String?                @unique
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  user                     User?                        @relation(fields: [userId], references: [id])
-  onboarding               JobOnboarding?
-  performanceAppraisals    PerformanceAppraisal[]
-  trainings                Training[]
-  leaveRequests            LeaveRequest[]
-  allowances               EmployeeAllowance[]
-  commissions              EmployeeCommission[]
-  loans                    EmployeeLoan[]
-  saturationDeductions     EmployeeSaturationDeduction[]
-  otherPayments            EmployeeOtherPayment[]
-  overtimes                EmployeeOvertime[]
-  hrmAwards                HrmAward[]
-  hrmTransfers             HrmTransfer[]
-  hrmResignations          HrmResignation[]
-  hrmTravels               HrmTravel[]
-  hrmPromotions            HrmPromotion[]
-  hrmEvents                HrmEvent[]
-  hrmMeetings              HrmMeeting[]
-  hrmAnnouncements         HrmAnnouncement[]
-  complaintsFrom           HrmComplaint[]  @relation("ComplaintFrom")
-  complaintsAgainst        HrmComplaint[]  @relation("ComplaintAgainst")
-  warningsReceived         HrmWarning[]     @relation("WarningEmployee")
-  warningsGiven            HrmWarning[]    @relation("WarningBy")
-  hrmTerminations          HrmTermination[]
-  payslips                 Payslip[]
-  attendances              Attendance[]
+  userId                String?                       @unique
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  attendances           Attendance[]
+  user                  User?                         @relation(fields: [userId], references: [id])
+  allowances            EmployeeAllowance[]
+  commissions           EmployeeCommission[]
+  loans                 EmployeeLoan[]
+  otherPayments         EmployeeOtherPayment[]
+  overtimes             EmployeeOvertime[]
+  saturationDeductions  EmployeeSaturationDeduction[]
+  hrmAnnouncements      HrmAnnouncement[]
+  hrm_asset_employees   hrm_asset_employees[]
+  hrmAwards             HrmAward[]
+  complaintsAgainst     HrmComplaint[]                @relation("ComplaintAgainst")
+  complaintsFrom        HrmComplaint[]                @relation("ComplaintFrom")
+  hrmEvents             HrmEvent[]
+  hrmMeetings           HrmMeeting[]
+  hrmPromotions         HrmPromotion[]
+  hrmResignations       HrmResignation[]
+  hrmTerminations       HrmTermination[]
+  hrmTransfers          HrmTransfer[]
+  hrmTravels            HrmTravel[]
+  warningsReceived      HrmWarning[]                  @relation("WarningEmployee")
+  warningsGiven         HrmWarning[]                  @relation("WarningBy")
+  onboarding            JobOnboarding?
+  leaveRequests         LeaveRequest[]
+  payslips              Payslip[]
+  performanceAppraisals PerformanceAppraisal[]
+  trainings             Training[]
 
   @@map("employee")
 }
 
 model AllowanceOption {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   employeeAllowances EmployeeAllowance[]
 
   @@map("allowance_option")
 }
 
 model EmployeeAllowance {
-  id                String   @id @default(cuid())
+  id                String          @id @default(cuid())
   employeeId        String
   allowanceOptionId String
   title             String
-  amount            Float    @default(0)
-  type              String   @default("Fixed")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  amount            Float           @default(0)
+  type              String          @default("Fixed")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  allowanceOption   AllowanceOption @relation(fields: [allowanceOptionId], references: [id])
+  employee          Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  allowanceOption AllowanceOption @relation(fields: [allowanceOptionId], references: [id], onDelete: Restrict)
-
-  @@map("employee_allowance")
   @@index([employeeId])
+  @@map("employee_allowance")
 }
 
 model EmployeeCommission {
@@ -916,71 +902,66 @@ model EmployeeCommission {
   type       String   @default("Fixed")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("employee_commission")
   @@index([employeeId])
+  @@map("employee_commission")
 }
 
 model LoanOption {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   employeeLoans EmployeeLoan[]
 
   @@map("loan_option")
 }
 
 model EmployeeLoan {
-  id          String    @id @default(cuid())
-  employeeId  String
+  id           String     @id @default(cuid())
+  employeeId   String
   loanOptionId String
-  title       String
-  amount      Float     @default(0)
-  startDate   DateTime
-  endDate     DateTime
-  reason      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  title        String
+  amount       Float      @default(0)
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  employee     Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  loanOption   LoanOption @relation(fields: [loanOptionId], references: [id])
 
-  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  loanOption LoanOption @relation(fields: [loanOptionId], references: [id], onDelete: Restrict)
-
-  @@map("employee_loan")
   @@index([employeeId])
+  @@map("employee_loan")
 }
 
 model DeductionOption {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id                           String                        @id @default(cuid())
+  name                         String
+  description                  String?
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
   employeeSaturationDeductions EmployeeSaturationDeduction[]
 
   @@map("deduction_option")
 }
 
 model EmployeeSaturationDeduction {
-  id                String   @id @default(cuid())
+  id                String          @id @default(cuid())
   employeeId        String
   deductionOptionId String
   title             String
-  amount            Float    @default(0)
-  type              String   @default("Fixed")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  amount            Float           @default(0)
+  type              String          @default("Fixed")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deductionOption   DeductionOption @relation(fields: [deductionOptionId], references: [id])
+  employee          Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  deductionOption DeductionOption @relation(fields: [deductionOptionId], references: [id], onDelete: Restrict)
-
-  @@map("employee_saturation_deduction")
   @@index([employeeId])
+  @@map("employee_saturation_deduction")
 }
 
 model EmployeeOtherPayment {
@@ -991,11 +972,10 @@ model EmployeeOtherPayment {
   type       String   @default("Fixed")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("employee_other_payment")
   @@index([employeeId])
+  @@map("employee_other_payment")
 }
 
 model EmployeeOvertime {
@@ -1007,11 +987,10 @@ model EmployeeOvertime {
   rate       Float    @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@map("employee_overtime")
   @@index([employeeId])
+  @@map("employee_overtime")
 }
 
 model Category {
@@ -1052,31 +1031,31 @@ model Unit {
 }
 
 model Product {
-  id               String          @id @default(cuid())
-  name             String
-  sku              String          @unique
-  salePrice        Float           @default(0)
-  purchasePrice    Float           @default(0)
-  taxId            String?
-  categoryId       String?
-  unitId           String?
-  quantity         Float           @default(0)
-  type             String
-  branchId         String?
-  saleAccountId    String?
-  expenseAccountId String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  billItems        BillItem[]
-  expenseItems     ExpenseItem[]
-  posOrderItems    PosOrderItem[]
+  id                 String              @id @default(cuid())
+  name               String
+  sku                String              @unique
+  salePrice          Float               @default(0)
+  purchasePrice      Float               @default(0)
+  taxId              String?
+  categoryId         String?
+  unitId             String?
+  quantity           Float               @default(0)
+  type               String
+  branchId           String?
+  saleAccountId      String?
+  expenseAccountId   String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  billItems          BillItem[]
+  expenseItems       ExpenseItem[]
+  posOrderItems      PosOrderItem[]
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  expenseAccount     ChartOfAccount?     @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
+  saleAccount        ChartOfAccount?     @relation("SaleAccount", fields: [saleAccountId], references: [id])
+  tax                Tax?                @relation(fields: [taxId], references: [id])
+  unit               Unit?               @relation(fields: [unitId], references: [id])
   warehouseTransfers WarehouseTransfer[] @relation("TransferProduct")
-  branch           Branch?         @relation(fields: [branchId], references: [id])
-  category         Category?       @relation(fields: [categoryId], references: [id])
-  expenseAccount   ChartOfAccount? @relation("ExpenseAccount", fields: [expenseAccountId], references: [id])
-  saleAccount      ChartOfAccount? @relation("SaleAccount", fields: [saleAccountId], references: [id])
-  tax              Tax?            @relation(fields: [taxId], references: [id])
-  unit             Unit?           @relation(fields: [unitId], references: [id])
 
   @@map("product")
 }
@@ -1173,14 +1152,14 @@ model LoginDetail {
   userId    String
   ip        String?
   date      DateTime @default(now())
-  details   Json?    // geo, browser, device (country, device_type, os_name, etc.)
+  details   Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("login_detail")
   @@index([userId])
   @@index([date])
+  @@map("login_detail")
 }
 
 model Account {
@@ -1600,8 +1579,8 @@ model Pipeline {
   dealStages     DealStage[]
   leads          Lead[]
   leadStages     LeadStage[]
-  pipelineLabels PipelineLabel[]
   branch         Branch?         @relation(fields: [branchId], references: [id])
+  pipelineLabels PipelineLabel[]
 
   @@map("pipeline")
 }
@@ -1613,12 +1592,12 @@ model PipelineLabel {
   name       String
   color      String
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime @default(now()) @updatedAt
   pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
 
-  @@map("pipeline_label")
   @@unique([pipelineId, name])
   @@index([pipelineId])
+  @@map("pipeline_label")
 }
 
 /// Contract type lookup (e.g. Implementasi, Dukungan). Used in CRM.
@@ -1626,7 +1605,7 @@ model ContractType {
   id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@map("contract_type")
 }
@@ -1666,8 +1645,8 @@ model Source {
   updatedAt DateTime @updatedAt
   branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
-  @@map("source")
   @@index([branchId])
+  @@map("source")
 }
 
 model Lead {
@@ -1784,41 +1763,41 @@ model Project {
 
 /// Zoom meeting (virtual meeting room). Optional link to Project; participants are Users.
 model ZoomMeeting {
-  id                String   @id @default(cuid())
-  title             String
-  projectId         String?
-  startAt           DateTime
-  durationMinutes   Int      @default(60)
-  joinUrl           String?
-  startUrl          String?
-  password          String?
-  status            String   @default("waiting") // waiting | started | ended
-  createdById       String
-  syncGoogleCalendar Boolean @default(false)
-  inviteClient      Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  project           Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  createdBy         User     @relation("ZoomMeetingCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  participants      ZoomMeetingParticipant[]
+  id                 String                   @id @default(cuid())
+  title              String
+  projectId          String?
+  startAt            DateTime
+  durationMinutes    Int                      @default(60)
+  joinUrl            String?
+  startUrl           String?
+  password           String?
+  status             String                   @default("waiting")
+  createdById        String
+  syncGoogleCalendar Boolean                  @default(false)
+  inviteClient       Boolean                  @default(true)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  createdBy          User                     @relation("ZoomMeetingCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  project            Project?                 @relation(fields: [projectId], references: [id])
+  participants       ZoomMeetingParticipant[]
 
-  @@map("zoom_meeting")
   @@index([projectId])
   @@index([createdById])
   @@index([startAt])
+  @@map("zoom_meeting")
 }
 
 model ZoomMeetingParticipant {
   id            String      @id @default(cuid())
   zoomMeetingId String
   userId        String
-  zoomMeeting   ZoomMeeting @relation(fields: [zoomMeetingId], references: [id], onDelete: Cascade)
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zoomMeeting   ZoomMeeting @relation(fields: [zoomMeetingId], references: [id], onDelete: Cascade)
 
   @@unique([zoomMeetingId, userId])
-  @@map("zoom_meeting_participant")
   @@index([zoomMeetingId])
   @@index([userId])
+  @@map("zoom_meeting_participant")
 }
 
 model ProjectTask {
@@ -1947,82 +1926,82 @@ model ProjectTaskStage {
 
 /// POS Warehouse: lokasi stok untuk transaksi POS.
 model Warehouse {
-  id          String       @id @default(cuid())
-  name        String
-  address     String?
-  phone       String?
-  branchId    String?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  branch           Branch?             @relation(fields: [branchId], references: [id])
-  posOrders        PosOrder[]
-  transfersFrom    WarehouseTransfer[] @relation("TransferFrom")
-  transfersTo      WarehouseTransfer[] @relation("TransferTo")
+  id            String              @id @default(cuid())
+  name          String
+  address       String?
+  phone         String?
+  branchId      String?
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  posOrders     PosOrder[]
+  branch        Branch?             @relation(fields: [branchId], references: [id])
+  transfersFrom WarehouseTransfer[] @relation("TransferFrom")
+  transfersTo   WarehouseTransfer[] @relation("TransferTo")
 
-  @@map("warehouse")
   @@index([branchId])
+  @@map("warehouse")
 }
 
 /// POS Order: transaksi kasir POS.
 model PosOrder {
-  id           String         @id @default(cuid())
-  posId        String         @unique
-  customerId   String?
-  warehouseId  String?
-  branchId     String?
-  discount     Float          @default(0)
-  subtotal     Float          @default(0)
-  total        Float          @default(0)
-  status       String         @default("completed")
-  quotationId  String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  customer     Customer?      @relation(fields: [customerId], references: [id])
-  warehouse    Warehouse?     @relation(fields: [warehouseId], references: [id])
-  branch       Branch?        @relation(fields: [branchId], references: [id])
-  items        PosOrderItem[]
+  id          String         @id @default(cuid())
+  posId       String         @unique
+  customerId  String?
+  warehouseId String?
+  branchId    String?
+  discount    Float          @default(0)
+  subtotal    Float          @default(0)
+  total       Float          @default(0)
+  status      String         @default("completed")
+  quotationId String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  branch      Branch?        @relation(fields: [branchId], references: [id])
+  customer    Customer?      @relation(fields: [customerId], references: [id])
+  warehouse   Warehouse?     @relation(fields: [warehouseId], references: [id])
+  items       PosOrderItem[]
 
-  @@map("pos_order")
   @@index([branchId])
   @@index([customerId])
   @@index([warehouseId])
   @@index([createdAt])
+  @@map("pos_order")
 }
 
 /// POS Order Item: item dalam transaksi POS.
 model PosOrderItem {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   posOrderId String
   productId  String?
   itemName   String
   sku        String?
-  quantity   Float     @default(1)
-  price      Float     @default(0)
-  discount   Float     @default(0)
-  taxRate    Float     @default(0)
-  subtotal   Float     @default(0)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  posOrder   PosOrder  @relation(fields: [posOrderId], references: [id], onDelete: Cascade)
-  product    Product?  @relation(fields: [productId], references: [id])
+  quantity   Float    @default(1)
+  price      Float    @default(0)
+  discount   Float    @default(0)
+  taxRate    Float    @default(0)
+  subtotal   Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  posOrder   PosOrder @relation(fields: [posOrderId], references: [id], onDelete: Cascade)
+  product    Product? @relation(fields: [productId], references: [id])
 
-  @@map("pos_order_item")
   @@index([posOrderId])
+  @@map("pos_order_item")
 }
 
 /// POS Barcode Setting: konfigurasi barcode per branch.
 model BarcodeSetting {
   id            String   @id @default(cuid())
   branchId      String?
-  barcodeType   String   @default("code128")  // code128, code39, code93
-  barcodeFormat String   @default("css")       // css, bmp
+  barcodeType   String   @default("code128")
+  barcodeFormat String   @default("css")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   branch        Branch?  @relation(fields: [branchId], references: [id])
 
-  @@map("barcode_setting")
   @@index([branchId])
+  @@map("barcode_setting")
 }
 
 /// Warehouse Transfer: transfer produk antar warehouse.
@@ -2038,40 +2017,40 @@ model WarehouseTransfer {
   transferDate    DateTime  @default(now())
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  fromWarehouse   Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
-  toWarehouse     Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
-  product         Product   @relation("TransferProduct", fields: [productId], references: [id])
   branch          Branch?   @relation(fields: [branchId], references: [id])
+  fromWarehouse   Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  product         Product   @relation("TransferProduct", fields: [productId], references: [id])
+  toWarehouse     Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
 
-  @@map("warehouse_transfer")
   @@index([branchId])
   @@index([fromWarehouseId])
   @@index([toWarehouseId])
   @@index([productId])
   @@index([transferDate])
+  @@map("warehouse_transfer")
 }
 
 /// Subscription Plan model for SaaS plan management
 model Plan {
-  id            String   @id @default(cuid())
-  name          String   @unique
-  price         Float    @default(0)
-  duration      String   @default("month") // lifetime | month | year
-  maxUsers      Int      @default(5)
-  maxCustomers  Int      @default(5)
-  maxVenders    Int      @default(5)
-  maxClients    Int      @default(5)
-  storageLimit  Int      @default(1024) // in MB, -1 = unlimited
-  trialDays     Int      @default(0)
-  isDisable     Boolean  @default(false)
-  hasAccount    Boolean  @default(true)
-  hasCrm        Boolean  @default(true)
-  hasHrm        Boolean  @default(true)
-  hasProject    Boolean  @default(false)
-  hasPos        Boolean  @default(false)
-  hasChatgpt    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String   @unique
+  price        Float    @default(0)
+  duration     String   @default("month")
+  maxUsers     Int      @default(5)
+  maxCustomers Int      @default(5)
+  maxVenders   Int      @default(5)
+  maxClients   Int      @default(5)
+  storageLimit Int      @default(1024)
+  trialDays    Int      @default(0)
+  isDisable    Boolean  @default(false)
+  hasAccount   Boolean  @default(true)
+  hasCrm       Boolean  @default(true)
+  hasHrm       Boolean  @default(true)
+  hasProject   Boolean  @default(false)
+  hasPos       Boolean  @default(false)
+  hasChatgpt   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("plan")
 }
@@ -2081,9 +2060,9 @@ model Coupon {
   id        String   @id @default(cuid())
   name      String
   code      String   @unique
-  discount  Float    @default(0)  // Percentage discount (0-100)
-  limit     Int      @default(0)  // Max usage limit (0 = unlimited)
-  used      Int      @default(0)  // Times used
+  discount  Float    @default(0)
+  limit     Int      @default(0)
+  used      Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2093,24 +2072,49 @@ model Coupon {
 
 /// Subscription Order: records of plan purchases by companies (super admin view)
 model Order {
-  id            String   @id @default(cuid())
-  orderId       String   @unique  // e.g. ORD-001
-  userId        String?           // Company user who placed the order
-  userName      String            // Company name / user name
-  planName      String            // Plan name at time of purchase
-  price         Float    @default(0)
-  paymentStatus String   @default("Pending") // Pending | Approved | success | failed
-  paymentType   String   @default("Bank Transfer") // Bank Transfer | STRIPE | Manually | Free
-  coupon        String?           // Coupon code used
-  receipt       String?           // Receipt URL or note
-  isRefund      Int      @default(0) // 0 = not refunded, 1 = refunded
-  orderDate     DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id             String   @id @default(cuid())
+  orderId        String   @unique
+  userId         String?
+  userName       String
+  planName       String
+  price          Float    @default(0)
+  paymentStatus  String   @default("Pending")
+  paymentType    String   @default("Bank Transfer")
+  coupon         String?
+  receipt        String?
+  isRefund       Int      @default(0)
+  orderDate      DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  paymentDetails Json?
+  user           User?    @relation(fields: [userId], references: [id])
 
-  @@map("order")
   @@index([userId])
   @@index([paymentStatus])
   @@index([orderDate])
+  @@map("order")
+}
+
+model hrm_asset_employees {
+  id          Int        @id @default(autoincrement())
+  asset_id    Int
+  employee_id String
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  hrm_assets  hrm_assets @relation(fields: [asset_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  employee    Employee   @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([asset_id, employee_id])
+}
+
+model hrm_assets {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  purchase_date       DateTime?             @db.Date
+  supported_date      DateTime?             @db.Date
+  amount              Decimal               @default(0) @db.Decimal(18, 2)
+  description         String?
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  hrm_asset_employees hrm_asset_employees[]
 }

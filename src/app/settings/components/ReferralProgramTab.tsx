@@ -138,7 +138,7 @@ function TransactionContent() {
   )
 
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardHeader>
         <CardTitle>Referral Transaction</CardTitle>
       </CardHeader>
@@ -286,7 +286,7 @@ function PayoutRequestContent() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Total Commission Amount Card */}
-        <Card className="bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800">
+        <Card className="bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800 shadow-none">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
@@ -303,7 +303,7 @@ function PayoutRequestContent() {
         </Card>
 
         {/* Paid Amount Card */}
-        <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+        <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 shadow-none">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
@@ -321,7 +321,7 @@ function PayoutRequestContent() {
       </div>
 
       {/* Payout History Table */}
-      <Card>
+      <Card className="shadow-none">
         <CardHeader>
           <CardTitle>Payout History</CardTitle>
         </CardHeader>
@@ -376,7 +376,7 @@ function ReferralSettingsContent() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-none">
       <CardContent className="pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Referral Instructions */}
@@ -455,7 +455,7 @@ function ReferralProgramContent() {
     <div className="grid gap-4 xl:grid-cols-12">
       {/* Vertical Sidebar - col-xl-3 (25%) */}
       <div className="xl:col-span-3">
-        <Card className="h-fit xl:sticky xl:top-6 border-r">
+        <Card className="h-fit xl:sticky xl:top-6 border-r shadow-none">
           <CardContent className="p-0">
             <div className="space-y-0">
               {referralMenuItems.map((item) => {

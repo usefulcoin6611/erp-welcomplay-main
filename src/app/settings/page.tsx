@@ -115,7 +115,7 @@ function SettingsContent() {
                 items={tabs}
                 value={activeTab}
                 defaultTabId={activeTab}
-                activeColor="bg-white dark:bg-gray-700 shadow-xs"
+                activeColor="bg-white dark:bg-gray-700"
                 onChange={handleTabChange}
                 stickyNav
               />

@@ -486,7 +486,7 @@ export default function PlansPage() {
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${style.badge}`}>
                             {plan.name}
                           </span>
-                          {isSuperAdmin && plan.price > 0 && (
+                          {isSuperAdmin && (
                             <Switch
                               checked={!plan.is_disable}
                               onCheckedChange={() => handleToggleDisable(plan)}

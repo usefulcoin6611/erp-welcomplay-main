@@ -64,6 +64,37 @@ const ROUTE_ACCESS_PROFILE_PERMISSIONS: { prefix: string; permissions: string[] 
   { prefix: '/settings', permissions: ['manage company settings', 'manage business settings'] },
   { prefix: '/messenger', permissions: ['manage company settings'] },
 ]
+/**
+ * Routes that are ALWAYS accessible regardless of subscription plan status.
+ * These are essential for account management and system setup.
+ */
+export const PLAN_EXEMPT_ROUTES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/setup-company',
+  '/settings',
+  '/plans',
+  '/profile',
+]
+
+/**
+ * Check if the user's subscription plan is active.
+ * Super Admin is always considered to have an active plan.
+ */
+export function hasActivePlan(user: { type: UserRole; plan?: string | null; planExpireDate?: Date | string | null; isActive?: boolean }): boolean {
+  if (user.type === 'super admin') return true
+  if (user.isActive === false) return false
+  if (!user.plan) return false
+  
+  if (user.planExpireDate) {
+    const expireDate = new Date(user.planExpireDate)
+    return expireDate > new Date()
+  }
+  
+  return true
+}
+
 
 /**
  * Check if the route is allowed by the given access profile permissions (for employee with assigned profile).
@@ -88,9 +119,30 @@ export function hasRouteAccessByProfile(route: string, userPermissions: string[]
  */
 export function hasRouteAccess(
   route: string,
-  userRole: UserRole,
-  accessProfilePermissions?: string[] | null
+  user: {
+    id?: string | number
+    type: UserRole
+    permissions?: string[] | null
+    plan?: string | null
+    planExpireDate?: Date | string | null
+    isActive?: boolean
+  }
 ): boolean {
+  const userRole = user.type
+  const accessProfilePermissions = user.permissions
+
+  // 1. Check if route is exempt from plan requirements
+  const isExempt = PLAN_EXEMPT_ROUTES.some(r => 
+    route === r || (r !== '/' && route.startsWith(r))
+  )
+
+  // 2. For non-exempt routes, check if user has active plan (only for Company and its associates)
+  if (!isExempt && userRole !== 'super admin') {
+    if (!hasActivePlan(user)) {
+      return false // Soft Lock: Redirect to settings/plan usually handled by AuthWrapper
+    }
+  }
+
   // Define route access rules for each role
   const routePermissions: Record<UserRole, string[]> = {
     'super admin': [
@@ -100,6 +152,7 @@ export function hasRouteAccess(
     'company': [
       // Company has access to most routes including User Management (per menu-config)
       '/dashboard',
+      '/setup-company',
       '/plans/', // Subscribe flow: /plans/[id]/subscribe
       '/hrm-dashboard',
       '/account-dashboard',

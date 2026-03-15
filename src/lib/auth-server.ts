@@ -7,6 +7,12 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
+    socialProviders: {
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID || "",
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        },
+    },
     emailAndPassword: {
         enabled: true,
         autoSignIn: true,
@@ -23,7 +29,20 @@ export const auth = betterAuth({
         additionalFields: {
             role: {
                 type: "string",
-                defaultValue: "employee",
+                defaultValue: "company", // Public registration is for companies
+                input: false,
+            },
+            plan: {
+                type: "string",
+                input: false,
+            },
+            planExpireDate: {
+                type: "date",
+                input: false,
+            },
+            isActive: {
+                type: "boolean",
+                defaultValue: true,
                 input: false,
             },
             branchId: {
@@ -37,3 +56,4 @@ export const auth = betterAuth({
         },
     },
 });
+

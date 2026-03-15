@@ -65,13 +65,15 @@ export async function POST(request: NextRequest) {
 
     const discountAmount = price * (discountPercent / 100)
     const priceAfterDiscount = Math.max(0, Math.round(price - discountAmount))
+    const taxAmount = Math.round(priceAfterDiscount * 0.11) // 11% tax
+    const totalAmount = priceAfterDiscount + taxAmount
 
-    const count = await db.order.count()
-    const orderId = `ORD-${String(count + 1).padStart(3, "0")}`
+    const timestamp = Date.now()
+    const orderId = `ORD-${timestamp}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
 
-    const isFree = priceAfterDiscount === 0
+    const isFree = totalAmount === 0
     const paymentStatus = isFree ? "success" : "Pending"
-    const paymentType = isFree ? "Free" : paymentMethod || "Bank Transfer"
+    const paymentType = isFree ? "Free" : paymentMethod.toUpperCase()
 
     const order = await db.order.create({
       data: {
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
         userId,
         userName,
         planName: plan.name,
-        price: priceAfterDiscount,
+        price: totalAmount, // Storing final total price inclusive of tax
         paymentStatus,
         paymentType,
         coupon: appliedCouponCode,
@@ -96,6 +98,38 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    let midtransResponse = null
+    if (!isFree) {
+      const { createCoreApiCharge } = await import("@/lib/midtrans")
+      try {
+        midtransResponse = await createCoreApiCharge({
+          orderId: order.orderId,
+          amount: totalAmount,
+          paymentMethod: paymentMethod.toLowerCase(),
+          customerName: userName,
+          customerEmail: user.email || "",
+          planName: plan.name,
+        })
+        
+        // Save Midtrans response to order for later retrieval
+        await db.order.update({
+          where: { id: order.id },
+          data: { paymentDetails: midtransResponse }
+        })
+      } catch (midtransError: any) {
+        console.error("Midtrans Charge Error:", midtransError)
+        // If Midtrans fails, we should probably mark order as failed
+        await db.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: "Failed" }
+        })
+        return NextResponse.json(
+          { success: false, message: `Payment Gateway Error: ${midtransError.message}` },
+          { status: 500 }
+        )
+      }
+    }
+
     if (isFree && userId) {
       const expireDate = new Date()
       expireDate.setDate(expireDate.getDate() + 365)
@@ -104,6 +138,7 @@ export async function POST(request: NextRequest) {
         data: {
           plan: plan.name,
           planExpireDate: expireDate,
+          isActive: true,
         },
       })
     }
@@ -113,9 +148,11 @@ export async function POST(request: NextRequest) {
       data: {
         orderId: order.orderId,
         planName: plan.name,
-        price: priceAfterDiscount,
+        price: totalAmount,
+        subtotal: priceAfterDiscount,
+        tax: taxAmount,
         paymentStatus,
-        discountApplied: discountPercent > 0,
+        midtransResponse, // Frontend will handle this
       },
       message: isFree
         ? "Subscription activated successfully."
