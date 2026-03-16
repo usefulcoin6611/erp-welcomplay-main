@@ -13,9 +13,19 @@ function isWriteAllowed(session: any) {
   return role === "super admin" || role === "company";
 }
 
+import { getTenantFilter, getTenantId } from "@/lib/multi-tenancy";
+
 export async function GET() {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const tenantFilter = await getTenantFilter(session.user);
+
     const stages = await (prisma as any).jobStage.findMany({
+      where: tenantFilter,
       orderBy: [
         { order: "asc" },
         { createdAt: "asc" },
@@ -64,8 +74,10 @@ export async function POST(request: Request) {
     }
 
     const { name } = validation.data;
+    const ownerId = getTenantId(session.user);
 
     const lastStage = await (prisma as any).jobStage.findFirst({
+      where: { ownerId },
       orderBy: { order: "desc" },
     });
 
@@ -75,6 +87,7 @@ export async function POST(request: Request) {
       data: {
         name,
         order: nextOrder,
+        ownerId,
       },
     });
 

@@ -14,6 +14,7 @@ interface PaymentInstructionViewProps {
   amount?: number
   subtotal?: number
   tax?: number
+  proratedCredit?: number
 }
 
 export function PaymentInstructionView({
@@ -22,7 +23,8 @@ export function PaymentInstructionView({
   planName,
   amount,
   subtotal,
-  tax
+  tax,
+  proratedCredit
 }: PaymentInstructionViewProps) {
   const router = useRouter()
   const { refreshUser } = useAuth()
@@ -31,7 +33,15 @@ export function PaymentInstructionView({
     return ['success', 'settlement', 'capture', 'approved'].includes(s) ? 'success' : 'pending'
   })
   const [isChecking, setIsChecking] = React.useState(false)
-  const [verifiedAt, setVerifiedAt] = React.useState<string | null>(null)
+  const [verifiedAt, setVerifiedAt] = React.useState<string | null>(() => {
+    if (status === 'success') {
+      return new Intl.DateTimeFormat('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).format(new Date()).replace(/\./g, ':')
+    }
+    return null
+  })
   const [stepProgress, setStepProgress] = React.useState(status === 'success' ? 3 : 0)
   const isInitialCheck = React.useRef(true)
   const pollIntervalRef = React.useRef<NodeJS.Timeout | null>(null)
@@ -249,8 +259,14 @@ export function PaymentInstructionView({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Harga Paket</p>
-                  <p className="text-[11px] font-bold text-slate-600">{formatPriceIdr(subtotal || Math.round((amount || 0) / 1.11))}</p>
+                  <p className="text-[11px] font-bold text-slate-600">{formatPriceIdr((subtotal || 0) + (proratedCredit || 0))}</p>
                 </div>
+                {proratedCredit ? proratedCredit > 0 && (
+                  <div className="flex justify-between items-center text-blue-600 font-bold">
+                    <p className="text-[10px] uppercase tracking-widest">Sisa Saldo Plan Lama</p>
+                    <p className="text-[11px]">-{formatPriceIdr(proratedCredit)}</p>
+                  </div>
+                ) : null}
                 <div className="flex justify-between items-center">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pajak (11%)</p>
                   <p className="text-[11px] font-bold text-slate-600">{formatPriceIdr(tax || Math.round((amount || 0) - ((amount || 0) / 1.11)))}</p>
@@ -276,17 +292,20 @@ export function PaymentInstructionView({
             </div>
 
             {/* Step by Step Instructions */}
-            <div className="space-y-6">
-              {getInstructions().map((step, idx) => (
-                <div key={idx} className="flex gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 text-[10px] font-black text-slate-500 flex items-center justify-center">
-                    {idx + 1}
-                  </span>
-                  <p className="text-[11px] font-medium text-slate-600 leading-relaxed pt-0.5">
-                    {step}
-                  </p>
-                </div>
-              ))}
+            <div className="space-y-4 pt-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-5">Cara Bayar</p>
+              <div className="space-y-6">
+                {getInstructions().map((step, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 text-[10px] font-black text-slate-500 flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <p className="text-[11px] font-medium text-slate-600 leading-relaxed pt-0.5">
+                      {step}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -338,9 +357,16 @@ export function PaymentInstructionView({
                     </div>
                   </div>
                   <h3 className="text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight">Pembayaran Berhasil!</h3>
-                  <p className="text-slate-500 text-sm md:text-base font-medium">
+                  <p className="text-slate-500 text-sm md:text-base font-medium mb-6 text-center">
                     Paket anda sudah diaktifkan secara otomatis.
                   </p>
+                  <Button
+                    onClick={() => router.push('/dashboard')}
+                    className="h-12 px-10 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl gap-2 transition-all active:scale-95 shadow-lg shadow-blue-200"
+                  >
+                    <span>Lanjutkan ke Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
 
@@ -490,7 +516,7 @@ export function PaymentInstructionView({
               <div className="pt-4">
                 <p className={`text-[10px] md:text-xs tracking-wide ${status === 'success' ? 'text-green-600 font-medium' : 'text-slate-400 font-medium'}`}>
                   {status === 'success'
-                    ? `Terverifikasi pukul ${verifiedAt || '--:--:--'} WIB`
+                    ? `Pukul ${verifiedAt || '--:--:--'} WIB`
                     : 'Selesaikan pembayaran anda sebelum waktu habis'}
                 </p>
               </div>

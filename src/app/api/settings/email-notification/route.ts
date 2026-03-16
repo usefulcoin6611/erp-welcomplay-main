@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth-server";
 
 const SETTING_KEY = "system_email_notification_settings";
 
@@ -19,11 +20,23 @@ function getDefaultSettings(): EmailNotificationSettings {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+
+    let existing = null;
+    if (userId) {
+      existing = await prisma.setting.findUnique({
+        where: { key_userId: { key: SETTING_KEY, userId } },
+      });
+    }
+
+    if (!existing) {
+      existing = await prisma.setting.findUnique({
+        where: { key_userId: { key: SETTING_KEY, userId: null } },
+      });
+    }
 
     if (!existing) {
       return NextResponse.json({
@@ -33,7 +46,6 @@ export async function GET() {
     }
 
     let parsed: EmailNotificationSettings | null = null;
-
     try {
       parsed = JSON.parse(existing.value);
     } catch {
@@ -41,7 +53,6 @@ export async function GET() {
     }
 
     const data = { ...getDefaultSettings(), ...(parsed || {}) };
-
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Error loading email notification settings:", error);
@@ -58,15 +69,22 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<EmailNotificationSettings>;
-    const current = getDefaultSettings();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
 
-    // Fetch existing settings to preserve missing values
+    const { role, id: userId } = session.user as any;
+    const targetUserId = role === "super admin" ? null : userId;
+
+    const body = (await request.json()) as Partial<EmailNotificationSettings>;
+    const currentDefaults = getDefaultSettings();
+
     const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
+      where: { key_userId: { key: SETTING_KEY, userId: targetUserId } },
     });
 
-    let existingParsed = {} as EmailNotificationSettings;
+    let existingParsed = {};
     if (existing) {
       try {
         existingParsed = JSON.parse(existing.value);
@@ -76,19 +94,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const merged: EmailNotificationSettings = {
-      ...current,
+      ...currentDefaults,
       ...existingParsed,
       ...body,
     };
 
     await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
+      where: { key_userId: { key: SETTING_KEY, userId: targetUserId } },
       update: { value: JSON.stringify(merged) },
       create: {
         key: SETTING_KEY,
+        userId: targetUserId,
         value: JSON.stringify(merged),
       },
     });
+
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
     console.error("Error saving email notification settings:", error);

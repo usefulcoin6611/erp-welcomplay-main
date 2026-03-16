@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// We'll use a dynamic route parameter for the template type eventually,
-// but for simplification or depending on how it's called, we might accept
-// the template type in the body or query. Let's assume the frontend will send
-// the specific letter templates they want to save along with the name.
-// Actually, it's easier to store them as one big object or use query params.
-// Let's store them as one object called system_letter_templates.
+import { auth } from "@/lib/auth-server";
 
 const SETTING_KEY = "system_letter_templates";
 
@@ -26,11 +20,23 @@ function getDefaultSettings(): LetterTemplates {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+
+    let existing = null;
+    if (userId) {
+      existing = await prisma.setting.findFirst({
+        where: { key: SETTING_KEY, userId },
+      });
+    }
+
+    if (!existing) {
+      existing = await prisma.setting.findFirst({
+        where: { key: SETTING_KEY, userId: null },
+      });
+    }
 
     if (!existing) {
       return NextResponse.json({
@@ -40,7 +46,6 @@ export async function GET() {
     }
 
     let parsed: LetterTemplates | null = null;
-
     try {
       parsed = JSON.parse(existing.value);
     } catch {
@@ -48,7 +53,6 @@ export async function GET() {
     }
 
     const data = { ...getDefaultSettings(), ...(parsed || {}) };
-
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Error loading letter templates:", error);
@@ -65,11 +69,19 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { role, id: userId } = session.user as any;
+    const targetUserId = role === "super admin" ? null : userId;
+
     const body = (await request.json()) as Partial<LetterTemplates>;
-    const current = getDefaultSettings();
+    const currentDefaults = getDefaultSettings();
 
     const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
+      where: { key_userId: { key: SETTING_KEY, userId: targetUserId } },
     });
 
     let existingParsed = {};
@@ -82,19 +94,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const merged: LetterTemplates = {
-      ...current,
+      ...currentDefaults,
       ...existingParsed,
       ...body,
     };
 
     await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
+      where: { key_userId: { key: SETTING_KEY, userId: targetUserId as any } },
       update: { value: JSON.stringify(merged) },
       create: {
         key: SETTING_KEY,
+        userId: targetUserId,
         value: JSON.stringify(merged),
       },
     });
+
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
     console.error("Error saving letter templates:", error);

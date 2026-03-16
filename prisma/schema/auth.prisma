@@ -1,0 +1,103 @@
+model User {
+  id                        String                    @id @default(cuid())
+  name                      String?
+  email                     String                    @unique
+  emailVerified             Boolean                   @default(false)
+  image                     String?
+  password                  String?
+  role                      String                    @default("employee")
+  branchId                  String?
+  departmentId              String?
+  ownerId                   String?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  accessProfileId           String?
+  plan                      String?
+  planExpireDate            DateTime?
+  pendingPlan               String?
+  isActive                  Boolean                   @default(true)
+  isEnableLogin             Boolean                   @default(true)
+  accounts                  Account[]
+  createdContracts          Contract[]
+  conversationParticipants  ConversationParticipant[]
+  createdCustomers          Customer[]                @relation("CreatedBy")
+  employee                  Employee?
+  createdLeads              Lead[]                    @relation("LeadCreatedBy")
+  ownedLeads                Lead[]                    @relation("LeadOwner")
+  loginDetails              LoginDetail[]
+  messagesSent              Message[]
+  orders                    Order[]
+  sessions                  Session[]
+  supportReplies            SupportReply[]
+  assignedSupportTickets    SupportTicket[]           @relation("SupportAssignedTo")
+  createdSupportTickets     SupportTicket[]           @relation("SupportCreatedBy")
+  settings                  Setting[]
+  accessProfile             AccessProfile?            @relation(fields: [accessProfileId], references: [id])
+  branch                    Branch?                   @relation(fields: [branchId], references: [id])
+  department                Department?               @relation(fields: [departmentId], references: [id])
+  createdVendors            Vendor[]
+  zoomMeetingsCreated       ZoomMeeting[]             @relation("ZoomMeetingCreatedBy")
+  zoomMeetingParticipations ZoomMeetingParticipant[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+model LoginDetail {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  date      DateTime @default(now())
+  details   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@map("login_detail")
+}

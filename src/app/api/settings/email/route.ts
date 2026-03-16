@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth-server";
 
 const SETTING_KEY = "system_email_settings";
 
@@ -27,11 +28,35 @@ function getDefaultSettings(): EmailSettings {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+
+    // First try to find user-specific settings if userId exists
+    let existing = null;
+    if (userId) {
+      existing = await prisma.setting.findUnique({
+        where: {
+          key_userId: {
+            key: SETTING_KEY,
+            userId: userId,
+          },
+        },
+      });
+    }
+
+    // If no user-specific settings, fallback to global settings
+    if (!existing) {
+      existing = await prisma.setting.findUnique({
+        where: {
+          key_userId: {
+            key: SETTING_KEY,
+            userId: null,
+          },
+        },
+      });
+    }
 
     if (!existing) {
       return NextResponse.json({
@@ -41,7 +66,6 @@ export async function GET() {
     }
 
     let parsed: EmailSettings | null = null;
-
     try {
       parsed = JSON.parse(existing.value);
     } catch {
@@ -49,7 +73,6 @@ export async function GET() {
     }
 
     const data = { ...getDefaultSettings(), ...(parsed || {}) };
-
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Error loading email settings:", error);
@@ -66,12 +89,26 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<EmailSettings>;
-    const current = getDefaultSettings();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
 
-    // Fetch existing settings to preserve password if not updated
+    const { role, id: userId } = session.user as any;
+    // Super admin edits global settings (userId: null)
+    const targetUserId = role === "super admin" ? null : userId;
+
+    const body = (await request.json()) as Partial<EmailSettings>;
+    const currentDefaults = getDefaultSettings();
+
+    // Fetch existing settings for this target to preserve password if not updated
     const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
+      where: {
+        key_userId: {
+          key: SETTING_KEY,
+          userId: targetUserId,
+        },
+      },
     });
 
     let existingParsed = {} as EmailSettings;
@@ -84,7 +121,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const merged: EmailSettings = {
-      ...current,
+      ...currentDefaults,
       ...existingParsed,
       ...body,
     };
@@ -95,13 +132,20 @@ export async function PUT(request: NextRequest) {
     }
 
     await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
+      where: {
+        key_userId: {
+          key: SETTING_KEY,
+          userId: targetUserId,
+        },
+      },
       update: { value: JSON.stringify(merged) },
       create: {
         key: SETTING_KEY,
+        userId: targetUserId,
         value: JSON.stringify(merged),
       },
     });
+
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
     console.error("Error saving email settings:", error);

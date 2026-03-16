@@ -138,6 +138,10 @@ export const getMenuByRole = (role: UserRole, t: (key: string) => string) => {
             isActive: true,
             items: [
               {
+                title: "Company Dashboard",
+                url: "/dashboard",
+              },
+              {
                 title: t("accounting"),
                 url: "#",
                 items: [

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth-server";
+import { getSetting, saveSetting } from "@/lib/settings";
 
 const SETTING_KEY = "system_general_settings";
 
@@ -41,11 +43,12 @@ function getDefaultSettings(): SystemSettings {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+
+    const existing = await getSetting(SETTING_KEY, userId);
 
     if (!existing) {
       return NextResponse.json({
@@ -55,7 +58,6 @@ export async function GET() {
     }
 
     let parsed: SystemSettings | null = null;
-
     try {
       parsed = JSON.parse(existing.value);
     } catch {
@@ -63,7 +65,6 @@ export async function GET() {
     }
 
     const data = { ...getDefaultSettings(), ...(parsed || {}) };
-
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Error loading system settings:", error);
@@ -78,16 +79,26 @@ export async function GET() {
   }
 }
 
+/**
+ * PUT /api/settings/system
+ * Simpan pengaturan sistem
+ */
 export async function PUT(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { role, id: userId } = session.user as any;
+    const targetUserId = role === "super admin" ? null : userId;
+
     const body = (await request.json()) as Partial<SystemSettings>;
     const current = getDefaultSettings();
 
-    const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const existing = await getSetting(SETTING_KEY, targetUserId);
 
-    let existingParsed = {};
+    let existingParsed = {} as SystemSettings;
     if (existing) {
       try {
         existingParsed = JSON.parse(existing.value);
@@ -102,14 +113,7 @@ export async function PUT(request: NextRequest) {
       ...body,
     };
 
-    await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
-      update: { value: JSON.stringify(merged) },
-      create: {
-        key: SETTING_KEY,
-        value: JSON.stringify(merged),
-      },
-    });
+    await saveSetting(SETTING_KEY, JSON.stringify(merged), targetUserId);
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
     console.error("Error saving system settings:", error);

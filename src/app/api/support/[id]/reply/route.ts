@@ -14,6 +14,9 @@ export async function POST(
     }
 
     const { id: supportTicketId } = await params;
+    const { id: sessionUserId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
     const body = await request.json();
     const message = String(body.message ?? "").trim();
 
@@ -26,10 +29,22 @@ export async function POST(
 
     const ticket = await prisma.supportTicket.findUnique({
       where: { id: supportTicketId },
+      include: { createdBy: { select: { id: true, ownerId: true } } }
     });
+
     if (!ticket) {
       return NextResponse.json(
         { success: false, message: "Ticket not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify ownership
+    const creator = ticket.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
         { status: 404 }
       );
     }

@@ -22,20 +22,33 @@ async function generateTicketCode(): Promise<string> {
 export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
     const tickets = await prisma.supportTicket.findMany({
+      where: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
+      },
       orderBy: { createdAt: "desc" },
       include: {
-        createdBy: { select: { id: true, name: true, image: true } },
+        createdBy: { select: { id: true, name: true, image: true, ownerId: true } },
         assignUser: { select: { id: true, name: true } },
         _count: { select: { replies: true } },
       },
     });
 
-    const data = tickets.map((t) => ({
+    const data = tickets.map((t: any) => ({
       id: t.id,
       ticket_code: t.ticketCode,
       subject: t.subject,
@@ -73,7 +86,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id as string;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const contentType = request.headers.get("content-type") ?? "";
     let subject: string;
     let assignUserId: string | null = null;
@@ -121,6 +136,24 @@ export async function POST(request: NextRequest) {
         { success: false, message: "Subject is required" },
         { status: 400 }
       );
+    }
+
+    if (assignUserId) {
+      const userExists = await prisma.user.findFirst({
+        where: {
+          id: assignUserId,
+          OR: [
+            { id: companyId },
+            { ownerId: companyId }
+          ]
+        }
+      });
+      if (!userExists) {
+        return NextResponse.json(
+          { success: false, message: "Invalid assigned user" },
+          { status: 400 }
+        );
+      }
     }
 
     const ticketCode = await generateTicketCode();

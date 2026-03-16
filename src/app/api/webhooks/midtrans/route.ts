@@ -79,18 +79,43 @@ export async function POST(request: NextRequest) {
       })
 
       if (plan) {
-        const expireDate = new Date()
-        expireDate.setDate(expireDate.getDate() + 365) // 1 year subscription
+        const { getPlanChangeType } = await import("@/lib/subscription")
+        const user = await db.user.findUnique({ where: { id: order.userId } })
+        const changeType = await getPlanChangeType(user?.plan, plan.name)
 
-        await db.user.update({
-          where: { id: order.userId },
-          data: {
-            plan: plan.name,
-            planExpireDate: expireDate,
-            isActive: true,
+        const now = new Date()
+        let expireDate = new Date()
+        const daysToAdd = plan.duration === 'year' ? 365 : 30 // Simplify for ERP logic
+
+        if (changeType === 'upgrade' || changeType === 'new' || changeType === 'renewal') {
+          // EXCEPTION: If it's a renewal, we might want to add to existing expire date
+          if (changeType === 'renewal' && user.planExpireDate && user.planExpireDate > now) {
+            expireDate = new Date(user.planExpireDate)
           }
-        })
-        console.log(`[Midtrans Webhook] Successfully activated plan ${plan.name} for user ${order.userId}`)
+          expireDate.setDate(expireDate.getDate() + daysToAdd)
+
+          await db.user.update({
+            where: { id: order.userId },
+            data: {
+              plan: plan.name,
+              planExpireDate: expireDate,
+              pendingPlan: null, // Clear any pending plan
+              isActive: true,
+            }
+          })
+        } else if (changeType === 'downgrade') {
+          // DOWNGRADE: Don't change current plan, just set pendingPlan
+          await db.user.update({
+            where: { id: order.userId },
+            data: {
+              pendingPlan: plan.name,
+              isActive: true,
+            }
+          })
+          console.log(`[Midtrans Webhook] Downgrade scheduled: ${plan.name} for user ${order.userId}`)
+        }
+        
+        console.log(`[Midtrans Webhook] Successfully processed ${changeType} plan ${plan.name} for user ${order.userId}`)
       }
     }
 

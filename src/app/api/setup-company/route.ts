@@ -46,17 +46,19 @@ export async function POST(request: NextRequest) {
           phone: phone || null,
           website: website || null,
           email: session.user.email,
+          ownerId: userId, // Set ownerId to company user ID
           users: {
             connect: { id: userId }
           }
         }
       })
 
-      // 2. Update the user's branchId
+      // 2. Update the user's branchId and ownerId
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: {
           branchId: branch.id,
+          ownerId: userId, // Set ownerId to self
           name: session.user.name || companyName
         }
       })

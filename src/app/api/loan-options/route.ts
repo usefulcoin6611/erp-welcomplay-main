@@ -9,17 +9,22 @@ const loanOptionSchema = z.object({
   description: z.string().trim().optional(),
 });
 
+import { getTenantFilter, getTenantId } from "@/lib/multi-tenancy";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantFilter = await getTenantFilter(session.user);
+
     const loanOptions = await (prisma as any).loanOption.findMany({
+      where: tenantFilter,
       orderBy: {
         createdAt: "desc",
       },
@@ -68,11 +73,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, description } = validation.data;
+    const ownerId = getTenantId(session.user);
 
     const loanOption = await (prisma as any).loanOption.create({
       data: {
         name,
         description: description || null,
+        ownerId,
       },
     });
 

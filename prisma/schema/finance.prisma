@@ -1,0 +1,168 @@
+model ChartOfAccount {
+  id              String           @id @default(cuid())
+  name            String
+  code            String           @unique
+  type            String
+  subType         String
+  description     String?
+  isSubAccount    Boolean          @default(false)
+  parentId        String?
+  balance         Float            @default(0)
+  status          String           @default("Active")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  branchId        String?
+  bankAccounts    BankAccount[]
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  parent          ChartOfAccount?  @relation("SubAccounts", fields: [parentId], references: [id])
+  subAccounts     ChartOfAccount[] @relation("SubAccounts")
+  journalLines    JournalLine[]
+  expenseProducts Product[]        @relation("ExpenseAccount")
+  saleProducts    Product[]        @relation("SaleAccount")
+
+  @@map("chart_of_account")
+}
+
+model JournalEntry {
+  id             String        @id @default(cuid())
+  journalId      String        @unique
+  date           DateTime
+  description    String?
+  reference      String?
+  amount         Float
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  branchId       String?
+  customerId     String?
+  bankAccountId  String?
+  paymentReceipt String?
+  bankAccount    BankAccount?  @relation(fields: [bankAccountId], references: [id])
+  branch         Branch?       @relation(fields: [branchId], references: [id])
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  lines          JournalLine[]
+
+  @@map("journal_entry")
+}
+
+model JournalLine {
+  id             String         @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Float          @default(0)
+  credit         Float          @default(0)
+  description    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  account        ChartOfAccount @relation(fields: [accountId], references: [id])
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@map("journal_line")
+}
+
+model BankAccount {
+  id             String         @id @default(cuid())
+  branchId       String?
+  chartAccountId String
+  holderName     String
+  bank           String
+  accountNumber  String
+  openingBalance Float          @default(0)
+  contactNumber  String?
+  bankAddress    String?
+  paymentGateway String
+  status         String         @default("Active")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  chartAccount   ChartOfAccount @relation(fields: [chartAccountId], references: [id])
+  transfersFrom  BankTransfer[] @relation("BankTransferFrom")
+  transfersTo    BankTransfer[] @relation("BankTransferTo")
+  journalEntries JournalEntry[]
+
+  @@map("bank_account")
+}
+
+model BankTransfer {
+  id            String      @id @default(cuid())
+  branchId      String?
+  fromAccountId String
+  toAccountId   String
+  date          DateTime
+  amount        Float       @default(0)
+  reference     String?
+  description   String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  fromAccount   BankAccount @relation("BankTransferFrom", fields: [fromAccountId], references: [id])
+  toAccount     BankAccount @relation("BankTransferTo", fields: [toAccountId], references: [id])
+
+  @@map("bank_transfer")
+}
+
+model FinancialGoal {
+  id        String   @id @default(cuid())
+  branchId  String?
+  name      String
+  type      String
+  fromDate  DateTime
+  toDate    DateTime
+  amount    Float    @default(0)
+  isDisplay Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("financial_goal")
+}
+
+model BudgetPlan {
+  id        String   @id @default(cuid())
+  branchId  String?
+  name      String
+  fromYear  Int
+  period    String
+  details   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("budget_plan")
+}
+
+model Tax {
+  id        String    @id @default(cuid())
+  name      String
+  rate      Float
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@map("tax")
+}
+
+model Unit {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@map("unit")
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  type      String
+  account   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  branchId  String?
+  color     String?   @default("FFFFFF")
+  bills     Bill[]
+  branch    Branch?   @relation(fields: [branchId], references: [id])
+  products  Product[]
+
+  @@map("category")
+}

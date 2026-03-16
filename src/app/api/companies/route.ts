@@ -122,24 +122,48 @@ export async function POST(request: NextRequest) {
       hashedPassword = await bcrypt.hash(data.password, 10)
     }
 
-    // Create a branch for the company
-    const branch = await db.branch.create({
-      data: { name: data.name },
+    // Use transaction to ensure both user and branch have the same ownerId
+    const { company, branch } = await db.$transaction(async (tx: any) => {
+      // 1. Create a branch for the company
+      const branch = await tx.branch.create({
+        data: { 
+          name: data.name,
+          email: data.email,
+        },
+      })
+
+      // 2. Create the company user
+      const companyUser = await tx.user.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          password: hashedPassword,
+          role: "company",
+          branchId: branch.id,
+          plan: data.plan ?? null,
+          planExpireDate: data.planExpireDate ? new Date(data.planExpireDate) : null,
+          isActive: true,
+          isEnableLogin: data.isEnableLogin ?? true,
+          emailVerified: false,
+        },
+      })
+
+      // 3. Update branch and user with ownerId (which is companyUser.id)
+      const updatedUser = await tx.user.update({
+        where: { id: companyUser.id },
+        data: { ownerId: companyUser.id }
+      })
+
+      const updatedBranch = await tx.branch.update({
+        where: { id: branch.id },
+        data: { ownerId: companyUser.id }
+      })
+
+      return { company: updatedUser, branch: updatedBranch }
     })
 
-    const company = await db.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        password: hashedPassword,
-        role: "company",
-        branchId: branch.id,
-        plan: data.plan ?? null,
-        planExpireDate: data.planExpireDate ? new Date(data.planExpireDate) : null,
-        isActive: true,
-        isEnableLogin: data.isEnableLogin ?? true,
-        emailVerified: false,
-      },
+    const fullCompany = await db.user.findUnique({
+      where: { id: company.id },
       include: {
         branch: { select: { name: true } },
         sessions: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
@@ -147,7 +171,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(
-      { success: true, data: mapUserToCompany(company), message: "Company created successfully" },
+      { success: true, data: mapUserToCompany(fullCompany), message: "Company created successfully" },
       { status: 201 }
     )
   } catch (error) {

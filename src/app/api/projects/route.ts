@@ -46,16 +46,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = ((session.user as any).branchId as string | null) || null;
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
 
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
     const search = url.searchParams.get("search")?.trim() || "";
 
-    const where: any = {};
+    const where: any = {
+      OR: [
+        { createdBy: { id: companyId } },
+        { createdBy: { ownerId: companyId } }
+      ]
+    };
 
-    if (branchId) {
-      where.branchId = branchId;
+    // If an employee is logged in and assigned to a specific branch, 
+    // we might want to further filter by that branch, but the primary 
+    // boundary should be the company.
+    if (role === "employee" && sessionBranchId) {
+      where.branchId = sessionBranchId;
     }
 
     if (status && status !== "all") {

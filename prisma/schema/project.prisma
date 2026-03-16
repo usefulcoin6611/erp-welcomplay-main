@@ -1,0 +1,130 @@
+model Project {
+  id           String        @id @default(cuid())
+  projectId    String        @unique @default(cuid())
+  branchId     String?
+  name         String
+  clientName   String?
+  status       String        @default("not_started")
+  startDate    DateTime?
+  endDate      DateTime?
+  budget       Float         @default(0)
+  estimatedHrs Float?        @default(0)
+  progress     Int           @default(0)
+  description  String?
+  tags         String?
+  users        Json?
+  createdById  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bugs         Bug[]
+  tasks        ProjectTask[]
+  timeTrackers TimeTracker[]
+  timesheets   Timesheet[]
+  zoomMeetings ZoomMeeting[]
+
+  @@map("project")
+}
+
+model ProjectTask {
+  id           String        @id @default(cuid())
+  taskKey      String        @unique
+  projectId    String
+  name         String
+  description  String?
+  priority     String
+  stage        String
+  startDate    DateTime?
+  endDate      DateTime?
+  estimatedHrs Float         @default(0)
+  completion   Float         @default(0)
+  attachments  Int           @default(0)
+  comments     Int           @default(0)
+  checklists   Int           @default(0)
+  isOwner      Boolean       @default(false)
+  assignedTo   Json?         @default("[]")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  project      Project       @relation(fields: [projectId], references: [projectId])
+  timeTrackers TimeTracker[]
+  timesheets   Timesheet[]
+
+  @@map("project_task")
+}
+
+model ProjectTaskStage {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("project_task_stage")
+}
+
+model Timesheet {
+  id          String       @id @default(cuid())
+  projectId   String
+  taskId      String?
+  date        DateTime
+  minutes     Int
+  userName    String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     Project      @relation(fields: [projectId], references: [projectId])
+  task        ProjectTask? @relation(fields: [taskId], references: [id])
+
+  @@map("timesheet")
+}
+
+model BugStatus {
+  id        String   @id @default(cuid())
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bugs      Bug[]
+
+  @@map("bug_status")
+}
+
+model Bug {
+  id          String     @id @default(cuid())
+  bugKey      String     @unique
+  projectId   String
+  title       String
+  priority    String
+  startDate   DateTime?
+  dueDate     DateTime?
+  description String?
+  statusId    String?
+  createdBy   String?
+  assignedTo  Json?      @default("[]")
+  attachments Int        @default(0)
+  comments    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  project     Project    @relation(fields: [projectId], references: [projectId])
+  status      BugStatus? @relation(fields: [statusId], references: [id])
+
+  @@map("bug")
+}
+
+model TimeTracker {
+  id           String       @id @default(cuid())
+  projectId    String
+  taskId       String?
+  name         String
+  isActive     Boolean      @default(false)
+  isBillable   Boolean      @default(false)
+  startTime    DateTime
+  endTime      DateTime?
+  totalSeconds Int          @default(0)
+  userName     String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  project      Project      @relation(fields: [projectId], references: [projectId])
+  task         ProjectTask? @relation(fields: [taskId], references: [id])
+
+  @@map("time_tracker")
+}

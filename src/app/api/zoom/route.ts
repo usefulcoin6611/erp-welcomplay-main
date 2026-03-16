@@ -73,21 +73,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
     const url = new URL(request.url);
     const search = url.searchParams.get("search")?.trim() || "";
     const projectId = url.searchParams.get("projectId")?.trim() || "";
 
-    const where: Record<string, unknown> = {};
+    const where: any = {
+      OR: [
+        { createdBy: { id: companyId } },
+        { createdBy: { ownerId: companyId } }
+      ]
+    };
 
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { project: { name: { contains: search, mode: "insensitive" } } },
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: search, mode: "insensitive" } },
+            { project: { name: { contains: search, mode: "insensitive" } } },
+          ]
+        }
       ];
     }
 
     if (projectId) {
-      where.projectId = projectId;
+      if (!where.AND) where.AND = [];
+      where.AND.push({ projectId });
     }
 
     const meetings = await prisma.zoomMeeting.findMany({
@@ -121,7 +138,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as { id: string }).id;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const rawBody = await request.json();
     const validation = createSchema.safeParse(rawBody);
 
@@ -150,12 +169,21 @@ export async function POST(request: NextRequest) {
 
     let resolvedProjectId: string | null = null;
     if (projectId) {
+      // Find project and verify it belongs to the company (via createdBy)
       const project = await prisma.project.findFirst({
-        where: { OR: [{ id: projectId }, { projectId }] },
+        where: { 
+          OR: [{ id: projectId }, { projectId }],
+          createdBy: {
+            OR: [
+              { id: companyId },
+              { ownerId: companyId }
+            ]
+          }
+        },
       });
       if (!project) {
         return NextResponse.json(
-          { success: false, message: "Project not found" },
+          { success: false, message: "Project not found or access denied" },
           { status: 400 }
         );
       }
@@ -163,13 +191,21 @@ export async function POST(request: NextRequest) {
     }
 
     const uniqueUserIds = [...new Set([userId, ...participantUserIds])];
+    // Verify all participants belong to the same company
     const usersExist = await prisma.user.findMany({
-      where: { id: { in: uniqueUserIds } },
+      where: { 
+        id: { in: uniqueUserIds },
+        OR: [
+          { id: companyId },
+          { ownerId: companyId }
+        ]
+      },
       select: { id: true },
     });
+
     if (usersExist.length !== uniqueUserIds.length) {
       return NextResponse.json(
-        { success: false, message: "One or more selected users do not exist" },
+        { success: false, message: "One or more selected users are invalid or from another company" },
         { status: 400 }
       );
     }

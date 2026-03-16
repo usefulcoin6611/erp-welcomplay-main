@@ -82,6 +82,7 @@ export default function SubscribePage({ params }: SubscribePageProps) {
   const [orderAmount, setOrderAmount] = React.useState<number | null>(null)
   const [orderSubtotal, setOrderSubtotal] = React.useState<number | null>(null)
   const [orderTax, setOrderTax] = React.useState<number | null>(null)
+  const [proratedCredit, setProratedCredit] = React.useState<number>(0)
 
   React.useEffect(() => {
     let cancelled = false
@@ -93,8 +94,13 @@ export default function SubscribePage({ params }: SubscribePageProps) {
         const id = resolvedParams.id
         setPlanId(id)
 
-        const res = await fetch(`/api/plans/${id}`, { cache: 'no-store' })
-        const json = await res.json()
+        const [planRes, quoteRes] = await Promise.all([
+          fetch(`/api/plans/${id}`, { cache: 'no-store' }),
+          fetch(`/api/subscription/quote?planId=${id}`, { cache: 'no-store' })
+        ])
+
+        const json = await planRes.json()
+        const quoteJson = await quoteRes.json()
 
         if (cancelled) return
 
@@ -122,6 +128,10 @@ export default function SubscribePage({ params }: SubscribePageProps) {
         } else {
           setPlan(null)
         }
+
+        if (quoteJson.success && quoteJson.data) {
+          setProratedCredit(quoteJson.data.proratedCredit || 0)
+        }
       } catch {
         if (!cancelled) setPlan(null)
       } finally {
@@ -142,7 +152,12 @@ export default function SubscribePage({ params }: SubscribePageProps) {
         const res = await fetch(`/api/orders/${initialOrderId}/payment-info`)
         const json = await res.json()
         if (json.success && json.data) {
-          setPaymentData(json.data.paymentDetails)
+          // Merge top-level paymentStatus into paymentDetails so View gets the correct initial state
+          const updatedPaymentData = {
+            ...json.data.paymentDetails,
+            paymentStatus: json.data.paymentStatus
+          }
+          setPaymentData(updatedPaymentData)
           setOrderAmount(json.data.price)
           setOrderSubtotal(json.data.subtotal)
           setOrderTax(json.data.tax)
@@ -239,14 +254,15 @@ export default function SubscribePage({ params }: SubscribePageProps) {
         setOrderAmount(json.data.price)
         setOrderSubtotal(json.data.subtotal)
         setOrderTax(json.data.tax)
+        if (json.data.proratedCredit) setProratedCredit(json.data.proratedCredit)
         setView('payment')
         toast.success('Pesanan dibuat. Silakan ikuti instruksi pembayaran.')
       } else if (json.data?.paymentStatus === 'success') {
         toast.success(json.message || 'Subscription activated successfully')
-        router.push('/settings?tab=subscription-plan')
+        router.push('/dashboard')
       } else {
         toast.success(json.message || 'Subscription order created')
-        router.push('/settings?tab=subscription-plan')
+        router.push('/dashboard')
       }
     } catch (error) {
       console.error('Submit error:', error)
@@ -341,9 +357,10 @@ export default function SubscribePage({ params }: SubscribePageProps) {
   }
 
   const planPriceIdr = plan.price
+  const basePriceAfterProration = Math.max(0, planPriceIdr - proratedCredit)
   const discountPercent = appliedCoupon?.discount ?? 0
-  const discountAmount = Math.round(planPriceIdr * (discountPercent / 100))
-  const priceAfterDiscount = Math.max(0, planPriceIdr - discountAmount)
+  const discountAmount = Math.round(basePriceAfterProration * (discountPercent / 100))
+  const priceAfterDiscount = Math.max(0, basePriceAfterProration - discountAmount)
   const totalPrice = Math.round(priceAfterDiscount * 1.11) // Include 11% tax (Pajak 11%)
 
   return (
@@ -593,6 +610,12 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                           <span className="text-slate-500">Harga Paket</span>
                           <span className="text-slate-800 font-medium">{formatPriceIdr(planPriceIdr)}</span>
                         </div>
+                        {proratedCredit > 0 && (
+                          <div className="flex justify-between text-xs text-blue-600 font-bold bg-blue-50/50 p-1 rounded-lg">
+                            <span>Sisa Saldo Plan Lama</span>
+                            <span>-{formatPriceIdr(proratedCredit)}</span>
+                          </div>
+                        )}
                         {discountPercent > 0 && (
                           <div className="flex justify-between text-xs text-green-600 font-medium">
                             <span>Diskon ({appliedCoupon?.code})</span>
@@ -645,6 +668,7 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                 subtotal={orderSubtotal || priceAfterDiscount}
                 tax={orderTax || Math.round(priceAfterDiscount * 0.11)}
                 onBack={() => setView('form')}
+                proratedCredit={proratedCredit}
               />
             )}
           </div>

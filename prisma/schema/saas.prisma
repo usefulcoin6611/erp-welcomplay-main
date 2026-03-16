@@ -1,0 +1,61 @@
+model Plan {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  price        Float    @default(0)
+  duration     String   @default("month")
+  maxUsers     Int      @default(5)
+  maxCustomers Int      @default(5)
+  maxVenders   Int      @default(5)
+  maxClients   Int      @default(5)
+  storageLimit Int      @default(1024)
+  trialDays    Int      @default(0)
+  isDisable    Boolean  @default(false)
+  hasAccount   Boolean  @default(true)
+  hasCrm       Boolean  @default(true)
+  hasHrm       Boolean  @default(true)
+  hasProject   Boolean  @default(false)
+  hasPos       Boolean  @default(false)
+  hasChatgpt   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("plan")
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  discount  Float    @default(0)
+  limit     Int      @default(0)
+  used      Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("coupon")
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  orderId        String   @unique
+  userId         String?
+  userName       String
+  planName       String
+  price          Float    @default(0)
+  paymentStatus  String   @default("Pending")
+  paymentType    String   @default("Bank Transfer")
+  coupon         String?
+  receipt        String?
+  isRefund       Int      @default(0)
+  orderDate      DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  paymentDetails Json?
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([orderDate])
+  @@map("order")
+}

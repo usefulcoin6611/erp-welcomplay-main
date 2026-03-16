@@ -49,7 +49,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { calculateUpgradeProration } = await import("@/lib/subscription")
+    const proratedCredit = await calculateUpgradeProration(userId, plan.price)
+
     let price = Number(plan.price) || 0
+    // Apply proration: subtract unused value of old plan from new plan price
+    const basePrice = Math.max(0, price - proratedCredit)
+    
     let appliedCouponCode: string | null = null
     let discountPercent = 0
 
@@ -63,8 +69,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const discountAmount = price * (discountPercent / 100)
-    const priceAfterDiscount = Math.max(0, Math.round(price - discountAmount))
+    const discountAmount = basePrice * (discountPercent / 100)
+    const priceAfterDiscount = Math.max(0, Math.round(basePrice - discountAmount))
     const taxAmount = Math.round(priceAfterDiscount * 0.11) // 11% tax
     const totalAmount = priceAfterDiscount + taxAmount
 
@@ -151,6 +157,7 @@ export async function POST(request: NextRequest) {
         price: totalAmount,
         subtotal: priceAfterDiscount,
         tax: taxAmount,
+        proratedCredit: proratedCredit,
         paymentStatus,
         midtransResponse, // Frontend will handle this
       },

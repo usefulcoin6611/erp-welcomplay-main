@@ -23,9 +23,16 @@ function SettingsContent() {
   const tabParam = searchParams.get('tab')
 
   // Validasi tab: hanya user company yang bisa akses settings
-  const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program'] // order = Subscription History
-  const isValidTab = isCompany && (!tabParam || companyTabs.includes(tabParam))
-  const activeTab = isValidTab ? (tabParam || 'system-settings') : 'system-settings'
+  const hasPlan = !!user?.plan
+  const companyTabs = ['system-settings', 'subscription-plan', 'order', 'referral-program']
+  
+  // Jika belum punya plan, batasi tab yang bisa diakses
+  const allowedTabs = !hasPlan 
+    ? ['subscription-plan', 'order'] 
+    : companyTabs
+
+  const isValidTab = isCompany && (!tabParam || allowedTabs.includes(tabParam))
+  const activeTab = isValidTab ? (tabParam || (hasPlan ? 'system-settings' : 'subscription-plan')) : (hasPlan ? 'system-settings' : 'subscription-plan')
 
   // Redirect jika user bukan company atau tab tidak valid
   React.useEffect(() => {
@@ -35,10 +42,17 @@ function SettingsContent() {
       router.replace('/')
       return
     }
-    if (!isValidTab && tabParam) {
-      router.replace(`/settings?tab=system-settings`, { scroll: false })
+
+    // Redirect ke subscription-plan jika mencoba akses tab lain tanpa plan
+    if (!hasPlan && tabParam !== 'subscription-plan' && tabParam !== 'order') {
+      router.replace(`/settings?tab=subscription-plan`, { scroll: false })
+      return
     }
-  }, [isLoading, isCompany, isValidTab, tabParam, router])
+
+    if (!isValidTab && tabParam) {
+      router.replace(`/settings?tab=${hasPlan ? 'system-settings' : 'subscription-plan'}`, { scroll: false })
+    }
+  }, [isLoading, isCompany, hasPlan, isValidTab, tabParam, router])
 
   const handleTabChange = (tabId: string) => {
     router.push(`/settings?tab=${tabId}`, { scroll: false })
@@ -46,9 +60,9 @@ function SettingsContent() {
 
   const tabs = React.useMemo(
     () => {
-      // Tampilkan 4 tab untuk user company
+      // Tampilkan tab untuk user company
       if (isCompany) {
-        return [
+        const allTabs = [
           {
             id: 'system-settings',
             title: 'System Settings',
@@ -86,6 +100,9 @@ function SettingsContent() {
             ),
           },
         ]
+
+        // Filter tabs berdasarkan kepemilikan plan
+        return allTabs.filter(tab => allowedTabs.includes(tab.id))
       }
 
       // Jika bukan company, tidak ada tab

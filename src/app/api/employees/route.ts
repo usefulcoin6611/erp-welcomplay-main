@@ -46,17 +46,22 @@ async function generateNextEmployeeId() {
   return `EMP${nextNumber.toString().padStart(3, "0")}`;
 }
 
+import { getTenantFilter, getTenantId } from "@/lib/multi-tenancy";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantFilter = await getTenantFilter(session.user);
+
     const employees = await (prisma as any).employee.findMany({
+      where: tenantFilter,
       orderBy: {
         createdAt: "desc",
       },
@@ -246,6 +251,8 @@ export async function POST(request: NextRequest) {
       userId = existingUser.id;
     }
 
+    const ownerId = getTenantId(session.user);
+
     if (data.needsUserAccess && !userId) {
       // Business logic: /users lists users by branchId. When company creates an employee here,
       // the new User must have the same branchId so they appear on /users. Super admin can
@@ -278,6 +285,7 @@ export async function POST(request: NextRequest) {
           emailVerified: false,
           branchId,
           departmentId,
+          ownerId, // Set ownerId for the new user
         },
       });
 
@@ -295,6 +303,7 @@ export async function POST(request: NextRequest) {
 
     if (formData) {
       const documentTypes = await (prisma as any).documentType.findMany({
+        where: { ownerId }, // Only use document types for this tenant
         orderBy: { createdAt: "asc" },
       });
 
@@ -375,6 +384,7 @@ export async function POST(request: NextRequest) {
         branchLocation: data.branchLocation ?? null,
         taxPayerId: data.taxPayerId ?? null,
         userId,
+        ownerId,
       },
     });
 

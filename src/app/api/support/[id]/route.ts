@@ -43,10 +43,13 @@ export async function GET(
     }
 
     const { id } = await params;
+    const { id: sessionUserId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
     const ticket = await prisma.supportTicket.findUnique({
       where: { id },
       include: {
-        createdBy: { select: { id: true, name: true, image: true } },
+        createdBy: { select: { id: true, name: true, image: true, ownerId: true } },
         assignUser: { select: { id: true, name: true } },
         _count: { select: { replies: true } },
       },
@@ -55,6 +58,16 @@ export async function GET(
     if (!ticket) {
       return NextResponse.json(
         { success: false, message: "Ticket not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify ownership
+    const creator = ticket.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
         { status: 404 }
       );
     }
@@ -83,6 +96,30 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const { id: sessionUserId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
+    const existing = await prisma.supportTicket.findUnique({
+      where: { id },
+      include: { createdBy: { select: { id: true, ownerId: true } } }
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, message: "Ticket not found" },
+        { status: 404 }
+      );
+    }
+
+    const creator = existing.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const status = body.status as string | undefined;
 
@@ -123,11 +160,35 @@ export async function PUT(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
+    const { id: sessionUserId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
+    const existing = await prisma.supportTicket.findUnique({
+      where: { id },
+      include: { createdBy: { select: { id: true, ownerId: true } } }
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, message: "Ticket not found" },
+        { status: 404 }
+      );
+    }
+
+    const creator = existing.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 404 }
+      );
+    }
+
     const contentType = request.headers.get("content-type") ?? "";
 
     let subject: string | undefined;
@@ -175,6 +236,24 @@ export async function PUT(
       attachmentPath = body.attachment;
     }
 
+    if (assignUserId) {
+      const userExists = await prisma.user.findFirst({
+        where: {
+          id: assignUserId,
+          OR: [
+            { id: companyId },
+            { ownerId: companyId }
+          ]
+        }
+      });
+      if (!userExists) {
+        return NextResponse.json(
+          { success: false, message: "Invalid assigned user" },
+          { status: 400 }
+        );
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
     if (subject !== undefined) updateData.subject = subject;
     if (assignUserId !== undefined) updateData.assignUserId = assignUserId;
@@ -214,11 +293,35 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
+    const { id: sessionUserId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
+    const existing = await prisma.supportTicket.findUnique({
+      where: { id },
+      include: { createdBy: { select: { id: true, ownerId: true } } }
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, message: "Ticket not found" },
+        { status: 404 }
+      );
+    }
+
+    const creator = existing.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 404 }
+      );
+    }
+
     await prisma.supportTicket.delete({ where: { id } });
     return NextResponse.json({
       success: true,

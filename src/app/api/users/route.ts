@@ -98,15 +98,27 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {};
 
-    if (user.role === "company") {
-      // Company: only employees in the same branch (clients are managed on /clients)
-      where.branchId = user.branchId ?? null;
-      where.role = "employee";
-    } else if (user.role === "super admin" && view === "companies") {
+    const { id: sessionUserId, role, ownerId, branchId: sessionBranchId } = user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
+    if (role === "company") {
+      // Company: only employees/users belonging to this company
+      where.OR = [
+        { id: companyId },
+        { ownerId: companyId }
+      ];
+      where.role = { in: ["employee", "client"] };
+    } else if (role === "super admin" && view === "companies") {
       where.role = "company";
-    } else if (user.role === "super admin") {
-      // Super admin default list: only employees (clients are on /clients)
+    } else if (role === "super admin") {
+      // Super admin list: potentially see all or just independent employees
       where.role = "employee";
+    } else if (role === "employee") {
+      // Employee: see colleagues in same company
+      where.OR = [
+        { id: companyId },
+        { ownerId: companyId }
+      ];
     }
 
     const users = await prisma.user.findMany({
@@ -120,7 +132,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = users.map((u) => ({
+    const data = users.map((u: any) => ({
       ...toUserRow(u),
       sessions: undefined,
     }));

@@ -1,0 +1,87 @@
+model PerformanceType {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("performance_type")
+}
+
+model Competency {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("competency")
+}
+
+model PerformanceIndicator {
+  id                       String   @id @default(cuid())
+  branch                   String
+  department               String
+  designation              String
+  technicalRating          Float
+  organizationalRating     Float
+  customerExperienceRating Float
+  overallRating            Float
+  addedBy                  String   @default("")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  periodYear               Int?
+  periodQuarter            Int?
+
+  @@unique([branch, department, designation, periodYear, periodQuarter], map: "performance_indicator_period_key")
+  @@map("performance_indicator")
+}
+
+model PerformanceAppraisal {
+  id                  String   @id @default(cuid())
+  employeeId          String
+  branch              String
+  department          String
+  designation         String
+  targetRating        Float
+  overallRating       Float
+  appraisalDate       DateTime
+  technicalRating     Float?
+  leadershipRating    Float?
+  teamworkRating      Float?
+  communicationRating Float?
+  remarks             String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  employee            Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("performance_appraisal")
+}
+
+model PerformanceGoal {
+  id                String   @id @default(cuid())
+  goalTypeId        String
+  subject           String
+  branch            String
+  targetAchievement String
+  startDate         DateTime
+  endDate           DateTime
+  rating            Int
+  progress          Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  goalType          GoalType @relation(fields: [goalTypeId], references: [id])
+
+  @@map("performance_goal")
+}
+
+model GoalType {
+  id               String            @id @default(cuid())
+  name             String
+  ownerId          String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  performanceGoals PerformanceGoal[]
+
+  @@map("goal_type")
+}

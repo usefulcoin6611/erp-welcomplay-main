@@ -74,7 +74,7 @@ import { seedPlans } from "./seeds/plans";
 import { seedCoupons } from "./seeds/coupons";
 import { seedOrders } from "./seeds/orders";
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);

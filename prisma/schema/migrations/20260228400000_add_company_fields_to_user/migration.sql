@@ -1,0 +1,5 @@
+-- AlterTable: Add company-specific fields to User model
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "plan" TEXT;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "planExpireDate" TIMESTAMP(3);
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "isEnableLogin" BOOLEAN NOT NULL DEFAULT true;

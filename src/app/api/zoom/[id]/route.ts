@@ -79,12 +79,14 @@ export async function GET(
     }
 
     const { id } = await context.params;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const meeting = await prisma.zoomMeeting.findUnique({
       where: { id },
       include: {
         project: { select: { id: true, name: true, projectId: true } },
-        createdBy: { select: { id: true, name: true, email: true, image: true } },
+        createdBy: { select: { id: true, name: true, email: true, image: true, ownerId: true } },
         participants: { include: { user: { select: { id: true, name: true, email: true, image: true } } } },
       },
     });
@@ -93,6 +95,16 @@ export async function GET(
       return NextResponse.json(
         { success: false, message: "Meeting not found" },
         { status: 404 }
+      );
+    }
+
+    // Verify ownership
+    const creator = meeting.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 404 } // Use 404 to avoid leaking existence
       );
     }
 
@@ -120,6 +132,9 @@ export async function PATCH(
     }
 
     const { id } = await context.params;
+    const { id: sessionUserId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? sessionUserId : ownerId;
+
     const rawBody = await request.json();
     const validation = updateSchema.safeParse(rawBody);
 
@@ -137,7 +152,10 @@ export async function PATCH(
 
     const existing = await prisma.zoomMeeting.findUnique({
       where: { id },
-      include: { participants: true },
+      include: { 
+        participants: true,
+        createdBy: { select: { id: true, ownerId: true } }
+      },
     });
 
     if (!existing) {
@@ -147,16 +165,34 @@ export async function PATCH(
       );
     }
 
+    // Verify ownership
+    const creator = existing.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
+        { status: 404 }
+      );
+    }
+
     const data = validation.data;
 
     let resolvedProjectId: string | null | undefined = data.projectId;
     if (data.projectId !== undefined && data.projectId !== null) {
       const project = await prisma.project.findFirst({
-        where: { OR: [{ id: data.projectId }, { projectId: data.projectId }] },
+        where: { 
+          OR: [{ id: data.projectId }, { projectId: data.projectId }],
+          createdBy: {
+            OR: [
+              { id: companyId },
+              { ownerId: companyId }
+            ]
+          }
+        },
       });
       if (!project) {
         return NextResponse.json(
-          { success: false, message: "Project not found" },
+          { success: false, message: "Project not found or access denied" },
           { status: 400 }
         );
       }
@@ -167,12 +203,18 @@ export async function PATCH(
       const creatorId = existing.createdById;
       const uniqueUserIds = [...new Set([creatorId, ...data.participantUserIds])];
       const usersExist = await prisma.user.findMany({
-        where: { id: { in: uniqueUserIds } },
+        where: { 
+          id: { in: uniqueUserIds },
+          OR: [
+            { id: companyId },
+            { ownerId: companyId }
+          ]
+        },
         select: { id: true },
       });
       if (usersExist.length !== uniqueUserIds.length) {
         return NextResponse.json(
-          { success: false, message: "One or more selected users do not exist" },
+          { success: false, message: "One or more selected users are invalid or from another company" },
           { status: 400 }
         );
       }
@@ -226,12 +268,29 @@ export async function DELETE(
     }
 
     const { id } = await context.params;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const existing = await prisma.zoomMeeting.findUnique({ where: { id } });
+    const existing = await prisma.zoomMeeting.findUnique({ 
+      where: { id },
+      include: {
+        createdBy: { select: { id: true, ownerId: true } }
+      }
+    });
 
     if (!existing) {
       return NextResponse.json(
         { success: false, message: "Meeting not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify ownership
+    const creator = existing.createdBy;
+    const creatorCompanyId = creator.ownerId || creator.id;
+    if (creatorCompanyId !== companyId) {
+      return NextResponse.json(
+        { success: false, message: "Access denied" },
         { status: 404 }
       );
     }

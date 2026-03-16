@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth-server";
 
 const SETTING_KEY = "system_brand_settings";
 
@@ -7,8 +8,8 @@ type BrandSettings = {
   logo_dark: string | null;
   logo_light: string | null;
   favicon: string | null;
-  title_text: string;
-  footer_text: string;
+  title_text: string | null;
+  footer_text: string | null;
   default_language: string;
   landing_page: boolean;
   enable_signup: boolean;
@@ -24,8 +25,8 @@ function getDefaultSettings(): BrandSettings {
     logo_dark: null,
     logo_light: null,
     favicon: null,
-    title_text: "ERPGo SaaS",
-    footer_text: "ERPGo SaaS",
+    title_text: null,
+    footer_text: null,
     default_language: "en",
     landing_page: true,
     enable_signup: true,
@@ -37,11 +38,31 @@ function getDefaultSettings(): BrandSettings {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
-    });
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id;
+
+    // First try to find user-specific settings if userId exists
+    let existing = null;
+    if (userId) {
+      existing = await prisma.setting.findFirst({
+        where: {
+          key: SETTING_KEY,
+          userId: userId,
+        },
+      });
+    }
+
+    // If no user-specific settings, fallback to global settings
+    if (!existing) {
+      existing = await prisma.setting.findFirst({
+        where: {
+          key: SETTING_KEY,
+          userId: null,
+        },
+      });
+    }
 
     if (!existing) {
       return NextResponse.json({
@@ -51,7 +72,6 @@ export async function GET() {
     }
 
     let parsed: BrandSettings | null = null;
-
     try {
       parsed = JSON.parse(existing.value);
     } catch {
@@ -59,7 +79,6 @@ export async function GET() {
     }
 
     const data = { ...getDefaultSettings(), ...(parsed || {}) };
-
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Error loading brand settings:", error);
@@ -76,12 +95,27 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<BrandSettings>;
-    const current = getDefaultSettings();
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
 
-    // Fetch existing settings to preserve values that aren't provided in the update
+    const { role, id: userId } = session.user as any;
+    // Super admin edits global settings (userId: null)
+    // Company owners edit their own settings
+    const targetUserId = role === "super admin" ? null : userId;
+
+    const body = (await request.json()) as Partial<BrandSettings>;
+    const currentDefaults = getDefaultSettings();
+
+    // Fetch existing settings for this target to preserve values
     const existing = await prisma.setting.findUnique({
-      where: { key: SETTING_KEY },
+      where: {
+        key_userId: {
+          key: SETTING_KEY,
+          userId: targetUserId,
+        },
+      },
     });
 
     let existingParsed = {};
@@ -94,19 +128,26 @@ export async function PUT(request: NextRequest) {
     }
 
     const merged: BrandSettings = {
-      ...current,
+      ...currentDefaults,
       ...existingParsed,
       ...body,
     };
 
     await prisma.setting.upsert({
-      where: { key: SETTING_KEY },
+      where: {
+        key_userId: {
+          key: SETTING_KEY,
+          userId: targetUserId as any,
+        },
+      },
       update: { value: JSON.stringify(merged) },
       create: {
         key: SETTING_KEY,
+        userId: targetUserId,
         value: JSON.stringify(merged),
       },
     });
+
     return NextResponse.json({ success: true, data: merged });
   } catch (error) {
     console.error("Error saving brand settings:", error);

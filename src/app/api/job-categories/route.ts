@@ -8,17 +8,22 @@ const jobCategorySchema = z.object({
   name: z.string().trim().min(1, "Nama job category wajib diisi"),
 });
 
+import { getTenantFilter, getTenantId } from "@/lib/multi-tenancy";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantFilter = await getTenantFilter(session.user);
+
     const jobCategories = await (prisma as any).jobCategory.findMany({
+      where: tenantFilter,
       orderBy: {
         createdAt: "desc",
       },
@@ -67,10 +72,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { name } = validation.data;
+    const ownerId = getTenantId(session.user);
 
     const jobCategory = await (prisma as any).jobCategory.create({
       data: {
         name,
+        ownerId,
       },
     });
 

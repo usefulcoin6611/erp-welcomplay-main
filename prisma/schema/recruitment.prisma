@@ -1,0 +1,129 @@
+model JobCategory {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+
+  @@map("job_category")
+}
+
+model RecruitmentQuestion {
+  id           String        @id @default(cuid())
+  question     String
+  isRequired   Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  jobQuestions JobQuestion[]
+
+  @@map("recruitment_question")
+}
+
+model Job {
+  id            String           @id @default(cuid())
+  title         String
+  branchId      String
+  jobCategoryId String
+  positions     Int              @default(1)
+  status        String           @default("active")
+  startDate     DateTime
+  endDate       DateTime
+  description   String?
+  requirement   String?
+  skill         Json?
+  applicant     Json?
+  visibility    Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  branch        Branch           @relation(fields: [branchId], references: [id])
+  jobCategory   JobCategory      @relation(fields: [jobCategoryId], references: [id])
+  applications  JobApplication[]
+  jobQuestions  JobQuestion[]
+
+  @@map("job")
+}
+
+model JobQuestion {
+  jobId      String
+  questionId String
+  order      Int                 @default(0)
+  job        Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  question   RecruitmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, questionId])
+  @@map("job_question")
+}
+
+model JobApplication {
+  id             String                 @id @default(cuid())
+  jobId          String
+  stageId        String
+  applicantName  String
+  email          String
+  phone          String
+  appliedDate    DateTime
+  rating         Int                    @default(0)
+  resume         String?
+  coverLetter    String?
+  isArchive      Boolean                @default(false)
+  dob            String?
+  gender         String?
+  country        String?
+  state          String?
+  city           String?
+  profile        String?
+  skill          String?
+  customQuestion Json?
+  notes          Json?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  job            Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  stage          JobStage               @relation(fields: [stageId], references: [id])
+  onboarding     JobOnboarding?
+  interviews     RecruitmentInterview[]
+
+  @@map("job_application")
+}
+
+model RecruitmentInterview {
+  id            String         @id @default(cuid())
+  applicationId String
+  interviewDate DateTime
+  interviewTime String
+  interviewer   String
+  location      String
+  status        String         @default("Scheduled")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("recruitment_interview")
+}
+
+model JobStage {
+  id           String           @id @default(cuid())
+  name         String
+  ownerId      String?
+  order        Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+
+  @@map("job_stage")
+}
+
+model JobOnboarding {
+  id             String         @id @default(cuid())
+  applicationId  String         @unique
+  employeeId     String?        @unique
+  status         String         @default("pending")
+  onboardingDate DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  application    JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employee       Employee?      @relation(fields: [employeeId], references: [id])
+
+  @@map("job_onboarding")
+}

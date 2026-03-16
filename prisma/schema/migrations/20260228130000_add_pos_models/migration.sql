@@ -1,0 +1,2 @@
+-- No-op: POS models (warehouse, pos_order, pos_order_item, barcode_setting) already created in 20260227300000_add_pos_models.
+-- This migration was added to satisfy Prisma migration history.

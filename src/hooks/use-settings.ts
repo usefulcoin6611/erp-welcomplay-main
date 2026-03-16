@@ -11,7 +11,12 @@ export function useSettings<T>(url: string, initial: T) {
             .then((res) => res.json())
             .then((json) => {
                 if (!cancelled && json.success && json.data) {
-                    setFormData(json.data);
+                    // Sanitize null values to empty strings to prevent React input warnings
+                    const sanitized = Object.keys(json.data).reduce((acc, key) => {
+                        acc[key as keyof T] = json.data[key] === null ? ('' as any) : json.data[key];
+                        return acc;
+                    }, {} as T);
+                    setFormData(sanitized);
                 }
             })
             .catch((err) => console.error("Error fetching settings:", err))
@@ -35,7 +40,11 @@ export function useSettings<T>(url: string, initial: T) {
             if (json.success) {
                 toast.success("Settings saved!");
                 if (json.data) {
-                    setFormData(json.data);
+                    const sanitized = Object.keys(json.data).reduce((acc, key) => {
+                        acc[key as keyof T] = json.data[key] === null ? ('' as any) : json.data[key];
+                        return acc;
+                    }, {} as T);
+                    setFormData(sanitized);
                 }
                 return json.data;
             } else {

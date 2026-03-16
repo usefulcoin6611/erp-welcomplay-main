@@ -9,17 +9,22 @@ const documentTypeSchema = z.object({
   requiredField: z.coerce.boolean().optional(),
 });
 
+import { getTenantFilter, getTenantId } from "@/lib/multi-tenancy";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantFilter = await getTenantFilter(session.user);
+
     const documentTypes = await (prisma as any).documentType.findMany({
+      where: tenantFilter,
       orderBy: {
         createdAt: "desc",
       },
@@ -68,11 +73,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, requiredField = false } = validation.data;
+    const ownerId = getTenantId(session.user);
 
     const documentType = await (prisma as any).documentType.create({
       data: {
         name,
         requiredField,
+        ownerId,
       },
     });
 

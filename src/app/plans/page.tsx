@@ -491,7 +491,7 @@ export default function PlansPage() {
                               checked={!plan.is_disable}
                               onCheckedChange={() => handleToggleDisable(plan)}
                               title={plan.is_disable ? 'Enable plan' : 'Disable plan'}
-                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300 cursor-pointer"
                             />
                           )}
                         </div>

@@ -42,6 +42,7 @@ interface Order {
   userId?: string
   userEmail?: string
   userCurrentPlan?: string
+  company_name?: string
 }
 
 interface OrderSummary {
@@ -145,6 +146,7 @@ export default function OrdersPage() {
       (order) =>
         order.order_id.toLowerCase().includes(q) ||
         order.user_name.toLowerCase().includes(q) ||
+        (order.company_name && order.company_name.toLowerCase().includes(q)) ||
         order.plan_name.toLowerCase().includes(q) ||
         order.payment_type.toLowerCase().includes(q) ||
         (order.coupon && order.coupon.toLowerCase().includes(q))
@@ -380,9 +382,10 @@ export default function OrdersPage() {
                     <table className="w-full">
                       <thead className="bg-white">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Order Id</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium">Plan Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Order Id</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Company</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Plan Name</th>
                           <th className="px-4 py-3 text-left text-xs font-medium">Price</th>
                           <th className="px-4 py-3 text-left text-xs font-medium">Status</th>
                           <th className="px-4 py-3 text-left text-xs font-medium">Payment Type</th>
@@ -399,7 +402,8 @@ export default function OrdersPage() {
                           paginatedData.map((order) => (
                             <tr key={order.id} className="border-t hover:bg-muted/50">
                               <td className="px-4 py-3 text-sm font-mono">{order.order_id}</td>
-                              <td className="px-4 py-3 text-sm">{order.user_name}</td>
+                              <td className="px-4 py-3 text-sm font-medium">{order.company_name}</td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">{order.user_name}</td>
                               <td className="px-4 py-3">
                                 <Badge className={getPlanBadgeColors(order.plan_name)}>{order.plan_name}</Badge>
                               </td>

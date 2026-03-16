@@ -96,7 +96,7 @@ interface LandingPageSettings {
   // Top Bar
   topbar_status: 'on' | 'off'
   topbar_notification_msg: string
-  
+
   // Home
   home_offer_text: string
   home_title: string
@@ -107,7 +107,7 @@ interface LandingPageSettings {
   home_buy_now_link: string
   home_banner: string
   home_logo: string[]
-  
+
   // Features
   feature_status: 'on' | 'off'
   feature_title: string
@@ -117,42 +117,42 @@ interface LandingPageSettings {
   highlight_feature_heading: string
   highlight_feature_description: string
   highlight_feature_image: string
-  
+
   // Discover
   discover_status: 'on' | 'off'
   discover_heading: string
   discover_description: string
   discover_live_demo_link: string
   discover_buy_now_link: string
-  
+
   // Screenshots
   screenshots_status: 'on' | 'off'
   screenshots_heading: string
   screenshots_description: string
-  
+
   // Pricing Plan
   plan_status: 'on' | 'off'
   plan_title: string
   plan_heading: string
   plan_description: string
-  
+
   // FAQ
   faq_status: 'on' | 'off'
   faq_title: string
   faq_heading: string
   faq_description: string
-  
+
   // Testimonials
   testimonials_status: 'on' | 'off'
   testimonials_heading: string
   testimonials_description: string
   testimonials_long_description: string
-  
+
   // Join Us
   joinus_status: 'on' | 'off'
   joinus_heading: string
   joinus_description: string
-  
+
   // Custom Page
   site_logo: string
   site_description: string
@@ -234,12 +234,12 @@ const initialSettings: LandingPageSettings = {
   highlight_feature_image: '',
   discover_status: 'on',
   discover_heading: 'Discover powerful modules',
-  discover_description: 'From finance to HR to sales, ERPGo SaaS includes everything you need.',
+  discover_description: 'From finance to HR to sales, Welcomplay ERP includes everything you need.',
   discover_live_demo_link: '#',
   discover_buy_now_link: '#',
   screenshots_status: 'on',
   screenshots_heading: 'Beautiful and intuitive dashboards',
-  screenshots_description: 'Explore how ERPGo SaaS presents complex data in simple views.',
+  screenshots_description: 'Explore how Welcomplay ERP presents complex data in simple views.',
   plan_status: 'on',
   plan_title: 'PLAN',
   plan_heading: 'Choose Your Plan',
@@ -256,7 +256,7 @@ const initialSettings: LandingPageSettings = {
   joinus_heading: 'Join our newsletter',
   joinus_description: 'Get product updates, tips, and best practices directly to your inbox.',
   site_logo: '',
-  site_description: 'ERPGo SaaS - Modern ERP solution for your business',
+  site_description: 'Welcomplay ERP - Modern ERP solution for your business',
 }
 
 const mockFeatures: Feature[] = []
@@ -273,9 +273,9 @@ const mockCustomPages: CustomPage[] = [
     template_name: 'page_content',
     menubar_page_contant: '<h1>About Us</h1><p>Learn more about our company and mission.</p>',
     page_url: '',
-    header: true,
-    footer: true,
-    login: false,
+    header: 'on',
+    footer: 'on',
+    login: 'off',
   },
   {
     id: '2',
@@ -284,9 +284,9 @@ const mockCustomPages: CustomPage[] = [
     template_name: 'page_content',
     menubar_page_contant: '<h1>Terms and Conditions</h1><p>Please read our terms and conditions carefully.</p>',
     page_url: '',
-    header: true,
-    footer: true,
-    login: false,
+    header: 'on',
+    footer: 'on',
+    login: 'off',
   },
   {
     id: '3',
@@ -295,9 +295,9 @@ const mockCustomPages: CustomPage[] = [
     template_name: 'page_content',
     menubar_page_contant: '<h1>Privacy Policy</h1><p>Your privacy is important to us.</p>',
     page_url: '',
-    header: true,
-    footer: true,
-    login: false,
+    header: 'on',
+    footer: 'on',
+    login: 'off',
   },
   {
     id: '4',
@@ -306,22 +306,22 @@ const mockCustomPages: CustomPage[] = [
     template_name: 'page_url',
     menubar_page_contant: '',
     page_url: 'https://example.com/contact',
-    header: true,
-    footer: true,
-    login: false,
+    header: 'on',
+    footer: 'on',
+    login: 'off',
   },
 ]
 
-type Section = 
-  | 'topbar' 
-  | 'custom_page' 
-  | 'home' 
-  | 'features' 
-  | 'discover' 
-  | 'screenshots' 
-  | 'pricing_plan' 
-  | 'faq' 
-  | 'testimonials' 
+type Section =
+  | 'topbar'
+  | 'custom_page'
+  | 'home'
+  | 'features'
+  | 'discover'
+  | 'screenshots'
+  | 'pricing_plan'
+  | 'faq'
+  | 'testimonials'
   | 'join_us'
 
 const sections: { key: Section; label: string }[] = [
@@ -340,7 +340,7 @@ const sections: { key: Section; label: string }[] = [
 export default function LandingPagePage() {
   const { user } = useAuth()
   const isSuperAdmin = user?.type === 'super admin'
-  
+
   const [activeSection, setActiveSection] = useState<Section>('topbar')
   const [settings, setSettings] = useState<LandingPageSettings>(initialSettings)
   const [features, setFeatures] = useState<Feature[]>(mockFeatures)
@@ -591,11 +591,10 @@ export default function LandingPagePage() {
                           <button
                             key={section.key}
                             onClick={() => setActiveSection(section.key)}
-                            className={`relative w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-300 ease-out border-0 cursor-pointer rounded-md mx-1 my-0.5 group ${
-                              isActive
-                                ? 'bg-gradient-to-r from-blue-50/80 to-transparent dark:from-blue-950/50 dark:to-transparent text-blue-700 dark:text-blue-300 font-medium border-l-2 border-blue-500 dark:border-blue-400'
-                                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                            }`}
+                            className={`relative w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-300 ease-out border-0 cursor-pointer rounded-md mx-1 my-0.5 group ${isActive
+                              ? 'bg-gradient-to-r from-blue-50/80 to-transparent dark:from-blue-950/50 dark:to-transparent text-blue-700 dark:text-blue-300 font-medium border-l-2 border-blue-500 dark:border-blue-400'
+                              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                              }`}
                           >
                             <span className="relative z-10">{section.label}</span>
                             {isActive && (
@@ -672,115 +671,115 @@ export default function LandingPagePage() {
                       <CardContent className="p-3">
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="home_offer_text" className="text-sm font-medium text-gray-700 dark:text-gray-300">Offer Text</Label>
-                            <Input
-                              id="home_offer_text"
-                              value={settings.home_offer_text}
-                              onChange={(e) =>
-                                setSettings({ ...settings, home_offer_text: e.target.value })
-                              }
-                              placeholder="70% Special Offer"
-                              className={modernInputClass}
-                            />
+                            <div className="space-y-2">
+                              <Label htmlFor="home_offer_text" className="text-sm font-medium text-gray-700 dark:text-gray-300">Offer Text</Label>
+                              <Input
+                                id="home_offer_text"
+                                value={settings.home_offer_text}
+                                onChange={(e) =>
+                                  setSettings({ ...settings, home_offer_text: e.target.value })
+                                }
+                                placeholder="70% Special Offer"
+                                className={modernInputClass}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="home_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</Label>
+                              <Input
+                                id="home_title"
+                                value={settings.home_title}
+                                onChange={(e) =>
+                                  setSettings({ ...settings, home_title: e.target.value })
+                                }
+                                placeholder="Enter Title"
+                                className={modernInputClass}
+                              />
+                            </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="home_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">Title</Label>
+                            <Label htmlFor="home_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">Heading</Label>
                             <Input
-                              id="home_title"
-                              value={settings.home_title}
+                              id="home_heading"
+                              value={settings.home_heading}
                               onChange={(e) =>
-                                setSettings({ ...settings, home_title: e.target.value })
+                                setSettings({ ...settings, home_heading: e.target.value })
                               }
-                              placeholder="Enter Title"
-                              className={modernInputClass}
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="home_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">Heading</Label>
-                          <Input
-                            id="home_heading"
-                            value={settings.home_heading}
-                            onChange={(e) =>
-                              setSettings({ ...settings, home_heading: e.target.value })
-                            }
-                            placeholder="Enter Heading"
-                            className={modernInputClass}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="home_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
-                          <Input
-                            id="home_description"
-                            value={settings.home_description}
-                            onChange={(e) =>
-                              setSettings({ ...settings, home_description: e.target.value })
-                            }
-                            placeholder="Enter Description"
-                            className={modernInputClass}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="home_trusted_by" className="text-sm font-medium text-gray-700 dark:text-gray-300">Trusted by</Label>
-                          <Input
-                            id="home_trusted_by"
-                            value={settings.home_trusted_by}
-                            onChange={(e) =>
-                              setSettings({ ...settings, home_trusted_by: e.target.value })
-                            }
-                            placeholder="1,000+ customers"
-                            className={modernInputClass}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="home_live_demo_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Live Demo Link</Label>
-                            <Input
-                              id="home_live_demo_link"
-                              value={settings.home_live_demo_link}
-                              onChange={(e) =>
-                                setSettings({ ...settings, home_live_demo_link: e.target.value })
-                              }
-                              placeholder="Enter Link"
+                              placeholder="Enter Heading"
                               className={modernInputClass}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="home_buy_now_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Buy Now Link</Label>
+                            <Label htmlFor="home_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
                             <Input
-                              id="home_buy_now_link"
-                              value={settings.home_buy_now_link}
+                              id="home_description"
+                              value={settings.home_description}
                               onChange={(e) =>
-                                setSettings({ ...settings, home_buy_now_link: e.target.value })
+                                setSettings({ ...settings, home_description: e.target.value })
                               }
-                              placeholder="Enter Link"
+                              placeholder="Enter Description"
                               className={modernInputClass}
                             />
                           </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="home_banner" className="text-sm font-medium text-gray-700 dark:text-gray-300">Banner</Label>
-                          <div className="flex items-center gap-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="home_trusted_by" className="text-sm font-medium text-gray-700 dark:text-gray-300">Trusted by</Label>
                             <Input
-                              id="home_banner"
-                              type="file"
-                              accept="image/*"
+                              id="home_trusted_by"
+                              value={settings.home_trusted_by}
+                              onChange={(e) =>
+                                setSettings({ ...settings, home_trusted_by: e.target.value })
+                              }
+                              placeholder="1,000+ customers"
                               className={modernInputClass}
                             />
-                            <Button type="button" variant="outline" size="sm" className=" rounded-lg">
-                              <Upload className="mr-2 h-4 w-4" />
-                              Choose file here
-                            </Button>
                           </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Logo</Label>
-                          <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="sm" className=" rounded-lg">
-                              <Plus className="mr-2 h-4 w-4" /> Create
-                            </Button>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="home_live_demo_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Live Demo Link</Label>
+                              <Input
+                                id="home_live_demo_link"
+                                value={settings.home_live_demo_link}
+                                onChange={(e) =>
+                                  setSettings({ ...settings, home_live_demo_link: e.target.value })
+                                }
+                                placeholder="Enter Link"
+                                className={modernInputClass}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="home_buy_now_link" className="text-sm font-medium text-gray-700 dark:text-gray-300">Buy Now Link</Label>
+                              <Input
+                                id="home_buy_now_link"
+                                value={settings.home_buy_now_link}
+                                onChange={(e) =>
+                                  setSettings({ ...settings, home_buy_now_link: e.target.value })
+                                }
+                                placeholder="Enter Link"
+                                className={modernInputClass}
+                              />
+                            </div>
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="home_banner" className="text-sm font-medium text-gray-700 dark:text-gray-300">Banner</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                id="home_banner"
+                                type="file"
+                                accept="image/*"
+                                className={modernInputClass}
+                              />
+                              <Button type="button" variant="outline" size="sm" className=" rounded-lg">
+                                <Upload className="mr-2 h-4 w-4" />
+                                Choose file here
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Logo</Label>
+                            <div className="flex items-center gap-2">
+                              <Button type="button" variant="outline" size="sm" className=" rounded-lg">
+                                <Plus className="mr-2 h-4 w-4" /> Create
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -1311,70 +1310,70 @@ export default function LandingPagePage() {
                 {activeSection === 'pricing_plan' && (
                   <form onSubmit={handleSubmit}>
                     <Card className="rounded-lg">
-                        <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
-                          <CardTitle className="text-base font-medium leading-none">Plan Section</CardTitle>
-                          <Switch
-                            id="plan_status"
-                            checked={settings.plan_status === 'on'}
-                            onCheckedChange={(checked) =>
-                              setSettings({
-                                ...settings,
-                                plan_status: checked ? 'on' : 'off',
-                              })
-                            }
-                            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
-                          />
-                        </CardHeader>
-                        <CardContent className="p-3">
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="plan_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Title <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  id="plan_title"
-                                  value={settings.plan_title}
-                                  onChange={(e) =>
-                                    setSettings({ ...settings, plan_title: e.target.value })
-                                  }
-                                  placeholder="Enter Title"
-                                  required
-                                  className={modernInputClass}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="plan_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Heading <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  id="plan_heading"
-                                  value={settings.plan_heading}
-                                  onChange={(e) =>
-                                    setSettings({ ...settings, plan_heading: e.target.value })
-                                  }
-                                  placeholder="Enter Heading"
-                                  required
-                                  className={modernInputClass}
-                                />
-                              </div>
+                      <CardHeader className="p-3 rounded-t-lg !flex !flex-row !items-center !justify-between">
+                        <CardTitle className="text-base font-medium leading-none">Plan Section</CardTitle>
+                        <Switch
+                          id="plan_status"
+                          checked={settings.plan_status === 'on'}
+                          onCheckedChange={(checked) =>
+                            setSettings({
+                              ...settings,
+                              plan_status: checked ? 'on' : 'off',
+                            })
+                          }
+                          className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                        />
+                      </CardHeader>
+                      <CardContent className="p-3">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="plan_title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Title <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                id="plan_title"
+                                value={settings.plan_title}
+                                onChange={(e) =>
+                                  setSettings({ ...settings, plan_title: e.target.value })
+                                }
+                                placeholder="Enter Title"
+                                required
+                                className={modernInputClass}
+                              />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="plan_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+                              <Label htmlFor="plan_heading" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Heading <span className="text-red-500">*</span>
+                              </Label>
                               <Input
-                                id="plan_description"
-                                value={settings.plan_description}
+                                id="plan_heading"
+                                value={settings.plan_heading}
                                 onChange={(e) =>
-                                  setSettings({ ...settings, plan_description: e.target.value })
+                                  setSettings({ ...settings, plan_heading: e.target.value })
                                 }
-                                placeholder="Enter Description"
+                                placeholder="Enter Heading"
+                                required
                                 className={modernInputClass}
                               />
                             </div>
                           </div>
-                        </CardContent>
-                        <CardFooter className="p-3 flex justify-end">
-                          <Button type="submit" variant="blue" className=" rounded-lg">
+                          <div className="space-y-2">
+                            <Label htmlFor="plan_description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
+                            <Input
+                              id="plan_description"
+                              value={settings.plan_description}
+                              onChange={(e) =>
+                                setSettings({ ...settings, plan_description: e.target.value })
+                              }
+                              placeholder="Enter Description"
+                              className={modernInputClass}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-3 flex justify-end">
+                        <Button type="submit" variant="blue" className=" rounded-lg">
                           <Save className="mr-2 h-4 w-4" /> Save Changes
                         </Button>
                       </CardFooter>
@@ -1718,9 +1717,9 @@ export default function LandingPagePage() {
                     </form>
 
                     <Card className="rounded-lg">
-                        <CardHeader className="p-3 rounded-t-lg">
-                          <CardTitle className="text-base font-medium leading-none">Join Us User</CardTitle>
-                        </CardHeader>
+                      <CardHeader className="p-3 rounded-t-lg">
+                        <CardTitle className="text-base font-medium leading-none">Join Us User</CardTitle>
+                      </CardHeader>
                       <CardContent className="p-3">
                         <div className="rounded-lg">
                           <Table>
@@ -1828,14 +1827,14 @@ export default function LandingPagePage() {
                               </div>
                             </div>
                           </div>
-                      </CardContent>
-                      <CardFooter className="p-3 flex justify-end">
-                        <Button type="submit" variant="blue" className=" rounded-lg">
-                          <Save className="mr-2 h-4 w-4" /> Save Changes
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </form>
+                        </CardContent>
+                        <CardFooter className="p-3 flex justify-end">
+                          <Button type="submit" variant="blue" className=" rounded-lg">
+                            <Save className="mr-2 h-4 w-4" /> Save Changes
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </form>
 
                     <Card className=" rounded-lg overflow-hidden">
                       <CardHeader className="p-3 rounded-t-lg bg-muted/30 !flex !flex-row !items-center !justify-between">
@@ -1846,162 +1845,162 @@ export default function LandingPagePage() {
                               <Plus className="mr-2 h-4 w-4" /> Create Page
                             </Button>
                           </DialogTrigger>
-                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Create Page</DialogTitle>
-                                <DialogDescription>Add a new custom page to your landing page menu.</DialogDescription>
-                              </DialogHeader>
-                              <form onSubmit={handleCreatePageSubmit}>
-                                <div className="space-y-4 py-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="create_page_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                      Page Name <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                      id="create_page_name"
-                                      value={pageFormData.menubar_page_name}
-                                      onChange={(e) =>
-                                        setPageFormData({ ...pageFormData, menubar_page_name: e.target.value })
-                                      }
-                                      placeholder="Enter Page Name"
-                                      required
-                                      className={modernInputClass}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Template</Label>
-                                    <div className="flex gap-6">
-                                      <div className="flex items-center space-x-2">
-                                        <input
-                                          type="radio"
-                                          id="create_page_content"
-                                          name="create_template_name"
-                                          value="page_content"
-                                          checked={pageFormData.template_name === 'page_content'}
-                                          onChange={(e) =>
-                                            setPageFormData({
-                                              ...pageFormData,
-                                              template_name: e.target.value as 'page_content' | 'page_url',
-                                            })
-                                          }
-                                          className="h-4 w-4"
-                                        />
-                                        <Label htmlFor="create_page_content" className="font-normal cursor-pointer">
-                                          Page Content
-                                        </Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <input
-                                          type="radio"
-                                          id="create_page_url"
-                                          name="create_template_name"
-                                          value="page_url"
-                                          checked={pageFormData.template_name === 'page_url'}
-                                          onChange={(e) =>
-                                            setPageFormData({
-                                              ...pageFormData,
-                                              template_name: e.target.value as 'page_content' | 'page_url',
-                                            })
-                                          }
-                                          className="h-4 w-4"
-                                        />
-                                        <Label htmlFor="create_page_url" className="font-normal cursor-pointer">
-                                          Page URL
-                                        </Label>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {pageFormData.template_name === 'page_url' ? (
-                                    <div className="space-y-2">
-                                      <Label htmlFor="create_page_url_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page URL</Label>
-                                      <Input
-                                        id="create_page_url_input"
-                                        value={pageFormData.page_url}
-                                        onChange={(e) =>
-                                          setPageFormData({ ...pageFormData, page_url: e.target.value })
-                                        }
-                                        placeholder="Enter Page URL"
-                                        className={modernInputClass}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      <Label htmlFor="create_page_content_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page Content</Label>
-                                      <Textarea
-                                        id="create_page_content_input"
-                                        value={pageFormData.menubar_page_contant}
-                                        onChange={(e) =>
-                                          setPageFormData({ ...pageFormData, menubar_page_contant: e.target.value })
-                                        }
-                                        rows={10}
-                                        placeholder="Enter Page Content (HTML supported)"
-                                        className={modernTextareaClass}
-                                      />
-                                      <p className="text-xs text-muted-foreground">
-                                        You can use HTML tags for formatting (e.g., &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;a&gt;)
-                                      </p>
-                                    </div>
-                                  )}
-                                  <div className="flex gap-4">
+                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Create Page</DialogTitle>
+                              <DialogDescription>Add a new custom page to your landing page menu.</DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleCreatePageSubmit}>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="create_page_name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Page Name <span className="text-red-500">*</span>
+                                  </Label>
+                                  <Input
+                                    id="create_page_name"
+                                    value={pageFormData.menubar_page_name}
+                                    onChange={(e) =>
+                                      setPageFormData({ ...pageFormData, menubar_page_name: e.target.value })
+                                    }
+                                    placeholder="Enter Page Name"
+                                    required
+                                    className={modernInputClass}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Template</Label>
+                                  <div className="flex gap-6">
                                     <div className="flex items-center space-x-2">
                                       <input
-                                        type="checkbox"
-                                        id="create_header"
-                                        checked={pageFormData.header}
+                                        type="radio"
+                                        id="create_page_content"
+                                        name="create_template_name"
+                                        value="page_content"
+                                        checked={pageFormData.template_name === 'page_content'}
                                         onChange={(e) =>
-                                          setPageFormData({ ...pageFormData, header: e.target.checked })
+                                          setPageFormData({
+                                            ...pageFormData,
+                                            template_name: e.target.value as 'page_content' | 'page_url',
+                                          })
                                         }
                                         className="h-4 w-4"
                                       />
-                                      <Label htmlFor="create_header" className="font-normal cursor-pointer">
-                                        Header
+                                      <Label htmlFor="create_page_content" className="font-normal cursor-pointer">
+                                        Page Content
                                       </Label>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                       <input
-                                        type="checkbox"
-                                        id="create_footer"
-                                        checked={pageFormData.footer}
+                                        type="radio"
+                                        id="create_page_url"
+                                        name="create_template_name"
+                                        value="page_url"
+                                        checked={pageFormData.template_name === 'page_url'}
                                         onChange={(e) =>
-                                          setPageFormData({ ...pageFormData, footer: e.target.checked })
+                                          setPageFormData({
+                                            ...pageFormData,
+                                            template_name: e.target.value as 'page_content' | 'page_url',
+                                          })
                                         }
                                         className="h-4 w-4"
                                       />
-                                      <Label htmlFor="create_footer" className="font-normal cursor-pointer">
-                                        Footer
-                                      </Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <input
-                                        type="checkbox"
-                                        id="create_login"
-                                        checked={pageFormData.login}
-                                        onChange={(e) =>
-                                          setPageFormData({ ...pageFormData, login: e.target.checked })
-                                        }
-                                        className="h-4 w-4"
-                                      />
-                                      <Label htmlFor="create_login" className="font-normal cursor-pointer">
-                                        Login
+                                      <Label htmlFor="create_page_url" className="font-normal cursor-pointer">
+                                        Page URL
                                       </Label>
                                     </div>
                                   </div>
                                 </div>
-                                <DialogFooter>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setCreatePageDialogOpen(false)}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button type="submit" variant="blue" className=" rounded-lg">
-                                    Create
-                                  </Button>
-                                </DialogFooter>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
+                                {pageFormData.template_name === 'page_url' ? (
+                                  <div className="space-y-2">
+                                    <Label htmlFor="create_page_url_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page URL</Label>
+                                    <Input
+                                      id="create_page_url_input"
+                                      value={pageFormData.page_url}
+                                      onChange={(e) =>
+                                        setPageFormData({ ...pageFormData, page_url: e.target.value })
+                                      }
+                                      placeholder="Enter Page URL"
+                                      className={modernInputClass}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <Label htmlFor="create_page_content_input" className="text-sm font-medium text-gray-700 dark:text-gray-300">Page Content</Label>
+                                    <Textarea
+                                      id="create_page_content_input"
+                                      value={pageFormData.menubar_page_contant}
+                                      onChange={(e) =>
+                                        setPageFormData({ ...pageFormData, menubar_page_contant: e.target.value })
+                                      }
+                                      rows={10}
+                                      placeholder="Enter Page Content (HTML supported)"
+                                      className={modernTextareaClass}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      You can use HTML tags for formatting (e.g., &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;a&gt;)
+                                    </p>
+                                  </div>
+                                )}
+                                <div className="flex gap-4">
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id="create_header"
+                                      checked={pageFormData.header}
+                                      onChange={(e) =>
+                                        setPageFormData({ ...pageFormData, header: e.target.checked })
+                                      }
+                                      className="h-4 w-4"
+                                    />
+                                    <Label htmlFor="create_header" className="font-normal cursor-pointer">
+                                      Header
+                                    </Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id="create_footer"
+                                      checked={pageFormData.footer}
+                                      onChange={(e) =>
+                                        setPageFormData({ ...pageFormData, footer: e.target.checked })
+                                      }
+                                      className="h-4 w-4"
+                                    />
+                                    <Label htmlFor="create_footer" className="font-normal cursor-pointer">
+                                      Footer
+                                    </Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id="create_login"
+                                      checked={pageFormData.login}
+                                      onChange={(e) =>
+                                        setPageFormData({ ...pageFormData, login: e.target.checked })
+                                      }
+                                      className="h-4 w-4"
+                                    />
+                                    <Label htmlFor="create_login" className="font-normal cursor-pointer">
+                                      Login
+                                    </Label>
+                                  </div>
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => setCreatePageDialogOpen(false)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button type="submit" variant="blue" className=" rounded-lg">
+                                  Create
+                                </Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
                       </CardHeader>
                       <CardContent className="p-3">
                         <div className="rounded-lg">
@@ -2233,29 +2232,29 @@ export default function LandingPagePage() {
           </div>
         </div>
       </SidebarInset>
-            {/* Delete Confirmation Dialog */}
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {getDeleteMessage()}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => {
-                    setDeleteId(null)
-                    setDeleteType(null)
-                  }}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleConfirmDelete}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription>
+              {getDeleteMessage()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteId(null)
+              setDeleteType(null)
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   )
 }

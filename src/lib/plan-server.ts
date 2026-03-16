@@ -38,6 +38,24 @@ export async function checkPlanStatus() {
   if (user.plan && user.planExpireDate) {
     const expireDate = new Date(user.planExpireDate);
     if (expireDate < new Date()) {
+        // If there is a pending plan (from a downgrade), activate it now
+        if (user.pendingPlan) {
+            const { prisma: db } = await import("@/lib/prisma");
+            const newExpireDate = new Date();
+            newExpireDate.setDate(newExpireDate.getDate() + 30);
+
+            const updatedUser = await db.user.update({
+                where: { id: user.id },
+                data: {
+                    plan: user.pendingPlan,
+                    planExpireDate: newExpireDate,
+                    pendingPlan: null
+                }
+            });
+
+            return { authorized: true, user: updatedUser };
+        }
+
         return { 
             authorized: false, 
             response: NextResponse.json({ 

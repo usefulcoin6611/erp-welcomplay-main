@@ -28,10 +28,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const search = searchParams.get("search") || ""
-    const status = searchParams.get("status") || ""
-
-    const db = prisma as any
+    const search = (searchParams.get("search") || "").trim()
+    const statusFilter = searchParams.get("status") || ""
 
     // Build where clause
     const where: any = {}
@@ -43,30 +41,40 @@ export async function GET(request: NextRequest) {
         { planName: { contains: search, mode: "insensitive" } },
         { paymentType: { contains: search, mode: "insensitive" } },
         { coupon: { contains: search, mode: "insensitive" } },
+        { user: { branch: { name: { contains: search, mode: "insensitive" } } } },
       ]
     }
 
-    if (status && status !== "all") {
-      where.paymentStatus = status
+    if (statusFilter && statusFilter !== "all") {
+      where.paymentStatus = statusFilter
     }
 
-    const orders = await db.order.findMany({
+    const orders = await prisma.order.findMany({
       where,
       orderBy: { orderDate: "desc" },
       include: {
         user: {
-          select: { id: true, name: true, email: true, plan: true, planExpireDate: true },
+          select: { 
+            id: true, 
+            name: true, 
+            email: true, 
+            plan: true, 
+            planExpireDate: true,
+            branch: { select: { name: true } }
+          },
         },
       },
     })
 
-    // Map to response format
+    // Map to response format (Compatible with OrdersPage UI)
     const orderData = orders.map((order: any) => ({
       id: order.id,
       order_id: order.orderId,
       user_name: order.userName,
+      name: order.userName,
+      company_name: order.user?.branch?.name || "-",
       plan_name: order.planName,
-      price: order.price,
+      price: Number(order.price),
       payment_status: order.paymentStatus,
       payment_type: order.paymentType,
       date: order.orderDate.toISOString().slice(0, 10),
@@ -79,15 +87,21 @@ export async function GET(request: NextRequest) {
     }))
 
     // Summary stats
-    const totalRevenue = orders
-      .filter((o: any) => o.paymentStatus === "success" || o.paymentStatus === "Approved")
-      .reduce((sum: number, o: any) => sum + o.price, 0)
+    // We calculate these from ALL orders regardless of search/status 
+    // to keep the dashboard numbers accurate to the whole system
+    const allOrders = await prisma.order.findMany({
+      select: { price: true, paymentStatus: true, isRefund: true }
+    })
 
-    const pendingCount = orders.filter((o: any) => o.paymentStatus === "Pending").length
-    const successCount = orders.filter((o: any) => 
-      o.paymentStatus === "success" || o.paymentStatus === "Approved"
+    const totalRevenue = allOrders
+      .filter((o: any) => o.paymentStatus === "success" || o.paymentStatus === "Approved" || o.paymentStatus === "succeeded")
+      .reduce((sum: number, o: any) => sum + Number(o.price), 0)
+
+    const pendingCount = allOrders.filter((o: any) => o.paymentStatus === "Pending").length
+    const successCount = allOrders.filter((o: any) => 
+      o.paymentStatus === "success" || o.paymentStatus === "Approved" || o.paymentStatus === "succeeded"
     ).length
-    const refundCount = orders.filter((o: any) => o.isRefund === 1).length
+    const refundCount = allOrders.filter((o: any) => o.isRefund === 1).length
 
     return NextResponse.json({
       success: true,

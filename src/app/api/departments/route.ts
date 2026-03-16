@@ -9,17 +9,26 @@ const departmentSchema = z.object({
   branchId: z.string().min(1, "Branch wajib dipilih"),
 });
 
+import { getTenantFilter } from "@/lib/multi-tenancy";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantFilter = await getTenantFilter(session.user);
+    const where: any = {};
+    if (tenantFilter?.ownerId) {
+      where.branch = { ownerId: tenantFilter.ownerId };
+    }
+
     const departments = await prisma.department.findMany({
+      where,
       include: {
         branch: {
           select: {

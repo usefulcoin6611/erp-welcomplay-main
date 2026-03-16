@@ -1,0 +1,31 @@
+model SupportTicket {
+  id           String         @id @default(cuid())
+  ticketCode   String         @unique
+  subject      String
+  description  String?
+  attachment   String?
+  status       String         @default("Open")
+  priority     String         @default("Medium")
+  endDate      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdById  String
+  assignUserId String?
+  replies      SupportReply[]
+  assignUser   User?          @relation("SupportAssignedTo", fields: [assignUserId], references: [id])
+  createdBy    User           @relation("SupportCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@map("support_ticket")
+}
+
+model SupportReply {
+  id              String        @id @default(cuid())
+  message         String
+  createdAt       DateTime      @default(now())
+  supportTicketId String
+  userId          String
+  supportTicket   SupportTicket @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("support_reply")
+}

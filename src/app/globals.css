@@ -24,8 +24,29 @@
   background: transparent;
 }
 
-[data-slot="sidebar-content"]:hover::-webkit-scrollbar-thumb {
+[data-slot="sidebar-content"]:hover::-webkit-scrollbar-thumb,
+[data-slot="settings-sidebar"]:hover::-webkit-scrollbar-thumb {
   background: var(--sidebar-accent);
+}
+
+/* Settings Sidebar Specific Scrollbar */
+[data-slot="settings-sidebar"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-accent) transparent;
+}
+[data-slot="settings-sidebar"]::-webkit-scrollbar {
+  width: 4px;
+  background: transparent;
+}
+[data-slot="settings-sidebar"]::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+[data-slot="settings-sidebar"]:hover::-webkit-scrollbar-thumb {
+  background: var(--sidebar-accent);
+}
+[data-slot="settings-sidebar"]::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-accent-foreground);
 }
 
 [data-slot="select-content"] {

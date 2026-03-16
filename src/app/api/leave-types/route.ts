@@ -9,17 +9,22 @@ const leaveTypeSchema = z.object({
   daysPerYear: z.coerce.number().int().min(0, "Days per year minimal 0"),
 });
 
+import { getTenantFilter, getTenantId } from "@/lib/multi-tenancy";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const tenantFilter = await getTenantFilter(session.user);
+
     const leaveTypes = await (prisma as any).leaveType.findMany({
+      where: tenantFilter,
       orderBy: {
         createdAt: "desc",
       },
@@ -68,11 +73,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, daysPerYear } = validation.data;
+    const ownerId = getTenantId(session.user);
 
     const leaveType = await (prisma as any).leaveType.create({
       data: {
         name,
         daysPerYear,
+        ownerId,
       },
     });
 

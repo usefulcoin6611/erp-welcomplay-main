@@ -1,0 +1,99 @@
+[dotenv@17.3.1] injecting env (11) from .env -- tip: ΓÜí∩╕Å secrets for agents: https://dotenvx.com/as2
+Loaded Prisma config from prisma.config.ts.
+
+Running seed command `npx tsx prisma/seed.ts` ...
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+[dotenv@17.3.1] injecting env (11) from .env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+Seeding plans...
+(node:9832) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Seeded 4 plans.
+Seeding coupons...
+Coupons seeding completed. Upserted 8 coupons.
+Ensuring leave_request table...
+leave_request table ready.
+Ensuring trainer and training tables...
+trainer and training tables ready.
+Ensuring employee payroll tables...
+Employee payroll tables ready.
+Seeding Branches...
+Seeding failed: PrismaClientKnownRequestError: 
+Invalid `prisma.branch.findFirst()` invocation in
+D:\dev\erp-welcomplay-main\prisma\seeds\branches.ts:11:42
+
+   8 ];
+   9 
+  10 for (const branch of branches) {
+ΓåÆ 11   const existing = await prisma.branch.findFirst(
+The column `(not available)` does not exist in the current database.
+    at zr.handleRequestError (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async a (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:808:24)
+    at async seedBranches (D:\dev\erp-welcomplay-main\prisma\seeds\branches.ts:11:22)
+    at async main (D:\dev\erp-welcomplay-main\prisma\seed.ts:91:5) {
+  code: 'P2022',
+  meta: {
+    modelName: 'Branch',
+    driverAdapterError: DriverAdapterError: ColumnNotFound
+        at PrismaPgAdapter.onError (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+adapter-pg@7.4.0\node_modules\@prisma\adapter-pg\dist\index.js:687:11)
+        at PrismaPgAdapter.performIO (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+adapter-pg@7.4.0\node_modules\@prisma\adapter-pg\dist\index.js:682:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        at async PrismaPgAdapter.queryRaw (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+adapter-pg@7.4.0\node_modules\@prisma\adapter-pg\dist\index.js:602:30)
+        at async e.interpretNode (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:182:26)
+        at async e.interpretNode (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:209:41)
+        at async e.interpretNode (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:268:41)
+        at async e.run (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:93:23)
+        at async e.execute (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\core\engines\client\LocalExecutor.ts:81:12)
+        at async qt.request (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\core\engines\client\ClientEngine.ts:492:22) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.4.1'
+}
+PrismaClientKnownRequestError: 
+Invalid `prisma.branch.findFirst()` invocation in
+D:\dev\erp-welcomplay-main\prisma\seeds\branches.ts:11:42
+
+   8 ];
+   9 
+  10 for (const branch of branches) {
+ΓåÆ 11   const existing = await prisma.branch.findFirst(
+The column `(not available)` does not exist in the current database.
+    at zr.handleRequestError (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\RequestHandler.ts:183:12)
+    at zr.request (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\RequestHandler.ts:152:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async a (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:808:24)
+    at async seedBranches (D:\dev\erp-welcomplay-main\prisma\seeds\branches.ts:11:22)
+    at async main (D:\dev\erp-welcomplay-main\prisma\seed.ts:91:5) {
+  code: 'P2022',
+  meta: {
+    modelName: 'Branch',
+    driverAdapterError: DriverAdapterError: ColumnNotFound
+        at PrismaPgAdapter.onError (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+adapter-pg@7.4.0\node_modules\@prisma\adapter-pg\dist\index.js:687:11)
+        at PrismaPgAdapter.performIO (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+adapter-pg@7.4.0\node_modules\@prisma\adapter-pg\dist\index.js:682:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        at async PrismaPgAdapter.queryRaw (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+adapter-pg@7.4.0\node_modules\@prisma\adapter-pg\dist\index.js:602:30)
+        at async e.interpretNode (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:182:26)
+        at async e.interpretNode (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:209:41)
+        at async e.interpretNode (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:268:41)
+        at async e.run (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:93:23)
+        at async e.execute (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\core\engines\client\LocalExecutor.ts:81:12)
+        at async qt.request (D:\dev\erp-welcomplay-main\node_modules\.pnpm\@prisma+client@7.4.1_prisma_1574c051f2c188ada277af5b331b0fc9\node_modules\@prisma\client\src\runtime\core\engines\client\ClientEngine.ts:492:22) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.4.1'
+}
+
+An error occurred while running the seed command:
+Error: Command failed with exit code 1: npx tsx prisma/seed.ts

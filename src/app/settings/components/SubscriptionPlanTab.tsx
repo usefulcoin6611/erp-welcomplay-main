@@ -148,42 +148,28 @@ export function SubscriptionPlanTab() {
 
   return (
     <div className="space-y-4">
-      {!loading && !error && currentPlanName != null && (
-        <div className="rounded-2xl overflow-hidden bg-white p-5 border border-border/50">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500 mb-0.5">Current plan</p>
-              <p className={`text-xl font-bold ${getPlanCardStyle(currentPlanName).price}`}>{currentPlanName}</p>
-              {currentPlanExpireDate && (
-                <p className="text-sm text-slate-600 mt-1">
-                  Expires: {new Date(currentPlanExpireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Current plan card removed as per request */}
 
       {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-2xl overflow-hidden bg-white p-6 border border-border/50">
-                <Skeleton className="h-5 w-20 mb-4" />
-                <Skeleton className="h-8 w-24 mb-2" />
-                <Skeleton className="h-4 w-16 mb-5" />
-                <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-2 mb-5">
-                  {[1, 2, 3, 4, 5].map((j) => (
-                    <Skeleton key={j} className="h-4 w-full" />
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-2 mb-5">
-                  <Skeleton className="h-6 w-16 rounded-lg" />
-                  <Skeleton className="h-6 w-12 rounded-lg" />
-                  <Skeleton className="h-6 w-14 rounded-lg" />
-                </div>
-                <Skeleton className="h-9 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-2xl overflow-hidden bg-white p-6 border border-border/50">
+              <Skeleton className="h-5 w-20 mb-4" />
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-4 w-16 mb-5" />
+              <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-2 mb-5">
+                {[1, 2, 3, 4, 5].map((j) => (
+                  <Skeleton key={j} className="h-4 w-full" />
+                ))}
               </div>
-            ))}
+              <div className="flex flex-wrap gap-2 mb-5">
+                <Skeleton className="h-6 w-16 rounded-lg" />
+                <Skeleton className="h-6 w-12 rounded-lg" />
+                <Skeleton className="h-6 w-14 rounded-lg" />
+              </div>
+              <Skeleton className="h-9 w-full rounded-xl" />
+            </div>
+          ))}
         </div>
       )}
 
@@ -200,97 +186,106 @@ export function SubscriptionPlanTab() {
       )}
 
       {!loading && !error && enabledPlans.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {enabledPlans.map((plan) => {
-              const isCurrentPlan = currentPlanName != null && plan.name === currentPlanName
-              const style = getPlanCardStyle(plan.name)
-              return (
-                <div
-                  key={plan.id}
-                  className={`group relative flex flex-col h-full ${style.card} rounded-2xl overflow-hidden`}
-                >
-                  <div className="flex flex-col flex-1 p-6">
-                    {/* Plan name pill + Active indicator */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${style.badge}`}>
-                        {plan.name}
-                      </span>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {enabledPlans.map((plan) => {
+            const isCurrentPlan = currentPlanName != null && plan.name === currentPlanName
+            const style = getPlanCardStyle(plan.name)
+            return (
+              <div
+                key={plan.id}
+                className={`group relative flex flex-col h-full ${style.card} rounded-2xl overflow-hidden`}
+              >
+                <div className="flex flex-col flex-1 p-6">
+                  {/* Plan name pill + Active indicator */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${style.badge}`}>
+                      {plan.name}
+                    </span>
+                  </div>
 
-                    {/* Price */}
-                    <div className="mb-5">
-                      <div className={`text-3xl font-bold ${style.price}`}>
-                        {formatPrice(plan.price)}
+                  {/* Price */}
+                  <div className="mb-5">
+                    <div className={`text-3xl font-bold ${style.price}`}>
+                      {formatPrice(plan.price)}
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1 font-medium">
+                      {plan.price === 0 ? 'See what we can do' : getDurationLabel(plan.duration)}
+                    </div>
+                    {plan.trial_days > 0 && (
+                      <div className="text-xs font-semibold text-slate-600 mt-2">
+                        {plan.trial_days} days trial
                       </div>
-                      <div className="text-sm text-slate-500 mt-1 font-medium">
-                        {plan.price === 0 ? 'See what we can do' : getDurationLabel(plan.duration)}
+                    )}
+                  </div>
+
+                  {/* Limits - with plan-specific tint */}
+                  <div className={`${style.limitsBg} rounded-xl px-4 py-3 space-y-2 mb-5`}>
+                    {[
+                      { label: 'Users', value: formatLimit(plan.max_users) },
+                      { label: 'Customers', value: formatLimit(plan.max_customers) },
+                      { label: 'Vendors', value: formatLimit(plan.max_venders) },
+                      { label: 'Clients', value: formatLimit(plan.max_clients) },
+                      { label: 'Storage', value: formatStorage(plan.storage_limit) },
+                    ].map((item) => (
+                      <div key={item.label} className="flex justify-between text-sm">
+                        <span className="text-slate-500">{item.label}</span>
+                        <span className="font-semibold text-slate-800">{item.value}</span>
                       </div>
-                      {plan.trial_days > 0 && (
-                        <div className="text-xs font-semibold text-slate-600 mt-2">
-                          {plan.trial_days} days trial
-                        </div>
-                      )}
-                    </div>
+                    ))}
+                  </div>
 
-                    {/* Limits - with plan-specific tint */}
-                    <div className={`${style.limitsBg} rounded-xl px-4 py-3 space-y-2 mb-5`}>
-                      {[
-                        { label: 'Users', value: formatLimit(plan.max_users) },
-                        { label: 'Customers', value: formatLimit(plan.max_customers) },
-                        { label: 'Vendors', value: formatLimit(plan.max_venders) },
-                        { label: 'Clients', value: formatLimit(plan.max_clients) },
-                        { label: 'Storage', value: formatStorage(plan.storage_limit) },
-                      ].map((item) => (
-                        <div key={item.label} className="flex justify-between text-sm">
-                          <span className="text-slate-500">{item.label}</span>
-                          <span className="font-semibold text-slate-800">{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Modules */}
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {modules.map((mod) => {
-                        const enabled = plan[mod.key as keyof PlanFromApi] as boolean
-                        return (
-                          <span
-                            key={mod.key}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${enabled ? style.badge : 'text-slate-400 bg-slate-100'}`}
-                          >
-                            {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : <X className="h-3 w-3" strokeWidth={2} />}
-                            {mod.label}
-                          </span>
-                        )
-                      })}
-                    </div>
-
-                    {/* Action */}
-                    <div className="pt-4 mt-auto">
-                      {isCurrentPlan ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full h-9 text-xs font-semibold rounded-xl bg-green-50 text-green-700 border-green-100"
-                          disabled
+                  {/* Modules */}
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {modules.map((mod) => {
+                      const enabled = plan[mod.key as keyof PlanFromApi] as boolean
+                      return (
+                        <span
+                          key={mod.key}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${enabled ? style.badge : 'text-slate-400 bg-slate-100'}`}
                         >
-                          <Check className="h-3 w-3 mr-1" /> Current Plan
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="blue"
-                          className="w-full h-9 text-xs font-semibold rounded-xl shadow-none"
-                          onClick={() => handleSubscribe(plan.id)}
-                        >
-                          Berlangganan
-                        </Button>
-                      )}
-                    </div>
+                          {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : <X className="h-3 w-3" strokeWidth={2} />}
+                          {mod.label}
+                        </span>
+                      )
+                    })}
+                  </div>
+
+                  {/* Action */}
+                  <div className="pt-4 mt-auto">
+                    {isCurrentPlan ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full h-9 flex items-center justify-center rounded-xl bg-green-50 text-green-700 border-green-200 px-2"
+                        disabled
+                      >
+                        <Check className="h-3 w-3 mr-1 shrink-0" strokeWidth={3} />
+                        <span className="text-[9px] font-black uppercase tracking-tighter whitespace-nowrap">Current Plan</span>
+                        {currentPlanExpireDate && (
+                          <>
+                            <span className="mx-1.5 opacity-30">•</span>
+                            <span className="text-[9px] font-bold uppercase tracking-tighter whitespace-nowrap">
+                              Exp: {new Date(currentPlanExpireDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
+                            </span>
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="blue"
+                        className="w-full h-9 text-xs font-semibold rounded-xl shadow-none"
+                        onClick={() => handleSubscribe(plan.id)}
+                      >
+                        Berlangganan
+                      </Button>
+                    )}
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
