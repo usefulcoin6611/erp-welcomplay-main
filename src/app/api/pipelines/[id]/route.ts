@@ -63,7 +63,10 @@ export async function PUT(
     }
 
     const pipeline = await prisma.pipeline.update({
-      where: { id },
+      where: { 
+        id,
+        branchId: branchId || null,
+      },
       data: { name },
       include: {
         deals: {
@@ -76,7 +79,7 @@ export async function PUT(
       id: pipeline.id,
       name: pipeline.name,
       deals: pipeline.deals.length,
-      value: pipeline.deals.reduce((sum, d) => sum + (d.price ?? 0), 0),
+      value: pipeline.deals.reduce((sum: number, d: any) => sum + (d.price ?? 0), 0),
     }
 
     return NextResponse.json({ success: true, data })
@@ -110,8 +113,11 @@ export async function DELETE(
       )
     }
 
-    const pipeline = await prisma.pipeline.findUnique({
-      where: { id },
+    const pipeline = await prisma.pipeline.findFirst({
+      where: { 
+        id,
+        branchId: (session.user as any).branchId ?? null,
+      },
       include: {
         leads: true,
         deals: true,

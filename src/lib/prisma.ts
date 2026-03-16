@@ -36,5 +36,7 @@ if (
   globalForPrisma.prisma = createPrismaClient();
 }
 
-export const prisma = globalForPrisma.prisma;
+export const prisma = globalForPrisma.prisma as InstanceType<typeof PrismaClient>;
+
+
 

@@ -28,7 +28,9 @@ export async function GET() {
     const branchId = (session.user as any).branchId ?? null
 
     const pipelines = await prisma.pipeline.findMany({
-      where: branchId ? { branchId } : { branchId: null },
+      where: {
+        branchId: branchId || null,
+      },
       include: {
         deals: {
           select: { price: true },
@@ -39,11 +41,11 @@ export async function GET() {
       },
     })
 
-    const data: PipelineListItem[] = pipelines.map((p) => ({
+    const data: PipelineListItem[] = pipelines.map((p: any) => ({
       id: p.id,
       name: p.name,
       deals: p.deals.length,
-      value: p.deals.reduce((sum, d) => sum + (d.price ?? 0), 0),
+      value: p.deals.reduce((sum: number, d: any) => sum + (d.price ?? 0), 0),
     }))
 
     return NextResponse.json({ success: true, data })
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.pipeline.findFirst({
       where: {
         name,
-        ...(branchId ? { branchId } : { branchId: null }),
+        branchId: branchId || null,
       },
     })
 

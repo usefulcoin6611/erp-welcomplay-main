@@ -12,21 +12,26 @@ export async function GET() {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    const branchId = (session.user as any).branchId as string | null;
+    const where = { branchId: branchId || null };
+
     const [totalLead, totalDeal, totalContract, leads, deals] = await Promise.all([
-      prisma.lead.count(),
-      prisma.deal.count(),
-      prisma.contract.count(),
+      prisma.lead.count({ where }),
+      prisma.deal.count({ where }),
+      prisma.contract.count({ where }),
       prisma.lead.findMany({
+        where,
         select: { stageId: true, stage: { select: { name: true } } },
       }),
       prisma.deal.findMany({
+        where,
         select: { stageId: true, stage: { select: { name: true } } },
       }),
     ])
 
     const totalL = totalLead || 1
     const leadCountByStage: Record<string, number> = {}
-    leads.forEach((l) => {
+    leads.forEach((l: any) => {
       const name = l.stage?.name ?? "—"
       leadCountByStage[name] = (leadCountByStage[name] ?? 0) + 1
     })
@@ -38,7 +43,7 @@ export async function GET() {
 
     const totalD = totalDeal || 1
     const dealCountByStage: Record<string, number> = {}
-    deals.forEach((d) => {
+    deals.forEach((d: any) => {
       const name = d.stage?.name ?? "—"
       dealCountByStage[name] = (dealCountByStage[name] ?? 0) + 1
     })

@@ -32,12 +32,21 @@ export async function GET(request: NextRequest) {
       : 10000
     const skip = (page - 1) * limit
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const [contracts, total] = await Promise.all([
       prisma.contract.findMany({
+        where: {
+          branchId: branchId || null,
+        },
         orderBy: { createdAt: "desc" },
         ...(usePagination && { skip, take: limit }),
       }),
-      prisma.contract.count(),
+      prisma.contract.count({
+        where: {
+          branchId: branchId || null,
+        },
+      }),
     ])
 
     const projectIds = [...new Set(contracts.map((c: { projectId: string | null }) => c.projectId).filter(Boolean))] as string[]
@@ -47,7 +56,7 @@ export async function GET(request: NextRequest) {
           select: { projectId: true, name: true },
         })
       : []
-    const projectNameByProjectId = Object.fromEntries(projects.map((p) => [p.projectId, p.name]))
+    const projectNameByProjectId = Object.fromEntries(projects.map((p: any) => [p.projectId, p.name]))
 
     const data = contracts.map((c: any) => {
       const numberPart = c.contractId.split("-").slice(-1)[0] as string
@@ -127,7 +136,12 @@ export async function POST(request: NextRequest) {
       projectId,
     } = parsed.data
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const last = await prisma.contract.findFirst({
+      where: {
+        branchId: branchId || null,
+      },
       orderBy: { createdAt: "desc" },
     })
 
@@ -144,6 +158,7 @@ export async function POST(request: NextRequest) {
     const created = await prisma.contract.create({
       data: {
         contractId,
+        branchId,
         clientName,
         subject,
         value,

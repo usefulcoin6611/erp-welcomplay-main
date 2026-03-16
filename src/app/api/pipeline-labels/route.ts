@@ -36,8 +36,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const branchId = (session.user as any).branchId ?? null
+
     const labels = await prisma.pipelineLabel.findMany({
-      where: { pipelineId },
+      where: { 
+        pipelineId,
+        pipeline: {
+          branchId: branchId || null,
+        },
+      },
       orderBy: { createdAt: "asc" },
     })
 
@@ -91,13 +98,18 @@ export async function POST(request: NextRequest) {
 
     const { pipelineId, name, color } = result.data
 
-    const pipeline = await prisma.pipeline.findUnique({
-      where: { id: pipelineId },
+    const branchId = (session.user as any).branchId ?? null
+
+    const pipeline = await prisma.pipeline.findFirst({
+      where: { 
+        id: pipelineId,
+        branchId: branchId || null,
+      },
     })
 
     if (!pipeline) {
       return NextResponse.json(
-        { success: false, message: "Pipeline tidak ditemukan" },
+        { success: false, message: "Pipeline tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }

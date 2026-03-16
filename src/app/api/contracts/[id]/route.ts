@@ -47,13 +47,18 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const contract = await prisma.contract.findUnique({
-      where: { contractId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const contract = await prisma.contract.findFirst({
+      where: { 
+        contractId: id,
+        branchId: branchId || null,
+      },
     })
 
     if (!contract) {
       return NextResponse.json(
-        { success: false, message: "Contract tidak ditemukan" },
+        { success: false, message: "Contract tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }
@@ -109,12 +114,17 @@ export async function PUT(
       )
     }
 
-    const existing = await prisma.contract.findUnique({
-      where: { contractId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const existing = await prisma.contract.findFirst({
+      where: { 
+        contractId: id,
+        branchId: branchId || null,
+      },
     })
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Contract tidak ditemukan" },
+        { success: false, message: "Contract tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }
@@ -131,7 +141,7 @@ export async function PUT(
     if (parsed.data.status != null) data.status = parsed.data.status
 
     const updated = await prisma.contract.update({
-      where: { contractId: id },
+      where: { id: existing.id },
       data,
     })
 
@@ -176,18 +186,23 @@ export async function DELETE(
       )
     }
 
-    const existing = await prisma.contract.findUnique({
-      where: { contractId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const existing = await prisma.contract.findFirst({
+      where: { 
+        contractId: id,
+        branchId: branchId || null,
+      },
     })
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Contract tidak ditemukan" },
+        { success: false, message: "Contract tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }
 
     await prisma.contract.delete({
-      where: { contractId: id },
+      where: { id: existing.id },
     })
 
     return NextResponse.json({

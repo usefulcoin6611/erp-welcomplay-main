@@ -14,41 +14,50 @@ model AccessProfile {
 }
 
 model Branch {
-  id                 String              @id @default(cuid())
-  name               String
-  ownerId            String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  address            String?
-  email              String?
-  logo               String?
-  phone              String?
-  website            String?
-  accessProfiles     AccessProfile[]
-  bankAccounts       BankAccount[]
-  bankTransfers      BankTransfer[]
-  barcodeSettings    BarcodeSetting[]
-  bill               Bill[]
-  budgetPlans        BudgetPlan[]
-  categories         Category[]
-  chartOfAccounts    ChartOfAccount[]
-  customers          Customer[]
-  deals              Deal[]
-  departments        Department[]
-  expenses           Expense[]
-  financialGoals     FinancialGoal[]
-  jobs               Job[]
-  journalEntries     JournalEntry[]
-  leads              Lead[]
-  payments           Payment[]
-  pipelines          Pipeline[]
-  posOrders          PosOrder[]
-  products           Product[]
-  sources            Source[]
-  users              User[]
-  vendors            Vendor[]
-  warehouses         Warehouse[]
-  warehouseTransfers WarehouseTransfer[]
+  id                   String                @id @default(cuid())
+  name                 String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  address              String?
+  email                String?
+  logo                 String?
+  phone                String?
+  website              String?
+  ownerId              String?
+  accessProfiles       AccessProfile[]
+  bankAccounts         BankAccount[]
+  bankTransfers        BankTransfer[]
+  barcodeSettings      BarcodeSetting[]
+  bill                 Bill[]
+  budgetPlans          BudgetPlan[]
+  categories           Category[]
+  chartOfAccounts      ChartOfAccount[]
+  customers            Customer[]
+  deals                Deal[]
+  departments          Department[]
+  estimates            Estimate[]
+  expenses             Expense[]
+  financialGoals       FinancialGoal[]
+  jobs                 Job[]
+  journalEntries       JournalEntry[]
+  leads                Lead[]
+  payments             Payment[]
+  payoutRequests       PayoutRequest[]       @relation("BranchPayouts")
+  pipelines            Pipeline[]
+  posOrders            PosOrder[]
+  products             Product[]
+  referralTransactions ReferralTransaction[] @relation("ReferrerTransactions")
+  sources              Source[]
+  users                User[]
+  vendors              Vendor[]
+  warehouses           Warehouse[]
+  warehouseTransfers   WarehouseTransfer[]
+  projects             Project[]
+  bugStatuses          BugStatus[]
+  projectTaskStages    ProjectTaskStage[]
+  contracts            Contract[]
+  contractTypes        ContractType[]
+  formBuilders         FormBuilder[]
 
   @@map("branch")
 }
@@ -82,10 +91,9 @@ model Setting {
   id        String   @id @default(cuid())
   key       String
   value     String
-  userId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([key, userId])

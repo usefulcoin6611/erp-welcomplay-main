@@ -21,11 +21,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const forms = await prisma.formBuilder.findMany({
+      where: {
+        branchId: branchId || null,
+      },
       orderBy: { createdAt: "desc" },
     });
 
-    const data = forms.map((f) => ({
+    const data = forms.map((f: any) => ({
       id: f.formId,
       name: f.name,
       code: f.code,
@@ -69,7 +74,12 @@ export async function POST(request: NextRequest) {
 
     const { name, code, isActive, isLeadActive } = validation.data;
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const lastForm = await prisma.formBuilder.findFirst({
+      where: {
+        branchId: branchId || null,
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -86,6 +96,7 @@ export async function POST(request: NextRequest) {
     const created = await prisma.formBuilder.create({
       data: {
         formId,
+        branchId,
         name,
         code,
         isActive: isActive ?? true,

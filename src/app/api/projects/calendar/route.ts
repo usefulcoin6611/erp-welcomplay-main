@@ -22,17 +22,38 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const tasks = await prisma.projectTask.findMany({
-      where: {
-        OR: [{ startDate: { not: null } }, { endDate: { not: null } }],
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const where: any = {
+      project: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
       },
+      OR: [{ startDate: { not: null } }, { endDate: { not: null } }],
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.project.branchId = sessionBranchId;
+    }
+
+    const tasks = await prisma.projectTask.findMany({
+      where,
       orderBy: { startDate: "asc" },
       include: {
         project: true,
       },
     });
 
-    const data: CalendarTask[] = tasks.map((t) => {
+
+    const data: CalendarTask[] = tasks.map((t: any) => {
+
       const start =
         t.startDate ?? t.endDate ?? t.project?.startDate ?? new Date();
       const end =

@@ -22,13 +22,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const deals = await prisma.deal.findMany({
+      where: {
+        branchId: branchId || null,
+      },
       include: {
         pipeline: true,
         stage: true,
       },
       orderBy: { createdAt: "desc" },
     });
+
 
     const data = deals.map((d: (typeof deals)[number]) => {
       const labels = (d.labels as any) ?? [];

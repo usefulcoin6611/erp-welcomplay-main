@@ -1,6 +1,7 @@
 model Contract {
   id                  String   @id @default(cuid())
   contractId          String   @unique
+  branchId            String?
   clientName          String
   subject             String
   value               Float    @default(0)
@@ -15,7 +16,9 @@ model Contract {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   createdBy           User?    @relation(fields: [createdById], references: [id])
+  branch              Branch?  @relation(fields: [branchId], references: [id])
 
+  @@index([branchId])
   @@map("contract")
 }
 
@@ -51,10 +54,15 @@ model PipelineLabel {
 
 model ContractType {
   id        String   @id @default(cuid())
-  name      String   @unique
+  branchId  String?
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
 
+  @@unique([branchId, name])
+
+  @@index([branchId])
   @@map("contract_type")
 }
 
@@ -156,15 +164,20 @@ model Deal {
 model FormBuilder {
   id           String      @id @default(cuid())
   formId       String      @unique
+  branchId     String?
   name         String
-  code         String      @unique
+  code         String
   isActive     Boolean     @default(true)
   isLeadActive Boolean     @default(false)
   responses    Int         @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   fields       FormField[]
+  branch       Branch?     @relation(fields: [branchId], references: [id])
 
+  @@unique([branchId, code])
+
+  @@index([branchId])
   @@map("form_builder")
 }
 

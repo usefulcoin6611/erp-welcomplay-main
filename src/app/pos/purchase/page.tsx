@@ -212,7 +212,7 @@ export default function POSPurchasePage() {
     fetch('/api/vendors').then(r => r.json()).then(res => {
       if (res.success) setVendors(res.data.map((v: any) => ({ id: v.id, name: v.name })))
     }).catch(() => {})
-    fetch('/api/categories?all=true').then(r => r.json()).then(res => {
+    fetch('/api/categories').then(r => r.json()).then(res => {
       if (res.success) setCategories(res.data.map((c: any) => ({ id: c.id, name: c.name })))
     }).catch(() => {})
     fetch('/api/products').then(r => r.json()).then(res => {

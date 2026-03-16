@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { type Estimate as EstimateModel, type Customer, type EstimateItem as EstimateItemModel } from "@prisma/client"
+import type { Estimate as EstimateModel, Customer, EstimateItem as EstimateItemModel } from "@prisma/client"
+
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth-server"
+import { headers } from "next/headers"
 
 type ProposalItem = {
   id: string
@@ -31,11 +34,18 @@ type Estimate = {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: true, data: [] });
+
     const url = new URL(request.url)
     const date = url.searchParams.get("date")
     const status = url.searchParams.get("status")
 
-    const where: any = {}
+    const where: any = { branchId }
     if (date) where.issueDate = new Date(date)
     if (status && status !== "") where.status = parseInt(status, 10)
     const dataDb = await prisma.estimate.findMany({
@@ -43,13 +53,13 @@ export async function GET(request: NextRequest) {
       include: { customer: true, items: true },
       orderBy: { issueDate: "desc" }
     })
-    const categoryIds = Array.from(new Set(dataDb.map((e) => e.categoryId).filter(Boolean))) as string[]
+    const categoryIds = Array.from(new Set(dataDb.map((e: any) => e.categoryId).filter(Boolean))) as string[]
     const categories = categoryIds.length > 0 ? await prisma.category.findMany({
       where: { id: { in: categoryIds } },
       select: { id: true, name: true }
     }) : []
-    const categoryMap = new Map<string, string>(categories.map((c) => [c.id, c.name]))
-    const data = dataDb.map((e: EstimateModel & { customer: Customer; items: EstimateItemModel[] }) => ({
+    const categoryMap = new Map<string, string>(categories.map((c: any) => [c.id, c.name]))
+    const data = dataDb.map((e: any) => ({
       id: e.estimateId,
       customer: e.customer.name,
       customerCode: e.customer.customerCode,
@@ -59,7 +69,7 @@ export async function GET(request: NextRequest) {
       status: e.status,
       total: e.total,
       description: e.description || "",
-      items: e.items.map((it: EstimateItemModel) => ({
+      items: e.items.map((it: any) => ({
         id: it.id,
         item: it.itemName,
         quantity: String(it.quantity),
@@ -80,18 +90,26 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: false, message: "Aksi ditolak: User tidak memiliki branch" }, { status: 400 });
+
     const body = await request.json()
-    const customer = await prisma.customer.findUnique({
-      where: { id: body.customerId },
+    const customer = await prisma.customer.findFirst({
+      where: { id: body.customerId, branchId },
     })
     if (!customer) {
-      return NextResponse.json({ success: false, message: "Customer not found" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Customer not found or access denied" }, { status: 400 })
     }
-    const count = await prisma.estimate.count()
+    const count = await prisma.estimate.count({ where: { branchId } })
     const estimateId = `PR-2026-${String(count + 1).padStart(3, "0")}`
     const created = await prisma.estimate.create({
       data: {
         estimateId,
+        branchId,
         customerId: customer.id,
         categoryId: body.categoryId ?? null,
         issueDate: new Date(body.issueDate),
@@ -99,7 +117,7 @@ export async function POST(request: NextRequest) {
         total: body.total ?? 0,
         description: body.description ?? "",
         items: {
-          create: (body.items ?? []).map((it: { item: string; quantity: string; price: string; discount: string; taxRate: string; amount?: number; description?: string }) => ({
+          create: (body.items ?? []).map((it: any) => ({
             itemName: it.item,
             quantity: parseFloat(it.quantity) || 0,
             price: parseFloat(it.price) || 0,

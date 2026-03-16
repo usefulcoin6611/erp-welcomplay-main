@@ -69,10 +69,28 @@ export async function GET(_request: NextRequest, props: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+    if (!companyId) return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
+
     const { id } = await props.params;
 
-    const bug = await prisma.bug.findUnique({
-      where: { id },
+    const where: any = {
+      id,
+      project: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
+      }
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.project.branchId = sessionBranchId;
+    }
+
+    const bug = await prisma.bug.findFirst({
+      where,
       include: {
         project: true,
         status: true,
@@ -81,10 +99,11 @@ export async function GET(_request: NextRequest, props: RouteParams) {
 
     if (!bug) {
       return NextResponse.json(
-        { success: false, message: "Bug tidak ditemukan" },
+        { success: false, message: "Bug tidak ditemukan atau akses ditolak" },
         { status: 404 },
       );
     }
+
 
     const data = mapBug(bug);
 

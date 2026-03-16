@@ -17,7 +17,15 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const branchId = (session.user as any).branchId as string | null;
+        if (!branchId) {
+            return NextResponse.json({ success: true, data: [] });
+        }
+
         const customers = await prisma.customer.findMany({
+            where: {
+                branchId: branchId,
+            },
             include: {
                 branch: true,
             },
@@ -72,9 +80,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const branchId = (session.user as any).branchId as string | null;
+        if (!branchId) {
+            return NextResponse.json(
+                { success: false, message: "Aksi ditolak: User tidak memiliki branch" },
+                { status: 400 }
+            );
+        }
+
         const customer = await prisma.customer.create({
             data: {
                 ...data,
+                branchId,
                 createdById: session.user.id,
             },
         });

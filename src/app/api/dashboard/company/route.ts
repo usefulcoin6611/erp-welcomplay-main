@@ -8,11 +8,17 @@ export async function GET() {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const user = session.user as { role?: string; id: string }
-    const role = user?.role ?? ""
+    const user = session.user as any;
+    const role = user?.role ?? "";
+    const userId = user?.id;
+    const branchId = user?.branchId;
 
     if (role !== "company") {
       return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 })
+    }
+
+    if (!branchId) {
+      return NextResponse.json({ success: false, message: "Branch not found" }, { status: 400 })
     }
 
     // Aggregate metrics for Company Dashboard
@@ -28,16 +34,19 @@ export async function GET() {
       totalRevenue,
       totalExpense
     ] = await Promise.all([
-      prisma.employee.count(),
-      prisma.department.count(),
-      prisma.branch.count(),
-      prisma.customer.count(),
-      prisma.project.count({ where: { status: "ongoing" } }),
-      prisma.project.count(),
-      prisma.deal.count({ where: { status: "Open" } }),
-      prisma.lead.count({ where: { isActive: true } }),
+      prisma.employee.count({ where: { ownerId: userId } }),
+      prisma.department.count({ where: { branchId: branchId } }),
+      prisma.branch.count({ where: { ownerId: userId } }),
+      prisma.customer.count({ where: { branchId: branchId } }),
+      prisma.project.count({ where: { status: "ongoing", branchId: branchId } }),
+      prisma.project.count({ where: { branchId: branchId } }),
+      prisma.deal.count({ where: { status: "Open", branchId: branchId } }),
+      prisma.lead.count({ where: { isActive: true, branchId: branchId } }),
       // Simplified Finance logic: sum amount from JournalEntry (needs more specific logic in production)
-      prisma.journalEntry.aggregate({ _sum: { amount: true } }),
+      prisma.journalEntry.aggregate({ 
+        _sum: { amount: true },
+        where: { branchId: branchId }
+      }),
       // For expense, we'd traditionally filter by account type, but let's mock/simplify for now
       Promise.resolve({ _sum: { amount: 0 } }) 
     ])

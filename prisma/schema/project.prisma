@@ -21,7 +21,9 @@ model Project {
   timeTrackers TimeTracker[]
   timesheets   Timesheet[]
   zoomMeetings ZoomMeeting[]
+  branch       Branch?       @relation(fields: [branchId], references: [id])
 
+  @@index([branchId])
   @@map("project")
 }
 
@@ -53,11 +55,14 @@ model ProjectTask {
 
 model ProjectTaskStage {
   id        String   @id @default(cuid())
+  branchId  String?
   name      String
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
 
+  @@index([branchId])
   @@map("project_task_stage")
 }
 
@@ -79,12 +84,15 @@ model Timesheet {
 
 model BugStatus {
   id        String   @id @default(cuid())
+  branchId  String?
   title     String
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   bugs      Bug[]
+  branch    Branch?  @relation(fields: [branchId], references: [id])
 
+  @@index([branchId])
   @@map("bug_status")
 }
 

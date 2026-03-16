@@ -12,7 +12,7 @@ export function getRedirectPathByRole(user: { type: UserRole; plan?: string | nu
   // For company role, check if they have an active plan
   if (role === 'company') {
     if (!hasActivePlan(user)) return '/settings?tab=subscription-plan'
-    return '/hrm-dashboard'
+    return '/dashboard'
   }
 
   switch (role) {

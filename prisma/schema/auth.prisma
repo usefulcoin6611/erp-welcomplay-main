@@ -8,15 +8,15 @@ model User {
   role                      String                    @default("employee")
   branchId                  String?
   departmentId              String?
-  ownerId                   String?
   createdAt                 DateTime                  @default(now())
   updatedAt                 DateTime                  @updatedAt
   accessProfileId           String?
   plan                      String?
   planExpireDate            DateTime?
-  pendingPlan               String?
   isActive                  Boolean                   @default(true)
   isEnableLogin             Boolean                   @default(true)
+  ownerId                   String?
+  pendingPlan               String?
   accounts                  Account[]
   createdContracts          Contract[]
   conversationParticipants  ConversationParticipant[]
@@ -28,10 +28,10 @@ model User {
   messagesSent              Message[]
   orders                    Order[]
   sessions                  Session[]
+  settings                  Setting[]
   supportReplies            SupportReply[]
   assignedSupportTickets    SupportTicket[]           @relation("SupportAssignedTo")
   createdSupportTickets     SupportTicket[]           @relation("SupportCreatedBy")
-  settings                  Setting[]
   accessProfile             AccessProfile?            @relation(fields: [accessProfileId], references: [id])
   branch                    Branch?                   @relation(fields: [branchId], references: [id])
   department                Department?               @relation(fields: [departmentId], references: [id])

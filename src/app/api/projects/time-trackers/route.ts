@@ -63,13 +63,35 @@ export async function GET(_request: NextRequest) {
       );
     }
 
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const where: any = {
+      project: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
+      }
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.project.branchId = sessionBranchId;
+    }
+
     const trackers = await client.timeTracker.findMany({
+      where,
       orderBy: { startTime: "desc" },
       include: {
         project: true,
         task: true,
       },
     });
+
 
     const data: TimeTrackerItem[] = trackers.map((t: TrackerRow) => ({
       id: t.id,

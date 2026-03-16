@@ -47,14 +47,19 @@ export async function PUT(request: NextRequest, props: RouteParams) {
 
     const { name, subject, email, phone, pipelineId, stageId, ownerId, sources, products, notes } = validation.data;
 
-    // Verify lead exists
-    const existingLead = await prisma.lead.findUnique({
-      where: { leadId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    // Verify lead exists and belongs to branch
+    const existingLead = await prisma.lead.findFirst({
+      where: { 
+        leadId: id,
+        branchId: branchId || null,
+      },
     });
 
     if (!existingLead) {
       return NextResponse.json(
-        { success: false, message: "Lead tidak ditemukan" },
+        { success: false, message: "Lead tidak ditemukan atau akses ditolak" },
         { status: 404 }
       );
     }
@@ -125,13 +130,18 @@ export async function DELETE(request: NextRequest, props: RouteParams) {
     const params = await props.params;
     const { id } = params;
 
-    const existingLead = await prisma.lead.findUnique({
-      where: { leadId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const existingLead = await prisma.lead.findFirst({
+      where: { 
+        leadId: id,
+        branchId: branchId || null,
+      },
     });
 
     if (!existingLead) {
       return NextResponse.json(
-        { success: false, message: "Lead tidak ditemukan" },
+        { success: false, message: "Lead tidak ditemukan atau akses ditolak" },
         { status: 404 }
       );
     }

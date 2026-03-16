@@ -1,15 +1,16 @@
 "use client"
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Copy, Search, PiggyBank, Wallet } from 'lucide-react'
+import { Copy, Search, PiggyBank, Wallet, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getPlanBadgeColors } from '@/lib/plan-badge-colors'
 import { SimplePagination } from '@/components/ui/simple-pagination'
 import { PLAN_DATA } from '@/lib/plan-data'
+import { useAuth } from '@/contexts/auth-context'
 import {
   Select,
   SelectContent,
@@ -33,6 +34,7 @@ interface Transaction {
   plan_price: number
   commission_percent: number
   commission_amount: number
+  date: string
 }
 
 interface PayoutRequest {
@@ -43,86 +45,30 @@ interface PayoutRequest {
   status: 'Approved' | 'Rejected' | 'In Progress'
 }
 
-const planPriceByName = (planName: string) =>
-  PLAN_DATA.find((plan) => plan.name === planName)?.price ?? 0
-
-const buildTransaction = (
-  id: string,
-  companyName: string,
-  planName: string,
-  commissionPercent: number,
-): Transaction => {
-  const planPrice = planPriceByName(planName)
-  return {
-    id,
-    company_name: companyName,
-    plan_name: planName,
-    plan_price: planPrice,
-    commission_percent: commissionPercent,
-    commission_amount: Math.round((planPrice * commissionPercent) / 100),
-  }
+interface ReferralSettings {
+  isEnable: boolean
+  percentage: number
+  minimumThreshold: number
+  guideline: string
 }
 
-const mockTransactions: Transaction[] = [
-  buildTransaction('1', 'Murray Group', 'Gold', 10),
-  buildTransaction('2', 'ABHISHEK DWIVEDI', 'Silver', 10),
-  buildTransaction('3', 'Shaine Mcdowell', 'Gold', 10),
-  buildTransaction('4', 'Nerea Hart', 'Platinum', 10),
-]
-
-const mockPayoutRequests: PayoutRequest[] = [
-  {
-    id: '1',
-    company_name: 'WelcomePlay',
-    requested_date: '2024-04-10',
-    requested_amount: 50000,
-    status: 'Approved',
-  },
-  {
-    id: '2',
-    company_name: 'Welcomplay',
-    requested_date: '2024-04-10',
-    requested_amount: 25000,
-    status: 'Rejected',
-  },
-  {
-    id: '3',
-    company_name: 'Welcomplay',
-    requested_date: '2024-04-10',
-    requested_amount: 100000,
-    status: 'Approved',
-  },
-  {
-    id: '4',
-    company_name: 'Welcomplay',
-    requested_date: '2024-04-10',
-    requested_amount: 75000,
-    status: 'In Progress',
-  },
-]
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
 
 // Transaction Component
-function TransactionContent() {
+function TransactionContent({ transactions, isLoading }: { transactions: Transaction[], isLoading: boolean }) {
   const [search, setSearch] = useState('')
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  // Calculate commission amount: (plan_price * commission_percent) / 100
-  const calculateCommissionAmount = (planPrice: number, commissionPercent: number) => {
-    return (planPrice * commissionPercent) / 100
-  }
-
   // Filter data
-  const filteredData = mockTransactions.filter((transaction) => {
+  const filteredData = transactions.filter((transaction) => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return (
@@ -136,6 +82,14 @@ function TransactionContent() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   )
+
+  if (isLoading) {
+    return (
+      <Card className="shadow-none min-h-[400px] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </Card>
+    )
+  }
 
   return (
     <Card className="shadow-none">
@@ -198,10 +152,6 @@ function TransactionContent() {
                 </TableRow>
               ) : (
                 paginatedData.map((transaction, idx) => {
-                  const commissionAmount = calculateCommissionAmount(
-                    transaction.plan_price,
-                    transaction.commission_percent
-                  )
                   const actualIndex = (currentPage - 1) * pageSize + idx + 1
                   return (
                     <TableRow key={transaction.id}>
@@ -214,7 +164,7 @@ function TransactionContent() {
                       </TableCell>
                       <TableCell>{formatCurrency(transaction.plan_price)}</TableCell>
                       <TableCell>{transaction.commission_percent}</TableCell>
-                      <TableCell>{formatCurrency(commissionAmount)}</TableCell>
+                      <TableCell>{formatCurrency(transaction.commission_amount)}</TableCell>
                     </TableRow>
                   )
                 })
@@ -237,22 +187,13 @@ function TransactionContent() {
 }
 
 // Payout Request Component
-function PayoutRequestContent() {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
+function PayoutRequestContent({ payouts, isLoading }: { payouts: PayoutRequest[], isLoading: boolean }) {
   // Calculate totals
-  const totalCommissionAmount = mockPayoutRequests.reduce(
+  const totalCommissionAmount = payouts.reduce(
     (sum, req) => sum + req.requested_amount,
     0
   )
-  const paidAmount = mockPayoutRequests
+  const paidAmount = payouts
     .filter((req) => req.status === 'Approved')
     .reduce((sum, req) => sum + req.requested_amount, 0)
 
@@ -279,6 +220,14 @@ function PayoutRequestContent() {
       default:
         return <span>{status}</span>
     }
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="shadow-none min-h-[400px] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </Card>
+    )
   }
 
   return (
@@ -338,18 +287,18 @@ function PayoutRequestContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockPayoutRequests.length === 0 ? (
+                {payouts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No payout requests found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  mockPayoutRequests.map((request, idx) => (
+                  payouts.map((request, idx) => (
                     <TableRow key={request.id}>
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell>{request.company_name}</TableCell>
-                      <TableCell>{request.requested_date}</TableCell>
+                      <TableCell>{new Date(request.requested_date).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusBadge(request.status)}</TableCell>
                       <TableCell>{formatCurrency(request.requested_amount)}</TableCell>
                     </TableRow>
@@ -365,14 +314,21 @@ function PayoutRequestContent() {
 }
 
 // GuideLine Component
-function ReferralSettingsContent() {
-  const [referralLink] = useState('https://welcomplay.com')
-  const [commissionPercent] = useState('10')
-  const [commissionAmount] = useState('10')
+function ReferralSettingsContent({ settings, isLoading }: { settings: ReferralSettings | null, isLoading: boolean }) {
+  const { user } = useAuth()
+  const referralLink = `${typeof window !== 'undefined' ? window.location.origin : ''}/register?ref=${user?.name || 'code'}`
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink)
     alert('Referral link copied to clipboard!')
+  }
+
+  if (isLoading || !settings) {
+    return (
+      <Card className="shadow-none min-h-[200px] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </Card>
+    )
   }
 
   return (
@@ -382,15 +338,14 @@ function ReferralSettingsContent() {
           {/* Left Column - Referral Instructions */}
           <div className="space-y-4">
             <h3 className="text-lg font-bold">
-              Refer Global Exports and earn {commissionPercent}% per paid signup!
+              Refer and earn {settings.percentage}% per paid signup!
             </h3>
-            <ol className="space-y-3 list-decimal list-inside">
-              <li className="text-sm">
-                Refer new users to us and earn {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(commissionAmount))} for each successful referral.
-                (Commission amount in Rupiah - set commission amount)
-              </li>
-              <li className="text-sm">Share your link and start earning today!</li>
-            </ol>
+            <div className="text-sm text-muted-foreground whitespace-pre-line">
+              {settings.guideline}
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              Minimum payout threshold: {formatCurrency(settings.minimumThreshold)}
+            </p>
           </div>
 
           {/* Right Column - Share Your Link */}
@@ -428,6 +383,60 @@ function ReferralProgramContent() {
   const subTabParam = searchParams.get('subtab')
   const activeSubTab = subTabParam || 'transaction'
 
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [payouts, setPayouts] = useState<PayoutRequest[]>([])
+  const [settings, setSettings] = useState<ReferralSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const [transRes, payoutRes, settingsRes] = await Promise.all([
+          fetch('/api/referral/transactions'),
+          fetch('/api/referral/payouts'),
+          fetch('/api/referral/settings')
+        ])
+
+        const transJson = await transRes.json()
+        const payoutJson = await payoutRes.json()
+        const settingsJson = await settingsRes.json()
+
+        if (transJson.success) {
+          setTransactions(transJson.data.map((t: any) => ({
+            id: t.id,
+            company_name: t.refereeCompanyName,
+            plan_name: t.planName,
+            plan_price: t.planPrice,
+            commission_percent: t.commissionPercent,
+            commission_amount: t.commissionAmount,
+            date: t.date
+          })))
+        }
+
+        if (payoutJson.success) {
+          setPayouts(payoutJson.data.map((p: any) => ({
+            id: p.id,
+            company_name: p.companyName,
+            requested_date: p.requestedDate,
+            requested_amount: p.requestedAmount,
+            status: p.status
+          })))
+        }
+
+        if (settingsJson.success) {
+          setSettings(settingsJson.data)
+        }
+      } catch (error) {
+        console.error("Error fetching referral data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   const referralMenuItems = [
     { id: 'transaction', label: 'Referral Transaction' },
     { id: 'payout', label: 'Payout' },
@@ -441,13 +450,13 @@ function ReferralProgramContent() {
   const renderContent = () => {
     switch (activeSubTab) {
       case 'transaction':
-        return <TransactionContent />
+        return <TransactionContent transactions={transactions} isLoading={isLoading} />
       case 'payout':
-        return <PayoutRequestContent />
+        return <PayoutRequestContent payouts={payouts} isLoading={isLoading} />
       case 'guideline':
-        return <ReferralSettingsContent />
+        return <ReferralSettingsContent settings={settings} isLoading={isLoading} />
       default:
-        return <TransactionContent />
+        return <TransactionContent transactions={transactions} isLoading={isLoading} />
     }
   }
 
@@ -493,4 +502,3 @@ export function ReferralProgramTab() {
     </Suspense>
   )
 }
-

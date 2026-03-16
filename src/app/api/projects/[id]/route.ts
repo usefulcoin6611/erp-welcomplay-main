@@ -46,22 +46,33 @@ export async function GET(_request: NextRequest, props: RouteParams) {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+    if (!companyId) return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
 
     const { id } = await props.params;
 
+    const where: any = {
+      projectId: id,
+      OR: [
+        { createdBy: { id: companyId } },
+        { createdBy: { ownerId: companyId } }
+      ]
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.branchId = sessionBranchId;
+    }
+
     const project = await prisma.project.findFirst({
-      where: {
-        projectId: id,
-      },
+      where,
     });
 
     if (!project) {
       return NextResponse.json(
-        { success: false, message: "Project tidak ditemukan" },
+        { success: false, message: "Project tidak ditemukan atau akses ditolak" },
         { status: 404 }
       );
     }
@@ -81,17 +92,11 @@ export async function PUT(request: NextRequest, props: RouteParams) {
       headers: await headers(),
     });
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const role = (session.user as { role?: string }).role;
-    if (role === "client") {
-      return NextResponse.json(
-        { success: false, message: "Client role cannot edit projects." },
-        { status: 403 }
-      );
-    }
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    if (role === "client") return NextResponse.json({ success: false, message: "Client role cannot edit projects." }, { status: 403 });
 
+    const companyId = role === "company" ? userId : ownerId;
     const { id } = await props.params;
 
     const rawBody = await request.json();
@@ -122,13 +127,25 @@ export async function PUT(request: NextRequest, props: RouteParams) {
       progress,
     } = validation.data;
 
+    const where: any = {
+      projectId: id,
+      OR: [
+        { createdBy: { id: companyId } },
+        { createdBy: { ownerId: companyId } }
+      ]
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.branchId = sessionBranchId;
+    }
+
     const existing = await prisma.project.findFirst({
-      where: { projectId: id },
+      where,
     });
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Project tidak ditemukan" },
+        { success: false, message: "Project tidak ditemukan atau akses ditolak" },
         { status: 404 }
       );
     }
@@ -176,26 +193,32 @@ export async function DELETE(_request: NextRequest, props: RouteParams) {
       headers: await headers(),
     });
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const role = (session.user as { role?: string }).role;
-    if (role === "client") {
-      return NextResponse.json(
-        { success: false, message: "Client role cannot delete projects." },
-        { status: 403 }
-      );
-    }
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    if (role === "client") return NextResponse.json({ success: false, message: "Client role cannot delete projects." }, { status: 403 });
 
+    const companyId = role === "company" ? userId : ownerId;
     const { id } = await props.params;
 
+    const where: any = {
+      projectId: id,
+      OR: [
+        { createdBy: { id: companyId } },
+        { createdBy: { ownerId: companyId } }
+      ]
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.branchId = sessionBranchId;
+    }
+
     const existing = await prisma.project.findFirst({
-      where: { projectId: id },
+      where,
     });
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Project tidak ditemukan" },
+        { success: false, message: "Project tidak ditemukan atau akses ditolak" },
         { status: 404 }
       );
     }
@@ -213,4 +236,5 @@ export async function DELETE(_request: NextRequest, props: RouteParams) {
     );
   }
 }
+
 

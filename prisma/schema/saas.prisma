@@ -59,3 +59,45 @@ model Order {
   @@index([orderDate])
   @@map("order")
 }
+
+model ReferralTransaction {
+  id                 String   @id @default(cuid())
+  referrerBranchId   String
+  refereeCompanyName String
+  planName           String
+  planPrice          Float
+  commissionPercent  Float
+  commissionAmount   Float
+  date               DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  referrerBranch     Branch   @relation("ReferrerTransactions", fields: [referrerBranchId], references: [id])
+
+  @@map("referral_transaction")
+}
+
+model PayoutRequest {
+  id              String   @id @default(cuid())
+  branchId        String
+  companyName     String
+  requestedDate   DateTime @default(now())
+  requestedAmount Float
+  status          String   @default("In Progress")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  branch          Branch   @relation("BranchPayouts", fields: [branchId], references: [id])
+
+  @@map("payout_request")
+}
+
+model ReferralSetting {
+  id               String   @id @default(cuid())
+  isEnable         Boolean  @default(true)
+  percentage       Float    @default(10)
+  minimumThreshold Float    @default(50000)
+  guideline        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("referral_setting")
+}

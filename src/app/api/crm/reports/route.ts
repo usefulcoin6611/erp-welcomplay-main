@@ -50,10 +50,9 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam, 10) : now.getFullYear()
     const month = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1
 
-    const branchId = (session.user as { branchId?: string | null })?.branchId ?? null
-
-    const baseWhereLead = branchId ? { branchId, isActive: true } : { isActive: true }
-    const baseWhereDeal = branchId ? { branchId, isActive: true } : { isActive: true }
+    const branchId = (session.user as any).branchId as string | null
+    const baseWhereLead = { branchId: branchId || null, isActive: true }
+    const baseWhereDeal = { branchId: branchId || null, isActive: true }
 
     if (type === 'lead') {
       // This week: count by day of week (1=Mon .. 7=Sun)
@@ -67,8 +66,8 @@ export async function GET(request: NextRequest) {
       })
 
       const weeklyByDay = [0, 0, 0, 0, 0, 0, 0]
-      const dateField = (l: { date: Date | null; createdAt: Date }) => l.date ?? l.createdAt
-      leadsThisWeek.forEach((l) => {
+      const dateField = (l: any) => l.date ?? l.createdAt
+      leadsThisWeek.forEach((l: any) => {
         const d = new Date(dateField(l))
         const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
         weeklyByDay[dayIndex]++
@@ -80,7 +79,7 @@ export async function GET(request: NextRequest) {
         where: baseWhereLead,
         select: { sources: true },
       })
-      allLeadsForSources.forEach((l) => {
+      allLeadsForSources.forEach((l: any) => {
         const key = (l.sources ?? '').trim() || 'Unspecified'
         sourceCount[key] = (sourceCount[key] ?? 0) + 1
       })
@@ -97,7 +96,7 @@ export async function GET(request: NextRequest) {
         select: { createdAt: true, date: true },
       })
       const weekCounts = [0, 0, 0, 0]
-      leadsInMonth.forEach((l) => {
+      leadsInMonth.forEach((l: any) => {
         const d = new Date(l.date ?? l.createdAt)
         const weekOfMonth = Math.min(Math.ceil(d.getDate() / 7), 4) - 1
         weekCounts[weekOfMonth]++
@@ -111,7 +110,7 @@ export async function GET(request: NextRequest) {
         include: { stage: { select: { name: true } } },
       })
       const stageCountLead: Record<string, number> = {}
-      leadsForPipeline.forEach((l) => {
+      leadsForPipeline.forEach((l: any) => {
         const name = l.stage?.name ?? '—'
         stageCountLead[name] = (stageCountLead[name] ?? 0) + 1
       })
@@ -155,7 +154,7 @@ export async function GET(request: NextRequest) {
           include: { owner: { select: { name: true } } },
         })
         const ownerCount: Record<string, number> = {}
-        staffLeads.forEach((l) => {
+        staffLeads.forEach((l: any) => {
           const name = l.owner?.name ?? 'Unassigned'
           ownerCount[name] = (ownerCount[name] ?? 0) + 1
         })
@@ -180,7 +179,7 @@ export async function GET(request: NextRequest) {
     })
 
     const weeklyByDayDeal = [0, 0, 0, 0, 0, 0, 0]
-    dealsThisWeek.forEach((d) => {
+    dealsThisWeek.forEach((d: any) => {
       const dayIndex = d.createdAt.getDay() === 0 ? 6 : d.createdAt.getDay() - 1
       weeklyByDayDeal[dayIndex]++
     })
@@ -191,7 +190,7 @@ export async function GET(request: NextRequest) {
       include: { pipeline: { select: { name: true } } },
     })
     const pipelineAsSource: Record<string, number> = {}
-    dealsForPipelineSource.forEach((d) => {
+    dealsForPipelineSource.forEach((d: any) => {
       const key = d.pipeline?.name ?? 'Unspecified'
       pipelineAsSource[key] = (pipelineAsSource[key] ?? 0) + 1
     })
@@ -207,7 +206,7 @@ export async function GET(request: NextRequest) {
       select: { createdAt: true },
     })
     const dealWeekCounts = [0, 0, 0, 0]
-    dealsInMonth.forEach((d) => {
+    dealsInMonth.forEach((d: any) => {
       const weekOfMonth = Math.min(Math.ceil(d.createdAt.getDate() / 7), 4) - 1
       dealWeekCounts[weekOfMonth]++
     })
@@ -217,7 +216,7 @@ export async function GET(request: NextRequest) {
       include: { stage: { select: { name: true } } },
     })
     const dealStageCount: Record<string, number> = {}
-    dealsForPipeline.forEach((d) => {
+    dealsForPipeline.forEach((d: any) => {
       const name = d.stage?.name ?? '—'
       dealStageCount[name] = (dealStageCount[name] ?? 0) + 1
     })
@@ -261,7 +260,7 @@ export async function GET(request: NextRequest) {
         include: { pipeline: { select: { name: true } } },
       })
       const pipelineCount: Record<string, number> = {}
-      staffDeals.forEach((d) => {
+      staffDeals.forEach((d: any) => {
         const name = d.pipeline?.name ?? 'Unspecified'
         pipelineCount[name] = (pipelineCount[name] ?? 0) + 1
       })

@@ -18,13 +18,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const contractTypes = await prisma.contractType.findMany({
+      where: {
+        branchId: branchId || null,
+      },
       orderBy: {
         createdAt: "desc",
       },
     })
 
-    const data = contractTypes.map((ct) => ({
+    const data = contractTypes.map((ct: any) => ({
       id: ct.id,
       name: ct.name,
     }))
@@ -70,10 +75,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name } = validation.data
+    const branchId = (session.user as any).branchId as string | null
 
     const existing = await prisma.contractType.findFirst({
-      where: { name },
+      where: { 
+        name,
+        branchId: branchId || null,
+      },
     })
 
     if (existing) {
@@ -84,7 +92,10 @@ export async function POST(request: NextRequest) {
     }
 
     const created = await prisma.contractType.create({
-      data: { name },
+      data: { 
+        name,
+        branchId,
+      },
     })
 
     return NextResponse.json({

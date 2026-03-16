@@ -23,13 +23,35 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const where: any = {
+      project: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
+      }
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.project.branchId = sessionBranchId;
+    }
+
     const timesheets = await prisma.timesheet.findMany({
+      where,
       orderBy: { date: "desc" },
       include: {
         project: true,
         task: true,
       },
     });
+
 
     const data: TimesheetItem[] = timesheets.map((t: any) => {
       const hours = Math.floor(t.minutes / 60)

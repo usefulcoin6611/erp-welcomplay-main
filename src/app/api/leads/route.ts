@@ -27,7 +27,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const branchId = (session.user as any).branchId as string | null;
+
     const leads = await prisma.lead.findMany({
+      where: {
+        branchId: branchId || null,
+      },
       include: {
         pipeline: true,
         stage: true,
@@ -35,6 +40,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: "desc" },
     });
+
 
     const data = leads.map((l: (typeof leads)[number]) => ({
       id: l.leadId,

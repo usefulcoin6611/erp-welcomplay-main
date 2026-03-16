@@ -45,20 +45,23 @@ export async function PUT(
     }
 
     const { name } = validation.data
-
-    const existing = await prisma.contractType.findUnique({
-      where: { id },
+    const branchId = (session.user as any).branchId as string | null
+    const existing = await prisma.contractType.findFirst({
+      where: { 
+        id,
+        branchId: branchId || null,
+      },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Contract type tidak ditemukan" },
+        { success: false, message: "Contract type tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }
 
     const updated = await prisma.contractType.update({
-      where: { id },
+      where: { id: existing.id },
       data: { name },
     })
 
@@ -98,19 +101,23 @@ export async function DELETE(
       )
     }
 
-    const existing = await prisma.contractType.findUnique({
-      where: { id },
+    const branchId = (session.user as any).branchId as string | null
+    const existing = await prisma.contractType.findFirst({
+      where: { 
+        id,
+        branchId: branchId || null,
+      },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Contract type tidak ditemukan" },
+        { success: false, message: "Contract type tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }
 
     await prisma.contractType.delete({
-      where: { id },
+      where: { id: existing.id },
     })
 
     return NextResponse.json({

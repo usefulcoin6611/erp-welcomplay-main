@@ -1,9 +1,9 @@
 model JobCategory {
   id        String   @id @default(cuid())
   name      String
-  ownerId   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  ownerId   String?
   jobs      Job[]
 
   @@map("job_category")
@@ -104,10 +104,10 @@ model RecruitmentInterview {
 model JobStage {
   id           String           @id @default(cuid())
   name         String
-  ownerId      String?
   order        Int              @default(0)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  ownerId      String?
   applications JobApplication[]
 
   @@map("job_stage")

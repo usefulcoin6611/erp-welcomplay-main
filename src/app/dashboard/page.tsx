@@ -369,15 +369,15 @@ export default function DashboardPage() {
                           <CardContent className="space-y-5">
                             <div className="space-y-2">
                               <div className="flex justify-between text-xs font-medium"><span className="text-slate-600">Employee Growth</span><span className="text-blue-600 font-bold">+12%</span></div>
-                              <Progress value={75} className="h-1.5" />
+                              <Progress value={75} className="h-1.5" indicatorClassName="bg-blue-600" />
                             </div>
                             <div className="space-y-2">
                               <div className="flex justify-between text-xs font-medium"><span className="text-slate-600">Project Completion</span><span className="text-blue-600 font-bold">68%</span></div>
-                              <Progress value={68} className="h-1.5" />
+                              <Progress value={68} className="h-1.5" indicatorClassName="bg-blue-600" />
                             </div>
                             <div className="space-y-2">
                               <div className="flex justify-between text-xs font-medium"><span className="text-slate-600">Sales Target</span><span className="text-blue-600 font-bold">45%</span></div>
-                              <Progress value={45} className="h-1.5" />
+                              <Progress value={45} className="h-1.5" indicatorClassName="bg-blue-600" />
                             </div>
                           </CardContent>
                         </Card>

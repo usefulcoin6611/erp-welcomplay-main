@@ -28,13 +28,35 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    if (!companyId) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const where: any = {
+      project: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
+      }
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.project.branchId = sessionBranchId;
+    }
+
     const bugs = await prisma.bug.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       include: {
         project: true,
         status: true,
       },
     });
+
 
     const data: BugItem[] = bugs.map((b: any, index: number) => ({
       id: b.id,

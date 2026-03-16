@@ -71,10 +71,28 @@ export async function GET(_request: NextRequest, props: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId, branchId: sessionBranchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+    if (!companyId) return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
+
     const { id } = await props.params;
 
-    const task = await prisma.projectTask.findUnique({
-      where: { id },
+    const where: any = {
+      id,
+      project: {
+        OR: [
+          { createdBy: { id: companyId } },
+          { createdBy: { ownerId: companyId } }
+        ]
+      }
+    };
+
+    if (role === "employee" && sessionBranchId) {
+      where.project.branchId = sessionBranchId;
+    }
+
+    const task = await prisma.projectTask.findFirst({
+      where,
       include: {
         project: true,
       },
@@ -82,10 +100,11 @@ export async function GET(_request: NextRequest, props: RouteParams) {
 
     if (!task) {
       return NextResponse.json(
-        { success: false, message: "Task tidak ditemukan" },
+        { success: false, message: "Task tidak ditemukan atau akses ditolak" },
         { status: 404 },
       );
     }
+
 
     const data = mapTask(task);
 

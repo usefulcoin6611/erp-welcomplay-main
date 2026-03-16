@@ -43,14 +43,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const numericPrice =
       typeof price === "string" ? parseFloat(price || "0") : price ?? 0;
 
-    const existing = await prisma.deal.findUnique({
-      where: { dealId },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const existing = await prisma.deal.findFirst({
+      where: { 
+        dealId,
+        branchId: branchId || null,
+      },
       include: { pipeline: true, stage: true },
     });
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Deal tidak ditemukan" },
+        { success: false, message: "Deal tidak ditemukan atau akses ditolak" },
         { status: 404 }
       );
     }

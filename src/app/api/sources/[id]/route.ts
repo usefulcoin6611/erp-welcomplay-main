@@ -46,8 +46,13 @@ export async function PUT(
 
     const { name } = validation.data
 
+    const branchId = (session.user as any).branchId ?? null
+
     const source = await (prisma as any).source.update({
-      where: { id },
+      where: { 
+        id,
+        branchId: branchId || null,
+      },
       data: {
         name,
       },
@@ -89,8 +94,13 @@ export async function DELETE(
       )
     }
 
+    const branchId = (session.user as any).branchId ?? null
+
     await (prisma as any).source.delete({
-      where: { id },
+      where: { 
+        id,
+        branchId: branchId || null,
+      },
     })
 
     return NextResponse.json({

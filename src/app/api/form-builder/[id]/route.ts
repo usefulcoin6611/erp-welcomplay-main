@@ -26,8 +26,13 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const form = await prisma.formBuilder.findUnique({
-      where: { formId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const form = await prisma.formBuilder.findFirst({
+      where: { 
+        formId: id,
+        branchId: branchId || null,
+      },
       include: {
         fields: true,
       },
@@ -47,7 +52,7 @@ export async function GET(
       isActive: form.isActive,
       isLeadActive: form.isLeadActive,
       responses: form.responses,
-      fields: form.fields.map((field) => ({
+      fields: form.fields.map((field: any) => ({
         id: field.id,
         name: field.name,
         type: field.type,
@@ -79,8 +84,13 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const form = await prisma.formBuilder.findUnique({
-      where: { formId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const form = await prisma.formBuilder.findFirst({
+      where: { 
+        formId: id,
+        branchId: branchId || null,
+      },
       include: { fields: true },
     });
 
@@ -157,8 +167,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const form = await prisma.formBuilder.findUnique({
-      where: { formId: id },
+    const branchId = (session.user as any).branchId as string | null;
+
+    const form = await prisma.formBuilder.findFirst({
+      where: { 
+        formId: id,
+        branchId: branchId || null,
+      },
     });
 
     if (!form) {

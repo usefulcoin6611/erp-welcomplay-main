@@ -15,7 +15,13 @@ function isWriteAllowed(session: any) {
 
 export async function GET() {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: true, data: [] });
+
     const statuses = await (prisma as any).bugStatus.findMany({
+      where: { branchId },
       orderBy: [
         { order: "asc" },
         { createdAt: "asc" },
@@ -65,7 +71,11 @@ export async function POST(request: Request) {
 
     const { title } = validation.data;
 
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: false, message: "Branch ID tidak ditemukan" }, { status: 400 });
+
     const lastStatus = await (prisma as any).bugStatus.findFirst({
+      where: { branchId },
       orderBy: { order: "desc" },
     });
 
@@ -75,6 +85,7 @@ export async function POST(request: Request) {
       data: {
         title,
         order: nextOrder,
+        branchId,
       },
     });
 

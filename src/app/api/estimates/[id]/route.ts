@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth-server"
+import { headers } from "next/headers"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: false, message: "Aksi ditolak: User tidak memiliki branch" }, { status: 400 });
+
     const { id } = await params
-    const est = await prisma.estimate.findUnique({
-      where: { estimateId: id },
+    const est = await prisma.estimate.findFirst({
+      where: { estimateId: id, branchId },
       include: { customer: true, items: true }
     })
     if (!est) return NextResponse.json({ success: false, message: "Estimate not found" }, { status: 404 })
@@ -23,14 +32,21 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: false, message: "Aksi ditolak: User tidak memiliki branch" }, { status: 400 });
+
     const { id } = await params
     const body = await request.json()
-    const existing = await prisma.estimate.findUnique({
-      where: { estimateId: id },
+    const existing = await prisma.estimate.findFirst({
+      where: { estimateId: id, branchId },
       select: { id: true },
     })
     if (!existing) {
-      return NextResponse.json({ success: false, message: "Estimate not found" }, { status: 404 })
+      return NextResponse.json({ success: false, message: "Estimate not found or access denied" }, { status: 404 })
     }
     const updated = await prisma.estimate.update({
       where: { estimateId: id },
@@ -69,7 +85,22 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const branchId = (session.user as any).branchId as string | null;
+    if (!branchId) return NextResponse.json({ success: false, message: "Aksi ditolak: User tidak memiliki branch" }, { status: 400 });
+
     const { id } = await params
+    const existing = await prisma.estimate.findFirst({
+      where: { estimateId: id, branchId },
+      select: { id: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ success: false, message: "Estimate not found or access denied" }, { status: 404 })
+    }
+
     await prisma.estimate.delete({
       where: { estimateId: id }
     })

@@ -35,12 +35,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const branchId = (session.user as any).branchId ?? null
+
     const stages = await prisma.dealStage.findMany({
-      where: { pipelineId },
+      where: { 
+        pipelineId,
+        pipeline: {
+          branchId: branchId || null,
+        },
+      },
       orderBy: { order: "asc" },
     })
 
-    const data: DealStageItem[] = stages.map((s) => ({
+    const data: DealStageItem[] = stages.map((s: any) => ({
       id: s.id,
       name: s.name,
       order: s.order ?? 0,
@@ -89,13 +96,18 @@ export async function POST(request: NextRequest) {
 
     const { pipelineId, name } = result.data
 
-    const pipeline = await prisma.pipeline.findUnique({
-      where: { id: pipelineId },
+    const branchId = (session.user as any).branchId ?? null
+
+    const pipeline = await prisma.pipeline.findFirst({
+      where: { 
+        id: pipelineId,
+        branchId: branchId || null,
+      },
     })
 
     if (!pipeline) {
       return NextResponse.json(
-        { success: false, message: "Pipeline tidak ditemukan" },
+        { success: false, message: "Pipeline tidak ditemukan atau akses ditolak" },
         { status: 404 },
       )
     }

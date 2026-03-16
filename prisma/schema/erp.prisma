@@ -110,11 +110,14 @@ model Estimate {
   status      Int            @default(0)
   total       Float          @default(0)
   description String?
+  branchId    String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  branch      Branch?        @relation(fields: [branchId], references: [id])
   customer    Customer       @relation(fields: [customerId], references: [id])
   items       EstimateItem[]
 
+  @@index([branchId])
   @@map("estimate")
 }
 

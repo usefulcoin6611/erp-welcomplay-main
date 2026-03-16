@@ -132,6 +132,8 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const branchId = (session.user as any).branchId as string | null
+    if (!branchId) return NextResponse.json({ success: false, message: "Aksi ditolak: User tidak memiliki branch" }, { status: 400 });
+
     const body = await request.json().catch(() => null)
 
     if (!body) return NextResponse.json({ success: false, message: "Invalid request body" }, { status: 400 })
@@ -143,17 +145,21 @@ export async function POST(request: NextRequest) {
 
     // Validate customer if provided
     if (body.customerId) {
-      const customer = await prisma.customer.findUnique({ where: { id: body.customerId } })
+      const customer = await prisma.customer.findFirst({
+        where: { id: body.customerId, branchId },
+      })
       if (!customer) {
-        return NextResponse.json({ success: false, message: "Customer not found" }, { status: 400 })
+        return NextResponse.json({ success: false, message: "Customer not found or access denied" }, { status: 400 })
       }
     }
 
     // Validate warehouse if provided
     if (body.warehouseId) {
-      const warehouse = await prisma.warehouse.findUnique({ where: { id: body.warehouseId } })
+      const warehouse = await prisma.warehouse.findFirst({
+        where: { id: body.warehouseId, branchId },
+      })
       if (!warehouse) {
-        return NextResponse.json({ success: false, message: "Warehouse not found" }, { status: 400 })
+        return NextResponse.json({ success: false, message: "Warehouse not found or access denied" }, { status: 400 })
       }
     }
 
