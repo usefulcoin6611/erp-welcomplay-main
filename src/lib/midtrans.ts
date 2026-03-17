@@ -1,13 +1,50 @@
-import midtransClient from "midtrans-client"
-
 const isProduction = process.env.MIDTRANS_IS_PRODUCTION === "true"
+const MIDTRANS_BASE_URL = isProduction
+    ? "https://api.midtrans.com/v2"
+    : "https://api.sandbox.midtrans.com/v2"
 
-// CoreApi client — for server-side status checks and custom payment UI
-export const coreApi = new midtransClient.CoreApi({
-    isProduction,
-    serverKey: process.env.MIDTRANS_SERVER_KEY ?? "",
-    clientKey: process.env.MIDTRANS_CLIENT_KEY ?? "",
-}) as any
+const SERVER_KEY = process.env.MIDTRANS_SERVER_KEY ?? ""
+const AUTH_HEADER = `Basic ${Buffer.from(SERVER_KEY + ":").toString("base64")}`
+
+/**
+ * Custom Midtrans Client using fetch to avoid deprecated url.parse() warning
+ * and provide better control over environment and banking methods.
+ */
+export const coreApi = {
+    charge: async (payload: any) => {
+        const response = await fetch(`${MIDTRANS_BASE_URL}/charge`, {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": AUTH_HEADER,
+            },
+            body: JSON.stringify(payload),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+            throw new Error(data.status_message || "Midtrans Charge Error")
+        }
+        return data
+    },
+    transaction: {
+        status: async (orderId: string) => {
+            const response = await fetch(`${MIDTRANS_BASE_URL}/${orderId}/status`, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Authorization": AUTH_HEADER,
+                },
+            })
+            const data = await response.json()
+            if (!response.ok) {
+                throw new Error(data.status_message || "Midtrans Status Error")
+            }
+            return data
+        }
+    }
+} as any
 
 // ─── Verify Webhook Signature ─────────────────────────────────
 export function verifyMidtransSignature(
@@ -38,7 +75,7 @@ export async function createCoreApiCharge(params: {
     const { orderId, amount, paymentMethod, customerName, customerEmail, planName } = params
 
     const basePayload: any = {
-        payment_type: "", 
+        payment_type: "",
         transaction_details: {
             order_id: orderId,
             gross_amount: amount,
@@ -58,32 +95,37 @@ export async function createCoreApiCharge(params: {
     }
 
     // Map internal IDs to Midtrans payment types
-    if (paymentMethod === 'qris') {
+    // Support direct VA for these banks
+    const directVABanks = ['bca', 'bni', 'bri', 'permata', 'cimb', 'bsi']
+    
+    if (paymentMethod === 'qris' || ['seabank', 'danamon', 'dana'].includes(paymentMethod)) {
         basePayload.payment_type = 'qris'
-        basePayload.qris = { acquirer: 'gopay' }
+        basePayload.qris = { acquirer: 'gopay' } // Note: Dana/SeaBank/Danamon users scan the QRIS
     } else if (paymentMethod === 'gopay') {
         basePayload.payment_type = 'gopay'
-        basePayload.gopay = { 
-            enable_callback: true, 
-            callback_url: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/settings?tab=subscription-plan` 
+        basePayload.gopay = {
+            enable_callback: true,
+            callback_url: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/settings?tab=subscription-plan`
         }
-    } else if (['bca', 'mandiri', 'bni', 'bri', 'bsi', 'permata', 'cimb', 'danamon'].includes(paymentMethod)) {
+    } else if (paymentMethod === 'mandiri') {
+        basePayload.payment_type = 'echannel'
+        basePayload.echannel = {
+            bill_info1: "Subscription Payment",
+            bill_info2: planName.slice(0, 50)
+        }
+    } else if (directVABanks.includes(paymentMethod)) {
         basePayload.payment_type = 'bank_transfer'
-        
-        if (paymentMethod === 'mandiri') {
-            basePayload.payment_type = 'echannel'
-            basePayload.echannel = {
-                bill_info1: "Subscription Payment",
-                bill_info2: planName.slice(0, 50)
-            }
-        } else if (paymentMethod === 'permata') {
+        if (paymentMethod === 'permata') {
             basePayload.bank_transfer = { bank: 'permata' }
         } else {
             basePayload.bank_transfer = { bank: paymentMethod }
         }
     } else {
-        throw new Error(`Payment method ${paymentMethod} not supported via Core API yet`)
+        // Default fallback to QRIS if unknown
+        basePayload.payment_type = 'qris'
+        basePayload.qris = { acquirer: 'gopay' }
     }
 
     return coreApi.charge(basePayload)
 }
+

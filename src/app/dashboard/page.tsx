@@ -39,10 +39,10 @@ type SuperAdminDashboard = {
 }
 
 type CompanyDashboardData = {
-  hrm: { totalEmployees: number; totalDepartments: number; totalBranches: number }
+  hrm: { totalEmployees: number; totalDepartments: number; totalBranches: number; employeeGrowth: number }
   crm: { totalCustomers: number; openDeals: number; activeLeads: number }
-  project: { activeProjects: number; totalProjects: number }
-  finance: { totalRevenue: number; totalExpense: number }
+  project: { activeProjects: number; totalProjects: number; projectCompletion: number }
+  finance: { totalRevenue: number; salesTarget: number }
   revenueTrend: { month: string; amount: number }[]
 }
 
@@ -368,16 +368,27 @@ export default function DashboardPage() {
                           <CardHeader><CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">Organization Health</CardTitle></CardHeader>
                           <CardContent className="space-y-5">
                             <div className="space-y-2">
-                              <div className="flex justify-between text-xs font-medium"><span className="text-slate-600">Employee Growth</span><span className="text-blue-600 font-bold">+12%</span></div>
-                              <Progress value={75} className="h-1.5" indicatorClassName="bg-blue-600" />
+                              <div className="flex justify-between text-xs font-medium">
+                                <span className="text-slate-600">Employee Growth</span>
+                                <span className="text-blue-600 font-bold">
+                                  {companyData.hrm.employeeGrowth >= 0 ? '+' : ''}{companyData.hrm.employeeGrowth}%
+                                </span>
+                              </div>
+                              <Progress value={Math.min(100, Math.max(0, companyData.hrm.employeeGrowth))} className="h-1.5" indicatorClassName="bg-blue-600" />
                             </div>
                             <div className="space-y-2">
-                              <div className="flex justify-between text-xs font-medium"><span className="text-slate-600">Project Completion</span><span className="text-blue-600 font-bold">68%</span></div>
-                              <Progress value={68} className="h-1.5" indicatorClassName="bg-blue-600" />
+                              <div className="flex justify-between text-xs font-medium">
+                                <span className="text-slate-600">Project Completion</span>
+                                <span className="text-blue-600 font-bold">{companyData.project.projectCompletion}%</span>
+                              </div>
+                              <Progress value={companyData.project.projectCompletion} className="h-1.5" indicatorClassName="bg-blue-600" />
                             </div>
                             <div className="space-y-2">
-                              <div className="flex justify-between text-xs font-medium"><span className="text-slate-600">Sales Target</span><span className="text-blue-600 font-bold">45%</span></div>
-                              <Progress value={45} className="h-1.5" indicatorClassName="bg-blue-600" />
+                              <div className="flex justify-between text-xs font-medium">
+                                <span className="text-slate-600">Sales Target</span>
+                                <span className="text-blue-600 font-bold">{companyData.finance.salesTarget}%</span>
+                              </div>
+                              <Progress value={companyData.finance.salesTarget} className="h-1.5" indicatorClassName="bg-blue-600" />
                             </div>
                           </CardContent>
                         </Card>
