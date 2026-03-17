@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { calculateUpgradeProration } = await import("@/lib/subscription")
+    const { calculateUpgradeProration, calculateExpirationDate } = await import("@/lib/subscription")
     const proratedCredit = await calculateUpgradeProration(userId, plan.price)
 
     let price = Number(plan.price) || 0
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             plan.name,
             `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/settings?tab=subscription-plan`
           );
-          await sendEmail({ to: user.email, subject, html }).catch(err => console.error("Email notify error:", err));
+          sendEmail({ to: user.email, subject, html }).catch(err => console.error("Email notify error:", err));
         }
         
         // Save Midtrans response to order for later retrieval
@@ -150,8 +150,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (isFree && userId) {
-      const expireDate = new Date()
-      expireDate.setDate(expireDate.getDate() + 365)
+      const userFull = await db.user.findUnique({ where: { id: userId }, select: { planExpireDate: true } })
+      const expireDate = calculateExpirationDate(plan.duration, userFull?.planExpireDate)
       await db.user.update({
         where: { id: userId },
         data: {

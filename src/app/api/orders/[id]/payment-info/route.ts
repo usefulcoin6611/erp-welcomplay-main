@@ -83,8 +83,10 @@ export async function GET(
                                 where: { name: order.planName }
                             })
                             if (plan) {
-                                const expireDate = new Date()
-                                expireDate.setDate(expireDate.getDate() + 365)
+                                const { calculateExpirationDate } = await import("@/lib/subscription")
+                                const user = await db.user.findUnique({ where: { id: order.userId }, select: { planExpireDate: true } })
+                                const expireDate = calculateExpirationDate(plan.duration, user?.planExpireDate)
+                                
                                 await db.user.update({
                                     where: { id: order.userId },
                                     data: {

@@ -79,26 +79,21 @@ export async function POST(request: NextRequest) {
       })
 
       if (plan) {
-        const { getPlanChangeType } = await import("@/lib/subscription")
-        const user = await db.user.findUnique({ where: { id: order.userId } })
+        const { getPlanChangeType, calculateExpirationDate } = await import("@/lib/subscription")
+        const user = await db.user.findUnique({ where: { id: order.userId }, select: { plan: true, planExpireDate: true } })
         const changeType = await getPlanChangeType(user?.plan, plan.name)
-
-        const now = new Date()
-        let expireDate = new Date()
-        const daysToAdd = plan.duration === 'year' ? 365 : 30 // Simplify for ERP logic
+        let finalExpireDate: Date | null = user?.planExpireDate || null
 
         if (changeType === 'upgrade' || changeType === 'new' || changeType === 'renewal') {
-          // EXCEPTION: If it's a renewal, we might want to add to existing expire date
-          if (changeType === 'renewal' && user.planExpireDate && user.planExpireDate > now) {
-            expireDate = new Date(user.planExpireDate)
-          }
-          expireDate.setDate(expireDate.getDate() + daysToAdd)
+          // If renewal, we append to current expiration. If upgrade/new, we start from now.
+          const currentExpire = changeType === 'renewal' ? user?.planExpireDate : null
+          finalExpireDate = calculateExpirationDate(plan.duration, currentExpire)
 
           await db.user.update({
             where: { id: order.userId },
             data: {
               plan: plan.name,
-              planExpireDate: expireDate,
+              planExpireDate: finalExpireDate,
               pendingPlan: null, // Clear any pending plan
               isActive: true,
             }
@@ -122,7 +117,7 @@ export async function POST(request: NextRequest) {
             order.userName || order.user.name || "User",
             order.orderId,
             plan.name,
-            expireDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+            finalExpireDate ? finalExpireDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'
           );
           await sendEmail({
             to: order.user.email,

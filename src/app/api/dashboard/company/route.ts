@@ -25,6 +25,16 @@ export async function GET() {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
 
+    const months = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push({
+        label: d.toLocaleString('en-US', { month: 'short' }),
+        start: new Date(d.getFullYear(), d.getMonth(), 1),
+        end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
+      })
+    }
+
     // Aggregate metrics for Company Dashboard
     const [
       totalEmployees,
@@ -39,7 +49,8 @@ export async function GET() {
       completedProjectsCount,
       currentMonthEmployees,
       previousEmployees,
-      financialGoal
+      financialGoal,
+      ...monthlyRevenueRaw
     ] = await Promise.all([
       prisma.employee.count({ where: { ownerId: userId } }),
       prisma.department.count({ where: { branchId: branchId } }),
@@ -73,8 +84,21 @@ export async function GET() {
           toDate: { gte: now }
         },
         orderBy: { createdAt: 'desc' }
-      })
+      }),
+      // Rolling 6 months revenue trend
+      ...months.map(m => prisma.journalEntry.aggregate({
+        _sum: { amount: true },
+        where: {
+          branchId: branchId,
+          createdAt: { gte: m.start, lte: m.end }
+        }
+      }))
     ])
+
+    const revenueTrend = months.map((m, idx) => ({
+      month: m.label,
+      amount: Number(monthlyRevenueRaw[idx]._sum.amount) || 0
+    }))
 
     // Calculations for Organization Health
     const employeeGrowth = previousEmployees > 0 
@@ -93,36 +117,14 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        hrm: {
-          totalEmployees,
-          totalDepartments,
-          totalBranches,
-          employeeGrowth
-        },
-        crm: {
-          totalCustomers,
-          openDeals,
-          activeLeads,
-        },
-        project: {
-          activeProjects,
-          totalProjects,
-          projectCompletion
-        },
-        finance: {
-          totalRevenue: revenueAmount,
-          salesTarget
-        },
-        revenueTrend: [
-          { month: 'Jan', amount: 45000000 },
-          { month: 'Feb', amount: 52000000 },
-          { month: 'Mar', amount: 48000000 },
-          { month: 'Apr', amount: 61000000 },
-          { month: 'May', amount: 55000000 },
-          { month: 'Jun', amount: 67000000 },
-        ]
+        hrm: { totalEmployees, totalDepartments, totalBranches, employeeGrowth },
+        crm: { totalCustomers, openDeals, activeLeads },
+        project: { activeProjects, totalProjects, projectCompletion },
+        finance: { totalRevenue: revenueAmount, salesTarget },
+        revenueTrend
       }
     })
+
   } catch (error) {
     console.error("Company dashboard API error:", error)
     return NextResponse.json(

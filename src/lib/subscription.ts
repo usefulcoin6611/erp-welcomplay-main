@@ -59,3 +59,33 @@ export async function getPlanChangeType(currentPlanName: string | null, newPlanN
   if (newPlan.price < currentPlan.price) return 'downgrade';
   return 'renewal';
 }
+
+/**
+ * Calculates the expiration date based on plan duration.
+ * Supports: 'month', 'year', 'lifetime'.
+ * If currentExpireDate is provided and is in the future, the new duration is added to it (Renewal/Extension).
+ */
+export function calculateExpirationDate(duration: string, currentExpireDate: Date | null = null) {
+  const now = new Date();
+  let baseDate = now;
+
+  // If there's an active subscription that hasn't expired yet, add to it (Renewal)
+  // Note: For Upgrades, Usually we start from now (handled by proration), but for Renewals we extend.
+  if (currentExpireDate && new Date(currentExpireDate) > now) {
+    baseDate = new Date(currentExpireDate);
+  }
+
+  const expireDate = new Date(baseDate);
+  const normalizedDuration = (duration || 'month').toLowerCase();
+
+  if (normalizedDuration === 'year') {
+    expireDate.setFullYear(expireDate.getFullYear() + 1);
+  } else if (normalizedDuration === 'lifetime') {
+    expireDate.setFullYear(expireDate.getFullYear() + 99); // 99 years for lifetime
+  } else {
+    // Default to month
+    expireDate.setMonth(expireDate.getMonth() + 1);
+  }
+
+  return expireDate;
+}
