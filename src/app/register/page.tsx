@@ -11,6 +11,7 @@ import { Loader2, Mail, Lock, User, CheckCircle2 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { authHeroBase64 } from "@/components/auth-hero-base64"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -328,22 +329,65 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {/* Right Side: Image */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-blue-900 border-l border-gray-100">
-          <Image
-            src="/login-bg.png"
-            alt="Abstract background"
-            fill
-            className="object-cover opacity-90 transition-transform duration-[20s] hover:scale-110"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-transparent to-black/40" />
+        {/* Right Side: Elegant 3D Mockup (Light Theme) */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-[#f8fafc] border-l border-gray-100 items-center justify-center p-12 overflow-hidden">
+          {/* Animated Background Gradients */}
+          <div className="absolute top-0 right-0 w-full h-full opacity-40">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-100 rounded-full blur-[120px]" />
+            <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-indigo-100 rounded-full blur-[100px]" />
+            <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-cyan-100 rounded-full blur-[80px]" />
+          </div>
+
+          <div 
+            className="relative w-full aspect-square max-w-[550px]"
+            style={{ perspective: '2000px' }}
+          >
+            <div 
+              className="w-full h-full relative"
+              style={{
+                transform: 'rotateY(-25deg) rotateX(15deg) skew(-5deg)',
+                transformStyle: 'preserve-3d',
+                boxShadow: '-20px 40px 80px -10px rgba(0,0,0,0.1), 0 5px 20px -5px rgba(59,130,246,0.1)',
+                borderRadius: '32px',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <Image
+                src={authHeroBase64}
+                alt="Welcomplay ERP Premium Dashboard"
+                fill
+                className="object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 pointer-events-none" />
+            </div>
+
+            {/* Decorative Elements (Static Pastel Squares with Custom SVG Icons) */}
+            <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-blue-100/40 to-cyan-100/40 backdrop-blur-xl rounded-3xl z-20 rotate-12 shadow-sm flex items-center justify-center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500/60 -rotate-12">
+                <rect width="7" height="9" x="3" y="3" rx="1" />
+                <rect width="7" height="5" x="14" y="3" rx="1" />
+                <rect width="7" height="9" x="14" y="12" rx="1" />
+                <rect width="7" height="5" x="3" y="16" rx="1" />
+              </svg>
+            </div>
+            <div className="absolute -bottom-8 -left-4 w-28 h-28 bg-gradient-to-br from-indigo-100/30 to-purple-100/30 backdrop-blur-xl rounded-3xl z-20 shadow-sm flex items-center justify-center">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500/50">
+                <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            </div>
+          </div>
 
           {/* Glassmorphism Footer */}
           <div className="absolute bottom-10 left-0 right-0 px-10">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl text-center">
-              <p className="text-white/60 text-[10px] leading-relaxed font-medium">
-                Sistem ERP Terpadu untuk Efisiensi Bisnis Anda dalam Satu Genggaman.
+            <div className="bg-white border border-gray-100 py-5 px-8 rounded-full text-center max-w-md mx-auto shadow-lg backdrop-blur-md">
+              <p className="text-slate-600 text-[11px] font-bold tracking-wide uppercase">
+                Integrated Business Solutions
+              </p>
+              <p className="text-slate-400 text-[9px] mt-1 font-medium">
+                Satu platform untuk semua kebutuhan operasional bisnis Anda.
               </p>
             </div>
           </div>

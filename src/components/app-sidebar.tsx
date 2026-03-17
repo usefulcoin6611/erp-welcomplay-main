@@ -62,6 +62,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth()
   const { sidebarSearchQuery } = useSidebar()
   const [messengerUnreadCount, setMessengerUnreadCount] = React.useState(0)
+  const [enableCoupon, setEnableCoupon] = React.useState<boolean>(true) // default true to avoid sudden hide/show
 
   // Poll messenger unread count for sidebar badge
   React.useEffect(() => {
@@ -77,6 +78,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         .catch(() => { })
     }
     fetchUnread()
+    
+    // Fetch brand settings for feature toggles
+    fetch('/api/settings/brand')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.success && json.data) {
+          setEnableCoupon(json.data.enable_coupon ?? false)
+        }
+      })
+      .catch(() => { })
+
     const interval = setInterval(fetchUnread, 15000)
     return () => clearInterval(interval)
   }, [user])
@@ -131,6 +143,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
 
     navMain = filterByPlan(navMain)
+
+    // Hide Coupon menu if disabled
+    if (!enableCoupon) {
+      navMain = navMain.filter(item => item.url !== '/coupons')
+    }
+
     navMain = injectBadgeIntoItems(navMain, '/messenger', messengerUnreadCount)
     return { ...menuByRole, navMain }
   }, [user, user?.type, user?.permissions, user?.plan, user?.planExpireDate, menuByRole, messengerUnreadCount])

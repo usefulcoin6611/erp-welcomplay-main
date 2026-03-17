@@ -117,6 +117,19 @@ export async function POST(request: NextRequest) {
           planName: plan.name,
         })
         
+        // Send Payment Notification Email
+        if (user.email) {
+          const { sendEmail, emailTemplates } = await import("@/lib/mail");
+          const { subject, html } = emailTemplates.paymentNotification(
+            userName,
+            order.orderId,
+            totalAmount.toLocaleString('id-ID'),
+            plan.name,
+            `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/settings?tab=subscription-plan`
+          );
+          await sendEmail({ to: user.email, subject, html }).catch(err => console.error("Email notify error:", err));
+        }
+        
         // Save Midtrans response to order for later retrieval
         await db.order.update({
           where: { id: order.id },

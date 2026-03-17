@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { authClient } from "@/lib/auth-client"
 import { toast } from "sonner"
 import { getRedirectPathByRole } from "@/lib/auth-utils"
+import { authHeroBase64 } from "@/components/auth-hero-base64"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -253,22 +254,65 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Right Side: Image */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-blue-900 border-l border-gray-100">
-          <Image
-            src="/login-bg.png"
-            alt="Abstract background"
-            fill
-            className="object-cover opacity-90 transition-transform duration-[20s] hover:scale-110"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-transparent to-black/40" />
+        {/* Right Side: Elegant 3D Mockup (Light Theme) */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-[#f8fafc] border-l border-gray-100 items-center justify-center p-12 overflow-hidden">
+          {/* Animated Background Gradients */}
+          <div className="absolute top-0 right-0 w-full h-full opacity-40">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-100 rounded-full blur-[120px]" />
+            <div className="absolute top-1/4 right-0 w-80 h-80 bg-indigo-50 rounded-full blur-[100px]" />
+            <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-cyan-50 rounded-full blur-[80px]" />
+          </div>
+
+          <div 
+            className="relative w-full aspect-square max-w-[550px]"
+            // Using inline style for a subtle 3D perspective
+            style={{ perspective: '2000px' }}
+          >
+            <div 
+              className="w-full h-full relative"
+              style={{
+                transform: 'rotateY(-25deg) rotateX(15deg) skew(-5deg)',
+                transformStyle: 'preserve-3d',
+                boxShadow: '-20px 40px 80px -10px rgba(0,0,0,0.1), 0 5px 20px -5px rgba(59,130,246,0.1)',
+                borderRadius: '32px',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <Image
+                src={authHeroBase64}
+                alt="Welcomplay ERP Premium Dashboard"
+                fill
+                className="object-cover"
+                priority
+              />
+              {/* Glossy Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 pointer-events-none" />
+            </div>
+
+            {/* Floating Elements (Static Pastel Squares with Custom SVG Icons) */}
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-gradient-to-br from-indigo-100/40 to-blue-100/40 backdrop-blur-xl rounded-3xl z-20 shadow-sm flex items-center justify-center">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500/60">
+                <path d="M3 3v18h18" />
+                <path d="m19 9-5 5-4-4-3 3" />
+              </svg>
+            </div>
+            <div className="absolute -bottom-10 -right-6 w-32 h-32 bg-gradient-to-br from-purple-100/30 to-pink-100/30 backdrop-blur-xl rounded-3xl z-20 shadow-sm flex items-center justify-center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500/50">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </div>
+          </div>
 
           {/* Glassmorphism Footer */}
           <div className="absolute bottom-10 left-0 right-0 px-10">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl text-center">
-              <p className="text-white/60 text-[10px] leading-relaxed font-medium">
-                &copy; {new Date().getFullYear()} Welcomplay ERP Systems. Seluruh Hak Cipta Dilindungi Undang-Undang.
+            <div className="bg-white share-shadow-sm border border-gray-100 py-5 px-8 rounded-full text-center max-w-md mx-auto shadow-lg backdrop-blur-md">
+              <p className="text-slate-600 text-[11px] font-bold tracking-wide uppercase">
+                Enterprise Resource Planning
+              </p>
+              <p className="text-slate-400 text-[9px] mt-1 font-medium">
+                Sistem Terpadu Efisiensi Bisnis Anda dalam Satu Genggaman.
               </p>
             </div>
           </div>

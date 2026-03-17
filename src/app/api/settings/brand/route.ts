@@ -18,6 +18,7 @@ type BrandSettings = {
   transparent_layout: boolean;
   dark_layout: boolean;
   rtl_layout: boolean;
+  enable_coupon: boolean;
 };
 
 function getDefaultSettings(): BrandSettings {
@@ -35,6 +36,7 @@ function getDefaultSettings(): BrandSettings {
     transparent_layout: true,
     dark_layout: false,
     rtl_layout: false,
+    enable_coupon: false,
   };
 }
 

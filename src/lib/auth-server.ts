@@ -15,7 +15,7 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
-        autoSignIn: true,
+        autoSignIn: false, // Don't auto-sign in if verification is enabled
         password: {
             hash: async (password: string) => {
                 return bcrypt.hash(password, 10);
@@ -23,6 +23,19 @@ export const auth = betterAuth({
             verify: async ({ hash, password }: { hash: string; password: string }) => {
                 return bcrypt.compare(password, hash);
             },
+        },
+    },
+    emailVerification: {
+        sendOnSignUp: true,
+        autoSignInAfterVerification: true,
+        sendVerificationEmail: async ({ user, url, token }, request) => {
+            const { sendEmail, emailTemplates } = await import("./mail");
+            const { subject, html } = emailTemplates.activation(user.name, url);
+            await sendEmail({
+                to: user.email,
+                subject,
+                html,
+            });
         },
     },
     user: {

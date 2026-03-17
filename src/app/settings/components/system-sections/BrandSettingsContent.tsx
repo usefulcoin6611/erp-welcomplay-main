@@ -48,6 +48,7 @@ export function BrandSettingsContent() {
     transparent_layout: true,
     dark_layout: false,
     rtl_layout: false,
+    enable_coupon: false,
   })
 
   const [isSaving, setIsSaving] = useState(false)
@@ -460,6 +461,25 @@ export function BrandSettingsContent() {
                       checked={formData.email_verification}
                       onCheckedChange={(checked) =>
                         setFormData({ ...formData, email_verification: checked })
+                      }
+                      className="data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-xl border-none bg-muted/30 shadow-none">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="enable_coupon" className="text-sm font-semibold text-foreground/90">Coupon System</Label>
+                      <p className="text-[11px] text-muted-foreground">Toggle coupon feature</p>
+                    </div>
+                    <Switch
+                      id="enable_coupon"
+                      checked={formData.enable_coupon}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, enable_coupon: checked })
                       }
                       className="data-[state=checked]:bg-blue-500"
                     />

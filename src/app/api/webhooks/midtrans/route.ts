@@ -114,6 +114,22 @@ export async function POST(request: NextRequest) {
           })
           console.log(`[Midtrans Webhook] Downgrade scheduled: ${plan.name} for user ${order.userId}`)
         }
+
+        // Send Payment Success Email
+        if (order.user?.email) {
+          const { sendEmail, emailTemplates } = await import("@/lib/mail");
+          const { subject, html } = emailTemplates.paymentSuccess(
+            order.userName || order.user.name || "User",
+            order.orderId,
+            plan.name,
+            expireDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+          );
+          await sendEmail({
+            to: order.user.email,
+            subject,
+            html
+          }).catch(err => console.error("[Midtrans Webhook] Email success error:", err));
+        }
         
         console.log(`[Midtrans Webhook] Successfully processed ${changeType} plan ${plan.name} for user ${order.userId}`)
       }

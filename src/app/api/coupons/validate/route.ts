@@ -26,6 +26,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Check if coupon feature is enabled globally
+    const brandSettings = await prisma.setting.findFirst({
+      where: { key: "system_brand_settings", userId: null }
+    })
+    if (brandSettings) {
+      const parsed = JSON.parse(brandSettings.value)
+      if (!parsed.enable_coupon) {
+        return NextResponse.json({
+          success: true,
+          valid: false,
+          message: "Coupon feature is currently disabled",
+        })
+      }
+    }
+
     const coupon = await db.coupon.findUnique({
       where: { code },
     })

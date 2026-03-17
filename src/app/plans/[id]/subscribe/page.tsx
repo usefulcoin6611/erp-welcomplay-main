@@ -83,6 +83,7 @@ export default function SubscribePage({ params }: SubscribePageProps) {
   const [orderSubtotal, setOrderSubtotal] = React.useState<number | null>(null)
   const [orderTax, setOrderTax] = React.useState<number | null>(null)
   const [proratedCredit, setProratedCredit] = React.useState<number>(0)
+  const [enableCoupon, setEnableCoupon] = React.useState<boolean>(false)
 
   React.useEffect(() => {
     let cancelled = false
@@ -94,13 +95,15 @@ export default function SubscribePage({ params }: SubscribePageProps) {
         const id = resolvedParams.id
         setPlanId(id)
 
-        const [planRes, quoteRes] = await Promise.all([
+        const [planRes, quoteRes, brandRes] = await Promise.all([
           fetch(`/api/plans/${id}`, { cache: 'no-store' }),
-          fetch(`/api/subscription/quote?planId=${id}`, { cache: 'no-store' })
+          fetch(`/api/subscription/quote?planId=${id}`, { cache: 'no-store' }),
+          fetch(`/api/settings/brand`, { cache: 'no-store' })
         ])
 
         const json = await planRes.json()
         const quoteJson = await quoteRes.json()
+        const brandJson = await brandRes.json()
 
         if (cancelled) return
 
@@ -131,6 +134,10 @@ export default function SubscribePage({ params }: SubscribePageProps) {
 
         if (quoteJson.success && quoteJson.data) {
           setProratedCredit(quoteJson.data.proratedCredit || 0)
+        }
+
+        if (brandJson.success && brandJson.data) {
+          setEnableCoupon(brandJson.data.enable_coupon || false)
         }
       } catch {
         if (!cancelled) setPlan(null)
@@ -518,9 +525,9 @@ export default function SubscribePage({ params }: SubscribePageProps) {
                           {filteredFeatures.map((feature) => (
                             <div
                               key={feature.key}
-                              className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${feature.enabled
-                                ? 'border-blue-100 bg-blue-50/40 text-blue-900 shadow-[0_1px_2px_rgba(0,0,0,0.02)]'
-                                : 'border-slate-50 bg-slate-50/30 opacity-30 grayscale'
+                              className={`flex items-center gap-2 p-2 rounded-xl transition-all ${feature.enabled
+                                ? 'bg-blue-50/40 text-blue-900'
+                                : 'bg-slate-50/30 opacity-30 grayscale'
                                 }`}
                             >
                               <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${feature.enabled ? 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] text-blue-600' : 'bg-slate-100 text-slate-400'
@@ -555,54 +562,56 @@ export default function SubscribePage({ params }: SubscribePageProps) {
 
                       <div className="h-[1px] bg-slate-100" />
 
-                      {/* Coupon Code */}
-                      <div className="space-y-3">
-                        <Label htmlFor="coupon-code" className="text-xs font-bold text-slate-600">Kode Kupon</Label>
-                        {appliedCoupon ? (
-                          <div className="flex items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50/50 px-3 py-2 animate-in slide-in-from-top-1">
-                            <div className="flex items-center gap-2">
-                              <PartyPopper className="h-4 w-4 text-green-600" />
-                              <span className="text-[11px] font-bold text-green-800">
-                                {appliedCoupon.name} (-{appliedCoupon.discount}%)
-                              </span>
+                      {/* Coupon Code - respect enableCoupon setting */}
+                      {enableCoupon && (
+                        <div className="space-y-3">
+                          <Label htmlFor="coupon-code" className="text-xs font-bold text-slate-600">Kode Kupon</Label>
+                          {appliedCoupon ? (
+                            <div className="flex items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50/50 px-3 py-2 animate-in slide-in-from-top-1">
+                              <div className="flex items-center gap-2">
+                                <PartyPopper className="h-4 w-4 text-green-600" />
+                                <span className="text-[11px] font-bold text-green-800">
+                                  {appliedCoupon.name} (-{appliedCoupon.discount}%)
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-green-700 hover:bg-green-100 rounded-full"
+                                onClick={handleRemoveCoupon}
+                              >
+                                <X className="h-3.5 h-3.5" />
+                              </Button>
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-green-700 hover:bg-green-100 rounded-full"
-                              onClick={handleRemoveCoupon}
-                            >
-                              <X className="h-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Input
-                              id="coupon-code"
-                              placeholder="Punya kupon?"
-                              value={couponCode}
-                              onChange={(e) => {
-                                setCouponCode(e.target.value)
-                                setCouponError(null)
-                              }}
-                              className={`h-9 text-xs rounded-xl bg-slate-50 border-slate-100 focus:bg-white focus:ring-blue-500/20 ${couponError ? 'border-destructive' : ''}`}
-                            />
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              className="h-9 px-4 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800"
-                              onClick={handleApplyCoupon}
-                              disabled={applyLoading}
-                            >
-                              {applyLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Apply'}
-                            </Button>
-                          </div>
-                        )}
-                        {couponError && (
-                          <p className="text-[10px] font-bold text-destructive pl-1 uppercase tracking-tight">{couponError}</p>
-                        )}
-                      </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Input
+                                id="coupon-code"
+                                placeholder="Punya kupon?"
+                                value={couponCode}
+                                onChange={(e) => {
+                                  setCouponCode(e.target.value)
+                                  setCouponError(null)
+                                }}
+                                className={`h-9 text-xs rounded-xl bg-slate-50 border-slate-100 focus:bg-white focus:ring-blue-500/20 ${couponError ? 'border-destructive' : ''}`}
+                              />
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className="h-9 px-4 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+                                onClick={handleApplyCoupon}
+                                disabled={applyLoading}
+                              >
+                                {applyLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Apply'}
+                              </Button>
+                            </div>
+                          )}
+                          {couponError && (
+                            <p className="text-[10px] font-bold text-destructive pl-1 uppercase tracking-tight">{couponError}</p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Price summary */}
                       <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
