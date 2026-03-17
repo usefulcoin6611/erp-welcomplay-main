@@ -239,6 +239,7 @@ model HrmAnnouncement {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   employeeId  String?
+  ownerId     String?
   employee    Employee? @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId])
@@ -254,6 +255,7 @@ model HrmHoliday {
   updatedAt   DateTime @updatedAt
   startDate   DateTime
   endDate     DateTime
+  ownerId     String?
 
   @@map("hrm_holiday")
 }
@@ -270,6 +272,7 @@ model HrmEvent {
   description String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  ownerId     String?
   employee    Employee? @relation(fields: [employeeId], references: [id])
 
   @@index([employeeId])
@@ -288,6 +291,7 @@ model HrmMeeting {
   status      String   @default("Scheduled")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  ownerId     String?
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
@@ -306,6 +310,7 @@ model Trainer {
   address   String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  ownerId   String?
   trainings Training[]
 
   @@map("trainer")

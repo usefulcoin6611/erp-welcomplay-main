@@ -17,15 +17,23 @@ export async function GET(request: NextRequest) {
     const employeeIdParam = searchParams.get("employeeId");
     const status = searchParams.get("status");
 
-    const whereClause: any = {};
-    const isEmployee = (session.user as { role?: string })?.role === "employee";
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
+    const whereClause: any = {
+      employee: {
+        ownerId: companyId,
+      },
+    };
+
+    const isEmployee = role === "employee";
     if (isEmployee) {
       const myEmployee = await prisma.employee.findFirst({
-        where: { userId: session.user.id },
+        where: { userId: userId },
         select: { id: true },
       });
       if (myEmployee) whereClause.employeeId = myEmployee.id;
-      else whereClause.employeeId = "none"; // no record, return empty
+      else whereClause.employeeId = "none";
     } else {
       if (employeeIdParam) whereClause.employeeId = employeeIdParam;
     }

@@ -568,3 +568,54 @@
   isolation: isolate;
 }
 
+/* Print styles for professional report downloads */
+@media print {
+  /* Hide UI elements that shouldn't be in the report */
+  aside,
+  header,
+  nav,
+  [data-slot="sidebar"],
+  [data-slot="site-header"],
+  .no-print,
+  button,
+  .action-buttons {
+    display: none !important;
+  }
+
+  /* Reset layout for print */
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  main, 
+  [data-slot="main-content"],
+  .flex-1 {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    display: block !important;
+  }
+
+  /* Ensure cards look good on print */
+  .card, .rounded-lg, border {
+    border: 1px solid #eee !important;
+    box-shadow: none !important;
+  }
+
+  /* Support page breaks */
+  section {
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  /* Ensure charts and text are clear */
+  canvas, svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+

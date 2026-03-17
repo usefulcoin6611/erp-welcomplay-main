@@ -13,7 +13,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const leaveTypes = await prisma.leaveType.findMany();
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const leaveTypes = await prisma.leaveType.findMany({
+      where: { ownerId: companyId },
+    });
     return NextResponse.json({ success: true, data: leaveTypes });
   } catch (error: any) {
     console.error("Error fetching leave types:", error);

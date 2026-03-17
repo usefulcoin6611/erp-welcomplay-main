@@ -54,29 +54,18 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const user = session.user as { role?: string; branchId?: string };
-    const delegate = (prisma as Record<string, unknown>).performanceGoal as undefined | { findMany: (args: unknown) => Promise<unknown[]> };
-    if (!delegate?.findMany) {
-      return NextResponse.json(
-        { success: false, message: "Prisma client belum menyertakan performanceGoal. Jalankan: pnpm prisma generate, lalu restart dev server." },
-        { status: 503 }
-      );
-    }
-    const where: Record<string, unknown> = {};
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    // Multi-tenancy: non super admin/company only see their own branch
-    if (user.role !== "super admin" && user.role !== "company" && user.branchId) {
-      const userBranch = await prisma.branch.findUnique({ where: { id: user.branchId } });
-      if (userBranch) {
-        where.branch = userBranch.name;
-      }
-    }
+    const where: any = {
+      ownerId: companyId,
+    };
 
-    const list = (await delegate.findMany({
+    const list = await prisma.performanceGoal.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: { goalType: { select: { name: true } } },
-    })) as Parameters<typeof toResponse>[0][];
+    });
     return NextResponse.json({ success: true, data: list.map(toResponse) });
   } catch (e) {
     console.error(e);
@@ -88,16 +77,12 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const user = session.user as { role?: string; branchId?: string };
-    const role = user?.role;
+    
+    const { id: userId, role, ownerId } = session.user as any;
     if (role !== "super admin" && role !== "company") return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
-    const delegate = (prisma as Record<string, unknown>).performanceGoal as undefined | { create: (args: unknown) => Promise<unknown> };
-    if (!delegate?.create) {
-      return NextResponse.json(
-        { success: false, message: "Prisma client belum menyertakan performanceGoal. Jalankan: pnpm prisma generate, lalu restart dev server." },
-        { status: 503 }
-      );
-    }
+
+    const companyId = role === "company" ? userId : ownerId;
+
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ success: false, message: parsed.error.errors[0]?.message ?? "Data tidak valid" }, { status: 400 });
@@ -112,20 +97,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let branchName = rest.branch;
-    // Enforce branch from session for non super admin/company
-    if (user.role !== "super admin" && user.role !== "company" && user.branchId) {
-      const userBranch = await prisma.branch.findUnique({ where: { id: user.branchId } });
-      if (userBranch) {
-        branchName = userBranch.name;
-      }
-    }
-
-    const created = await delegate.create({
-      data: { ...rest, branch: branchName, startDate: start, endDate: end },
+    const created = await prisma.performanceGoal.create({
+      data: { 
+        ...rest, 
+        startDate: start, 
+        endDate: end,
+        ownerId: companyId 
+      },
       include: { goalType: { select: { name: true } } },
     });
-    return NextResponse.json({ success: true, message: "Goal berhasil dibuat", data: toResponse(created as Parameters<typeof toResponse>[0]) });
+    return NextResponse.json({ success: true, message: "Goal berhasil dibuat", data: toResponse(created) });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ success: false, message: "Gagal membuat goal" }, { status: 500 });

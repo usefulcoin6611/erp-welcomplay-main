@@ -16,10 +16,16 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const { id } = await params;
 
-    const employee = await prisma.employee.findUnique({
-      where: { id },
+    const employee = await prisma.employee.findFirst({
+      where: { 
+        id,
+        ownerId: companyId
+      },
       include: {
         allowances: { include: { allowanceOption: true } },
         commissions: true,
@@ -106,7 +112,24 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const { id } = await params;
+    
+    // Authorization check
+    const employeeExist = await prisma.employee.findFirst({
+      where: { id, ownerId: companyId },
+      select: { id: true }
+    });
+
+    if (!employeeExist) {
+      return NextResponse.json(
+        { success: false, message: "Employee not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
     let body: any;
     try {
       body = await request.json();
@@ -148,7 +171,7 @@ export async function PUT(
     const otherPayments = Array.isArray(body.otherPayments) ? body.otherPayments : [];
     const overtimes = Array.isArray(body.overtimes) ? body.overtimes : [];
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.employee.update({
         where: { id },
         data: employeeUpdateData,

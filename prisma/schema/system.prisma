@@ -58,6 +58,9 @@ model Branch {
   contracts            Contract[]
   contractTypes        ContractType[]
   formBuilders         FormBuilder[]
+  invoices             Invoice[]
+  taxes                Tax[]
+  units                Unit[]
 
   @@map("branch")
 }

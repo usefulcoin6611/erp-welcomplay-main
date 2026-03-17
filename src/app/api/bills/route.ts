@@ -138,19 +138,22 @@ async function buildBillItems(
 
 export async function GET(request: NextRequest) {
   try {
-    const s = await getSessionBranch()
-    if (s.error || typeof s.branchId !== 'string') {
-      return NextResponse.json({ success: false, message: s.error }, { status: s.status || 401 })
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = s.branchId as string;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const url = new URL(request.url)
     const date = url.searchParams.get("date")
     const status = url.searchParams.get("status")
 
-    const where: any = {
-      branchId,
-    }
+    const where: any = {}
 
     if (date) {
       where.billDate = new Date(date)
@@ -160,7 +163,12 @@ export async function GET(request: NextRequest) {
     }
 
     const billsDb = await prisma.bill.findMany({
-      where,
+      where: {
+        ...where,
+        branch: {
+          ownerId: companyId,
+        },
+      },
       include: {
         vendor: true,
         category: true,

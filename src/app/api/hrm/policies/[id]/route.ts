@@ -99,6 +99,9 @@ export async function PUT(
       );
     }
 
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
     const updated =
       attachmentPath === undefined
         ? await prisma.$queryRaw<PolicyRow[]>`
@@ -108,7 +111,7 @@ export async function PUT(
               title = ${title.trim()},
               description = ${description ?? null},
               updated_at = NOW()
-            WHERE id = ${numericId}
+            WHERE id = ${numericId} AND "ownerId" = ${companyId}
             RETURNING id, branch, title, description, attachment
           `
         : await prisma.$queryRaw<PolicyRow[]>`
@@ -119,7 +122,7 @@ export async function PUT(
               description = ${description ?? null},
               attachment = ${attachmentPath},
               updated_at = NOW()
-            WHERE id = ${numericId}
+            WHERE id = ${numericId} AND "ownerId" = ${companyId}
             RETURNING id, branch, title, description, attachment
           `;
 
@@ -157,8 +160,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userRole = (session.user as any).role;
-    if (userRole !== "super admin" && userRole !== "company") {
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
+    if (role !== "super admin" && role !== "company") {
       return NextResponse.json(
         { success: false, message: "Forbidden: Akses ditolak" },
         { status: 403 },
@@ -177,7 +182,7 @@ export async function DELETE(
 
     const deleted = await prisma.$queryRaw<PolicyRow[]>`
       DELETE FROM company_policies
-      WHERE id = ${numericId}
+      WHERE id = ${numericId} AND "ownerId" = ${companyId}
       RETURNING id, branch, title, description, attachment
     `;
 

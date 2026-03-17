@@ -41,7 +41,15 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const items = await prisma.hrmComplaint.findMany({
+      where: {
+        employeeFrom: {
+          ownerId: companyId,
+        },
+      },
       include: {
         employeeFrom: { select: { name: true } },
         complaintAgainst: { select: { name: true } },

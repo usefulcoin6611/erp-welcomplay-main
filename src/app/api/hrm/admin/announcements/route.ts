@@ -44,7 +44,11 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const items = await prisma.hrmAnnouncement.findMany({
+      where: { ownerId: companyId },
       include: { employee: { select: { name: true } } },
       orderBy: { startDate: "desc" },
     });
@@ -71,6 +75,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: "Employee not found" }, { status: 400 });
       }
     }
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
     const item = await prisma.hrmAnnouncement.create({
       data: {
         title: parsed.data.title,
@@ -80,6 +87,7 @@ export async function POST(request: NextRequest) {
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
         description: parsed.data.description?.trim() || null,
+        ownerId: companyId,
       },
       include: { employee: { select: { name: true } } },
     });

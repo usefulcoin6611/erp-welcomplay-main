@@ -13,17 +13,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const branchId = searchParams.get("branchId"); // Optional filter
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const whereClause: any = {};
+    const { searchParams } = new URL(request.url);
+    const branchId = searchParams.get("branchId"); 
+
+    const whereClause: any = {
+      ownerId: companyId,
+    };
     if (branchId) {
-      whereClause.branch = branchId; // Assuming branch is stored as string name or relation? 
-      // Employee model has 'branch' as String (name) and no branchId relation. 
-      // Wait, schema says: branch String. But also branch relation in some models.
-      // Let's check Employee model again.
-      // Employee model: branch String. No relation to Branch model.
-      // Okay, we filter by string for now.
+      // If branchId is passed, it might be the ID or name depending on frontend implementation.
+      // Based on previous fixes, we should try to match the branch name if it's a UUID/CUID.
+      const branchRecord = await prisma.branch.findFirst({
+        where: { id: branchId, ownerId: companyId }
+      });
+      if (branchRecord) {
+        whereClause.branch = branchRecord.name;
+      } else {
+        whereClause.branch = branchId; 
+      }
     }
 
     const employees = await prisma.employee.findMany({

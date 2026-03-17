@@ -25,11 +25,20 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId ?? null
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const pipelines = await prisma.pipeline.findMany({
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
+    const pipelines = await (prisma.pipeline as any).findMany({
       where: {
-        branchId: branchId || null,
+        branchId: {
+          in: branchIds
+        }
       },
       include: {
         deals: {
@@ -39,7 +48,7 @@ export async function GET() {
       orderBy: {
         createdAt: "asc",
       },
-    })
+    }) as any[]
 
     const data: PipelineListItem[] = pipelines.map((p: any) => ({
       id: p.id,
@@ -67,8 +76,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userRole = (session.user as any).role
-    if (userRole !== "super admin" && userRole !== "company") {
+    const { id: userId, role, ownerId, branchId } = session.user as any
+    const companyId = role === "company" ? userId : ownerId
+
+    if (role !== "super admin" && role !== "company" && role !== "employee") {
       return NextResponse.json(
         { success: false, message: "Forbidden: Akses ditolak" },
         { status: 403 },
@@ -90,12 +101,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { name } = result.data
-    const branchId = (session.user as any).branchId ?? null
 
     const existing = await prisma.pipeline.findFirst({
       where: {
         name,
-        branchId: branchId || null,
+        branch: { ownerId: companyId },
       },
     })
 

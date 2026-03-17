@@ -16,10 +16,18 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const { id } = await params;
 
-    const payslip = await prisma.payslip.findUnique({
-      where: { id },
+    const payslip = await prisma.payslip.findFirst({
+      where: { 
+        id,
+        employee: {
+          ownerId: companyId
+        }
+      },
       include: {
         employee: true,
         payslipType: true,
@@ -88,9 +96,29 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params;
-    const body = await request.json();
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
+    const { id } = await params;
+    
+    // Check ownership
+    const payslipExist = await prisma.payslip.findFirst({
+      where: {
+        id,
+        employee: {
+          ownerId: companyId
+        }
+      }
+    });
+
+    if (!payslipExist) {
+       return NextResponse.json(
+        { success: false, message: "Payslip not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
     const data: any = {};
 
     if (body.status !== undefined) {
@@ -146,7 +174,27 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const { id } = await params;
+
+    const payslipExist = await prisma.payslip.findFirst({
+      where: {
+        id,
+        employee: {
+          ownerId: companyId
+        }
+      },
+      select: { id: true }
+    });
+
+    if (!payslipExist) {
+       return NextResponse.json(
+        { success: false, message: "Payslip not found or unauthorized" },
+        { status: 404 }
+      );
+    }
 
     await prisma.payslip.delete({
       where: { id },

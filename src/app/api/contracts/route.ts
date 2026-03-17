@@ -32,22 +32,25 @@ export async function GET(request: NextRequest) {
       : 10000
     const skip = (page - 1) * limit
 
-    const branchId = (session.user as any).branchId as string | null;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const [contracts, total] = await Promise.all([
-      prisma.contract.findMany({
-        where: {
-          branchId: branchId || null,
-        },
-        orderBy: { createdAt: "desc" },
-        ...(usePagination && { skip, take: limit }),
-      }),
-      prisma.contract.count({
-        where: {
-          branchId: branchId || null,
-        },
-      }),
-    ])
+    const allContracts = await (prisma.contract as any).findMany({
+      orderBy: { createdAt: "desc" },
+    }) as any[];
+
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
+    const filteredContracts = allContracts.filter((c: any) => branchIds.includes(c.branchId));
+    const total = filteredContracts.length;
+
+    const contracts = usePagination
+      ? filteredContracts.slice(skip, skip + limit)
+      : filteredContracts;
 
     const projectIds = [...new Set(contracts.map((c: { projectId: string | null }) => c.projectId).filter(Boolean))] as string[]
     const projects = projectIds.length > 0
@@ -136,11 +139,12 @@ export async function POST(request: NextRequest) {
       projectId,
     } = parsed.data
 
-    const branchId = (session.user as any).branchId as string | null;
+    const { id: userId, ownerId, branchId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const last = await prisma.contract.findFirst({
       where: {
-        branchId: branchId || null,
+        branch: { ownerId: companyId },
       },
       orderBy: { createdAt: "desc" },
     })

@@ -20,6 +20,15 @@ function TaxSummaryTabComponent() {
     handleYearChange(String(new Date().getFullYear()))
   }
 
+  const handleExport = () => {
+    const { exportTaxSummary } = require('../utils/exportUtils');
+    exportTaxSummary(incomeTaxes, expenseTaxes, monthList, `tax_summary_${year}`);
+  };
+
+  const handleDownload = () => {
+    handleExport();
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Filters */}
@@ -28,6 +37,8 @@ function TaxSummaryTabComponent() {
         onYearChange={handleYearChange}
         onApply={() => {}} // year change auto-triggers refetch via useEffect
         onReset={handleReset}
+        onExport={handleExport}
+        onDownload={handleDownload}
       />
 
       {/* Info Cards */}

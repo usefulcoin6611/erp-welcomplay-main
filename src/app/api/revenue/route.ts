@@ -31,10 +31,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get("startDate")
@@ -48,8 +52,10 @@ export async function GET(request: NextRequest) {
     const [entries, incomeCategories] = await Promise.all([
       prisma.journalEntry.findMany({
         where: {
-          branchId: branchId,
           date: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
+          branch: {
+            ownerId: companyId,
+          },
         },
         include: {
           lines: {
@@ -65,20 +71,25 @@ export async function GET(request: NextRequest) {
       }) as any[],
       prisma.category.findMany({
         where: {
-          branchId,
           type: "Income",
+          branch: {
+            ownerId: companyId,
+          },
         },
       }),
     ])
 
+    const filteredEntries = entries;
+    const filteredIncomeCategories = incomeCategories;
+
     const categoryByAccountName = new Map<string, { id: string; name: string }>()
-    for (const cat of incomeCategories as any[]) {
+    for (const cat of filteredIncomeCategories as any[]) {
       if (cat.account) {
         categoryByAccountName.set(cat.account, { id: cat.id, name: cat.name })
       }
     }
 
-    const data = (entries as any[]).reduce<RevenueApiRow[]>((acc, entry: any) => {
+    const data = (filteredEntries as any[]).reduce<RevenueApiRow[]>((acc, entry: any) => {
       const incomeLines = entry.lines.filter((ln: any) => ln.account.type === "Income")
       const cashLines = entry.lines.filter((ln: any) => ln.account.type === "Assets")
       const incomeAmount = incomeLines.reduce(

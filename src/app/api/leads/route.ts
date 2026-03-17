@@ -27,22 +27,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = (session.user as any).branchId as string | null;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const leads = await prisma.lead.findMany({
-      where: {
-        branchId: branchId || null,
-      },
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
+    const leads = await (prisma.lead as any).findMany({
       include: {
         pipeline: true,
         stage: true,
         owner: true,
       },
       orderBy: { createdAt: "desc" },
-    });
+    }) as any[];
 
+    const filteredLeads = leads.filter((l: any) => branchIds.includes(l.branchId));
 
-    const data = leads.map((l: (typeof leads)[number]) => ({
+    const data = filteredLeads.map((l: any) => ({
       id: l.leadId,
       name: l.name,
       subject: l.subject ?? "",
@@ -123,8 +128,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const role = (session.user as any).role;
+    const ownerIdFromSession = (session.user as any).ownerId;
+    const companyId = role === "company" ? userId : ownerIdFromSession;
+
     const lastLead = await prisma.lead.findFirst({
-      where: branchId ? { branchId } : undefined,
+      where: {
+        branch: { ownerId: companyId },
+      },
       orderBy: { createdAt: "desc" },
     });
 

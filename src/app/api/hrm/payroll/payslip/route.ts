@@ -17,7 +17,14 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get("month"); // YYYY-MM
     const employeeId = searchParams.get("employeeId");
 
-    const whereClause: any = {};
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const whereClause: any = {
+      employee: {
+        ownerId: companyId,
+      },
+    };
     if (month) {
       whereClause.salaryMonth = month;
     }
@@ -66,9 +73,17 @@ export async function POST(request: NextRequest) {
 
     const salaryMonth = `${year}-${String(month).padStart(2, "0")}`;
 
-    // Check if already generated
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
+    // Check if already generated for this company
     const existingCount = await prisma.payslip.count({
-      where: { salaryMonth },
+      where: { 
+        salaryMonth,
+        employee: {
+          ownerId: companyId
+        }
+      },
     });
 
     if (existingCount > 0) {
@@ -79,10 +94,13 @@ export async function POST(request: NextRequest) {
     }
 
     const employees = await prisma.employee.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        ownerId: companyId
+      },
     });
 
-    const payslipsData = employees.map((emp) => {
+    const payslipsData = employees.map((emp: any) => {
       const basicSalary = emp.basicSalary || 0;
       const allowance = 0;
       const commission = 0;

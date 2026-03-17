@@ -21,7 +21,29 @@ function MonthlyAttendanceTabComponent() {
   };
 
   const handleExport = () => {
-    console.log('Export attendance data', data);
+    if (!data.length) return;
+    const { exportToCSV } = require('@/components/reports/utils/exportUtils');
+    const exportData = data.map(item => {
+      const row: any = {
+        'Employee ID': item.employeeId,
+        'Employee Name': item.employeeName,
+        'Department': item.department,
+        'Branch': item.branch,
+      };
+      
+      // Add each date's attendance status
+      dates.forEach(date => {
+        row[date] = item.attendance[date] || '-';
+      });
+      
+      return row;
+    });
+    
+    exportToCSV(exportData, `attendance_report_${filters.month}`);
+  };
+
+  const handleDownload = () => {
+    handleExport();
   };
 
   const formatMonth = () => {
@@ -39,6 +61,7 @@ function MonthlyAttendanceTabComponent() {
         onFilterChange={setFilters}
         onReset={handleReset}
         onExport={handleExport}
+        onDownload={handleDownload}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

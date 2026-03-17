@@ -25,6 +25,14 @@ async function ensureTable() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  // Ensure ownerId column exists
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE company_policies ADD COLUMN IF NOT EXISTS "ownerId" TEXT;
+    `);
+  } catch (e) {
+    // Ignore if column already exists or other errors
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -39,9 +47,13 @@ export async function GET(request: NextRequest) {
 
     await ensureTable();
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const rows = await prisma.$queryRaw<PolicyRow[]>`
       SELECT id, branch, title, description, attachment
       FROM company_policies
+      WHERE "ownerId" = ${companyId}
       ORDER BY created_at DESC
     `;
 
@@ -77,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     let branch: string | undefined;
     let title: string | undefined;
-    let description: string | undefined;
+    let description: string | null | undefined;
     let attachmentPath: string | null = null;
 
     if (contentType.includes("multipart/form-data")) {
@@ -124,11 +136,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = userRole === "company" ? userId : sessionOwnerId;
+
     await ensureTable();
 
     const inserted = await prisma.$queryRaw<PolicyRow[]>`
-      INSERT INTO company_policies (branch, title, description, attachment)
-      VALUES (${branch.trim()}, ${title.trim()}, ${description ?? null}, ${attachmentPath})
+      INSERT INTO company_policies (branch, title, description, attachment, "ownerId")
+      VALUES (${branch.trim()}, ${title.trim()}, ${description ?? null}, ${attachmentPath}, ${companyId})
       RETURNING id, branch, title, description, attachment
     `;
 

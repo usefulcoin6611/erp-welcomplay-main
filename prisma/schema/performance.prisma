@@ -32,8 +32,9 @@ model PerformanceIndicator {
   updatedAt                DateTime @updatedAt
   periodYear               Int?
   periodQuarter            Int?
+  ownerId                  String?
 
-  @@unique([branch, department, designation, periodYear, periodQuarter], map: "performance_indicator_period_key")
+  @@unique([branch, department, designation, periodYear, periodQuarter, ownerId], map: "performance_indicator_period_key")
   @@map("performance_indicator")
 }
 
@@ -70,6 +71,7 @@ model PerformanceGoal {
   progress          Int
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  ownerId           String?
   goalType          GoalType @relation(fields: [goalTypeId], references: [id])
 
   @@map("performance_goal")

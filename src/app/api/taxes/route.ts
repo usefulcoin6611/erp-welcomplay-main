@@ -19,7 +19,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const taxes = await prisma.tax.findMany({
+      where: {
+        branch: {
+          ownerId: companyId,
+        },
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -67,12 +75,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+    const branchId = (session.user as any).branchId || branchIds[0];
+
     const { name, rate } = validation.data;
 
     const tax = await prisma.tax.create({
       data: {
         name,
         rate,
+        branchId,
       },
     });
 

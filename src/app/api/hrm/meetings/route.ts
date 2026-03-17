@@ -45,7 +45,11 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const items = await prisma.hrmMeeting.findMany({
+      where: { ownerId: companyId },
       include: { employee: { select: { name: true } } },
       orderBy: [{ meetingDate: "asc" }, { meetingTime: "asc" }],
     });
@@ -103,6 +107,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
     const item = await prisma.hrmMeeting.create({
       data: {
         title: parsed.data.title.trim(),
@@ -113,6 +120,7 @@ export async function POST(request: NextRequest) {
         meetingTime: parsed.data.meetingTime.trim(),
         note: parsed.data.note?.trim() || null,
         status: parsed.data.status ?? "Scheduled",
+        ownerId: companyId,
       },
       include: { employee: { select: { name: true } } },
     });

@@ -59,15 +59,14 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = session.user as { role?: string; branchId?: string };
-    const where: Record<string, unknown> = {};
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    if (user.role !== "super admin" && user.role !== "company" && user.branchId) {
-      const userBranch = await prisma.branch.findUnique({ where: { id: user.branchId } });
-      if (userBranch) {
-        where.branch = userBranch.name;
-      }
-    }
+    const where: any = {
+      employee: {
+        ownerId: companyId,
+      },
+    };
 
     const list = await prisma.training.findMany({
       where,

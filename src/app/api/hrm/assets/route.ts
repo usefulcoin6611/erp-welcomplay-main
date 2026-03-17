@@ -33,6 +33,7 @@ async function ensureTables() {
       supported_date DATE NULL,
       amount NUMERIC(18,2) NOT NULL DEFAULT 0,
       description TEXT NULL,
+      ownerId TEXT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
@@ -68,7 +69,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await ensureTables();
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const rows = await prisma.$queryRaw<AssetRow[]>`
       SELECT
@@ -90,11 +92,12 @@ export async function GET(request: NextRequest) {
       FROM hrm_assets a
       LEFT JOIN hrm_asset_employees ae ON ae.asset_id = a.id
       LEFT JOIN employee e ON e.id = ae.employee_id
+      WHERE a."ownerId" = ${companyId}
       GROUP BY a.id
       ORDER BY a.created_at DESC
     `;
 
-    const data: AssetResponse[] = rows.map((row) => {
+    const data: AssetResponse[] = rows.map((row: any) => {
       const employees = (row.employees ?? []) as { id: string; name: string }[];
       return {
         id: row.id,
@@ -217,13 +220,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
     await ensureTables();
 
     const insertedAssets = await prisma.$queryRaw<
       { id: number }[]
     >`
-      INSERT INTO hrm_assets (name, purchase_date, supported_date, amount, description)
-      VALUES (${name}, ${purchaseDate}, ${supportedDate}, ${amountNumber}, ${description})
+      INSERT INTO hrm_assets (name, purchase_date, supported_date, amount, description, "ownerId")
+      VALUES (${name}, ${purchaseDate}, ${supportedDate}, ${amountNumber}, ${description}, ${companyId})
       RETURNING id
     `;
 

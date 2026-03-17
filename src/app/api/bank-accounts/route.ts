@@ -13,10 +13,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = (session.user as any).branchId || null;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const bankAccounts = await prisma.bankAccount.findMany({
-      where: branchId ? { branchId } : undefined,
+      where: {
+        branch: {
+          ownerId: companyId,
+        },
+      },
       include: {
         chartAccount: {
           select: { id: true, code: true, name: true, balance: true },
@@ -25,7 +30,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const data = bankAccounts.map((b: (typeof bankAccounts)[number]) => {
+    const data = bankAccounts.map((b: any) => {
       const balance = b.chartAccount.balance ?? 0;
       const opening = b.openingBalance ?? 0;
       const effectiveBalance = balance !== 0 ? balance : opening;
@@ -66,13 +71,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
     const branchId = (session.user as any).branchId || null;
     const body = await request.json();
 
     const chartCode = String(body.chartCode ?? "");
-    const chart = await prisma.chartOfAccount.findUnique({ where: { code: chartCode } });
+    const chart = await prisma.chartOfAccount.findUnique({
+      where: {
+        code: chartCode,
+        branchId: { in: branchIds }
+      }
+    });
     if (!chart) {
-      return NextResponse.json({ success: false, message: "Chart of Account tidak ditemukan" }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Chart of Account tidak ditemukan atau tidak dapat diakses" }, { status: 400 });
     }
 
     const created = await prisma.bankAccount.create({

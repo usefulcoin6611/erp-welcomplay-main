@@ -25,19 +25,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = (session.user as any).branchId as string | null;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    if (!branchId) {
-      return NextResponse.json(
-        { error: "User has no assigned branch" },
-        { status: 400 },
-      );
-    }
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const transfers = await db.bankTransfer.findMany({
-      where: {
-        branchId,
-      },
       include: {
         fromAccount: true,
         toAccount: true,
@@ -47,7 +44,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = transfers.map((t: any) => ({
+    const filteredTransfers = transfers.filter((t: any) => branchIds.includes(t.branchId))
+
+    const data = filteredTransfers.map((t: any) => ({
       id: t.id,
       date: t.date.toISOString().slice(0, 10),
       amount: t.amount,

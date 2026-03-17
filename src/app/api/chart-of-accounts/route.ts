@@ -25,14 +25,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = (session.user as any).branchId;
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 });
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const coas = await prisma.chartOfAccount.findMany({
       where: {
-        branchId: branchId, // Filter by branch
+        branch: {
+          ownerId: companyId,
+        },
       },
       include: {
         subAccounts: true,

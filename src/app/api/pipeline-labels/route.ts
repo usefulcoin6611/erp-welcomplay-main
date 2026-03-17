@@ -36,13 +36,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const branchId = (session.user as any).branchId ?? null
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const labels = await prisma.pipelineLabel.findMany({
       where: { 
         pipelineId,
         pipeline: {
-          branchId: branchId || null,
+          branch: { ownerId: companyId },
         },
       },
       orderBy: { createdAt: "asc" },
@@ -74,8 +75,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userRole = (session.user as any).role
-    if (userRole !== "super admin" && userRole !== "company") {
+    const { id: userId, role, ownerId } = session.user as any
+    const companyId = role === "company" ? userId : ownerId
+
+    if (role !== "super admin" && role !== "company" && role !== "employee") {
       return NextResponse.json(
         { success: false, message: "Forbidden: Akses ditolak" },
         { status: 403 },
@@ -98,12 +101,10 @@ export async function POST(request: NextRequest) {
 
     const { pipelineId, name, color } = result.data
 
-    const branchId = (session.user as any).branchId ?? null
-
     const pipeline = await prisma.pipeline.findFirst({
       where: { 
         id: pipelineId,
-        branchId: branchId || null,
+        branch: { ownerId: companyId },
       },
     })
 

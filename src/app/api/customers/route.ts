@@ -17,27 +17,27 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const branchId = (session.user as any).branchId as string | null;
-        if (!branchId) {
-            return NextResponse.json({ success: true, data: [] });
-        }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-        const customers = await prisma.customer.findMany({
-            where: {
-                branchId: branchId,
-            },
-            include: {
-                branch: true,
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+    const customers = await prisma.customer.findMany({
+      where: {
+        branch: {
+          ownerId: companyId,
+        },
+      },
+      include: {
+        branch: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
-        return NextResponse.json({
-            success: true,
-            data: customers,
-        });
+    return NextResponse.json({
+      success: true,
+      data: customers,
+    });
     } catch (error: any) {
         console.error("Error fetching customers:", error);
         return NextResponse.json(

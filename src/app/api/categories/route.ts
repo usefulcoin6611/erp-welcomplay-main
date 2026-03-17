@@ -34,25 +34,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = (session.user as any).branchId as string | null;
-    const url = new URL(request.url)
-    const all = url.searchParams.get("all") === "true"
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const where: any = {};
-    // If ?all=true, return all categories (for forms that need cross-branch categories)
-    // Otherwise filter by branchId
-    if (!all && branchId) {
-      where.branchId = branchId;
-    }
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const categories = await prisma.category.findMany({
-      where,
       orderBy: {
         name: "asc",
       },
     });
 
-    return NextResponse.json({ success: true, data: categories });
+    const filteredCategories = categories.filter((c: any) => branchIds.includes(c.branchId))
+
+    return NextResponse.json({ success: true, data: filteredCategories });
   } catch (error) {
     console.error("Error fetching categories:", error);
     return NextResponse.json(

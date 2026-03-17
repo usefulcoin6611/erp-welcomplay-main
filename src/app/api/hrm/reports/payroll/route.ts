@@ -19,26 +19,24 @@ export async function GET(request: NextRequest) {
     const departmentId = searchParams.get("departmentId") || "";
     const employeeId = searchParams.get("employeeId") || "";
 
-    const user = session.user as { role?: string; branchId?: string | null };
-    const role = user?.role ?? "";
-    const userBranchId = user?.branchId ?? null;
-    const scopeByBranch = role !== "super admin" && role !== "company" && !!userBranchId;
+    const { id: userId, role: userRole, ownerId } = session.user as any;
+    const companyId = userRole === "company" ? userId : ownerId;
 
     let branchName: string | null = null;
     let departmentName: string | null = null;
-    if (scopeByBranch && userBranchId) {
-      const ub = await prisma.branch.findUnique({ where: { id: userBranchId }, select: { name: true } });
-      branchName = ub?.name ?? null;
-    } else if (branchId) {
-      const b = await prisma.branch.findUnique({ where: { id: branchId }, select: { name: true } });
+    
+    if (branchId) {
+      const b = await prisma.branch.findFirst({ where: { id: branchId, ownerId: companyId }, select: { name: true } });
       branchName = b?.name ?? null;
     }
     if (departmentId) {
-      const d = await prisma.department.findUnique({ where: { id: departmentId }, select: { name: true } });
+      const d = await prisma.department.findFirst({ where: { id: departmentId, ownerId: companyId }, select: { name: true } });
       departmentName = d?.name ?? null;
     }
 
-    const employeeWhere: Record<string, unknown> = {};
+    const employeeWhere: any = {
+      ownerId: companyId,
+    };
     if (branchName) employeeWhere.branch = branchName;
     if (departmentName) employeeWhere.department = departmentName;
     if (employeeId) employeeWhere.id = employeeId;
@@ -52,7 +50,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const data = payslips.map((p) => ({
+    const data = payslips.map((p: any) => ({
       id: p.id,
       employeeId: p.employee.employeeId,
       employeeDbId: p.employee.id,
@@ -67,10 +65,10 @@ export async function GET(request: NextRequest) {
     }));
 
     const summary = {
-      totalBasicSalary: data.reduce((s, i) => s + i.basicSalary, 0),
-      totalAllowances: data.reduce((s, i) => s + i.allowances, 0),
-      totalDeductions: data.reduce((s, i) => s + i.deductions, 0),
-      totalNetSalary: data.reduce((s, i) => s + i.netSalary, 0),
+      totalBasicSalary: data.reduce((s: number, i: any) => s + i.basicSalary, 0),
+      totalAllowances: data.reduce((s: number, i: any) => s + i.allowances, 0),
+      totalDeductions: data.reduce((s: number, i: any) => s + i.deductions, 0),
+      totalNetSalary: data.reduce((s: number, i: any) => s + i.netSalary, 0),
       totalEmployees: data.length,
     };
 

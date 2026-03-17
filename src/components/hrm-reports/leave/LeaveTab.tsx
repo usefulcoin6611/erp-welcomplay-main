@@ -22,7 +22,22 @@ function LeaveTabComponent() {
   };
 
   const handleExport = () => {
-    console.log('Export leave data', data);
+    if (!data.length) return;
+    const { exportToCSV } = require('@/components/reports/utils/exportUtils');
+    const exportData = data.map(item => ({
+      'Employee Name': item.employeeName,
+      'Leave Type': item.leaveType,
+      'Start Date': item.startDate,
+      'End Date': item.endDate,
+      'Days': item.days,
+      'Status': item.status,
+      'Applied Date': item.appliedDate
+    }));
+    exportToCSV(exportData, `leave_report_${filters.month || filters.year}`);
+  };
+
+  const handleDownload = () => {
+    handleExport();
   };
 
   return (
@@ -33,6 +48,7 @@ function LeaveTabComponent() {
         onFilterChange={setFilters}
         onReset={handleReset}
         onExport={handleExport}
+        onDownload={handleDownload}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

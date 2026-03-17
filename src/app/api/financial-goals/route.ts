@@ -13,21 +13,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const goals = await (prisma as any).financialGoal.findMany({
-      where: {
-        branchId,
-      },
       orderBy: {
         createdAt: "desc",
       },
     })
 
-    const data = goals.map((g: any) => ({
+    const filteredGoals = goals.filter((g: any) => branchIds.includes(g.branchId))
+
+    const data = filteredGoals.map((g: any) => ({
       id: g.id,
       name: g.name,
       type: g.type,
@@ -141,10 +144,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const body = await request.json()
     const { id, name, type, from, to, amount, is_display } = body || {}
@@ -159,13 +166,13 @@ export async function PUT(request: NextRequest) {
     const existing = await (prisma as any).financialGoal.findFirst({
       where: {
         id,
-        branchId,
+        branchId: { in: branchIds },
       },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Financial goal tidak ditemukan" },
+        { success: false, message: "Financial goal tidak ditemukan atau tidak dapat diakses" },
         { status: 404 }
       )
     }
@@ -238,10 +245,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
@@ -256,13 +267,13 @@ export async function DELETE(request: NextRequest) {
     const existing = await (prisma as any).financialGoal.findFirst({
       where: {
         id,
-        branchId,
+        branchId: { in: branchIds },
       },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Financial goal tidak ditemukan" },
+        { success: false, message: "Financial goal tidak ditemukan atau tidak dapat diakses" },
         { status: 404 }
       )
     }

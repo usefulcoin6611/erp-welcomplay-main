@@ -22,21 +22,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const branchId = (session.user as any).branchId as string | null;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const deals = await prisma.deal.findMany({
-      where: {
-        branchId: branchId || null,
-      },
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
+    const deals = await (prisma.deal as any).findMany({
       include: {
         pipeline: true,
         stage: true,
       },
       orderBy: { createdAt: "desc" },
-    });
+    }) as any[];
 
+    const filteredDeals = deals.filter((d: any) => branchIds.includes(d.branchId));
 
-    const data = deals.map((d: (typeof deals)[number]) => {
+    const data = filteredDeals.map((d: any) => {
       const labels = (d.labels as any) ?? [];
       const users = (d.users as any) ?? [];
 
@@ -110,12 +115,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const { id: userId, ownerId } = session.user as any;
+    const role = (session.user as any).role;
+    const companyId = role === "company" ? userId : ownerId;
+
     if (!pipeline) {
       const pipelineName = "Default Pipeline";
       pipeline = await prisma.pipeline.findFirst({
         where: {
           name: pipelineName,
-          branchId,
+          branch: { ownerId: companyId },
         },
       });
 

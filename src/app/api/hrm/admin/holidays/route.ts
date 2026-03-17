@@ -25,7 +25,11 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const items = await prisma.hrmHoliday.findMany({
+      where: { ownerId: companyId },
       orderBy: { startDate: "asc" },
     });
     return NextResponse.json({ success: true, data: items.map(toRow) });
@@ -44,12 +48,16 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ success: false, message: parsed.error.errors[0]?.message ?? "Invalid input" }, { status: 400 });
     }
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
     const item = await prisma.hrmHoliday.create({
       data: {
         name: parsed.data.name,
         startDate: new Date(parsed.data.startDate),
         endDate: new Date(parsed.data.endDate),
         description: parsed.data.description?.trim() || null,
+        ownerId: companyId,
       },
     });
     return NextResponse.json({ success: true, message: "Holiday created", data: toRow(item) });

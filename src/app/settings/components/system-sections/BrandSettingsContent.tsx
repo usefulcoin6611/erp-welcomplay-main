@@ -83,7 +83,7 @@ export function BrandSettingsContent() {
         toast.error('File size must be less than 2MB')
         return
       }
-      
+
       const previewUrl = URL.createObjectURL(file)
       setLogoPreview(prev => ({ ...prev, [field]: previewUrl }))
       setPendingFiles(prev => ({ ...prev, [field]: file }))
@@ -121,7 +121,7 @@ export function BrandSettingsContent() {
     setIsSaving(true)
     try {
       const updatedData = { ...formData }
-      
+
       // Upload pending files first
       for (const field of ['logo_dark', 'logo_light', 'favicon'] as const) {
         if (pendingFiles[field]) {
@@ -151,7 +151,7 @@ export function BrandSettingsContent() {
   ]
 
   const colorSwatches = [
-    '#22c55e', '#a855f7', '#3b82f6', '#06b6d4', '#ec4899', 
+    '#22c55e', '#a855f7', '#3b82f6', '#06b6d4', '#ec4899',
     '#14b8a6', '#8b5cf6', '#f59e0b', '#6b7280', '#000000'
   ]
 
@@ -365,7 +365,7 @@ export function BrandSettingsContent() {
               <Input
                 id="title_text"
                 value={formData.title_text ?? ''}
-                placeholder="Nexus ERP"
+                placeholder="Welcom ERP"
                 variant="modern"
                 className="rounded-xl border-muted-foreground/20"
                 onChange={(e) =>
@@ -378,7 +378,7 @@ export function BrandSettingsContent() {
               <Input
                 id="footer_text"
                 value={formData.footer_text ?? ''}
-                placeholder="© 2024 Nexus ERP"
+                placeholder="© 2026 Welcom ERP"
                 variant="modern"
                 className="rounded-xl border-muted-foreground/20"
                 onChange={(e) =>
@@ -476,7 +476,7 @@ export function BrandSettingsContent() {
               </div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Theme Customizer</h3>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-4">
                 <Label className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
@@ -489,19 +489,18 @@ export function BrandSettingsContent() {
                       key={index}
                       type="button"
                       onClick={() => setFormData({ ...formData, primary_color: color })}
-                      className={`w-full aspect-square rounded-lg border-2 transition-all duration-200 active:scale-90 ${
-                        formData.primary_color === color
+                      className={`w-full aspect-square rounded-lg border-2 transition-all duration-200 active:scale-90 ${formData.primary_color === color
                         ? 'border-white ring-2 ring-blue-500 ring-offset-2'
                         : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-                      }`}
+                        }`}
                       style={{ backgroundColor: color }}
                       title={color}
                     />
                   ))}
                 </div>
                 <div className="relative group">
-                   <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-sm border shadow-sm" style={{ backgroundColor: formData.primary_color }} />
-                   <Input
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-sm border shadow-sm" style={{ backgroundColor: formData.primary_color }} />
+                  <Input
                     type="text"
                     value={formData.primary_color}
                     onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
@@ -555,11 +554,11 @@ export function BrandSettingsContent() {
           </div>
 
           <div className="flex justify-end pt-4">
-            <Button 
-                type="submit" 
-                variant="blue" 
-                className="h-11 px-8 rounded-xl active:scale-[0.98] transition-all duration-200"
-                disabled={isSaving}
+            <Button
+              type="submit"
+              variant="blue"
+              className="h-11 px-8 rounded-xl active:scale-[0.98] transition-all duration-200"
+              disabled={isSaving}
             >
               {isSaving ? (
                 <>
@@ -579,7 +578,7 @@ export function BrandSettingsContent() {
             <AlertDialogHeader>
               <AlertDialogTitle className="text-xl font-bold">Remove Asset</AlertDialogTitle>
               <AlertDialogDescription className="text-sm">
-                Are you sure you want to remove the {fieldToDelete?.replace('_', ' ')}? 
+                Are you sure you want to remove the {fieldToDelete?.replace('_', ' ')}?
                 This will revert to the default placeholder until you upload a new one.
               </AlertDialogDescription>
             </AlertDialogHeader>

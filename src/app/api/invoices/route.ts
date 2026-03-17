@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { type Invoice as InvoiceModel, type Customer, type InvoiceItem as InvoiceItemModel } from "@prisma/client"
+import { auth } from "@/lib/auth-server"
+import { headers } from "next/headers"
 
 type InvoiceItemInput = {
   item: string
@@ -14,6 +16,17 @@ type InvoiceItemInput = {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const url = new URL(request.url)
     const date = url.searchParams.get("date")
     const status = url.searchParams.get("status")
@@ -25,11 +38,19 @@ export async function GET(request: NextRequest) {
     if (customerId && customerId !== "all") where.customerId = customerId
 
     const dataDb = await prisma.invoice.findMany({
-      where,
+      where: {
+        ...where,
+        customer: {
+          branch: {
+            ownerId: companyId,
+          },
+        },
+      },
       include: { customer: true, items: true },
       orderBy: { issueDate: "desc" }
     })
-    const data = dataDb.map((e: InvoiceModel & { customer: Customer; items: InvoiceItemModel[] }) => ({
+
+    const data = dataDb.map((e: any) => ({
       id: e.invoiceId,
       issueDate: e.issueDate.toISOString().slice(0, 10),
       dueDate: e.dueDate.toISOString().slice(0, 10),
@@ -38,7 +59,7 @@ export async function GET(request: NextRequest) {
       customerId: e.customerId,
       categoryId: e.categoryId || "",
       description: e.description || "",
-      items: e.items.map((it: InvoiceItemModel) => ({
+      items: e.items.map((it: any) => ({
         id: it.id,
         item: it.itemName,
         quantity: String(it.quantity),
@@ -57,6 +78,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await request.json()
     const customer = await prisma.customer.findUnique({ where: { id: body.customerId } })
     if (!customer) return NextResponse.json({ success: false, message: "Customer not found" }, { status: 400 })
@@ -66,6 +95,7 @@ export async function POST(request: NextRequest) {
       data: {
         invoiceId,
         customerId: customer.id,
+        branchId: customer.branchId,
         categoryId: body.categoryId ?? null,
         issueDate: new Date(body.issueDate),
         dueDate: new Date(body.dueDate),

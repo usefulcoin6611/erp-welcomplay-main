@@ -19,7 +19,15 @@ export async function GET(request: NextRequest) {
     const branchId = searchParams.get("branchId");
     const departmentId = searchParams.get("departmentId");
 
-    const whereClause: any = {};
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const whereClause: any = {
+      employee: {
+        ownerId: companyId,
+      },
+    };
+
     if (date) {
       const startOfDay = new Date(date);
       const endOfDay = new Date(date);
@@ -39,8 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (branchId || departmentId) {
-      whereClause.employee = {};
-      if (branchId) whereClause.employee.branch = branchId; // Note: Schema has branch string, ideally relation
+      if (branchId) whereClause.employee.branch = branchId;
       if (departmentId) whereClause.employee.department = departmentId;
     }
 

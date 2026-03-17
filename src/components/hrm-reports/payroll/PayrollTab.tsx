@@ -23,17 +23,37 @@ function PayrollTabComponent() {
   };
 
   const handleExport = () => {
-    console.log('Export payroll data', data);
+    if (!data.length) return;
+    const { exportToCSV } = require('@/components/reports/utils/exportUtils');
+    const exportData = data.map(item => ({
+      'Employee ID': item.employeeId,
+      'Employee Name': item.employeeName,
+      'Department': item.department,
+      'Branch': item.branch,
+      'Basic Salary': item.basicSalary,
+      'Allowances': item.allowances,
+      'Deductions': item.deductions,
+      'Net Salary': item.netSalary,
+      'Payment Date': item.paymentDate
+    }));
+    exportToCSV(exportData, `payroll_report_${filters.month}`);
+  };
+
+  const handleDownload = () => {
+    // For now, download as CSV as well
+    handleExport();
   };
 
   const getBranchName = () => {
     if (!filters.branchId || filters.branchId === 'all') return 'All Branch';
-    return filters.branchId.charAt(0).toUpperCase() + filters.branchId.slice(1);
+    const found = filterOptions.branches.find(b => b.value === filters.branchId);
+    return found ? found.label : filters.branchId;
   };
 
   const getDepartmentName = () => {
     if (!filters.departmentId || filters.departmentId === 'all') return 'All Department';
-    return filters.departmentId.toUpperCase();
+    const found = filterOptions.departments.find(d => d.value === filters.departmentId);
+    return found ? found.label : filters.departmentId;
   };
 
   const getDuration = () => {
@@ -54,6 +74,7 @@ function PayrollTabComponent() {
         onFilterChange={setFilters}
         onReset={handleReset}
         onExport={handleExport}
+        onDownload={handleDownload}
       />
 
       <PayrollSummary

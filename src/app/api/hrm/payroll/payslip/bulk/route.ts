@@ -32,10 +32,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
+
     const result = await prisma.payslip.updateMany({
       where: {
         salaryMonth,
         status: 0, // Unpaid only
+        employee: {
+          ownerId: companyId
+        }
       },
       data: {
         status: 1, // Paid

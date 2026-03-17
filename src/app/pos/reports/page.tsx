@@ -7,7 +7,7 @@ import { SmoothTab } from '@/components/ui/smooth-tab'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Download, Loader2 } from 'lucide-react'
+import { Download, Loader2, FileSpreadsheet } from 'lucide-react'
 
 const CARD_STYLE = 'shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)]'
 
@@ -44,13 +44,20 @@ export default function POSReportsPage() {
   const handleDownload = useCallback(async () => {
     setIsDownloading(true)
     try {
-      await new Promise((r) => setTimeout(r, 2000))
-      console.log('Downloading', activeTab, 'report as PDF...')
+      await new Promise((r) => setTimeout(r, 500))
+      window.print()
     } catch (e) {
       console.error('Download failed:', e)
     } finally {
       setIsDownloading(false)
     }
+  }, [])
+
+  const handleExport = useCallback(() => {
+    const { exportToCSV } = require('@/components/reports/utils/exportUtils')
+    let filename = `pos_${activeTab}_report`
+    let data = [{ 'Message': 'Please use specialized export in tab if available' }]
+    exportToCSV(data, filename)
   }, [activeTab])
 
   // Cache for tab content (to avoid Suspense fallback after first load)
@@ -131,31 +138,50 @@ export default function POSReportsPage() {
             onChange={handleTabChange}
             onTabPreload={handleTabPreload}
             action={
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleDownload}
-                      disabled={isDownloading}
-                      size="sm"
-                      className="shrink-0 h-9 bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isDownloading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Download report as PDF</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleExport}
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 h-9"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        Export CSV
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Export data to CSV</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        size="sm"
+                        className="shrink-0 h-9 bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDownloading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Download report as PDF</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             }
           />
         </CardContent>

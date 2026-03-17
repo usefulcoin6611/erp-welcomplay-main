@@ -13,10 +13,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
@@ -25,13 +29,13 @@ export async function GET(request: NextRequest) {
       const budget = await (prisma as any).budgetPlan.findFirst({
         where: {
           id,
-          branchId,
+          branchId: { in: branchIds },
         },
       })
 
       if (!budget) {
         return NextResponse.json(
-          { success: false, message: "Budget plan tidak ditemukan" },
+          { success: false, message: "Budget plan tidak ditemukan atau tidak dapat diakses" },
           { status: 404 }
         )
       }
@@ -49,15 +53,14 @@ export async function GET(request: NextRequest) {
     }
 
     const budgets = await (prisma as any).budgetPlan.findMany({
-      where: {
-        branchId,
-      },
       orderBy: {
         createdAt: "desc",
       },
     })
 
-    const data = budgets.map((b: any) => ({
+    const filteredBudgets = budgets.filter((b: any) => branchIds.includes(b.branchId))
+
+    const data = filteredBudgets.map((b: any) => ({
       id: b.id,
       name: b.name,
       from: String(b.fromYear),
@@ -140,10 +143,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const body = await request.json().catch(() => null)
     const { id, name, from, budgetPeriod, details } = body || {}
@@ -158,13 +165,13 @@ export async function PUT(request: NextRequest) {
     const existing = await (prisma as any).budgetPlan.findFirst({
       where: {
         id,
-        branchId,
+        branchId: { in: branchIds },
       },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Budget plan tidak ditemukan" },
+        { success: false, message: "Budget plan tidak ditemukan atau tidak dapat diakses" },
         { status: 404 }
       )
     }
@@ -216,10 +223,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId
-    if (!branchId) {
-      return NextResponse.json({ error: "User has no assigned branch" }, { status: 400 })
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
@@ -234,13 +245,13 @@ export async function DELETE(request: NextRequest) {
     const existing = await (prisma as any).budgetPlan.findFirst({
       where: {
         id,
-        branchId,
+        branchId: { in: branchIds },
       },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "Budget plan tidak ditemukan" },
+        { success: false, message: "Budget plan tidak ditemukan atau tidak dapat diakses" },
         { status: 404 }
       )
     }

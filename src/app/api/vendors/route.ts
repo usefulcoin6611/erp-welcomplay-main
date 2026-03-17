@@ -13,15 +13,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId as string | null
-
-    const where: any = {}
-    if (branchId) {
-      where.branchId = branchId
-    }
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const vendors = await prisma.vendor.findMany({
-      where,
+      where: {
+        branch: {
+          ownerId: companyId,
+        },
+      },
       include: {
         branch: true,
       },

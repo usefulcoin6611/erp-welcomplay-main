@@ -57,40 +57,37 @@ export async function GET(request: NextRequest) {
     const status = url.searchParams.get("status");
     const search = url.searchParams.get("search")?.trim() || "";
 
-    const where: any = {
-      OR: [
-        { createdBy: { id: companyId } },
-        { createdBy: { ownerId: companyId } }
-      ]
-    };
+    const projects = await (prisma.project as any).findMany({
+      orderBy: { createdAt: "desc" },
+    }) as any[];
 
-    // If an employee is logged in and assigned to a specific branch, 
-    // we might want to further filter by that branch, but the primary 
-    // boundary should be the company.
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
+    let filteredProjects = projects.filter((p: any) => branchIds.includes(p.branchId));
+
     if (role === "employee" && sessionBranchId) {
-      where.branchId = sessionBranchId;
+      filteredProjects = filteredProjects.filter((p: any) => p.branchId === sessionBranchId);
     }
 
     if (status && status !== "all") {
-      where.status = status;
+      filteredProjects = filteredProjects.filter((p: any) => p.status === status);
     }
 
     if (search) {
-      where.name = {
-        contains: search,
-        mode: "insensitive",
-      };
+      filteredProjects = filteredProjects.filter((p: any) => 
+        p.name.toLowerCase().includes(search.toLowerCase())
+      );
     }
 
-    const projects = await prisma.project.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-    });
-
-    const data = projects.map(mapProject);
+    const data = filteredProjects.map(mapProject);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
+    console.error("Projects GET error:", error);
     return NextResponse.json(
       { success: false, message: "Terjadi kesalahan internal" },
       { status: 500 }
@@ -115,8 +112,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id as string | undefined;
-    const branchId = ((session.user as any).branchId as string | null) || null;
+    const { id: userId, branchId: sessionBranchId } = session.user as any;
+    const branchId = sessionBranchId || null;
 
     const rawBody = await request.json();
     const validation = projectSchema.safeParse(rawBody);
@@ -146,7 +143,7 @@ export async function POST(request: NextRequest) {
     } = validation.data;
 
     const lastProject = await prisma.project.findFirst({
-      where: branchId ? { branchId } : undefined,
+      where: branchId ? { branchId } : {},
       orderBy: { createdAt: "desc" },
     });
 

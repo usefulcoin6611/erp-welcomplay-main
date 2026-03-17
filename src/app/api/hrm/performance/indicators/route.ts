@@ -79,15 +79,12 @@ export async function GET(request: NextRequest) {
     const yearParam = url.searchParams.get("year");
     const quarterParam = url.searchParams.get("quarter");
 
-    const where: Record<string, unknown> = {};
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = role === "company" ? userId : sessionOwnerId;
 
-    // Scoping multi-branch: non admin/company hanya lihat branch miliknya
-    if (user.role !== "super admin" && user.role !== "company" && user.branchId) {
-      const userBranch = await prisma.branch.findUnique({ where: { id: user.branchId } });
-      if (userBranch) {
-        where.branch = userBranch.name;
-      }
-    }
+    const where: any = {
+      ownerId: companyId,
+    };
 
     if (yearParam) {
       const year = Number(yearParam);
@@ -137,9 +134,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const role = (session.user as { role?: string })?.role;
+    const { id: userId, role, ownerId: sessionOwnerId } = session.user as any;
     if (role !== "super admin" && role !== "company")
       return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
+
+    const companyId = role === "company" ? userId : sessionOwnerId;
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -159,7 +158,7 @@ export async function POST(request: NextRequest) {
       ...rest
     } = parsed.data;
 
-    // Unik per (branch + department + designation + periode)
+    // Unik per (branch + department + designation + periode + ownerId)
     const existing = await prisma.performanceIndicator.findFirst({
       where: {
         branch: rest.branch,
@@ -167,6 +166,7 @@ export async function POST(request: NextRequest) {
         designation: rest.designation,
         periodYear,
         periodQuarter,
+        ownerId: companyId,
       },
     });
     if (existing) {
@@ -189,6 +189,7 @@ export async function POST(request: NextRequest) {
         overallRating: Math.round(overallRating * 10) / 10,
         periodYear,
         periodQuarter,
+        ownerId: companyId,
       },
     })) as IndicatorRow;
 

@@ -9,8 +9,16 @@ export async function GET() {
     const { authorized, response } = await checkPlanStatus();
     if (!authorized) return response!;
 
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const employees = await prisma.employee.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        ownerId: companyId 
+      },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     });

@@ -23,26 +23,24 @@ export async function GET(request: NextRequest) {
     const monthStart = new Date(y, m - 1, 1, 0, 0, 0, 0);
     const monthEnd = new Date(y, m, 0, 23, 59, 59, 999);
 
-    const user = session.user as { role?: string; branchId?: string | null };
-    const role = user?.role ?? "";
-    const userBranchId = user?.branchId ?? null;
-    const scopeByBranch = role !== "super admin" && role !== "company" && !!userBranchId;
+    const { id: userId, role: userRole, ownerId } = session.user as any;
+    const companyId = userRole === "company" ? userId : ownerId;
 
     let branchName: string | null = null;
     let departmentName: string | null = null;
-    if (scopeByBranch && userBranchId) {
-      const ub = await prisma.branch.findUnique({ where: { id: userBranchId }, select: { name: true } });
-      branchName = ub?.name ?? null;
-    } else if (branchId) {
-      const b = await prisma.branch.findUnique({ where: { id: branchId }, select: { name: true } });
+    
+    if (branchId) {
+      const b = await prisma.branch.findFirst({ where: { id: branchId, ownerId: companyId }, select: { name: true } });
       branchName = b?.name ?? null;
     }
     if (departmentId) {
-      const d = await prisma.department.findUnique({ where: { id: departmentId }, select: { name: true } });
+      const d = await prisma.department.findFirst({ where: { id: departmentId, ownerId: companyId }, select: { name: true } });
       departmentName = d?.name ?? null;
     }
 
-    const employeeWhere: Record<string, unknown> = {};
+    const employeeWhere: any = {
+      ownerId: companyId,
+    };
     if (branchName) employeeWhere.branch = branchName;
     if (departmentName) employeeWhere.department = departmentName;
 

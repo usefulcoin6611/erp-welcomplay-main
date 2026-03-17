@@ -13,36 +13,23 @@ export async function GET() {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const user = session.user as { role?: string; branchId?: string | null };
-    const role = user?.role ?? "";
-    const branchId = user?.branchId ?? null;
-    const scopeByBranch = role !== "super admin" && role !== "company" && !!branchId;
+    const { id: userId, role: userRole, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = userRole === "company" ? userId : sessionOwnerId;
 
-    const branchWhere = scopeByBranch && branchId ? { id: branchId } : {};
     const branches = await prisma.branch.findMany({
-      where: branchWhere,
+      where: { ownerId: companyId },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
 
-    const departmentWhere = scopeByBranch && branchId ? { branchId } : {};
     const departments = await prisma.department.findMany({
-      where: departmentWhere,
+      where: { ownerId: companyId },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
 
-    let branchName: string | null = null;
-    if (scopeByBranch && branchId) {
-      const b = await prisma.branch.findUnique({
-        where: { id: branchId },
-        select: { name: true },
-      });
-      branchName = b?.name ?? null;
-    }
-    const employeeWhere = scopeByBranch && branchName ? { branch: branchName, isActive: true } : { isActive: true };
     const employees = await prisma.employee.findMany({
-      where: employeeWhere,
+      where: { ownerId: companyId, isActive: true },
       select: { id: true, employeeId: true, name: true },
       orderBy: { name: "asc" },
     });
@@ -50,9 +37,9 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        branches: branches.map((b) => ({ value: b.id, label: b.name })),
-        departments: departments.map((d) => ({ value: d.id, label: d.name })),
-        employees: employees.map((e) => ({ value: e.id, label: e.name, employeeId: e.employeeId })),
+        branches: branches.map((b: any) => ({ value: b.id, label: b.name })),
+        departments: departments.map((d: any) => ({ value: d.id, label: d.name })),
+        employees: employees.map((e: any) => ({ value: e.id, label: e.name, employeeId: e.employeeId })),
       },
     });
   } catch (error) {

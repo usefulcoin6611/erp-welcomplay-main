@@ -26,6 +26,14 @@ async function ensureTable() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  // Ensure ownerId column exists
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE document_uploads ADD COLUMN IF NOT EXISTS "ownerId" TEXT;
+    `);
+  } catch (e) {
+    // Ignore if column already exists
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -40,9 +48,13 @@ export async function GET(request: NextRequest) {
 
     await ensureTable();
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const rows = await prisma.$queryRaw<DocumentRow[]>`
       SELECT id, name, document, role, description
       FROM document_uploads
+      WHERE "ownerId" = ${companyId}
       ORDER BY created_at DESC
     `;
 
@@ -78,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     let name: string | undefined;
     let role: string | undefined;
-    let description: string | undefined;
+    let description: string | null | undefined;
     let documentPath: string | null = null;
 
     if (contentType.includes("multipart/form-data")) {
@@ -125,12 +137,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, ownerId: sessionOwnerId } = session.user as any;
+    const companyId = userRole === "company" ? userId : sessionOwnerId;
+
     // Untuk sekarang kita hanya menyimpan nama file (tanpa proses upload sebenarnya).
     await ensureTable();
 
     const inserted = await prisma.$queryRaw<DocumentRow[]>`
-      INSERT INTO document_uploads (name, document, role, description)
-      VALUES (${name.trim()}, ${documentPath}, ${role.trim()}, ${description ?? null})
+      INSERT INTO document_uploads (name, document, role, description, "ownerId")
+      VALUES (${name.trim()}, ${documentPath}, ${role.trim()}, ${description ?? null}, ${companyId})
       RETURNING id, name, document, role, description
     `;
 

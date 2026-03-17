@@ -149,7 +149,9 @@ model Invoice {
   updatedAt   DateTime      @updatedAt
   dueAmount   Float         @default(0)
   invoiceId   String        @unique
+  branchId    String?
   creditNotes CreditNote[]
+  branch      Branch?       @relation(fields: [branchId], references: [id])
   customer    Customer      @relation(fields: [customerId], references: [id])
   items       InvoiceItem[]
 

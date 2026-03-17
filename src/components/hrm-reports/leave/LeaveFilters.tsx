@@ -23,9 +23,10 @@ interface LeaveFiltersProps {
   onFilterChange: (filters: Filters) => void;
   onReset: () => void;
   onExport: () => void;
+  onDownload: () => void;
 }
 
-function LeaveFilters({ filters, filterOptions, onFilterChange, onReset, onExport }: LeaveFiltersProps) {
+function LeaveFilters({ filters, filterOptions, onFilterChange, onReset, onExport, onDownload }: LeaveFiltersProps) {
   const { branches, departments } = filterOptions;
   return (
     <div className="flex flex-col gap-4 rounded-lg border bg-card px-4 py-2">
@@ -130,7 +131,7 @@ function LeaveFilters({ filters, filterOptions, onFilterChange, onReset, onExpor
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" onClick={() => {}} className="h-9 w-9 p-0 bg-blue-500 hover:bg-blue-600">
+                <Button size="sm" onClick={onDownload} className="h-9 w-9 p-0 bg-blue-500 hover:bg-blue-600">
                   <Download className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>

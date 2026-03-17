@@ -112,20 +112,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const filterByPlan = (items: MenuItem[]): MenuItem[] => {
       return (items || [])
         .map(item => {
-           // If item has children, filter children first
-           if (item.items?.length) {
-             const filteredChildren = filterByPlan(item.items)
-             // If all children hidden, check if the parent itself has a URL we can check
-             if (filteredChildren.length === 0 && item.url === '#') return null
-             return { ...item, items: filteredChildren }
-           }
-           
-           // Check access for direct URL
-           if (item.url && item.url !== '#') {
-             if (!hasRouteAccess(item.url, user as any)) return null
-           }
-           
-           return item
+          // If item has children, filter children first
+          if (item.items?.length) {
+            const filteredChildren = filterByPlan(item.items)
+            // If all children hidden, check if the parent itself has a URL we can check
+            if (filteredChildren.length === 0 && item.url === '#') return null
+            return { ...item, items: filteredChildren }
+          }
+
+          // Check access for direct URL
+          if (item.url && item.url !== '#') {
+            if (!hasRouteAccess(item.url, user as any)) return null
+          }
+
+          return item
         })
         .filter((item): item is MenuItem => item !== null)
     }
@@ -159,9 +159,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         >
           <a href="/dashboard" className="flex items-center gap-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm">
-              N
+              W
             </div>
-            <span className="text-base font-semibold text-sidebar-foreground truncate">Nexus ERP</span>
+            <span className="text-base font-semibold text-sidebar-foreground truncate">Welcom ERP</span>
           </a>
         </SidebarMenuButton>
       </SidebarHeader>

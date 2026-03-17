@@ -22,7 +22,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const awards = await prisma.hrmAward.findMany({
+      where: {
+        employee: {
+          ownerId: companyId,
+        },
+      },
       include: {
         employee: { select: { id: true, name: true } },
         awardType: { select: { id: true, name: true } },
@@ -30,7 +38,7 @@ export async function GET(request: NextRequest) {
       orderBy: { date: "desc" },
     });
 
-    const data = awards.map((a) => ({
+    const data = awards.map((a: any) => ({
       id: a.id,
       employeeId: a.employeeId,
       employeeName: a.employee.name,

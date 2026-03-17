@@ -83,8 +83,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get("status");
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const where: any = {
+      branch: {
+        ownerId: companyId,
+      },
+    };
+    if (statusFilter) where.status = statusFilter;
+
     const jobs = await prisma.job.findMany({
-      where: statusFilter ? { status: statusFilter } : undefined,
+      where,
       orderBy: { createdAt: "desc" },
       include: {
         branch: { select: { name: true } },

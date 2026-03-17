@@ -71,6 +71,10 @@ const MenuItemComponent = ({
   const isActive = isActiveUrl(pathname, item.url)
   const hasChildren = item.items && item.items.length > 0
   
+  // Disable animation if on HRM setup pages
+  const isHrmSetupPage = pathname.startsWith("/hrm/setup/")
+  const animDuration = isHrmSetupPage ? 0 : 0.3
+  
   // Check if any child is active
   const childIsActive = hasChildren && item.items?.some(subItem => {
     if (isActiveUrl(pathname, subItem.url)) return true
@@ -113,18 +117,19 @@ const MenuItemComponent = ({
               className={`
                 flex items-center justify-between w-full py-2 px-3 
                 text-sm font-medium rounded-md cursor-pointer
-                transition-all duration-300 ease-out
+                transition-all ease-out
                 ${getHoverStyleByLevel(level)}
                 ${paddingLeft}
                 ${childIsActive ? 'text-blue-700' : 'text-sidebar-foreground'}
               `}
-              whileTap={{ scale: 0.98 }}
+              style={{ transitionDuration: `${animDuration}s` }}
+              whileTap={isHrmSetupPage ? {} : { scale: 0.98 }}
             >
               <div className="flex items-center gap-2">
                 {item.icon && (
                   <motion.div
                     animate={{ rotate: effectiveOpen ? 15 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    transition={{ duration: animDuration, ease: "easeOut" }}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
                   </motion.div>
@@ -137,7 +142,7 @@ const MenuItemComponent = ({
                   scale: effectiveOpen ? 1.1 : 1 
                 }}
                 transition={{ 
-                  duration: 0.4, 
+                  duration: animDuration + 0.1, 
                   ease: [0.4, 0, 0.2, 1]
                 }}
               >
@@ -146,7 +151,10 @@ const MenuItemComponent = ({
             </motion.div>
           </CollapsibleTrigger>
           
-          <CollapsibleContent className="space-y-1 mt-1 overflow-hidden">
+          <CollapsibleContent 
+            className={`space-y-1 mt-1 overflow-hidden transition-all`}
+            style={{ transitionDuration: `${animDuration}s` }}
+          >
             {item.items?.map((subItem, idx) => (
               <MenuItemComponent
                 key={subItem.title}
@@ -170,11 +178,12 @@ const MenuItemComponent = ({
       <motion.div
         className={`
           flex items-center gap-2 w-full py-2 px-3 
-          text-sm font-medium rounded-md transition-all duration-300 ease-out
+          text-sm font-medium rounded-md transition-all ease-out
           ${getHoverStyleByLevel(level)}
           ${paddingLeft}
           ${activeLeafClass}
         `}
+        style={{ transitionDuration: `${animDuration}s` }}
         initial={false}
       >
         {item.icon && (

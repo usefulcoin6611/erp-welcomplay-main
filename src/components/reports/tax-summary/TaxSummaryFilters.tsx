@@ -13,6 +13,8 @@ interface TaxSummaryFiltersProps {
   onYearChange: (value: string) => void
   onApply?: () => void
   onReset?: () => void
+  onExport?: () => void
+  onDownload?: () => void
 }
 
 function TaxSummaryFiltersComponent({
@@ -20,6 +22,8 @@ function TaxSummaryFiltersComponent({
   onYearChange,
   onApply,
   onReset,
+  onExport,
+  onDownload,
 }: TaxSummaryFiltersProps) {
   return (
     <Card className="shadow-none">
@@ -66,6 +70,7 @@ function TaxSummaryFiltersComponent({
               variant="outline"
               size="sm"
               className="h-9 px-4 shadow-none"
+              onClick={onExport}
             >
               <FileSpreadsheet className="w-4 h-4" />
               Export
@@ -73,6 +78,7 @@ function TaxSummaryFiltersComponent({
             <Button
               size="sm"
               className="h-9 px-4 bg-blue-500 hover:bg-blue-600 shadow-none"
+              onClick={onDownload}
             >
               <FileDown className="w-4 h-4" />
               Download

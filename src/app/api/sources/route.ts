@@ -18,28 +18,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId as string | null
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
     const sourceModel = (prisma as any).source
     if (sourceModel == null || typeof sourceModel.findMany !== "function") {
       return NextResponse.json({ success: true, data: [] })
     }
 
-    const where: any = {}
-    if (branchId) {
-      where.branchId = branchId
-    } else {
-      where.branchId = null
-    }
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
 
     const sources = await sourceModel.findMany({
-      where,
       orderBy: {
         createdAt: "asc",
       },
-    })
+    }) as any[]
 
-    return NextResponse.json({ success: true, data: sources })
+    const filteredSources = sources.filter((s: any) => branchIds.includes(s.branchId))
+
+    return NextResponse.json({ success: true, data: filteredSources })
   } catch (error) {
     console.error("Error fetching sources:", error)
     return NextResponse.json(
@@ -59,8 +60,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userRole = (session.user as any).role
-    if (userRole !== "super admin" && userRole !== "company") {
+    const { id: userId, role, ownerId, branchId } = session.user as any
+    const companyId = role === "company" ? userId : ownerId
+
+    if (role !== "super admin" && role !== "company" && role !== "employee") {
       return NextResponse.json(
         { success: false, message: "Forbidden: Akses ditolak" },
         { status: 403 },
@@ -82,7 +85,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { name } = validation.data
-    const branchId = ((session.user as any).branchId as string | null) ?? null
 
     const sourceModel = (prisma as any).source
     if (!sourceModel?.findFirst || !sourceModel?.create) {
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
     const existing = await sourceModel.findFirst({
       where: {
         name,
-        ...(branchId ? { branchId } : { branchId: null }),
+        branch: { ownerId: companyId },
       },
     })
 

@@ -33,14 +33,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId as string | null
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const url = new URL(request.url)
-    const type = url.searchParams.get("type")
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get("type")
 
-    const where: any = {}
-    if (branchId) {
-      where.branchId = branchId
+    const where: any = {
+      branch: {
+        ownerId: companyId,
+      },
     }
     if (type) {
       where.type = type

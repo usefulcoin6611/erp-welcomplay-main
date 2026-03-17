@@ -18,7 +18,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
     const units = await prisma.unit.findMany({
+      where: {
+        branch: {
+          ownerId: companyId,
+        },
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -66,11 +74,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
+
+    const userBranches = await prisma.branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+    const branchId = (session.user as any).branchId || branchIds[0];
+
     const { name } = validation.data;
 
     const unit = await prisma.unit.create({
       data: {
         name,
+        branchId,
       },
     });
 

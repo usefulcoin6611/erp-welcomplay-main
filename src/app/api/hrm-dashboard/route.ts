@@ -15,27 +15,37 @@ export async function GET() {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const user = session.user as { role?: string; branchId?: string | null }
-    const role = user?.role ?? ""
-    const branchId = user?.branchId ?? null
+    const { id: userId, role: userRole, ownerId, branchId } = session.user as any;
+    const companyId = userRole === "company" ? userId : ownerId;
 
     const scopeByBranch =
-      role !== "super admin" && role !== "company" && !!branchId
+      userRole !== "super admin" && userRole !== "company" && !!branchId
 
     let branchName: string | null = null
     if (scopeByBranch && branchId) {
       const branch = await prisma.branch.findUnique({
-        where: { id: branchId },
+        where: { id: branchId, ownerId: companyId },
         select: { name: true },
       })
       branchName = branch?.name ?? null
     }
 
-    const employeeWhere = scopeByBranch && branchName ? { branch: branchName } : {}
-    const jobWhere = scopeByBranch && branchId ? { branchId } : {}
-    const trainingWhere = scopeByBranch && branchName ? { branch: branchName } : {}
-    const trainerWhere = scopeByBranch && branchName ? { branch: branchName } : {}
-    const customerWhere = scopeByBranch && branchId ? { branchId } : {}
+    const baseWhere = { ownerId: companyId };
+    const employeeWhere = scopeByBranch && branchName ? { ...baseWhere, branch: branchName } : baseWhere;
+    const trainerWhere = scopeByBranch && branchName ? { ...baseWhere, branch: branchName } : baseWhere;
+    
+    // Training/Job/Customer/Trainer might have different relations
+    const trainingWhere = scopeByBranch && branchName 
+      ? { employee: { ownerId: companyId }, branch: branchName } 
+      : { employee: { ownerId: companyId } };
+    
+    const jobWhere = scopeByBranch && branchId 
+      ? { branch: { ownerId: companyId, id: branchId } } 
+      : { branch: { ownerId: companyId } };
+
+    const customerWhere = scopeByBranch && branchId 
+      ? { branch: { ownerId: companyId, id: branchId } } 
+      : { branch: { ownerId: companyId } };
 
     const [
       totalEmployee,
@@ -51,9 +61,9 @@ export async function GET() {
       prisma.employee.count({
         where: { ...employeeWhere, isActive: true },
       }),
-      prisma.customer.count({ where: customerWhere }),
-      prisma.job.count({ where: jobWhere }),
-      prisma.job.count({
+      (prisma.customer as any).count({ where: customerWhere }),
+      (prisma as any).job.count({ where: jobWhere }),
+      (prisma as any).job.count({
         where: { ...jobWhere, status: "active" },
       }),
       prisma.trainer.count({ where: trainerWhere }),

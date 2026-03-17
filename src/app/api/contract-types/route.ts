@@ -18,18 +18,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const branchId = (session.user as any).branchId as string | null;
+    const { id: userId, role, ownerId } = session.user as any;
+    const companyId = role === "company" ? userId : ownerId;
 
-    const contractTypes = await prisma.contractType.findMany({
-      where: {
-        branchId: branchId || null,
-      },
+    const contractTypes = await (prisma.contractType as any).findMany({
       orderBy: {
         createdAt: "desc",
       },
-    })
+    }) as any[]
 
-    const data = contractTypes.map((ct: any) => ({
+    const userBranches = await (prisma as any).branch.findMany({
+      where: { ownerId: companyId },
+      select: { id: true }
+    })
+    const branchIds = userBranches.map((b: any) => b.id)
+
+    const filteredData = contractTypes.filter((ct: any) => 
+      branchIds.includes(ct.branchId) || !ct.branchId
+    )
+
+    const data = filteredData.map((ct: any) => ({
       id: ct.id,
       name: ct.name,
     }))
@@ -53,8 +61,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userRole = (session.user as any).role
-    if (userRole !== "super admin" && userRole !== "company") {
+    const { id: userId, role, ownerId, branchId } = session.user as any
+    const companyId = role === "company" ? userId : ownerId
+
+    if (role !== "super admin" && role !== "company" && role !== "employee") {
       return NextResponse.json(
         { success: false, message: "Forbidden: Akses ditolak" },
         { status: 403 },
@@ -75,12 +85,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const branchId = (session.user as any).branchId as string | null
+    const { name } = validation.data
 
     const existing = await prisma.contractType.findFirst({
       where: { 
         name,
-        branchId: branchId || null,
+        branch: { ownerId: companyId }
       },
     })
 
@@ -94,7 +104,7 @@ export async function POST(request: NextRequest) {
     const created = await prisma.contractType.create({
       data: { 
         name,
-        branchId,
+        branchId: branchId || null,
       },
     })
 

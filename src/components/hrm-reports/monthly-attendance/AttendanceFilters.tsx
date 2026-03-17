@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useState } from 'react';
-import { Search, RotateCcw, Download, ChevronDown } from 'lucide-react';
+import { Search, RotateCcw, Download, ChevronDown, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -22,9 +22,10 @@ interface AttendanceFiltersProps {
   onFilterChange: (filters: Filters) => void;
   onReset: () => void;
   onExport: () => void;
+  onDownload: () => void;
 }
 
-function AttendanceFilters({ filters, filterOptions, onFilterChange, onReset, onExport }: AttendanceFiltersProps) {
+function AttendanceFilters({ filters, filterOptions, onFilterChange, onReset, onExport, onDownload }: AttendanceFiltersProps) {
   const { branches, departments, employees } = filterOptions;
   const handleEmployeeChange = (value: string) => {
     // Handle multi-select
@@ -121,12 +122,24 @@ function AttendanceFilters({ filters, filterOptions, onFilterChange, onReset, on
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" onClick={() => {}} className="h-9 w-9 p-0 bg-blue-500 hover:bg-blue-600">
+                <Button size="sm" onClick={onDownload} className="h-9 w-9 p-0 bg-blue-500 hover:bg-blue-600">
                   <Download className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Download</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onExport} className="h-9 w-9 p-0">
+                  <FileDown className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Export</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
