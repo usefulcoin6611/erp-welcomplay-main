@@ -2,9 +2,11 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import { authClient } from "@/lib/auth-client"
+import { Loader2, Mail, ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -19,106 +21,106 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Implement actual password reset API call
-      // This should send a password reset link to the email
-      console.log("Password reset request:", { email })
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      // Show success message
-      setSuccess("We have emailed your password reset link.")
+      const { data, error: authError } = await (authClient as any).forgetPassword({
+        email: email.toLowerCase().trim(),
+        redirectTo: "/reset-password",
+      })
+
+      if (authError) {
+        setError(authError.message || "Gagal mengirim email reset password")
+        return
+      }
+
+      setSuccess("Email instruksi reset password telah dikirim ke alamat email Anda.")
+      toast.success("Email reset password telah dikirim!")
       setEmail("")
     } catch (err) {
-      setError("Email not found or error occurred. Please try again.")
+      setError("Terjadi kesalahan. Silakan coba lagi.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center relative z-10 px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            {/* Title */}
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Forgot Password</h2>
-              <p className="text-sm text-gray-600">
-                Enter your email address and we&apos;ll send you a link to reset your password.
-              </p>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 md:p-8 lg:p-12 font-sans overflow-hidden relative">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none" />
 
-            {/* Success Message */}
-            {success && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-sm text-green-600">{success}</p>
-              </div>
-            )}
+      <div className="w-full max-w-[500px] bg-white rounded-3xl sm:rounded-[48px] overflow-hidden border border-gray-100 relative z-10 p-8 sm:p-12 md:p-16">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 leading-tight tracking-tight text-center">Lupa Password?</h1>
+          <p className="text-sm sm:text-base text-gray-500 font-medium text-center">
+            Masukkan email Anda dan kami akan mengirimkan link untuk mereset password.
+          </p>
+        </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
+        {/* Success Message */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl text-center">
+            <p className="text-sm font-bold text-green-700 leading-snug">{success}</p>
+          </div>
+        )}
 
-            {/* Reset Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  E-Mail
-                </Label>
-                <Input
-                  id="email"
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+            <p className="text-sm font-bold text-red-700 leading-snug">{error}</p>
+          </div>
+        )}
+
+        {/* Reset Form */}
+        {!success && (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-bold text-gray-700 ml-1">Email Bisnis</Label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                  <Mail size={18} />
+                </div>
+                <input
                   type="email"
-                  placeholder="Enter Email"
+                  required
+                  className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white transition-all outline-none text-gray-900 font-medium text-sm"
+                  placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
                   disabled={isLoading}
                   autoFocus
                 />
               </div>
+            </div>
 
-              {/* Submit Button */}
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  variant="blue"
-                  className="w-full h-11 font-medium shadow-sm"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending..." : "Send Password Reset Link"}
-                </Button>
-              </div>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 sm:py-3 h-auto rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base mt-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Memproses...
+                </>
+              ) : (
+                "Kirim Link Reset"
+              )}
+            </Button>
+          </form>
+        )}
 
-              {/* Back to Login Link */}
-              <div className="text-center pt-2">
-                <p className="text-sm text-gray-600">
-                  Back to{" "}
-                  <Link
-                    href="/login"
-                    className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                  >
-                    Login
-                  </Link>
-                </p>
-              </div>
-            </form>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
-              &copy; {new Date().getFullYear()} ERP System. All rights reserved.
-            </p>
-          </div>
+        {/* Back Link */}
+        <div className="mt-8 text-center">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-blue-600 transition-colors group"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            Kembali ke Login
+          </Link>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

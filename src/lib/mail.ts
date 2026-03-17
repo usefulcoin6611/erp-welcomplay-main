@@ -95,4 +95,40 @@ export const emailTemplates = {
       </div>
     `,
   }),
+
+  forgetPassword: (name: string, url: string) => ({
+    subject: 'Reset Password Welcomplay ERP',
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        <h2 style="color: #2563eb;">Permintaan Reset Password</h2>
+        <p>Halo ${name},</p>
+        <p>Kami menerima permintaan untuk melakukan reset password akun Anda. Silakan klik tombol di bawah ini untuk melanjutkan:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${url}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password Sekarang</a>
+        </div>
+        <p>Link ini akan kedaluwarsa dalam 1 jam. Jika Anda tidak merasa melakukan permintaan ini, silakan abaikan email ini.</p>
+        <p>Atau salin dan tempelkan link berikut ke browser Anda:</p>
+        <p style="word-break: break-all; color: #666;">${url}</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #999;">Welcomplay ERP System - Keamanan Akun Anda Prioritas Kami.</p>
+      </div>
+    `,
+  }),
+
+  passwordResetSuccess: (name: string) => ({
+    subject: 'Password Berhasil Diubah - Welcomplay ERP',
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        <h2 style="color: #10b981;">Password Berhasil Diubah</h2>
+        <p>Halo ${name},</p>
+        <p>Email ini mengonfirmasi bahwa password akun Welcomplay ERP Anda telah berhasil diubah.</p>
+        <p>Jika Anda tidak merasa melakukan perubahan ini, silakan hubungi tim support kami segera atau coba lakukan reset password kembali.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/login" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Masuk ke Akun</a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #999;">Welcomplay ERP System - Keamanan Akun Terjamin.</p>
+      </div>
+    `,
+  }),
 };
