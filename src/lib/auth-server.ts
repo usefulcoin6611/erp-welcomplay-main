@@ -24,16 +24,14 @@ export const auth = betterAuth({
                 return bcrypt.compare(password, hash);
             },
         },
-        resetPassword: {
-            sendResetPasswordEmail: async ({ user, url, token }: any, request: any) => {
-                const { sendEmail, emailTemplates } = await import("./mail");
-                const { subject, html } = emailTemplates.forgetPassword(user.name, url);
-                await sendEmail({
-                    to: user.email,
-                    subject,
-                    html,
-                });
-            },
+        sendResetPassword: async ({ user, url, token }: any, request: any) => {
+            const { sendEmail, emailTemplates } = await import("./mail");
+            const { subject, html } = emailTemplates.forgetPassword(user.name, url);
+            await sendEmail({
+                to: user.email,
+                subject,
+                html,
+            });
         },
     },
     emailVerification: {
