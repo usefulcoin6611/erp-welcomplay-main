@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
-import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { authClient } from "@/lib/auth-client"
 import { toast } from "sonner"
@@ -26,6 +26,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [isUnverified, setIsUnverified] = useState(false)
 
   useEffect(() => {
     setIsLoading(false)
@@ -50,7 +52,12 @@ export default function LoginPage() {
       })
 
       if (authError) {
-        setError(authError.message || "Email atau password salah")
+        if (authError.code === "EMAIL_NOT_VERIFIED") {
+          setIsUnverified(true)
+          setError("Email Anda belum diaktifkan. Silakan cek inbox Anda.")
+        } else {
+          setError(authError.message || "Email atau password salah")
+        }
         setIsLoading(false)
         return
       }
@@ -59,7 +66,6 @@ export default function LoginPage() {
       toast.success("Login Berhasil!")
       
       if (updatedUser) {
-        // Special case: Company owner without branchId should go to setup-company
         if (updatedUser.type === 'company' && !updatedUser.branchId) {
           router.push('/setup-company')
         } else {
@@ -71,6 +77,22 @@ export default function LoginPage() {
     } catch (err) {
       setError("Terjadi kesalahan. Silakan coba lagi.")
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!email) return
+    setResendLoading(true)
+    try {
+      await authClient.sendVerificationEmail({
+        email: email.toLowerCase().trim(),
+        callbackURL: "/setup-company",
+      })
+      toast.success("Email aktivasi telah dikirim ulang!")
+    } catch (err) {
+      toast.error("Gagal mengirim ulang email aktivasi")
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -88,31 +110,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 p-6 lg:p-12 font-sans overflow-hidden relative">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 md:p-8 lg:p-12 font-sans overflow-hidden relative">
       {/* Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-[1400px] flex flex-col lg:flex-row bg-white rounded-[48px] overflow-hidden border border-gray-100 relative z-10 shadow-none min-h-[800px]">
+      <div className="w-full max-w-[1400px] flex flex-col lg:flex-row bg-white rounded-3xl sm:rounded-[48px] overflow-hidden border border-gray-100 relative z-10 shadow-none min-h-[auto] lg:min-h-[800px]">
         {/* Left Side: Form */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-10 sm:px-20 lg:px-24 xl:px-32 py-20 relative bg-white">
+        <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 md:px-16 lg:px-20 xl:px-24 py-12 relative bg-white">
           {/* Header */}
-          <div className="mb-10">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight tracking-tight">Selamat Datang!</h1>
-            <p className="text-[17px] text-gray-500 font-medium">Silakan masuk ke akun Anda untuk melanjutkan.</p>
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 leading-tight tracking-tight">Selamat Datang!</h1>
+            <p className="text-sm sm:text-base text-gray-500 font-medium">Silakan masuk ke akun Anda untuk melanjutkan.</p>
           </div>
 
           {/* Auth Toggle Like Tabs */}
-          <div className="flex p-1 bg-gray-50 rounded-xl mb-8 w-full border border-gray-100">
+          <div className="flex p-1 bg-gray-50 rounded-xl mb-6 w-full border border-gray-100">
             <button
               type="button"
-              className="flex-1 py-2 text-sm font-bold rounded-lg transition-all bg-white text-blue-600 border border-gray-100/50"
+              className="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-blue-600 border border-gray-100/50"
             >
               Masuk
             </button>
             <Link
               href="/register"
-              className="flex-1 py-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors text-center"
+              className="flex-1 py-1.5 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors text-center"
             >
               Daftar
             </Link>
@@ -120,43 +142,59 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-xl">
-              <p className="text-[13px] font-semibold text-red-600 leading-snug">{error}</p>
+            <div className={`mb-6 p-4 rounded-2xl flex items-start gap-3 border ${isUnverified ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+              {isUnverified ? <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" /> : <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 animate-pulse shrink-0" />}
+              <div className="space-y-2 flex-1">
+                <p className="text-[13px] font-bold leading-snug">{error}</p>
+                {isUnverified && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendLoading}
+                    className="text-xs font-bold text-amber-900 underline hover:no-underline flex items-center gap-2"
+                  >
+                    {resendLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Kirim Ulang Email Aktivasi"}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5 w-full">
             <div className="space-y-4">
-              {/* Email Field */}
               <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-gray-700 ml-1">Email Bisnis</Label>
                 <div className="relative group">
-                  <Input
-                    id="email"
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                    <Mail size={18} />
+                  </div>
+                  <input
                     type="email"
-                    placeholder="Email Anda"
+                    required
+                    className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white transition-all outline-none text-gray-900 font-medium text-sm"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="h-10 pl-5 pr-12 border border-gray-200 bg-white focus:border-blue-500 rounded-xl transition-all shadow-none placeholder:text-gray-400 font-medium outline-none"
                     disabled={isLoading || googleLoading}
                     autoComplete="email"
                   />
-                  <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 transition-colors group-focus-within:text-blue-500" />
                 </div>
               </div>
 
-              {/* Password Field */}
               <div className="space-y-1.5">
+                <Label className="text-sm font-bold text-gray-700 ml-1">Password</Label>
                 <div className="relative group">
-                  <Input
-                    id="password"
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                    <Lock size={18} />
+                  </div>
+                  <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password"
+                    required
+                    className="w-full pl-11 pr-12 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white transition-all outline-none text-gray-900 font-medium text-sm"
+                    placeholder="Masukkan password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-10 pl-5 pr-12 border border-gray-200 bg-white focus:border-blue-500 rounded-xl transition-all shadow-none placeholder:text-gray-400 font-medium outline-none"
                     disabled={isLoading || googleLoading}
                     autoComplete="current-password"
                   />
@@ -165,7 +203,7 @@ export default function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-blue-500 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
@@ -177,54 +215,49 @@ export default function LoginPage() {
                   id="remember"
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked === true)}
-                  className="w-5 h-5 rounded-md border-gray-200 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  className="rounded-md border-gray-200 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                 />
-                <Label htmlFor="remember" className="text-xs font-bold text-gray-400 cursor-pointer select-none">Ingat saya</Label>
+                <Label htmlFor="remember" className="text-[13px] font-medium text-gray-500 cursor-pointer select-none">Ingat saya</Label>
               </div>
               <Link
                 href="/forgot-password"
-                className="text-xs font-bold text-blue-600 transition-colors hover:text-blue-700"
+                className="text-[13px] font-bold text-blue-600 transition-colors hover:text-blue-700"
               >
                 Lupa Password?
               </Link>
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
-              variant="blue"
-              className="w-full h-10 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-[0.98] bg-blue-600 hover:bg-blue-700 shadow-none"
-              disabled={isLoading || googleLoading || !email.trim() || !password.trim()}
+              disabled={isLoading || googleLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 sm:py-3 h-auto rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Memverifikasi...
-                </span>
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Memproses...
+                </>
               ) : (
                 "Masuk Sekarang"
               )}
             </Button>
 
-            {/* Divider */}
-            <div className="relative py-2 flex items-center gap-4">
+            <div className="relative py-4 flex items-center gap-4">
               <div className="flex-1 h-[1px] bg-gray-100" />
-              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Atau</span>
+              <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Atau</span>
               <div className="flex-1 h-[1px] bg-gray-100" />
             </div>
 
-            {/* Social Logins */}
-            <div className="space-y-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-10 rounded-xl border-gray-100 bg-gray-50/50 hover:bg-gray-100 hover:border-gray-200 transition-all font-bold text-gray-600 flex items-center justify-center gap-3 shadow-none overflow-hidden py-2.5"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading || isLoading}
-              >
-                {googleLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                ) : (
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading || isLoading}
+              className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 rounded-xl border border-gray-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-none text-sm"
+            >
+              {googleLoading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -235,7 +268,7 @@ export default function LoginPage() {
                       fill="#34A853"
                     />
                     <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
                       fill="#FBBC05"
                     />
                     <path
@@ -243,14 +276,17 @@ export default function LoginPage() {
                       fill="#EA4335"
                     />
                   </svg>
-                )}
-                <span className="text-sm">Masuk dengan Google</span>
-              </Button>
-            </div>
+                  Google
+                </>
+              )}
+            </button>
           </form>
 
-          <p className="mt-10 text-center text-xs text-gray-400 font-medium tracking-wide">
-            &copy; {new Date().getFullYear()} Welcomplay ERP Systems.
+          <p className="mt-8 text-center text-gray-500 text-sm font-medium">
+            Belum punya akun?{" "}
+            <Link href="/register" className="text-blue-600 font-bold hover:underline">
+              Daftar Gratis
+            </Link>
           </p>
         </div>
 
@@ -259,13 +295,12 @@ export default function LoginPage() {
           {/* Animated Background Gradients */}
           <div className="absolute top-0 right-0 w-full h-full opacity-40">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-100 rounded-full blur-[120px]" />
-            <div className="absolute top-1/4 right-0 w-80 h-80 bg-indigo-50 rounded-full blur-[100px]" />
-            <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-cyan-50 rounded-full blur-[80px]" />
+            <div className="absolute top-1/4 right-0 w-80 h-80 bg-indigo-100 rounded-full blur-[100px]" />
+            <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-cyan-100 rounded-full blur-[80px]" />
           </div>
 
           <div 
             className="relative w-full aspect-square max-w-[550px]"
-            // Using inline style for a subtle 3D perspective
             style={{ perspective: '2000px' }}
           >
             <div 
@@ -286,32 +321,17 @@ export default function LoginPage() {
                 className="object-cover"
                 priority
               />
-              {/* Glossy Overlay */}
               <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 pointer-events-none" />
-            </div>
-
-            {/* Floating Elements (Static Pastel Squares with Custom SVG Icons) */}
-            <div className="absolute -top-6 -left-6 w-24 h-24 bg-gradient-to-br from-indigo-100/40 to-blue-100/40 backdrop-blur-xl rounded-3xl z-20 shadow-sm flex items-center justify-center">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500/60">
-                <path d="M3 3v18h18" />
-                <path d="m19 9-5 5-4-4-3 3" />
-              </svg>
-            </div>
-            <div className="absolute -bottom-10 -right-6 w-32 h-32 bg-gradient-to-br from-purple-100/30 to-pink-100/30 backdrop-blur-xl rounded-3xl z-20 shadow-sm flex items-center justify-center">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500/50">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
             </div>
           </div>
 
-          {/* Glassmorphism Footer */}
+          {/* Footer Label */}
           <div className="absolute bottom-10 left-0 right-0 px-10">
-            <div className="bg-white share-shadow-sm border border-gray-100 py-5 px-8 rounded-full text-center max-w-md mx-auto shadow-lg backdrop-blur-md">
-              <p className="text-slate-600 text-[11px] font-bold tracking-wide uppercase">
+            <div className="bg-slate-100/80 py-5 px-8 rounded-full text-center max-w-md mx-auto backdrop-blur-md">
+              <p className="text-slate-700 text-[11px] font-bold tracking-wide uppercase">
                 Enterprise Resource Planning
               </p>
-              <p className="text-slate-400 text-[9px] mt-1 font-medium">
+              <p className="text-slate-500 text-[9px] mt-1 font-medium">
                 Sistem Terpadu Efisiensi Bisnis Anda dalam Satu Genggaman.
               </p>
             </div>

@@ -3,19 +3,21 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/api/auth"];
 
-export default async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     
     // Check if the route is public
     const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
     const isAuthRoute = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
 
-    // Optimization: Skip session check for assets
+    // Optimization: Skip session check for API routes or assets that matched but shouldn't be here
+    // Actually matcher should handle this, but being explicit helps.
     if (pathname.includes(".")) return NextResponse.next();
 
     let session = null;
     try {
         // Only fetch session for non-public routes OR auth routes (to redirect AWAY)
+        // This avoids unnecessary fetches for other public pages if any
         if (!isPublicRoute || isAuthRoute) {
             const { data } = await betterFetch<any>(
                 "/api/auth/get-session",
@@ -29,13 +31,16 @@ export default async function proxy(request: NextRequest) {
             session = data;
         }
     } catch (error) {
-        console.error("[Proxy Error]:", error);
+        console.error("[Middleware Error]:", error);
+        // If session check fails, we treat as not logged in for safety
     }
 
+    // 1. If user IS authenticated and tries to access auth pages -> Redirect to dashboard
     if (session && isAuthRoute) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
+    // 2. If user is NOT authenticated and tries to access protected route -> Redirect to login
     if (!session && !isPublicRoute) {
         return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -45,7 +50,7 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
+        // Match all routes except static files, images, favicon, and API auth routes
         "/((?!_next/static|_next/image|favicon.ico|api/auth).*)",
     ],
 };
-
