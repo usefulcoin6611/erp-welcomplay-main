@@ -267,11 +267,21 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
   }
 
   // ✅ PREVENT FLASH: Check route access synchronously before rendering children
-  // This blocks unauthorized pages from rendering while useEffect handles the redirect
+  // 1. If not authenticated and NOT a public route, don't show children (prevents flashing dashboard on logout)
+  if (!isPublicRoute && !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  // 2. If authenticated, check specific route access (permissions, role, plan)
   if (isAuthenticated && user && !isPublicRoute) {
     const hasAccess = hasRouteAccess(pathname, user)
     
     // If no access (e.g. at /dashboard but plan expired), show loader instead of the page
+    // useEffect will handle the actual redirect
     if (!hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-screen">

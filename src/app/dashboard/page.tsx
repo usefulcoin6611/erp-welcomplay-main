@@ -147,12 +147,21 @@ export default function DashboardPage() {
 
   // Common formatters
   const formatCurrency = (amount: number) => {
+    if (!amount && amount !== 0) return "Rp 0"
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount)
+    }).format(amount).replace("Rp", "Rp ")
+  }
+
+  const formatCompactNumber = (val: number) => {
+    if (!val || val === 0) return "Rp 0"
+    if (val >= 1000000000) return `Rp ${(val / 1000000000).toFixed(1).replace(/\.0$/, "")}M`
+    if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1).replace(/\.0$/, "")}jt`
+    if (val >= 1000) return `Rp ${(val / 1000).toFixed(1).replace(/\.0$/, "")}rb`
+    return `Rp ${val}`
   }
 
   // Chart configs
@@ -258,16 +267,29 @@ export default function DashboardPage() {
                     <Card className="rounded-lg">
                       <CardHeader className="p-3"><CardTitle className="text-lg font-medium text-gray-900">Recent Orders</CardTitle></CardHeader>
                       <CardContent>
-                        <Chart
-                          options={{
-                            chart: { height: 300, type: "area", toolbar: { show: false }, fontFamily: "inherit" },
-                            dataLabels: { enabled: false }, stroke: { width: 2, curve: "smooth" },
-                            xaxis: { categories: superAdminData.recentOrdersChart.labels, labels: { style: { colors: "#6b7280", fontSize: "12px" } } },
-                            yaxis: { labels: { style: { colors: "#6b7280", fontSize: "12px" } } },
-                            colors: ["#3b82f6"], grid: { strokeDashArray: 4, borderColor: "#f3f4f6" }, legend: { show: false }, tooltip: { theme: "light", style: { fontSize: "12px" } },
-                          }}
-                          series={[{ name: "Income", data: superAdminData.recentOrdersChart.data }]} type="area" height={300}
-                        />
+                        {(() => {
+                           const isAllEmpty = superAdminData.recentOrdersChart.data.every(v => v === 0)
+                           return (
+                             <Chart
+                               options={{
+                                 chart: { height: 300, type: "area", toolbar: { show: false }, fontFamily: "inherit" },
+                                 dataLabels: { enabled: false }, stroke: { width: 2, curve: "smooth" },
+                                 xaxis: { categories: superAdminData.recentOrdersChart.labels, labels: { style: { colors: "#6b7280", fontSize: "12px" } } },
+                                 yaxis: { 
+                                   labels: { style: { colors: "#6b7280", fontSize: "12px" }, formatter: formatCompactNumber }, 
+                                   min: 0,
+                                   max: isAllEmpty ? 10_000_000 : undefined,
+                                   tickAmount: isAllEmpty ? 5 : undefined,
+                                   decimalsInFloat: 0,
+                                   forceNiceScale: true
+                                 },
+                                 colors: ["#3b82f6"], grid: { strokeDashArray: 4, borderColor: "#f3f4f6" }, legend: { show: false }, 
+                                 tooltip: { theme: "light", style: { fontSize: "12px" }, y: { formatter: (val) => formatCurrency(val) } },
+                               }}
+                               series={[{ name: "Income", data: superAdminData.recentOrdersChart.data }]} type="area" height={300}
+                             />
+                           )
+                        })()}
                       </CardContent>
                     </Card>
                   </>
@@ -345,20 +367,33 @@ export default function DashboardPage() {
                       <Card className="lg:col-span-2 shadow-none border-slate-200">
                         <CardHeader><CardTitle className="text-sm font-semibold text-slate-700">Revenue Overview</CardTitle></CardHeader>
                         <CardContent>
-                          <Chart
-                            type="area"
-                            height={300}
-                            series={[{ name: 'Revenue', data: companyData.revenueTrend.map(d => d.amount) }]}
-                            options={{
-                              chart: { toolbar: { show: false }, fontFamily: 'inherit' },
-                              stroke: { curve: 'smooth', width: 2 },
-                              fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0.05 } },
-                              xaxis: { categories: companyData.revenueTrend.map(d => d.month), labels: { style: { colors: '#94a3b8', fontSize: '12px' } }, axisBorder: { show: false } },
-                              yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '12px' }, formatter: (val) => `Rp ${val/1000000}jt` } },
-                              colors: ['#3b82f6'],
-                              grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
-                            }}
-                          />
+                          {(() => {
+                            const isAllEmpty = companyData.revenueTrend.every(d => d.amount === 0)
+                            return (
+                              <Chart
+                                type="area"
+                                height={300}
+                                series={[{ name: 'Revenue', data: companyData.revenueTrend.map(d => d.amount) }]}
+                                options={{
+                                  chart: { toolbar: { show: false }, fontFamily: 'inherit' },
+                                  stroke: { curve: 'smooth', width: 2 },
+                                  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0.05 } },
+                                  xaxis: { categories: companyData.revenueTrend.map(d => d.month), labels: { style: { colors: '#94a3b8', fontSize: '12px' } }, axisBorder: { show: false } },
+                                  yaxis: { 
+                                    labels: { style: { colors: '#94a3b8', fontSize: '12px' }, formatter: formatCompactNumber }, 
+                                    min: 0,
+                                    max: isAllEmpty ? 10_000_000 : undefined,
+                                    tickAmount: isAllEmpty ? 5 : undefined,
+                                    decimalsInFloat: 0,
+                                    forceNiceScale: true
+                                  },
+                                  colors: ['#3b82f6'],
+                                  grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+                                  tooltip: { theme: 'light', y: { formatter: (val) => formatCurrency(val) } }
+                                }}
+                              />
+                            )
+                          })()}
                         </CardContent>
                       </Card>
 
