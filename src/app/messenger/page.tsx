@@ -96,6 +96,7 @@ export default function MessengerPage() {
   const [userSearch, setUserSearch] = useState('')
   const [otherLastSeenAt, setOtherLastSeenAt] = useState<string | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [loadingPeople, setLoadingPeople] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -239,6 +240,7 @@ export default function MessengerPage() {
   }, [selectedConversation?.id])
 
   const fetchUsers = useCallback(async () => {
+    setLoadingPeople(true)
     try {
       const res = await fetch('/api/messenger/users')
       const json = await res.json()
@@ -246,6 +248,9 @@ export default function MessengerPage() {
       else setUsers([])
     } catch {
       setUsers([])
+      toast.error('Failed to load people')
+    } finally {
+      setLoadingPeople(false)
     }
   }, [])
 
@@ -810,9 +815,27 @@ export default function MessengerPage() {
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" data-messenger-scroll>
             <div className="p-2">
-              {filteredUsers.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  {users.length === 0 ? 'Loading...' : 'No people found.'}
+              {loadingPeople ? (
+                <div className="p-2 space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-2">
+                      <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                  <div className="rounded-full bg-slate-50 dark:bg-slate-900 p-4 mb-3">
+                    <User className="h-6 w-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">No people found</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {userSearch.trim() ? "No matches for your search." : "There are no other users you can message at this time."}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-0.5">

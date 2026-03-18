@@ -585,6 +585,10 @@ export async function seedEmployeeUsers(prisma: any) {
         })
       : null;
 
+    const companyUser = await prisma.user.findUnique({
+      where: { email: "company@example.com" },
+    });
+
     const user = await prisma.user.upsert({
       where: { email: emp.email },
       update: {
@@ -592,6 +596,7 @@ export async function seedEmployeeUsers(prisma: any) {
         role: "employee",
         branchId: branch?.id ?? null,
         departmentId: department?.id ?? null,
+        ownerId: companyUser?.id ?? null,
         password: hashedPassword,
         emailVerified: true,
       },
@@ -599,6 +604,7 @@ export async function seedEmployeeUsers(prisma: any) {
         email: emp.email,
         name: emp.name,
         role: "employee",
+        ownerId: companyUser?.id ?? null,
         password: hashedPassword,
         emailVerified: true,
         branchId: branch?.id ?? null,

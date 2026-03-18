@@ -22,13 +22,32 @@ export async function GET() {
 
     const role = (session.user as { role?: string }).role
     const branchId = (session.user as { branchId?: string | null }).branchId ?? null
+    const ownerId = (session.user as { ownerId?: string | null }).ownerId ?? null
 
-    const where: { isActive?: boolean; id?: { not: string }; branchId?: string | null } = {
+    let where: any = {
       isActive: true,
       id: { not: currentUserId },
     }
-    if (role !== 'super admin' && branchId) {
-      where.branchId = branchId
+
+    if (role === 'super admin') {
+      // Super admin sees everyone
+    } else if (role === 'company') {
+      // Company sees all their employees
+      where.ownerId = currentUserId
+    } else {
+      // Employees and others see people in the same company (owner) and the boss
+      const effectiveOwnerId = ownerId || currentUserId // Fallback if ownerId is missing
+      where.OR = [
+        { ownerId: effectiveOwnerId },
+        { id: effectiveOwnerId }
+      ]
+      // Ensure we still exclude self after the OR
+      where = {
+        AND: [
+          where,
+          { id: { not: currentUserId } }
+        ]
+      }
     }
 
     const users = await prisma.user.findMany({
@@ -44,7 +63,7 @@ export async function GET() {
       orderBy: { name: 'asc' },
     })
 
-    const data = users.map((u) => ({
+    const data = users.map((u: any) => ({
       id: u.id,
       name: u.name ?? u.email,
       email: u.email,

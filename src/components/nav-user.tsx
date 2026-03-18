@@ -10,8 +10,11 @@ import {
   IconShield,
   IconBuildingStore,
   IconRocket,
+  IconSettings,
+  IconUsersGroup,
 } from "@tabler/icons-react"
 import { ChevronDown } from "lucide-react"
+import { getPlanBadgeColors } from "@/lib/plan-badge-colors"
 
 import {
   Avatar,
@@ -184,27 +187,55 @@ export function NavUser({
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="mx-0" />
           <DropdownMenuGroup className="p-1.5">
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
-              <IconUserCircle className="size-4 text-muted-foreground" />
-              Account
-            </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
-              <IconCreditCard className="size-4 text-muted-foreground" />
-              Billing
-            </DropdownMenuItem>
             {isCompany && (
-              <DropdownMenuItem
-                className="rounded-lg cursor-pointer gap-2.5 py-2.5"
-                onClick={() => router.push("/settings?tab=subscription-plan")}
-              >
-                <IconRocket className="size-4 text-muted-foreground" />
-                Upgrade plan
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem 
+                  className="rounded-lg cursor-pointer gap-2.5 py-2.5"
+                  onClick={() => router.push("/settings?tab=system-settings")}
+                >
+                  <IconSettings className="size-4 text-muted-foreground" />
+                  Pengaturan Sistem
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-lg cursor-pointer flex items-center justify-between gap-2.5 py-2.5"
+                  onClick={() => router.push("/settings?tab=subscription-plan")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <IconRocket className="size-4 text-muted-foreground" />
+                    Paket Langganan
+                  </div>
+                  {authUser?.plan && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${getPlanBadgeColors(authUser.plan)} uppercase tracking-wider`}>
+                      {authUser.plan}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-lg cursor-pointer gap-2.5 py-2.5"
+                  onClick={() => router.push("/settings?tab=order")}
+                >
+                  <IconCreditCard className="size-4 text-muted-foreground" />
+                  Riwayat Langganan
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-lg cursor-pointer gap-2.5 py-2.5"
+                  onClick={() => router.push("/settings?tab=referral-program")}
+                >
+                  <IconUsersGroup className="size-4 text-muted-foreground" />
+                  Program Referral
+                </DropdownMenuItem>
+              </>
             )}
-            <DropdownMenuItem className="rounded-lg cursor-pointer gap-2.5 py-2.5">
-              <IconNotification className="size-4 text-muted-foreground" />
-              Notifications
-            </DropdownMenuItem>
+            
+            {!isCompany && (
+               <DropdownMenuItem 
+                className="rounded-lg cursor-pointer gap-2.5 py-2.5"
+                onClick={() => router.push("/settings")}
+               >
+                 <IconUserCircle className="size-4 text-muted-foreground" />
+                 Akun
+               </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="mx-0" />
           <div className="p-1.5">
@@ -216,7 +247,7 @@ export function NavUser({
               className="rounded-lg cursor-pointer gap-2.5 py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive"
             >
               <IconLogout className="size-4" />
-              Log out
+              Keluar
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>
@@ -237,18 +268,18 @@ export function NavUser({
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to log out? You will need to log in again to access your account.
+              Apakah Anda yakin ingin keluar? Anda perlu masuk kembali untuk mengakses akun Anda.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
               className="bg-destructive text-white hover:bg-destructive/90 hover:text-white"
             >
-              Log out
+              Keluar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
